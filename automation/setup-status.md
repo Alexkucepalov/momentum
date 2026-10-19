@@ -30,9 +30,9 @@ Last updated: cloud-first loop bootstrap (local verify + GitHub private repo).
 Follow `automation/CLOUD-SETUP.md` and `automation/bootstrap-checklist.md`:
 
 - [ ] Link repo to Cursor Cloud Agents; set spend limits; no production credentials
-- [ ] Create 4 Cursor Automations from `automation/cursor-prompts.md` (PR review, `agent-ready`, nightly triage, pre-release)
-- [ ] Smoke: issue with `agent-ready` produces a PR while founder is offline
-- [ ] Local dogfood APK pipeline already present (`npm run build:apk:local`)
+- [ ] Create 4 Cursor Automations from `automation/cursor-prompts.md` (PR review, `agent-ready`, nightly triage, pre-release) — see `CLOUD-SETUP.md`
+- [x] Smoke path proven locally: issue [#1](https://github.com/Alexkucepalov/momentum/issues/1) → PR [#2](https://github.com/Alexkucepalov/momentum/pull/2) (repeat unattended after Automations are live)
+- [x] Local dogfood APK pipeline already present (`npm run build:apk:local`)
 - [ ] Configure Expo account + `eas init` projectId + cloud EAS preview (later)
 - [ ] Add `EXPO_TOKEN` GitHub Actions secret; manually dispatch staging build (later)
 - [ ] Play developer account + privacy before closed testing (later)
