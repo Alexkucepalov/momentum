@@ -7,6 +7,7 @@
 - `06-DATA-MODEL.md`: entities, invariants, API contracts
 - `07-AGENTS.md`: runtime AI agency/orchestration/safety
 - `08-AUTOMATION.md`: AI-assisted development, permissions and workflows
+- `AUTONOMOUS-DEVELOPMENT.md`: GitHub Actions + Cursor Cloud Agents dispatcher (dry-run / live)
 - `09-ROADMAP.md`: milestones, epics, prioritized backlog
 - `10-PLAY-RELEASE.md`: Google Play launch and privacy checklist
 - `11-QUALITY.md`: testing, security, performance, reliability

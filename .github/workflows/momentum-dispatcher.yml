@@ -1,0 +1,48 @@
+name: Momentum Dispatcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Force dry run (true/false). Empty = use repo variable DISPATCH_DRY_RUN.'
+        required: false
+        default: ''
+  schedule:
+    - cron: '*/15 * * * *'
+  issues:
+    types: [labeled, unlabeled, reopened, closed]
+  pull_request:
+    types: [closed]
+
+concurrency:
+  group: momentum-dispatcher
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Run dispatcher
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # Live launch requires BOTH: DISPATCH_ENABLED=true AND DRY_RUN=false
+          DISPATCH_ENABLED: ${{ vars.DISPATCH_ENABLED || 'false' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run != '' && github.event.inputs.dry_run || vars.DISPATCH_DRY_RUN || 'true' }}
+        run: npm run automation:dispatch
