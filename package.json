@@ -11,9 +11,11 @@
     "typecheck": "tsc --noEmit",
     "security:scan": "node scripts/check-secrets.mjs",
     "mobile:typecheck": "npx tsc --noEmit -p apps/mobile",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "automation:dispatch": "tsx automation/dispatcher/index.ts"
   },
   "devDependencies": {
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }
