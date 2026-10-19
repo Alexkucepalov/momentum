@@ -76,8 +76,15 @@ export default function RecipesIndexScreen() {
     <View style={styles.root}>
       <View style={styles.top}>
         <View style={styles.hubCard}>
-          <Text style={styles.hubHint}>Добавить рецепт</Text>
-          <Text style={styles.hubLead}>Три пути — вручную, из текста или из архива</Text>
+          <View style={styles.hubHeader}>
+            <View style={styles.hubIconWrap}>
+              <Ionicons name="add-circle" size={24} color={colors.text} />
+            </View>
+            <View style={styles.hubHeaderText}>
+              <Text style={styles.hubHint}>Добавить рецепт</Text>
+              <Text style={styles.hubLead}>Три пути — вручную, из текста или из архива</Text>
+            </View>
+          </View>
           <RecipeHubActions />
         </View>
 
@@ -248,21 +255,40 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.md,
-    marginBottom: space.md,
+    padding: space.lg,
+    marginBottom: space.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  hubHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.md,
+    marginBottom: space.lg,
+  },
+  hubIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hubHeaderText: {
+    flex: 1,
   },
   hubHint: {
-    fontSize: type.micro,
+    fontSize: type.caption,
     fontWeight: '800',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 2,
+    color: colors.text,
+    marginBottom: 4,
   },
   hubLead: {
     fontSize: type.caption,
     color: colors.textSecondary,
-    marginBottom: space.md,
     lineHeight: 18,
   },
   headerBtn: {
@@ -305,29 +331,31 @@ const styles = StyleSheet.create({
   chipTextOn: { color: colors.primaryButtonText },
   list: { paddingHorizontal: space.lg, paddingBottom: 48, paddingTop: space.xs },
   emptyFilter: {
-    padding: space.xl,
+    padding: space.xxl,
     alignItems: 'center',
   },
   emptyIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: space.md,
+    marginBottom: space.lg,
   },
   emptyFilterTitle: {
     fontWeight: '800',
     fontSize: type.subtitle,
     color: colors.text,
     marginBottom: space.sm,
+    textAlign: 'center',
   },
   emptyFilterBody: {
-    fontSize: type.caption,
+    fontSize: type.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
+    maxWidth: 280,
   },
   card: {
     flexDirection: 'row',
@@ -337,21 +365,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.md,
-    marginBottom: space.sm,
-    minHeight: touchMin,
+    padding: space.lg,
+    marginBottom: space.md,
+    minHeight: touchMin + 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   thumb: {
-    width: 76,
-    height: 76,
+    width: 84,
+    height: 84,
     borderRadius: radius.lg,
     backgroundColor: colors.accentSoft,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  thumbArchive: { backgroundColor: '#EEF2F6' },
-  cardBody: { flex: 1 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
-  cardTitle: { flex: 1, fontSize: type.body, fontWeight: '800', color: colors.text },
+  thumbArchive: { backgroundColor: '#F0F4F8' },
+  cardBody: { flex: 1, gap: 6 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, marginBottom: 2 },
+  cardTitle: { flex: 1, fontSize: type.body, fontWeight: '800', color: colors.text, lineHeight: 20 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -359,17 +392,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   badgeText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
-  cardMeta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 4 },
+  cardMeta: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 16, marginBottom: 4 },
   chevron: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { opacity: 0.88 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });
