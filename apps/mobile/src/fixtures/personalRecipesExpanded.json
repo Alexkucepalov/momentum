@@ -1,0 +1,2429 @@
+{
+  "format": "momentum.recipe_import.v1",
+  "created_on": "2026-10-19",
+  "language": "ru",
+  "policy": {
+    "missing_quantities": "null",
+    "unknown_nutrition": "null",
+    "estimates_not_promoted_to_facts": true,
+    "requires_user_review_before_save": true
+  },
+  "recipes": [
+    {
+      "id": "cheesecake-600-no-semolina",
+      "title": "Творожный чизкейк-запеканка без манки",
+      "category": "ПП / домашнее",
+      "record_status": "user_prepared",
+      "source_context": "18.10.2026: пользователь сообщал, что приготовил творожную запеканку-чизкейк; в ответе ассистента на 600 г творога приведён рецепт без манки.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог обычный 5%",
+          "quantity": 600,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт",
+          "quantity": 150,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 2,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Желток",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Крахмал",
+          "quantity": 23,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахарозаменитель",
+          "quantity": 40,
+          "unit": "g",
+          "note": "40 г — рекомендация из переписки; состав и калорийность конкретного продукта неизвестны",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Пробить обычный творог блендером до однородности.",
+        "Добавить йогурт, яйца, желток, крахмал, сахарозаменитель и перемешать.",
+        "Выпекать при 165°C около 45–55 минут.",
+        "Остудить и убрать в холодильник на 3–4 часа."
+      ],
+      "oven_temperature_c": 165,
+      "bake_time_minutes": "45–55",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Точное соответствие приготовленного варианта предложенному рецепту нужно подтвердить.",
+        "В обсуждении важны обычный творог и отсутствие манки."
+      ],
+      "needs_confirmation": [
+        "Фактически использованные продукты и сахзам",
+        "Вес готовой запеканки",
+        "Реальное число порций"
+      ],
+      "verified_by_user": true
+    },
+    {
+      "id": "pasta-turkey-beef-beans",
+      "title": "Макароны по-флотски с фаршем и фасолью",
+      "category": "ПП / домашнее",
+      "record_status": "user_prepared",
+      "source_context": "15.10.2026: пользователь описал приготовленный обед и сообщил о 2 готовых порциях плюс 250 г смеси фарша и овощей.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Макароны отварные",
+          "quantity": 110,
+          "unit": "g",
+          "note": "110 г — обсуждавшаяся масса на одну порцию, не общий вес кастрюли",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Фарш индейки и говядины",
+          "quantity": null,
+          "unit": null,
+          "note": "Масса и соотношение неизвестны",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Лук",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Морковь",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Фасоль в томатном соке",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло для жарки",
+          "quantity": null,
+          "unit": null,
+          "note": "Упоминалась обжарка, факт/масса масла неизвестны",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Обжарить лук и морковь.",
+        "Добавить смешанный фарш индейки и говядины и приготовить.",
+        "Отварить макароны.",
+        "За три минуты до готовности фарша добавить фасоль в томатном соке и прогреть.",
+        "Подавать смесь фарша и овощей с макаронами."
+      ],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Пользователь приготовил две порции макарон со смесью и оставил дополнительно около 250 г мясо-овощной смеси.",
+        "110 г отварных макарон — вариант порции из диалога, не подтверждённый общий рецепт."
+      ],
+      "needs_confirmation": [
+        "Массы всех продуктов для полной партии",
+        "Общий вес готовой смеси",
+        "Размер каждой порции смеси",
+        "Фактические КБЖУ ингредиентов"
+      ],
+      "verified_by_user": true
+    },
+    {
+      "id": "baked-chicken-breasts",
+      "title": "Запечённые куриные грудки (партия)",
+      "category": "ПП / домашнее",
+      "record_status": "user_prepared",
+      "source_context": "18.10.2026: пользователь сообщил, что запёк 6 грудок суммарной массой примерно 1,5–1,7 кг.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриная грудка",
+          "quantity": null,
+          "unit": null,
+          "note": "6 грудок, общая исходная масса приблизительно 1500–1700 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": null,
+          "note": "Не подтверждено",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Специи",
+          "quantity": null,
+          "unit": null,
+          "note": "Не подтверждено",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло",
+          "quantity": null,
+          "unit": null,
+          "note": "Не подтверждено",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Запечь куриные грудки до готовности."
+      ],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Исходная масса 1,5–1,7 кг приблизительная; точное время и режим не подтверждены."
+      ],
+      "needs_confirmation": [
+        "Точная сырая масса",
+        "Режим и время приготовления",
+        "Добавленные масло и специи",
+        "Итоговый вес после запекания"
+      ],
+      "verified_by_user": true
+    },
+    {
+      "id": "baked-potato-wedges",
+      "title": "Запечённый картофель дольками",
+      "category": "ПП / домашнее",
+      "record_status": "user_prepared",
+      "source_context": "18.10.2026: пользователь сообщил, что картофель уже запечён; уточнял время и режим аэрогриля.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Картофель",
+          "quantity": null,
+          "unit": null,
+          "note": "Количество неизвестно",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло",
+          "quantity": null,
+          "unit": null,
+          "note": "Неизвестно, использовалось ли",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Специи",
+          "quantity": null,
+          "unit": null,
+          "note": "Состав неизвестен",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Нарезать картофель дольками.",
+        "Запечь до готовности."
+      ],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": [
+        "Масса сырого картофеля",
+        "Количество масла",
+        "Температура, режим и время",
+        "Масса после приготовления"
+      ],
+      "verified_by_user": true
+    },
+    {
+      "id": "pp-charlotte-apple",
+      "title": "ПП-шарлотка с яблоками",
+      "category": "ПП / домашнее",
+      "record_status": "discussed_unconfirmed",
+      "source_context": "17.10.2026: составлен рецепт, пользователь уточнял количество сахарозаменителя.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Яблоки",
+          "quantity": 350,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйца",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Греческий йогурт",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Разрыхлитель",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Корица",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахарозаменитель",
+          "quantity": 20,
+          "unit": "g",
+          "note": "20 г — рекомендованная доза, фактическая не подтверждена",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Нарезать яблоки и посыпать корицей.",
+        "Взбивать яйца с сахарозаменителем 2–3 минуты.",
+        "Добавить греческий йогурт, муку и разрыхлитель.",
+        "Выложить яблоки в форму 18–20 см и залить тестом.",
+        "Выпекать при 180°C около 30–40 минут."
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "30–40",
+      "cooked_yield_g": null,
+      "servings": 6,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "В диалоге приводился ориентир ~125 ккал/порция, но данные неполные и эту оценку не экспортируем как достоверное КБЖУ.",
+        "Для данного сахзама 5 г по сладости эквивалентны примерно 10 г сахара, но пищевая ценность не установлена."
+      ],
+      "needs_confirmation": [
+        "Количество яиц",
+        "Масса йогурта",
+        "Масса муки и разрыхлителя",
+        "Фактический готовый выход",
+        "Фактическое приготовление"
+      ],
+      "verified_by_user": false
+    },
+    {
+      "id": "chicken-potatoes-600",
+      "title": "Курица с картофельными дольками",
+      "category": "ПП / домашнее",
+      "record_status": "assistant_suggestion",
+      "source_context": "18.10.2026: предложено в меню для нескольких дней, не подтверждено как приготовленная именно по этой формуле.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": 600,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Картофель",
+          "quantity": 600,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло",
+          "quantity": 15,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Паприка",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Чеснок",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Нарезать картофель дольками, приправить.",
+        "Добавить куриное филе и масло.",
+        "Запекать при 200°C около 25–35 минут, до готовности курицы."
+      ],
+      "oven_temperature_c": 200,
+      "bake_time_minutes": "25–35",
+      "cooked_yield_g": null,
+      "servings": 3,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Ранее была озвучена приблизительная оценка ~435 ккал/порция, но без проверенных товарных КБЖУ; точные значения не импортируются."
+      ],
+      "needs_confirmation": [
+        "Фактический готовый вес",
+        "Пищевая ценность конкретных ингредиентов"
+      ],
+      "verified_by_user": false
+    },
+    {
+      "id": "cottage-muffins-pp",
+      "title": "ПП творожные маффины",
+      "category": "ПП / домашнее",
+      "record_status": "assistant_suggestion",
+      "source_context": "18.05.2026: предложенный вариант ПП-маффинов.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 200,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйца",
+          "quantity": 2,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Овсяная мука",
+          "quantity": 80,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт",
+          "quantity": 2,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Разрыхлитель",
+          "quantity": 1,
+          "unit": "tsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Подсластитель",
+          "quantity": null,
+          "unit": null,
+          "note": "По вкусу",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Ягоды или яблоко",
+          "quantity": null,
+          "unit": null,
+          "note": "Необязательно",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Смешать ингредиенты до однородности.",
+        "Разложить по формочкам.",
+        "Выпекать при 180°C 20–25 минут."
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "20–25",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": [
+        "Масса йогурта, разрыхлителя, подсластителя и добавок в граммах",
+        "Количество получившихся маффинов",
+        "Вес после выпечки"
+      ],
+      "verified_by_user": false
+    },
+    {
+      "id": "pp-pizza-cottage-dough",
+      "title": "ПП-пицца с творожным тестом — основа",
+      "category": "ПП / домашнее",
+      "record_status": "assistant_suggestion",
+      "source_context": "23.01.2026: обсуждалась ПП-пицца, доступен состав теста и предварительная выпечка основы.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 200,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": null,
+          "unit": null,
+          "note": "Диапазон 70–90 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Разрыхлитель",
+          "quantity": 1,
+          "unit": "tsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Смешать компоненты основы.",
+        "Сформировать основу и запечь при 180°C 10–12 минут.",
+        "Добавить начинку и допечь по отдельному рецепту."
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "10–12 для основы",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": [
+        "Фактическая масса муки",
+        "Состав и масса начинки",
+        "Общая продолжительность выпечки",
+        "Готовый выход"
+      ],
+      "verified_by_user": false
+    },
+    {
+      "id": "potato-veggie-stew",
+      "title": "Картофельно-овощное рагу",
+      "category": "ПП / домашнее",
+      "record_status": "assistant_suggestion",
+      "source_context": "15.02.2026: предложенное рагу на две порции.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Картофель",
+          "quantity": 500,
+          "unit": "g",
+          "note": "Приблизительно",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Замороженные овощи",
+          "quantity": null,
+          "unit": null,
+          "note": "Диапазон 300–400 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Вода",
+          "quantity": null,
+          "unit": null,
+          "note": "Диапазон 150–250 мл",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": null,
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт",
+          "quantity": null,
+          "unit": null,
+          "note": "Необязательно, 1–2 ст. л.",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Соединить картофель, овощи и воду.",
+        "Тушить под крышкой 20–30 минут до мягкости.",
+        "При желании добавить йогурт."
+      ],
+      "oven_temperature_c": null,
+      "bake_time_minutes": "20–30",
+      "cooked_yield_g": null,
+      "servings": 2,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": [
+        "Точные количества",
+        "Состав овощной смеси",
+        "Готовый выход"
+      ],
+      "verified_by_user": false
+    },
+    {
+      "id": "pear-curd-dessert",
+      "title": "Творожно-грушевый десерт",
+      "category": "ПП / домашнее",
+      "record_status": "assistant_suggestion",
+      "source_context": "15.02.2026: предложенный чизкейк-подобный десерт.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Обычный творог",
+          "quantity": null,
+          "unit": null,
+          "note": "150–200 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мягкий творог или рикотта",
+          "quantity": null,
+          "unit": null,
+          "note": "150–200 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Груша",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Крахмал или манка",
+          "quantity": null,
+          "unit": null,
+          "note": "1–2 чайные ложки (альтернативы)",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Смешать ингредиенты.",
+        "Переложить в форму.",
+        "Выпекать при 160–170°C 25–30 минут.",
+        "Остудить и охладить."
+      ],
+      "oven_temperature_c": null,
+      "bake_time_minutes": "25–30",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Это старое предложенное блюдо, не рецепт основной запеканки без манки."
+      ],
+      "needs_confirmation": [
+        "Выбор крахмала или манки",
+        "Точные массы",
+        "Готовый выход"
+      ],
+      "verified_by_user": false
+    },
+    {
+      "id": "mexican-vegetable-mix",
+      "title": "Мексиканская овощная смесь",
+      "category": "ПП / домашнее",
+      "record_status": "user_prepared",
+      "source_context": "18.10.2026: пользователь просил способ приготовления мексиканской смеси; факт приготовления именно смеси не подтверждён.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Овощная смесь мексиканская",
+          "quantity": null,
+          "unit": null,
+          "note": "Неизвестная масса/бренд",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "В переписке нет надёжно подтверждённых массы, режима и времени."
+      ],
+      "needs_confirmation": [
+        "Масса смеси",
+        "Состав по упаковке",
+        "Способ приготовления"
+      ],
+      "verified_by_user": true
+    },
+    {
+      "id": "syrniki-original",
+      "title": "Сырники по твоему рецепту",
+      "category": "Домашнее / ПП",
+      "record_status": "discussed",
+      "source_context": "18.10.2025: пользователь дал рецепт с творогом, мукой, сахаром, желтками, ванилью и солью; 10.02.2026 уточнена база на 500 г.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 500,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": 72,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахар",
+          "quantity": 72,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Желток",
+          "quantity": 2,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Ваниль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло растительное",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло сливочное",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Сформировать сырники колбаской/стаканом",
+        "Обжарить с двух сторон на растительном и сливочном масле",
+        "Довести в духовке при 180°C около 5 минут"
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "5–7",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Порция 500 г подтверждена как описанный пользователем рецепт, не факт приготовления конкретной партии"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "syrniki-1kg",
+      "title": "Сырники, масштабирование на 1 кг творога",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "18.10.2025: ассистент пересчитал рецепт на 1 кг творога.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 1000,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": 144,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахарная пудра",
+          "quantity": null,
+          "unit": "g",
+          "note": "Вариант 115–120 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Желтки",
+          "quantity": 4,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Ваниль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло для жарки",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Обжарить и довести в духовке при 180°C 5–7 минут"
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "5–7",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Вариант исходных сырников; сахарную пудру нужно уточнить"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "syrniki-700",
+      "title": "Сырники с сахарозаменителем на 700 г творога",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "01.08.2026: предложен вариант на 700 г творога; мука позже уточнена.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 700,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйца",
+          "quantity": 3,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": null,
+          "unit": "g",
+          "note": "Ориентир 70–80 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахарозаменитель",
+          "quantity": null,
+          "unit": "g",
+          "note": "Эквивалент 70–80 г сахара",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Не путать с ранним вариантом на манке"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "pp-lasagna-turkey-prepared",
+      "title": "ПП-лазанья с индейкой и йогуртовым бешамелем",
+      "category": "Домашнее / ПП",
+      "record_status": "user_prepared",
+      "source_context": "05.04.2026: пользователь фактически готовил лазанью и называл бренды и массы.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Фарш индейки Инделайт",
+          "quantity": 450,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Томаты",
+          "quantity": 600,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Чеснок",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Лук",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Морковь",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Итальянские травы",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт Epica",
+          "quantity": 260,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Молоко Простоквашино",
+          "quantity": 160,
+          "unit": "ml",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Крахмал",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мускатный орех",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Листы лазаньи",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сыр",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Масса листов, сыра, овощей и крахмала не найдена; соус назывался бешамелем на йогурте"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "pp-lasagna-proposed",
+      "title": "ПП-лазанья — базовый предложенный вариант",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "04.04.2026: предложен рецепт.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Фарш куриный",
+          "quantity": 500,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Томаты",
+          "quantity": 400,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт",
+          "quantity": 200,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сыр",
+          "quantity": null,
+          "unit": "g",
+          "note": "80–100 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Листы лазаньи",
+          "quantity": null,
+          "unit": "pcs",
+          "note": "6–8 шт.",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Выпекать при 180°C 30–40 минут"
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "30–40",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "chicken-pasta-mushrooms",
+      "title": "Паста с курицей, шампиньонами и греческим йогуртом",
+      "category": "Домашнее / ПП",
+      "record_status": "discussed",
+      "source_context": "19.04.2026: подробно обсуждалась готовка на 3–4 порции.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": 500,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Шампиньоны",
+          "quantity": 400,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Макароны сухие",
+          "quantity": null,
+          "unit": "g",
+          "note": "200–250 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт греческий",
+          "quantity": 300,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Обсуждена готовка, но завершение не подтверждено"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "sweet-sour-chicken",
+      "title": "Курица с рисом в кисло-сладком соусе",
+      "category": "Домашнее / ПП",
+      "record_status": "discussed",
+      "source_context": "12.05.2026: пользователь выбрал блюдо на 800 г курицы и просил адаптировать соус.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": 800,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Рис",
+          "quantity": 400,
+          "unit": "g",
+          "note": "Не уточнено, сухая или готовая масса",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Кетчуп",
+          "quantity": 10,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахар",
+          "quantity": 15,
+          "unit": "tbsp",
+          "note": "Исходный соус; мог быть заменён сахарозаменителем",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Уксус яблочный",
+          "quantity": 20,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Вода",
+          "quantity": 25,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахарозаменитель",
+          "quantity": null,
+          "unit": "g",
+          "note": "Альтернатива сахару; 1–1.5 ст. л. при концентрации 1:10",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Количество сахара и замена сахарозаменителем требуют обязательной проверки: в истории это вариант соуса, не доказанный фактический состав"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "baked-chicken-strips",
+      "title": "Куриные стрипсы в духовке",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "14.03.2026: предложен расчёт на 750 г курицы.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": 750,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 3,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Панировочные сухари",
+          "quantity": 150,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": 4,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Крахмал",
+          "quantity": 1.5,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соевый соус",
+          "quantity": 2,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Чеснок",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Специи",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Мариновать и запанировать",
+        "Запечь при 210–220°C 22–25 минут, перевернуть примерно через 12 минут"
+      ],
+      "oven_temperature_c": 220,
+      "bake_time_minutes": "22–25",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "kfc-style-strips",
+      "title": "Стрипсы с кефирным маринадом и двойной панировкой",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "14.03.2026: альтернативный вариант под KFC.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": null,
+          "unit": "g",
+          "note": "500–700 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Кефир",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Панировка",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Мариновать и сделать двойную панировку",
+        "Запечь при 220°C 20–25 минут"
+      ],
+      "oven_temperature_c": 220,
+      "bake_time_minutes": "20–25",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "caesar-pp",
+      "title": "ПП-Цезарь с курицей и йогуртовым соусом",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "05.04.2026: предложен вариант салата.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": 400,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Хлеб",
+          "quantity": 150,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Айсберг",
+          "quantity": null,
+          "unit": "g",
+          "note": "250–300 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Помидоры черри",
+          "quantity": null,
+          "unit": "g",
+          "note": "150–200 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт для соуса",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сыр",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Подсушить сухарики при 160–170°C 10–15 минут",
+        "Собрать салат с курицей, овощами и соусом"
+      ],
+      "oven_temperature_c": 165,
+      "bake_time_minutes": "10–15",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "feta-tomato-sausage-pasta",
+      "title": "Запечённая паста с фетой, томатами и купатами",
+      "category": "Домашнее / ПП",
+      "record_status": "discussed",
+      "source_context": "08.04.2026: обсуждались имеющиеся продукты.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Паста сухая",
+          "quantity": null,
+          "unit": "g",
+          "note": "80–100 г на человека",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Фета",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Помидоры черри",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Помидор",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Купаты",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Итальянские специи",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "turkey-meatballs",
+      "title": "Котлеты из индейки в духовке на 1 кг фарша",
+      "category": "Домашнее / ПП",
+      "record_status": "user_prepared",
+      "source_context": "26.07.2026: пользователь спрашивал время запекания приготовленных котлет.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Фарш индейки",
+          "quantity": 1000,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Лук",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Соль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Перец",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Паприка",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Чеснок сушёный",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Сформировать примерно 10–12 котлет",
+        "Запекать при 200°C около 25 минут"
+      ],
+      "oven_temperature_c": 200,
+      "bake_time_minutes": "25",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Факт подготовки котлет/запекания косвенно подтверждён; уточнить реальные массы добавок"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "curd-bagels",
+      "title": "ПП творожные бейглы с семенами",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "28.06.2026: предложен рецепт.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 500,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйца",
+          "quantity": null,
+          "unit": "pcs",
+          "note": "2–3 шт.",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука",
+          "quantity": 125,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Семена в тесто",
+          "quantity": 50,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Семена сверху",
+          "quantity": null,
+          "unit": "g",
+          "note": "20–30 г",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Выпекать при 180°C 25–30 минут"
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "25–30",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "chicken-creamy-pasta",
+      "title": "Сливочная паста с курицей и греческим йогуртом",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "17.05.2026: предложен рецепт.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": 800,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Паста сухая",
+          "quantity": null,
+          "unit": "g",
+          "note": "250–300 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт греческий",
+          "quantity": 200,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "udon-chicken",
+      "title": "Удон с курицей и овощами",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "01.08.2026: предложен вариант.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Куриное филе",
+          "quantity": null,
+          "unit": "g",
+          "note": "500–600 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Удон",
+          "quantity": null,
+          "unit": "g",
+          "note": "250–300 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Овощи",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "meatballs-tomato",
+      "title": "Тефтели из фарша в томатном соусе",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "01.08.2026: предложен вариант.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Фарш",
+          "quantity": null,
+          "unit": "g",
+          "note": "700–800 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Томатный соус",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "curd-blueberry-bake",
+      "title": "Запеканка с йогуртом и голубикой",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "19.04.2026: предложена заготовка на 4 порции; название условное, так как основа без творога.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Яйца",
+          "quantity": 5,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Греческий йогурт",
+          "quantity": 400,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Голубика",
+          "quantity": null,
+          "unit": "g",
+          "note": "150–200 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Манка или овсянка",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Выпекать при 180°C около 35–40 минут"
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "35–40",
+      "cooked_yield_g": null,
+      "servings": 4,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "baked-baby-potatoes",
+      "title": "Запечённый картофель бэйби",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "19.04.2026: предложена заготовка на 3–4 дня.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Картофель бэйби",
+          "quantity": null,
+          "unit": "g",
+          "note": "1200–1500 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло",
+          "quantity": 2,
+          "unit": "tsp",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Запекать около 40 минут при 200°C"
+      ],
+      "oven_temperature_c": 200,
+      "bake_time_minutes": "40",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "mini-cheesecake",
+      "title": "Мини-ПП-чизкейк без блендера",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "03.01.2026: предложен рецепт.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 120,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сливочный сыр",
+          "quantity": null,
+          "unit": "g",
+          "note": "120–150 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Крахмал",
+          "quantity": 1,
+          "unit": "tsp",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Выпекать при 160–170°C 35–40 минут",
+        "Охладить 2–3 часа"
+      ],
+      "oven_temperature_c": 165,
+      "bake_time_minutes": "35–40",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "cheesecake-oat-base",
+      "title": "ПП-чизкейк с овсяной основой",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "03.01.2026: предложен рецепт.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Творог",
+          "quantity": 400,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сливочный сыр",
+          "quantity": 250,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Овсянка",
+          "quantity": 80,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Выпекать при 160–170°C 50–60 минут"
+      ],
+      "oven_temperature_c": 165,
+      "bake_time_minutes": "50–60",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "charlotte-yogurt",
+      "title": "Ленивая ПП-шарлотка с йогуртом",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "09.04.2026: предложенный рецепт, не подтверждено приготовление.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Яйца",
+          "quantity": 2,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Йогурт греческий",
+          "quantity": null,
+          "unit": "g",
+          "note": "150–200 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Мука или манка",
+          "quantity": null,
+          "unit": "tbsp",
+          "note": "2–3 ст. л.",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Яблоки",
+          "quantity": 2,
+          "unit": "pcs",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Разрыхлитель",
+          "quantity": 1,
+          "unit": "tsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахарозаменитель",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Ваниль",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Выпекать 180°C 30–35 минут"
+      ],
+      "oven_temperature_c": 180,
+      "bake_time_minutes": "30–35",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "savory-tomato-oatmeal",
+      "title": "Несладкая томатная овсянка с сыром",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "29.03.2026: предложено блюдо.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Овсянка",
+          "quantity": 50,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Вода или бульон",
+          "quantity": null,
+          "unit": "ml",
+          "note": "200–250 мл",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Помидор",
+          "quantity": 150,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Чеснок",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Масло",
+          "quantity": 1,
+          "unit": "tbsp",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сыр",
+          "quantity": null,
+          "unit": "g",
+          "note": "20–30 г",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "sea-buckthorn-syrup",
+      "title": "Облепиховый сироп для чая",
+      "category": "Напитки / десерты",
+      "record_status": "assistant_suggested",
+      "source_context": "12.03.2026: предложен рецепт, не диетический из-за сахара.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Облепиха замороженная",
+          "quantity": 300,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Вода",
+          "quantity": 100,
+          "unit": "ml",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Сахар",
+          "quantity": null,
+          "unit": "g",
+          "note": "200–250 г",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Кипятить ягоды с водой 5–7 минут",
+        "Добавить сахар и готовить ещё 5–10 минут"
+      ],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Не классифицировать как низкокалорийный ПП-рецепт"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "pho-bo",
+      "title": "Фо бо — домашний бульон и суп",
+      "category": "Домашнее / ПП",
+      "record_status": "discussed",
+      "source_context": "06.04.2026: пользователь запекал кости для супа, готовое блюдо не подтверждено.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Кости говяжьи",
+          "quantity": null,
+          "unit": "g",
+          "note": "2000–2500 г",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Вода",
+          "quantity": null,
+          "unit": "ml",
+          "note": "Кастрюля 4,7 л",
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Остальные ингредиенты",
+          "quantity": null,
+          "unit": "g",
+          "note": "Точный состав не восстановлен",
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [
+        "Запечь кости при 200–220°C 35–50 минут",
+        "Варить бульон 6–10 часов"
+      ],
+      "oven_temperature_c": 210,
+      "bake_time_minutes": "35–50 (кости)",
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "turkey-tomato-beans-extra",
+      "title": "Индейка с нутом / овощами — идея заготовки",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "26.07.2026: упомянута как вариант из фарша / индейки; количеств нет.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Индейка",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Нут",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        },
+        {
+          "name": "Овощи",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Это лишь идея, может быть исключена из импорта по умолчанию"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "scrambled-eggs",
+      "title": "Скрэмбл — идея завтрака",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "26.07.2026: предложено как завтрак, количества неизвестны.",
+      "variant": null,
+      "ingredients": [
+        {
+          "name": "Яйца",
+          "quantity": null,
+          "unit": "g",
+          "note": null,
+          "nutrition_per_100g": null
+        }
+      ],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Черновик только с названием"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    },
+    {
+      "id": "oat-pancake",
+      "title": "Овсяноблин — идея завтрака",
+      "category": "Домашнее / ПП",
+      "record_status": "assistant_suggested",
+      "source_context": "03.01.2026: упомянуто как вариант, точные ингредиенты неизвестны.",
+      "variant": null,
+      "ingredients": [],
+      "instructions": [],
+      "oven_temperature_c": null,
+      "bake_time_minutes": null,
+      "cooked_yield_g": null,
+      "servings": null,
+      "nutrition": {
+        "total": null,
+        "per_100g": null,
+        "per_serving": null,
+        "source": "unknown",
+        "is_estimate": false
+      },
+      "notes": [
+        "Список ингредиентов предположительный по названию; требует проверки"
+      ],
+      "needs_confirmation": true,
+      "verified_by_user": false
+    }
+  ],
+  "revision": "expanded-history-v2",
+  "notes": "Recovered from previous conversations; do not treat suggested recipes as actually cooked; missing quantities and KБЖУ remain null."
+}

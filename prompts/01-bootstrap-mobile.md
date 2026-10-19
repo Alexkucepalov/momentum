@@ -1,0 +1,4 @@
+# Cursor Cloud Agent issue: Bootstrap Android app
+Implement issue P0-01. Read AGENTS.md, docs/01-PRD.md, docs/05-ARCHITECTURE.md, docs/11-QUALITY.md.
+Goal: generate a NEW Expo React Native TypeScript app in apps/mobile with Expo Router, Today/Food/Activity/Progress navigation and static placeholders CLEARLY marked as design previews; use latest supported Expo SDK that can target Android API 36; use real compatible package versions. No fake persistence, no AI.
+Acceptance: emulator/dev build runs, basic navigation works, strong accessibility labels, TypeScript and lint pass, README precise start commands; add PR screenshots and environment setup steps. Keep root nutrition engine tests working. Do not push directly to main. If SDK compatibility with API36 blocks you, explain and propose a verified alternative; never downgrade Play requirement.

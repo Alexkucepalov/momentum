@@ -1,0 +1,2 @@
+# Cursor Cloud Agent issue: Nutrition local persistence
+Read docs/06-DATA-MODEL.md and docs/11-QUALITY.md. Add SQLite migrations and repository layer to generated Expo app for FoodProduct/FoodEntry/Recipe, including source and snapshots, date timezone, local validation and transactional updates. Add integration tests for offline, restart, undo deletion. Do not add cloud/backend. PR with data migration explanation; no direct merge.

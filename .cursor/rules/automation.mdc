@@ -1,0 +1,11 @@
+---
+description: Low-touch agent workflow — one issue, one branch, one PR
+alwaysApply: true
+---
+Before coding: read `AGENTS.md` and `docs/17-DEV-PLAN.md` (Backlog / current issue only).
+
+Workflow: one GitHub issue → one feature branch → one PR. Never merge to `main`, never rotate secrets, never Play/EAS production, never invent nutrition values or commit real health data.
+
+Scope: only the issue acceptance criteria. If blocked (architecture, privacy, credentials), stop, label/note `needs-human`, do not guess.
+
+DoD before PR: `npm run verify`. Report changed files, commands/results, UI screenshots when UI, risk, rollback. Max 2 CI-fix push cycles; then stop and report.

@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import ts from 'typescript';
+import { createRequire } from 'node:module';
+const source = readFileSync(new URL('../src/domain/nutrition.ts', import.meta.url),'utf8');
+const transpiled = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const mod={exports:{}};
+new Function('module','exports',transpiled)(mod,mod.exports);
+const {portion,recipePortion,addNutrition}=mod.exports;
+const base={kcal:200,protein:10,fat:5,carbs:25};
+test('portion scales accurately',()=>assert.deepEqual(portion(base,150),{kcal:300,protein:15,fat:7.5,carbs:37.5}));
+test('cooked recipe yield uses weight of finished dish',()=>assert.equal(recipePortion([{grams:500,nutritionPer100g:base}],800,200).kcal,250));
+test('unknown is NOT zero',()=>assert.equal(addNutrition([{...base,kcal:null},base]).kcal,null));
+test('reject bad grams',()=>assert.throws(()=>portion(base,-1)));
+test('reject zero yield',()=>assert.throws(()=>recipePortion([],0,100)));
+test('reject invalid nutrition',()=>assert.throws(()=>portion({...base,kcal:NaN},100)));

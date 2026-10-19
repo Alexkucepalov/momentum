@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Momentum",
+    "slug": "momentum",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "momentum",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.momentum.dogfood"
+    },
+    "android": {
+      "package": "app.momentum.dogfood",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F8F6",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F8F6"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Камера нужна, чтобы считать штрихкод и сфотографировать этикетку с КБЖУ. Фото не уходят в облако.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Галерея нужна, чтобы прикрепить фото к рецепту. Фото остаются только на устройстве.",
+          "cameraPermission": "Камера нужна, чтобы сфотографировать блюдо для рецепта. Фото не уходят в облако."
+        }
+      ],
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

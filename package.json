@@ -1,0 +1,19 @@
+{
+  "name": "momentum-blueprint",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "security:scan": "node scripts/check-secrets.mjs",
+    "mobile:typecheck": "npx tsc --noEmit -p apps/mobile",
+    "verify": "node scripts/verify.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

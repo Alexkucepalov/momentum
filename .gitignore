@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.keystore
+*.jks
+*.aab
+*.apk
+.DS_Store
+coverage/
+dist/

@@ -1,0 +1,5 @@
+---
+description: Nutrition engine and offline persistence constraints
+alwaysApply: true
+---
+Use strict TypeScript; avoid floating NaN/negative gram amounts; unknown != zero; store entry snapshot; preserve source; offline first; agents only propose changes and never bypass domain validation. Never commit secrets or real health records.

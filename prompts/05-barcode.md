@@ -1,0 +1,2 @@
+# Cursor Cloud Agent issue: Barcode with graceful fallback
+Implement Expo Camera barcode flow only after core diary and permissions approved. Handle denial, offline, unknown SKU, timeout. Resolve local cache first; Open Food Facts API with correct license/attribution, request rates, caching and explicit user confirmation. Preserve source; no fake zeros; tests/simulator video and manual real-device checklist.

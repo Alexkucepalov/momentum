@@ -1,0 +1,25 @@
+# Document map
+- `01-PRD.md`: product direction, personas, scope, priorities, acceptance criteria
+- `02-MARKET.md`: hypotheses/competitive positioning and validation research
+- `03-UX.md`: IA, screens, navigation, user flows, micro-interactions, accessibility
+- `04-DESIGN-SYSTEM.md`: tokens and components
+- `05-ARCHITECTURE.md`: app, local storage, sync, backend, tradeoffs
+- `06-DATA-MODEL.md`: entities, invariants, API contracts
+- `07-AGENTS.md`: runtime AI agency/orchestration/safety
+- `08-AUTOMATION.md`: AI-assisted development, permissions and workflows
+- `09-ROADMAP.md`: milestones, epics, prioritized backlog
+- `10-PLAY-RELEASE.md`: Google Play launch and privacy checklist
+- `11-QUALITY.md`: testing, security, performance, reliability
+- `12-METRICS.md`: analytics, product metrics, data privacy
+- `13-RESEARCH.md`: checked official references, 2026-10-16
+- `14-DECISIONS.md`: architecture decisions and unknowns
+- `15-BUSINESS.md`: pricing, unit economics and experiments
+- `16-OPERATIONS.md`: ownership, costs and recurring review
+- `17-DEV-PLAN.md`: living dogfood development plan (current sprint, DoD, order)
+- `18-COMPETITOR-GAPS.md`: competitor convenience gaps → prioritized Momentum features
+- `19-SMART-RECIPE-IMPORT.md`: text/photo → recipe draft; AI boundaries; Phase 0 local parser
+- `fixtures/personal-recipes-expanded.json`: personal recipe archive import (review UI)
+- `reference-momentum-ui.jpg`: visual UI reference board for screens
+- `prompts/`: copy-ready Cursor agent jobs
+- `.github/`: working automation workflow templates
+- `automation/setup-status.md`: human vs automated setup checklist progress

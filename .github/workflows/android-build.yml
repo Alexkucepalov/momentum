@@ -1,0 +1,26 @@
+name: Android staging build (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify mobile project exists
+        run: test -f apps/mobile/eas.json || (echo 'Bootstrap Expo and EAS first: see README' && exit 1)
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: npm ci
+      - name: Trigger EAS Android preview build
+        working-directory: apps/mobile
+        run: eas build --platform android --profile preview --non-interactive --no-wait
