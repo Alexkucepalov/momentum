@@ -1,8 +1,42 @@
-# Visual design system, draft v0.1
-Tone: warm, calm, capable, encouraging. Neutral surfaces, green-teal progress accent, gold achievements, no judgmental red.
-Tokens (proposals to test WCAG contrast): background #F7F8F6, surface #FFFFFF, primary text #17231F, secondary #586962, accent #208C74, warm #C98D39, border #DEE6E1, danger #A23737 for destructive action only.
-Typography: system font, 14/16/20/28/34 logical px scale; 1.45+ body line height.
-Spacing: 4px base, 8/12/16/24/32. Radius: 12–20px. Buttons ≥48dp height.
-Components: AppHeader, DayPicker, NutritionSummary, MacroBar, FoodRow, EntrySheet, PortionStepper, ProductSourceBadge, RecipeIngredients, WorkoutCard, HabitTile, ChallengeProgress, ConsentPrompt, UndoToast, OfflineBanner, EmptyState, AISuggestionCard.
-Interaction: immediate visual confirmation, subtle haptic feedback opt-in, reduced-motion support; never block logging on AI.
-Accessibility: dynamic font, semantic labels, numeric entry focus, voiceover tested, don't convey macro values by color alone.
+# Visual design system (runtime-aligned)
+
+**Source of truth:** `apps/mobile/src/theme/tokens.ts` (Nothing-inspired light mono).  
+Older teal/gold draft is **obsolete** — do not reintroduce `#208C74` as brand primary.
+
+## Tone
+
+Calm, capable, private. Black CTAs on light gray. No shame/guilt colors as “failure.”
+
+## Color tokens
+
+| Token | Hex | Use |
+|-------|-----|-----|
+| background | `#F4F5F7` | Screen |
+| surface | `#FFFFFF` | Cards / sheets |
+| text | `#111111` | Primary copy / accent |
+| textSecondary | `#6B7280` | Supporting |
+| textMuted | `#9CA3AF` | Hints |
+| accentSoft | `#E8EAED` | Soft fills |
+| primaryButton | `#111111` | Primary CTA fill |
+| primaryButtonText / textOnInverse | `#FFFFFF` | On black |
+| border | `#E5E7EB` | Hairlines |
+| danger | `#B42318` | Destructive only |
+| success / successSoft | `#16A34A` / `#D4EDDA` | Positive / soft badge |
+| protein / fat / carbs | green / amber / blue | **Always labeled** — never color-only |
+| warning | `#FBBF24` | Scanner affordances |
+| shadow | `#000000` | Elevation tint |
+
+## Type / space / radius
+
+- type: 34 / 22 / 17 / 15 / 13 / 11  
+- space: 4 / 8 / 12 / 16 / 24 / 32  
+- radius: 10 / 14 / 18 / 24 / pill  
+- touchMin: **48**
+
+## Components (prefer)
+
+`PrimaryButton`, `EmptyState`, `FlashBar`, `UndoBar`, `ScreenFooter`, `SwipeToDismissSheet`, `FormScrollView`, `KcalRing`, `MacroStrip`.
+
+## Accessibility
+
+Numeric entry focusable; TalkBack labels on CTAs; macros labeled; reduced motion: no required animations for logging.

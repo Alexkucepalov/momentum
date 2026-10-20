@@ -19,6 +19,10 @@ export const colors = {
   ringTrack: '#E8EAED',
   ringFill: '#111111',
   success: '#16A34A',
+  successSoft: '#D4EDDA',
+  textOnInverse: '#FFFFFF',
+  shadow: '#000000',
+  warning: '#FBBF24',
 } as const;
 
 export const space = {

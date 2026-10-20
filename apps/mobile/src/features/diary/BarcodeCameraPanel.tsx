@@ -211,8 +211,8 @@ export function BarcodeCameraPanel({
 }
 
 const MASK = 'rgba(0,0,0,0.55)';
-const CORNER = '#FFFFFF';
-const LINE = '#FFFFFF';
+const CORNER = colors.textOnInverse;
+const LINE = colors.textOnInverse;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     marginBottom: space.lg,
-    backgroundColor: '#000000',
+    backgroundColor: colors.shadow,
     borderWidth: 2,
     borderColor: colors.text,
   },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 2,
     backgroundColor: LINE,
-    shadowColor: '#FFFFFF',
+    shadowColor: colors.textOnInverse,
     shadowOpacity: 0.9,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   capturedCheck: {
-    color: '#FFFFFF',
+    color: colors.textOnInverse,
     fontSize: 36,
     fontWeight: '800',
   },
@@ -297,16 +297,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FBBF24',
+    backgroundColor: colors.warning,
   },
   statusDotPulse: {
-    backgroundColor: '#FBBF24',
+    backgroundColor: colors.warning,
   },
   statusDotOk: {
     backgroundColor: colors.success,
   },
   statusText: {
-    color: '#FFFFFF',
+    color: colors.textOnInverse,
     fontSize: type.caption,
     fontWeight: '700',
   },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderColor: colors.surface,
   },
-  toolBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: type.caption },
+  toolBtnText: { color: colors.textOnInverse, fontWeight: '700', fontSize: type.caption },
   toolBtnTextOn: { color: colors.text },
   fallback: {
     backgroundColor: colors.surface,
