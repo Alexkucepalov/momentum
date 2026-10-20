@@ -105,11 +105,13 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 **Статус:** design-only PR на ветке `docs/food-intelligence-overhaul`. **Не** начинать slice 1 (import → preview → pantry + expense) до approve ADR + OCR/consent. Quality Freeze для несвязанных фич сохраняется; device dogfood (#36–#38) остаётся open gate.
 
-| Slice | Outcome | Agent-ready? |
-|-------|---------|--------------|
-| Docs 00–07 | Founder review package | n/a (this PR) |
-| FI-1…FI-3 | Purchase confirm → pantry + expense | Only after ADR approve |
-| FI-4+ | OCR / match / Eat Now / plan→shop / budget | Serial after slice 1 dogfood |
+| Slice | Outcome | Status |
+|-------|---------|--------|
+| Docs 00–07 | Founder review package | Done (#57) |
+| FI slice 1 | Purchase → pantry + expense | Done (#58 / #59) |
+| FI slice 2 | Pantry coverage → Eat Now / Recipes | Done (#60 / #63) |
+| FI slices 3–4 | Missing shop + budget metrics | Done (#61–#62 / #64) |
+| FI-5+ | OCR / OFF enrichment / QR | Deferred — consent / `needs-human` |
 
 ## Backlog (next agent-ready)
 
