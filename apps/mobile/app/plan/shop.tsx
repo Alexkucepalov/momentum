@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { filterMissingShoppingItems } from '../../../../src/domain/aggregateShopping';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
@@ -27,6 +28,7 @@ export default function ShopScreen() {
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [lastCheckedId, setLastCheckedId] = useState<string | null>(null);
+  const [onlyMissing, setOnlyMissing] = useState(true);
 
   const activeListId = listId ?? lists[0]?.id ?? null;
   const list = activeListId ? repo.getShoppingList(activeListId) : null;
@@ -34,6 +36,14 @@ export default function ShopScreen() {
   const basket = activeListId ? repo.shoppingBasketTotal(activeListId) : null;
 
   const checkedCount = useMemo(() => items.filter((i) => i.checked).length, [items]);
+  const visibleItems = useMemo(
+    () => (onlyMissing ? filterMissingShoppingItems(items, { includeChecked: false }) : items),
+    [items, onlyMissing],
+  );
+  const coveredSkipped = useMemo(
+    () => items.filter((i) => i.needToBuy <= 0).length,
+    [items],
+  );
 
   const buildFromPlan = (planId: string) => {
     setError(null);
@@ -50,8 +60,8 @@ export default function ShopScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
-        Собери корзину из меню: одинаковые продукты — одной строкой, запасы вычитаются. Цену вводи
-        сам — показываем как оценку с датой, не как «цену сегодня».
+        Список из меню — только недостающее после запасов. Цену вводи сам: оценка с датой, не «цена
+        сегодня».
       </Text>
 
       <Text style={styles.section}>Из меню</Text>
@@ -90,7 +100,20 @@ export default function ShopScreen() {
           <Text style={styles.section}>{list.title}</Text>
           <Text style={styles.meta}>
             {checkedCount}/{items.length} отмечено
+            {coveredSkipped > 0 ? ` · ${coveredSkipped} уже дома (не в списке)` : ''}
           </Text>
+
+          <Pressable
+            onPress={() => setOnlyMissing((v) => !v)}
+            style={[styles.filterChip, onlyMissing && styles.filterChipOn]}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: onlyMissing }}
+            accessibilityLabel="Только недостающее"
+          >
+            <Text style={styles.filterChipText}>
+              {onlyMissing ? 'Только недостающее' : 'Показать все строки'}
+            </Text>
+          </Pressable>
 
           <View style={styles.totalBox} accessibilityRole="summary">
             <Text style={styles.totalHero}>
@@ -100,10 +123,14 @@ export default function ShopScreen() {
           </View>
 
           {items.length === 0 ? (
-            <Text style={styles.hint}>Пустой список — в плане нет ингредиентов с граммовкой.</Text>
+            <Text style={styles.hint}>
+              Пусто — либо в плане нет граммовок, либо всё уже покрыто запасами.
+            </Text>
+          ) : visibleItems.length === 0 ? (
+            <Text style={styles.hint}>Недостающего нет — всё отмечено или покрыто дома.</Text>
           ) : (
             <View style={styles.list}>
-              {items.map((item) => {
+              {visibleItems.map((item) => {
                 const need = item.needToBuy;
                 const cover =
                   item.coveredByPantry > 0
@@ -225,6 +252,18 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
   meta: { fontSize: type.caption, color: colors.textMuted },
+  filterChip: {
+    alignSelf: 'flex-start',
+    minHeight: touchMin,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+  },
+  filterChipOn: { borderColor: colors.text },
+  filterChipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   list: { gap: space.sm },
   card: {
     backgroundColor: colors.surface,

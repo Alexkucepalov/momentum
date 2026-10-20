@@ -137,6 +137,15 @@ export function aggregateShopping(
   return lines.sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
 }
 
+/** Actionable shop rows: still need to buy (and not already checked if provided). */
+export function filterMissingShoppingItems<T extends { needToBuy: number; checked?: boolean }>(
+  items: T[],
+  opts?: { includeChecked?: boolean },
+): T[] {
+  const includeChecked = opts?.includeChecked === true;
+  return items.filter((i) => i.needToBuy > 0 && (includeChecked || !i.checked));
+}
+
 /**
  * Basket total for lines that still need buying.
  * If any needToBuy>0 line lacks price → totalRub null + partial label.

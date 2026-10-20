@@ -22,6 +22,7 @@ export default function BudgetScreen() {
   const month = monthKeyFromDateLocal(dateLocal);
   const snap = repo.monthBudgetSnapshot(month, dateLocal);
   const eaten = repo.monthEatenCostEstimate(month);
+  const projected = repo.openShoppingProjection();
   const expenses = repo.listFoodExpenses(month);
 
   const [limit, setLimit] = useState(snap.limitRub != null ? String(snap.limitRub) : '30000');
@@ -74,8 +75,8 @@ export default function BudgetScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
-        «Потрачено» — деньги в магазины и кафе. «Стоимость съеденного» — оценка по ценам из
-        покупок (пересчёт в ₽/кг) на записи дневника. Разные метрики; прогноз — только при данных.
+        Три разные метрики: фактически потраченное, прогноз открытых списков покупок и оценка
+        съеденного. Ни одна не выдаётся за live-цену магазина.
       </Text>
 
       <Text style={styles.month}>{month}</Text>
@@ -85,12 +86,24 @@ export default function BudgetScreen() {
         <Text style={styles.heroValue}>
           {snap.limitRub != null ? `${Math.round(snap.limitRub)} ₽` : 'не задан'}
         </Text>
+
+        <Text style={styles.metricLabel}>Фактически (чеки / расходы)</Text>
         <Text style={styles.heroRow}>
-          Потрачено:{' '}
           {snap.spentRub != null ? `${Math.round(snap.spentRub)} ₽` : 'неизвестно'}
         </Text>
+
+        <Text style={styles.metricLabel}>Прогноз корзины (открытые списки)</Text>
         <Text style={styles.heroRow}>
-          Стоимость съеденного:{' '}
+          {projected.totalRub != null
+            ? `${Math.round(projected.totalRub)} ₽`
+            : projected.knownSumRub != null
+              ? `частично ~${Math.round(projected.knownSumRub)} ₽`
+              : '—'}
+        </Text>
+        <Text style={styles.hint}>{projected.label}</Text>
+
+        <Text style={styles.metricLabel}>Съеденное (оценка по вашим ценам)</Text>
+        <Text style={styles.heroRow}>
           {eaten.totalRub != null
             ? `${Math.round(eaten.totalRub)} ₽`
             : eaten.knownSumRub != null
@@ -99,12 +112,13 @@ export default function BudgetScreen() {
                 ? 'нет записей'
                 : 'нужны цены в покупках'}
         </Text>
+
         <Text style={styles.heroRow}>
-          Осталось:{' '}
+          Осталось к лимиту:{' '}
           {snap.remainingRub != null ? `${Math.round(snap.remainingRub)} ₽` : '—'}
         </Text>
         <Text style={styles.heroRow}>
-          Прогноз до конца:{' '}
+          Прогноз трат до конца месяца:{' '}
           {snap.forecastRub != null
             ? `~${Math.round(snap.forecastRub)} ₽`
             : 'недостаточно данных'}
@@ -204,6 +218,12 @@ const styles = StyleSheet.create({
   },
   heroLabel: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   heroValue: { fontSize: type.hero, fontWeight: '800', color: colors.text },
+  metricLabel: {
+    marginTop: space.sm,
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
   heroRow: { fontSize: type.body, color: colors.text, fontWeight: '600' },
   section: {
     fontSize: type.caption,

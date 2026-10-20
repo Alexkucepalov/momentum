@@ -4,14 +4,14 @@
 
 ## Slice order (must follow)
 
-| Order | Slice | Outcome | Depends |
-|------:|-------|---------|---------|
-| **1** | Purchase import → editable preview → confirm → pantry + expense | Vertical proof of north star steps 2–5 | ADR-PURCHASES approved |
-| **2** | Pantry ↔ Recipes ↔ Eat Now | Suggestions from real stock | Slice 1 |
-| **3** | Weekly plan → shopping list (missing only) | Plan drives shop, not echo of pantry | Slice 2 |
-| **4** | Budget: actual / projected / consumed | Provenance-aware totals | Slice 1 + 3 |
-| **5** | Enrichment (OFF match, Open Prices observations) | Better match %, fresher prices | Consent + rate limits |
-| **6** | Multi-screenshot + paste polish; QR if lawful path | Coverage | Slice 1 |
+| Order | Slice | Outcome | Status |
+|------:|-------|---------|--------|
+| **1** | Purchase import → preview → pantry + expense | #58 / PR #59 | **Done** |
+| **2** | Pantry ↔ Recipes ↔ Eat Now coverage | #60 / PR #63 | **Done** |
+| **3** | Weekly plan → shopping missing-only | #61 | This PR |
+| **4** | Budget: actual / projected shop / consumed | #62 | This PR |
+| **5** | Enrichment (OFF / Open Prices) | Consent + rate limits | Deferred |
+| **6** | OCR / multi-screenshot / QR | Consent + lawful path | Deferred `needs-human` |
 
 ## Issue-ready candidates (draft titles)
 
