@@ -101,7 +101,7 @@ export function AddFoodBlock({
               style={({ pressed }) => [styles.repeatRow, pressed && styles.pressed]}
               onPress={() => onRepeat(e.id)}
               accessibilityRole="button"
-              accessibilityLabel={`Повторить ${e.displayName}`}
+              accessibilityLabel={`Повторить ${e.displayName}, ${e.grams} грамм в ${MEAL_RU[meal]}`}
             >
               <Ionicons name="refresh" size={16} color={colors.text} />
               <View style={styles.rowBody}>

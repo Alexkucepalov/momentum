@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import type { PlannedMeal } from '../../../../../src/storage/types';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL: Record<string, string> = {
   breakfast: 'Завтрак',
@@ -31,7 +31,7 @@ export function TodayPlanStrip() {
         onPress={() => router.push('/plan/week')}
         style={({ pressed }) => [styles.emptyLink, pressed && styles.pressed]}
         accessibilityRole="link"
-        accessibilityLabel="Составить меню на неделю"
+        accessibilityLabel="Составить план на сегодня"
         hitSlop={8}
       >
         <Text style={styles.emptyLinkText}>Составить план на сегодня →</Text>
@@ -50,7 +50,13 @@ export function TodayPlanStrip() {
     <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План на сегодня">
       <View style={styles.head}>
         <Text style={styles.title}>План на сегодня</Text>
-        <Pressable onPress={() => router.push('/plan/week')} accessibilityRole="button">
+        <Pressable
+          onPress={() => router.push('/plan/week')}
+          accessibilityRole="button"
+          accessibilityLabel="Открыть меню на неделю"
+          hitSlop={8}
+          style={styles.menuHit}
+        >
           <Text style={styles.link}>Меню</Text>
         </Pressable>
       </View>
@@ -102,6 +108,8 @@ const styles = StyleSheet.create({
   ctaText: { color: colors.primaryButtonText, fontWeight: '800', fontSize: type.caption },
   emptyLink: {
     alignSelf: 'flex-start',
+    justifyContent: 'center',
+    minHeight: touchMin,
     paddingVertical: space.sm,
     marginBottom: space.md,
   },
@@ -109,6 +117,11 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     fontWeight: '700',
     color: colors.textSecondary,
+  },
+  menuHit: {
+    minHeight: touchMin,
+    justifyContent: 'center',
+    paddingHorizontal: space.xs,
   },
   pressed: { opacity: 0.9 },
 });
