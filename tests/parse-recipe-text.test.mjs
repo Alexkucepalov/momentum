@@ -97,3 +97,57 @@ test('isMacroSummaryLine rejects diary KBJU rows as ingredients', () => {
   assert.equal(isMacroSummaryLine('Куриная грудка — 180 г'), false);
   assert.equal(parseIngredientLine('297 ккал · Б 55,8 г · Ж 6,5 г · У 0 г'), null);
 });
+
+test('missing fat stays null; missing protein stays null (unknown ≠ 0)', () => {
+  const noFat = parseRecipeText(`Творог — 200 г
+120 ккал · Б 18 г · У 3 г`);
+  assert.equal(noFat.ingredients.length, 1);
+  assert.equal(noFat.ingredients[0].fatGPer100g, null);
+  assert.equal(noFat.ingredients[0].proteinGPer100g, 9);
+  assert.equal(noFat.ingredients[0].carbGPer100g, 1.5);
+
+  const noProtein = parseRecipeText(`Масло — 10 г
+74 ккал · Ж 8 г · У 0 г`);
+  assert.equal(noProtein.ingredients[0].proteinGPer100g, null);
+  assert.equal(noProtein.ingredients[0].fatGPer100g, 80);
+  assert.ok(noProtein.ingredients.every((i) => i.energyKcalPer100g != null));
+});
+
+test('Всего: N г yield; recipe-total KBJU after it is not an ingredient', () => {
+  const { isTotalOrYieldLine } = mods['domain/parseRecipeText'];
+  assert.equal(isTotalOrYieldLine('Всего: 500 г'), true);
+  assert.equal(isTotalOrYieldLine('Всего 500г'), true);
+  assert.equal(isTotalOrYieldLine('Итого'), true);
+
+  const text = `Курица — 180 г
+297 ккал · Б 55,8 г · Ж 6,5 г · У 0 г
+
+Рис — 160 г
+208 ккал · Б 4,3 г · Ж 0,5 г · У 45,1 г
+
+Всего: 500 г
+999 ккал · Б 99 г · Ж 9 г · У 9 г`;
+
+  const p = parseRecipeText(text);
+  assert.equal(p.cookedYieldG, 500);
+  assert.equal(p.ingredients.length, 2);
+  assert.ok(p.ingredients.every((i) => i.energyKcalPer100g !== 999));
+  assert.ok(p.ingredients.every((i) => i.displayName !== '999 ккал'));
+});
+
+test('structured RU paste still works with Ингредиенты header', () => {
+  const text = `Овсянка с ягодами
+Выход: 350 г
+
+Ингредиенты:
+- овсянка 60 г
+- молоко 200 г
+- черника 50 г
+
+Приготовление:
+Сварить кашу.`;
+  const p = parseRecipeText(text);
+  assert.equal(p.ingredients.length, 3);
+  assert.equal(p.cookedYieldG, 350);
+  assert.ok(p.ingredients.every((i) => i.energyKcalPer100g == null));
+});

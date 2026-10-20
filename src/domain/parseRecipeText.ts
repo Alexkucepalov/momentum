@@ -148,7 +148,9 @@ export function isMacroSummaryLine(rawLine: string): boolean {
 export function isTotalOrYieldLine(rawLine: string): boolean {
   const line = stripListPrefix(rawLine);
   if (!line) return false;
-  if (/^(?:итого|всего|сумма|total|выход)\b/i.test(line)) return true;
+  // No \\b after Cyrillic — JS word boundaries ignore Cyrillic letters.
+  if (/^(?:итого|всего|сумма|выход)(?=\s|:|[—–\-]|г\b|$)/i.test(line)) return true;
+  if (/^(?:total|yield|serves?)(?=\s|:|[—–\-]|$)/i.test(line)) return true;
   return YIELD_RE.test(line);
 }
 
