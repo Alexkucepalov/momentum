@@ -1,9 +1,9 @@
 # One-time setup by owner (required before autonomous work)
 
 ## GitHub
-- [ ] Create GitHub private repository (`Alexkucepalov/momentum`); push this package.
-- [ ] Enable main branch protection: require PR, require CI job `verify`, no force-push, no admin bypass for agents.
-- [ ] Create labels from `automation/GITHUB-LABELS.md`.
+- [x] Create GitHub private repository (`Alexkucepalov/momentum`); push this package.
+- [ ] Enable main branch protection: require PR, require CI job `verify`, no force-push — **needs GitHub Pro** on private repos (403 on free). Soft rules via AGENTS until then.
+- [x] Create labels from `automation/GITHUB-LABELS.md`.
 
 ## Cursor Cloud
 - [ ] Link GitHub repository to Cursor Cloud Agents (cursor.com/agents).

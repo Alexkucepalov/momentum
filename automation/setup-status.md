@@ -1,31 +1,31 @@
 # Automation setup status
 
-Last updated with Phase 0–1 dogfood implementation. Human-only steps stay unchecked until done in GitHub / Cursor / Expo UI.
+Last updated: Autonomous Sprint Dispatcher v1 (dry-run default).
 
-## In-repo (automated / committed)
+## In-repo
 
-- [x] CI workflow: `.github/workflows/ci.yml` (typecheck, test, secret scan; mobile typecheck when `apps/mobile` exists)
-- [x] Android staging workflow template: `.github/workflows/android-build.yml`
-- [x] PR + issue templates under `.github/`
-- [x] Agent prompts: `prompts/01`–`07`
-- [x] Cursor Automations copy/paste: `automation/cursor-prompts.md`
-- [x] Project hook: `.cursor/hooks.json` injects `docs/17-DEV-PLAN.md` + `AGENTS.md` on session start
-- [x] Living plan: `docs/17-DEV-PLAN.md`
-- [x] Labels guide: `automation/GITHUB-LABELS.md`
-- [x] Local `git init` on `main` (no remote yet)
-- [x] Expo app scaffold + Phase 1 diary in `apps/mobile`
+- [x] CI + dispatcher workflow (`.github/workflows/ci.yml`, `momentum-dispatcher.yml`)
+- [x] Dispatcher code: `automation/dispatcher/*` + `npm run automation:dispatch`
+- [x] Docs: `docs/AUTONOMOUS-DEVELOPMENT.md`
+- [x] Labels: `agent-ready`, `agent-running`, `agent-review`, `agent-failed`, `needs-human`, `dogfood`, `p0`, `p1`
+- [x] `npm run verify` DoD gate
+- [x] Cursor rule/skill for local agents
 
-## Human one-time (cannot be done by agent alone)
+## GitHub
 
-- [ ] Create **private** GitHub repository; push this package
-- [ ] Enable `main` branch protection + required CI status checks
-- [ ] Link repo to Cursor Cloud Agents; set spend limits; no production credentials
-- [ ] Create Cursor Automations from `automation/cursor-prompts.md` (PR review, `agent-ready`, weekday triage, pre-release)
-- [x] Local dogfood APK pipeline (`apps/mobile/eas.json`, `npm run build:apk:local`)
-- [ ] Configure Expo account + `eas init` projectId + cloud EAS preview
-- [ ] Add `EXPO_TOKEN` GitHub Actions secret; manually dispatch staging build
-- [ ] Play developer account + privacy before closed testing
+- [x] Private repo: https://github.com/Alexkucepalov/momentum
+- [x] Secret `CURSOR_API_KEY` (set via founder; **rotate if ever pasted in chat**)
+- [x] Variables `DISPATCH_ENABLED=false`, `DISPATCH_DRY_RUN=true`
+- [ ] Branch protection (needs GitHub Pro on private)
+
+## Go-live checklist
+
+- [ ] Keep Cursor Automation **Momentum agent-ready** Inactive while dispatcher is primary
+- [ ] Dry-run Action once (manual workflow_dispatch)
+- [ ] Founder approves live: set `DISPATCH_DRY_RUN=false` and `DISPATCH_ENABLED=true`
+- [ ] First live issue = small docs-only task
+- [ ] Spend limits in Cursor dashboard
 
 ## Operating rule
 
-Agent: feature branch + PR only. Human: merge, secrets, Play, dangerous migrations.
+Agent / dispatcher: feature branch + PR only. Human: merge, secrets, Play.
