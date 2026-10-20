@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
+import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
 import type { FoodRepository } from '../../../../src/storage/foodRepository';
 import { localDateKey } from '../../../../src/storage/validation';
 import type { MealSlot } from '../../../../src/storage/types';
@@ -34,7 +35,7 @@ export function DataProvider({
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
   const [dateLocal, setDateLocal] = useState(today);
-  const [meal, setMeal] = useState<MealSlot>('breakfast');
+  const [meal, setMeal] = useState<MealSlot>(() => mealSlotForNow());
   const [revision, setRevision] = useState(0);
   const [undo, setUndo] = useState<UndoState>(null);
   const [flash, setFlash] = useState<string | null>(null);

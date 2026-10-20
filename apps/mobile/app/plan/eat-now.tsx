@@ -8,6 +8,7 @@ import {
   eatNowInputsFromRecipes,
 } from '../../../../src/domain/buildEatNowInputs';
 import { recipeAtHome, selectEatNowProducts } from '../../../../src/domain/eatNowPool';
+import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
 import { hasAnyKnownRemaining, remainingMacros } from '../../../../src/domain/remainingMacros';
 import {
   scoreEatNow,
@@ -35,14 +36,6 @@ const FILTERS: { id: EatNowFilterId; label: string }[] = [
   { id: 'quick_15', label: 'До 15 мин' },
   { id: 'more_protein', label: 'Больше белка' },
 ];
-
-function defaultMealForNow(): MealSlot {
-  const h = new Date().getHours();
-  if (h < 11) return 'breakfast';
-  if (h < 16) return 'lunch';
-  if (h < 21) return 'dinner';
-  return 'snack';
-}
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -113,7 +106,7 @@ export default function EatNowScreen() {
   useEffect(() => {
     if (mealSeeded.current) return;
     mealSeeded.current = true;
-    setMeal(defaultMealForNow());
+    setMeal(mealSlotForNow());
   }, [setMeal]);
 
   const profile = repo.getProfile();

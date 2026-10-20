@@ -83,10 +83,10 @@ Nothing-inspired: mono, сильная типографика, один primary 
 
 ---
 
-## Что согласовать сейчас (блокирует S2-1)
+## Согласование IA (утверждено 2026-10-20)
 
-1. Структура **Today** above-the-fold (wireframe A).  
-2. Сегменты **Food**: `Дневник` | `Каталог` (wireframe B).  
-3. Список **скрыть / перенести** (JourneyShortcuts, dual plan strip, …).  
+1. **Today** above-the-fold: КБЖУ → primary «Добавить еду» → recent. Meal chips с fold убраны (время + правка в sheet).  
+2. **Food** сегменты `Дневник` | `Каталог` — **S2-2** после review S2-1.  
+3. Empty plan → text-link; JourneyShortcuts → secondary text links ниже fold.  
 
-Ответ основателя: approve / правки wireframes → затем Issue + PR S2-1.
+**S2-1 in progress** · S2-2 не начинать до review S2-1.

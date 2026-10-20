@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import type { PlannedMeal } from '../../../../../src/storage/types';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL: Record<string, string> = {
   breakfast: 'Завтрак',
@@ -29,12 +29,12 @@ export function TodayPlanStrip() {
     return (
       <Pressable
         onPress={() => router.push('/plan/week')}
-        style={({ pressed }) => [styles.empty, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Составить меню на неделю"
+        style={({ pressed }) => [styles.emptyLink, pressed && styles.pressed]}
+        accessibilityRole="link"
+        accessibilityLabel="Составить план на сегодня"
+        hitSlop={8}
       >
-        <Text style={styles.emptyTitle}>План на сегодня пуст</Text>
-        <Text style={styles.emptySub}>Собери меню → потом отмечай съеденное отсюда</Text>
+        <Text style={styles.emptyLinkText}>Составить план на сегодня →</Text>
       </Pressable>
     );
   }
@@ -50,7 +50,13 @@ export function TodayPlanStrip() {
     <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План на сегодня">
       <View style={styles.head}>
         <Text style={styles.title}>План на сегодня</Text>
-        <Pressable onPress={() => router.push('/plan/week')} accessibilityRole="button">
+        <Pressable
+          onPress={() => router.push('/plan/week')}
+          accessibilityRole="button"
+          accessibilityLabel="Открыть меню на неделю"
+          hitSlop={8}
+          style={styles.menuHit}
+        >
           <Text style={styles.link}>Меню</Text>
         </Pressable>
       </View>
@@ -100,16 +106,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   ctaText: { color: colors.primaryButtonText, fontWeight: '800', fontSize: type.caption },
-  empty: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
+  emptyLink: {
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    minHeight: touchMin,
+    paddingVertical: space.sm,
     marginBottom: space.md,
-    gap: 4,
   },
-  emptyTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  emptySub: { fontSize: type.caption, color: colors.textSecondary },
+  emptyLinkText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  menuHit: {
+    minHeight: touchMin,
+    justifyContent: 'center',
+    paddingHorizontal: space.xs,
+  },
   pressed: { opacity: 0.9 },
 });
