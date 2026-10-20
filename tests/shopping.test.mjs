@@ -129,7 +129,7 @@ test('createShoppingListFromPlan merges ingredients; plan≠diary', () => {
   const rice = items.find((i) => i.displayName === 'Рис');
   assert.ok(rice);
   assert.ok(rice.coveredByPantry >= 100);
-  assert.equal(repo.toSnapshot().version, 12);
+  assert.equal(repo.toSnapshot().version, 13);
   assert.equal(shoppingKey('Рис', 'g'), 'рис|g');
 });
 

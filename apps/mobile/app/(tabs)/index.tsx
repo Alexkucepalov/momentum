@@ -18,6 +18,7 @@ import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { JourneyShortcuts } from '@/src/components/JourneyShortcuts';
+import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
@@ -165,6 +166,8 @@ export default function TodayScreen() {
           activityMinutes={activityMinutes}
           onSetTarget={() => router.push('/profile')}
         />
+
+        <TodayPlanStrip />
 
         <AddFoodBlock
           meal={meal}

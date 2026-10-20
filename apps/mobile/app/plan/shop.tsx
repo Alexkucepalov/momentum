@@ -143,11 +143,11 @@ export default function ShopScreen() {
                         <TextInput
                           value={priceDraft[item.id] ?? (item.priceRub != null ? String(item.priceRub) : '')}
                           onChangeText={(t) => setPriceDraft((d) => ({ ...d, [item.id]: t }))}
-                          placeholder="₽"
+                          placeholder="₽ за нужное"
                           placeholderTextColor={colors.textMuted}
                           keyboardType="decimal-pad"
                           style={styles.priceInput}
-                          accessibilityLabel={`Цена ${item.displayName}`}
+                          accessibilityLabel={`Цена за нужный объём ${item.displayName}`}
                         />
                         <Pressable
                           onPress={() => {
