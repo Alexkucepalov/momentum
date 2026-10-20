@@ -61,7 +61,8 @@ export default function PlanHubScreen() {
         Рецепты · Неделя · Покупки · Бюджет
       </Text>
       <Text style={styles.lead}>
-        Остаток КБЖУ — ориентир для выбора, не запрет на еду.
+        Вечером — что съесть по остатку. В запасах — что дома. В выходные — меню и покупки. Без
+        запретов и выдуманных ккал.
       </Text>
 
       <View style={styles.list} accessibilityRole="list">

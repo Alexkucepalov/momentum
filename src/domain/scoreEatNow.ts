@@ -8,6 +8,7 @@ import {
 export type EatNowFilterId =
   | 'all'
   | 'at_home'
+  | 'to_buy'
   | 'no_cook'
   | 'quick_15'
   | 'more_protein';
@@ -23,6 +24,8 @@ export type EatNowCandidateInput = {
   prepMinutes: number | null;
   /** True when pantry / leftovers imply available without shopping. */
   atHome: boolean;
+  /** True when suggestion may require a store run (catalog / not in pantry). */
+  toBuy?: boolean;
 };
 
 export type EatNowCandidate = {
@@ -139,6 +142,10 @@ function matchesFilters(
   for (const f of active) {
     if (f === 'at_home') {
       if (!input.atHome) return { ok: false, matched };
+      matched.push(f);
+    } else if (f === 'to_buy') {
+      const buy = input.toBuy === true || input.atHome === false;
+      if (!buy) return { ok: false, matched };
       matched.push(f);
     } else if (f === 'no_cook') {
       if (input.prepMinutes === null || input.prepMinutes > 5) return { ok: false, matched };

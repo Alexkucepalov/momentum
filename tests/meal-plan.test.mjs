@@ -59,6 +59,13 @@ test('create draft does not touch diary totals', () => {
   assert.equal(repo.dailyTotals('2026-10-20').entryCount, before);
   assert.ok(repo.listPlannedMeals(plan.id).length > 0);
   assert.equal(repo.toSnapshot().version, 12);
+
+  const second = repo.createMealPlanDraft({
+    startDateLocal: '2026-10-20',
+    days: 5,
+  });
+  assert.equal(second.status, 'draft');
+  assert.equal(repo.getMealPlan(plan.id)?.status, 'archived');
 });
 
 test('logPlannedMealToDiary is explicit; move and portion work', () => {

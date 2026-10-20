@@ -1938,6 +1938,13 @@ export function createMemoryFoodRepository(seed?: {
         diversity: input.diversity ?? 'balanced',
       });
       const ts = nowIso();
+      // Keep one working draft: archive older drafts (not destructive).
+      for (const prev of mealPlans.values()) {
+        if (!prev.deletedAt && prev.status === 'draft') {
+          prev.status = 'archived';
+          prev.updatedAt = ts;
+        }
+      }
       const plan: MealPlan = {
         id: newId(),
         startDate: draft.startDateLocal,

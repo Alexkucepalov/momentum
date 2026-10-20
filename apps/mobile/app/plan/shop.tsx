@@ -26,6 +26,7 @@ export default function ShopScreen() {
   const [listId, setListId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [lastCheckedId, setLastCheckedId] = useState<string | null>(null);
 
   const activeListId = listId ?? lists[0]?.id ?? null;
   const list = activeListId ? repo.getShoppingList(activeListId) : null;
@@ -49,7 +50,8 @@ export default function ShopScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
-        Одинаковые ингредиенты объединяются. Цены — только ваши, с датой; без «цены сегодня».
+        Собери корзину из меню: одинаковые продукты — одной строкой, запасы вычитаются. Цену вводи
+        сам — показываем как оценку с датой, не как «цену сегодня».
       </Text>
 
       <Text style={styles.section}>Из меню</Text>
@@ -113,6 +115,7 @@ export default function ShopScreen() {
                       onPress={() => {
                         const next = !item.checked;
                         repo.setShoppingItemChecked(item.id, next);
+                        if (next) setLastCheckedId(item.id);
                         refresh();
                         showFlash(next ? 'Куплено' : 'Снова в списке');
                       }}
@@ -180,6 +183,22 @@ export default function ShopScreen() {
               })}
             </View>
           )}
+
+          {lastCheckedId ? (
+            <Pressable
+              onPress={() => {
+                repo.setShoppingItemChecked(lastCheckedId, false);
+                setLastCheckedId(null);
+                refresh();
+                showFlash('Отменено');
+              }}
+              style={styles.undo}
+              accessibilityRole="button"
+              accessibilityLabel="Отменить последнюю отметку куплено"
+            >
+              <Text style={styles.undoText}>Отменить последнюю «куплено»</Text>
+            </Pressable>
+          ) : null}
 
           <PrimaryButton
             label="Удалить список"
@@ -255,4 +274,13 @@ const styles = StyleSheet.create({
   priceBtnText: { color: colors.primaryButtonText, fontWeight: '800', fontSize: type.caption },
   error: { color: colors.danger, fontSize: type.caption },
   hint: { fontSize: type.caption, color: colors.textMuted },
+  undo: {
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+  },
+  undoText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
 });
