@@ -67,13 +67,14 @@ Nothing-inspired: мало рамок, типографика > chips.
 
 ### Acceptance (S2-1 Today)
 
-- [ ] Above-fold: дата + КБЖУ + **один** primary «Добавить еду» + recent ≤6  
-- [ ] JourneyShortcuts не как 4 равные кнопки (убрать или заменить text links ниже)  
-- [ ] Plan strip не выше primary Add  
-- [ ] Meal chips не обязательны above-fold (meal выбирается в sheet / контекст)  
-- [ ] Empty recent: copy + CTA добавить  
-- [ ] v13 / verify / screenshot before-after  
-- [ ] Dogfood: Flow 1 из `DEVICE-DOGFOOD` или короткий повтор  
+- [x] Above-fold: дата + КБЖУ + **один** primary «Добавить еду» (sticky footer) + recent ≤6  
+- [x] JourneyShortcuts не как 4 равные кнопки → text links ниже fold  
+- [x] Plan strip не выше primary Add / recent  
+- [x] Meal chips не на fold (mealSlotForNow + правка в AddFoodSheet)  
+- [x] Empty recent: copy + CTA добавить  
+- [x] v13 без breaking · `npm run verify`  
+- [ ] Screenshot before/after (device/emulator) — **pending** без Android dogfood  
+- [ ] Dogfood: Flow 1 из `DEVICE-DOGFOOD` — **pending** (quality gate open) 
 
 ### Скрыть / перенести
 

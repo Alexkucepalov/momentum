@@ -12,6 +12,13 @@ const MEAL_RU: Record<MealSlot, string> = {
   snack: 'перекус',
 };
 
+const MEAL_TITLE: Record<MealSlot, string> = {
+  breakfast: 'Завтрак',
+  lunch: 'Обед',
+  dinner: 'Ужин',
+  snack: 'Перекус',
+};
+
 export type QuickRepeatItem = {
   id: string;
   displayName: string;
@@ -19,8 +26,8 @@ export type QuickRepeatItem = {
 };
 
 /**
- * Food context on Today: meal slot + last logs / quick repeat.
- * Primary add + scan live in the sticky footer (no duplicate CTAs).
+ * Recent / quick-repeat on Today.
+ * Meal chips optional — default off fold; override lives in AddFoodSheet.
  */
 export function AddFoodBlock({
   meal,
@@ -30,6 +37,7 @@ export function AddFoodBlock({
   onRepeat,
   onCopyYesterday,
   onOpenDiary,
+  showMealChips = false,
 }: {
   meal: MealSlot;
   onChangeMeal: (meal: MealSlot) => void;
@@ -39,6 +47,8 @@ export function AddFoodBlock({
   onCopyYesterday?: () => void;
   /** Open full Food diary (meals, edit, delete). */
   onOpenDiary?: () => void;
+  /** When true, show meal chips (legacy). Today keeps false. */
+  showMealChips?: boolean;
 }) {
   const last = todayEntries.slice(0, 3);
   const entryCount = todayEntries.length;
@@ -46,7 +56,7 @@ export function AddFoodBlock({
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Text style={styles.title}>Еда</Text>
+        <Text style={styles.title}>Недавно</Text>
         {onOpenDiary ? (
           <Pressable
             onPress={onOpenDiary}
@@ -69,35 +79,17 @@ export function AddFoodBlock({
         )}
       </View>
 
-      <Text style={styles.mealLabel}>Куда записать</Text>
-      <View style={styles.chipsWrap}>
-        <MealChips value={meal} onChange={onChangeMeal} compact />
-      </View>
-
-      {last.length > 0 ? (
-        <View style={styles.list}>
-          <Text style={styles.sectionLabel}>Сегодня · {MEAL_RU[meal]} и другое</Text>
-          {last.map((e) => (
-            <View key={e.id} style={styles.row}>
-              <View style={styles.rowBody}>
-                <Text style={styles.rowTitle} numberOfLines={1}>
-                  {e.displayName}
-                </Text>
-                <Text style={styles.rowMeta}>
-                  {e.grams} г · {MEAL_RU[e.meal]}
-                  {e.energyKcal == null ? '' : ` · ~${Math.round(e.energyKcal)} ккал`}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
+      {showMealChips ? (
+        <>
+          <Text style={styles.mealLabel}>Куда записать</Text>
+          <View style={styles.chipsWrap}>
+            <MealChips value={meal} onChange={onChangeMeal} compact />
+          </View>
+        </>
       ) : (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Пока без записей</Text>
-          <Text style={styles.emptyBody}>
-            Добавь снизу или повтори недавнее. Сканер — рядом с кнопкой «Добавить еду».
-          </Text>
-        </View>
+        <Text style={styles.mealHint} accessibilityLiveRegion="polite">
+          В {MEAL_TITLE[meal].toLowerCase()} · приём можно сменить при добавлении
+        </Text>
       )}
 
       {quickRepeats.length > 0 ? (
@@ -123,6 +115,32 @@ export function AddFoodBlock({
               <Text style={styles.plus}>+</Text>
             </Pressable>
           ))}
+        </View>
+      ) : null}
+
+      {last.length > 0 ? (
+        <View style={styles.list}>
+          <Text style={styles.sectionLabel}>Сегодня</Text>
+          {last.map((e) => (
+            <View key={e.id} style={styles.row}>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle} numberOfLines={1}>
+                  {e.displayName}
+                </Text>
+                <Text style={styles.rowMeta}>
+                  {e.grams} г · {MEAL_RU[e.meal]}
+                  {e.energyKcal == null ? '' : ` · ~${Math.round(e.energyKcal)} ккал`}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : quickRepeats.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>Пока без записей</Text>
+          <Text style={styles.emptyBody}>
+            Нажмите «Добавить еду» внизу или отсканируйте штрихкод рядом.
+          </Text>
         </View>
       ) : null}
 
@@ -154,7 +172,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   title: {
     fontSize: type.subtitle,
@@ -178,6 +196,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.3,
     marginBottom: space.sm,
+  },
+  mealHint: {
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    marginBottom: space.md,
+    lineHeight: 18,
   },
   chipsWrap: { marginBottom: space.md },
   sectionLabel: {

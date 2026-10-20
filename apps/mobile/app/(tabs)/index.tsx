@@ -17,7 +17,6 @@ import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { JourneyShortcuts } from '@/src/components/JourneyShortcuts';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
@@ -142,6 +141,7 @@ export default function TodayScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
+        {/* Fold: date → KBJU → primary Add (footer sticky) → recent */}
         <Text style={styles.dateLine}>{dateLine}</Text>
 
         <DayStrip
@@ -150,8 +150,6 @@ export default function TodayScreen() {
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
         />
-
-        <JourneyShortcuts keys={['food', 'eat-now', 'plan', 'recipes']} />
 
         <KcalRing
           variant="compact"
@@ -167,11 +165,10 @@ export default function TodayScreen() {
           onSetTarget={() => router.push('/profile')}
         />
 
-        <TodayPlanStrip />
-
         <AddFoodBlock
           meal={meal}
           onChangeMeal={setMeal}
+          showMealChips={false}
           todayEntries={todayEntries}
           quickRepeats={recent.map((e) => ({
             id: e.id,
@@ -216,6 +213,9 @@ export default function TodayScreen() {
           }
           onOpenDiary={() => router.push('/(tabs)/food')}
         />
+
+        {/* Below fold: plan, habits, water, favorites, secondary links */}
+        <TodayPlanStrip />
 
         <TodayChecklist
           flexibleHabits={flexibleRows}
@@ -280,6 +280,25 @@ export default function TodayScreen() {
             })}
           </>
         ) : null}
+
+        <View style={styles.secondaryLinks} accessibilityRole="summary">
+          <Pressable
+            onPress={() => router.push('/plan/eat-now')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Что съесть сейчас"
+          >
+            <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/recipes')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Рецепты"
+          >
+            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
+          </Pressable>
+        </View>
       </FormScrollView>
 
       <ScreenFooter>
@@ -372,6 +391,21 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: space.sm,
     marginTop: -4,
+  },
+  secondaryLinks: {
+    marginTop: space.md,
+    marginBottom: space.sm,
+    gap: space.xs,
+  },
+  secondaryLink: {
+    paddingVertical: space.sm,
+    minHeight: touchMin,
+    justifyContent: 'center',
+  },
+  secondaryLinkText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
   },
   footerScan: {
     width: touchMin,
