@@ -35,6 +35,7 @@ import {
   resolveExpenseAmountRub,
 } from '../domain/purchaseConfirm';
 import { nutritionForRecipePortion } from '../domain/recipeNutrition';
+import { suggestPantryLocation } from '../domain/suggestPantryLocation';
 import { computeDailyTotals } from './dailyTotals';
 import {
   assertNonNegativeFinite,
@@ -2238,7 +2239,7 @@ export function createMemoryFoodRepository(seed?: {
           id: newId(),
           displayName: apply.displayName,
           productId: apply.productId,
-          location: 'pantry',
+          location: suggestPantryLocation(apply.displayName),
           quantityG,
           quantityCount,
           unit,
