@@ -2,6 +2,20 @@
 
 Источник истины для сессий разработки. Cursor plan — зеркало; при расхождении править этот файл. Читать вместе с `AGENTS.md` перед каждым issue.
 
+## Quality Freeze (утверждён 2026-10-20, 2–3 недели)
+
+**Режим:** product quality first — `docs/quality/QUALITY-ROADMAP.md` (утверждённая последовательность).
+
+| Разрешено | Запрещено |
+|-----------|-----------|
+| Sprint 1: baseline fixtures, Node benches, P0 durability/double-submit, repeat timing | Product features / FP-8+ / AI / OCR / live prices |
+| Human review → merge или close polish (#20) | Auto-merge; live Dispatcher |
+| UX Today/Food **после** baseline цифр | Rewrite foodRepository / normalized SQLite «на всякий» |
+| Issues с label `dogfood` + `p0`/`p1` **без** `agent-ready` | Новые `agent-ready` feature Issues |
+
+Эталонный сценарий: открыть → привычный продукт → граммы → дневник.  
+Dispatcher: `DISPATCH_ENABLED=false`, `DISPATCH_DRY_RUN=true`.
+
 ## Цель
 
 Личное Android-приложение для ежедневного лога еды (offline-first). Привычки — свои, без хардкода; челленджи позже.
@@ -92,10 +106,11 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 |----------|-------|---------------------|
 | — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
 | 1 | ~~Parse diary-style recipe paste hardening~~ | Done (#28) |
-| 2 | Catalog / Recipes / Archive visual polish QA | Проверить Food catalog, `/recipes`, `/recipes/import-personal` на a11y labels, empty states, без shame copy; скриншоты в PR; точечные фиксы spacing/contrast |
+| 2 | Catalog / Recipes / Archive visual polish QA | Open #5 + PR #20 (review); **no new agent-ready** — quality freeze |
 | 3 | ~~Import-text preview shows per-100g macros~~ | Done (#29) |
-| 4 | Agent smoke / docs sync | После cloud setup: issue+PR pipeline documented in `automation/setup-status.md`; `npm run verify` в README/AGENTS |
-| 5 | Offline recipe search aliases | in PR (#8) |
+| 4 | Agent smoke / docs sync | #10 open — docs only; optional during freeze |
+| 5 | ~~Offline recipe search aliases~~ | Done (#32) |
+| ★ | **Quality backlog** | `docs/quality/QUALITY-BACKLOG.md` — приоритет над feature queue |
 
 ## Порядок (не параллелить)
 

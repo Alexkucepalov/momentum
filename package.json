@@ -12,6 +12,8 @@
     "security:scan": "node scripts/check-secrets.mjs",
     "mobile:typecheck": "npx tsc --noEmit -p apps/mobile",
     "verify": "node scripts/verify.mjs",
+    "perf:fixtures": "node scripts/perf/generate-fixtures.mjs",
+    "perf:bench": "node scripts/perf/bench-node.mjs",
     "automation:dispatch": "tsx automation/dispatcher/index.ts"
   },
   "devDependencies": {

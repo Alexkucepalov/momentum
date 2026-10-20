@@ -10,6 +10,7 @@ import type { MealSlot, PlannedMeal } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
@@ -46,6 +47,7 @@ function fmtMacroLine(kcal: number | null, p: number | null, f: number | null, c
 export default function WeekPlanScreen() {
   const router = useRouter();
   const { repo, dateLocal, refresh, revision, showFlash } = useData();
+  const allowAdd = useAddGuard();
   void revision;
 
   const [days, setDays] = useState<MealPlanPeriodDays>(7);
@@ -307,6 +309,7 @@ export default function WeekPlanScreen() {
                   showFlash(`Замена: ${other.name}`);
                 }}
                 onLog={() => {
+                  if (!allowAdd()) return;
                   repo.logPlannedMealToDiary(m.id);
                   refresh();
                   showFlash(`В дневник: ${m.displayName}`);

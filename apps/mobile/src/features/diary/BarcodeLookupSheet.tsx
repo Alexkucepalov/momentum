@@ -14,6 +14,7 @@ import type { FoodProduct } from '../../../../../src/storage/types';
 import { fetchOpenFoodFacts } from '../../integrations/fetchOpenFoodFacts';
 import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeCameraPanel, type ScanStatus } from './BarcodeCameraPanel';
@@ -48,6 +49,7 @@ export function BarcodeLookupSheet({
   onClose: () => void;
 }) {
   const { repo, dateLocal, meal, refresh, showFlash, revision } = useData();
+  const allowAdd = useAddGuard();
   void revision;
   const insets = useSafeAreaInsets();
   const frequentLocal = repo.listFrequentProducts(12);
@@ -518,6 +520,7 @@ export function BarcodeLookupSheet({
         }}
         onConfirm={(result) => {
           if (!product) return;
+          if (!allowAdd()) return;
           repo.updateProductNutrition(product.id, result.per100g);
           repo.addEntryFromProduct({
             productId: product.id,

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import type { PlannedMeal } from '../../../../../src/storage/types';
+import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, type } from '@/src/theme/tokens';
 
@@ -16,6 +17,7 @@ const MEAL: Record<string, string> = {
 export function TodayPlanStrip() {
   const router = useRouter();
   const { repo, dateLocal, refresh, revision, showFlash } = useData();
+  const allowAdd = useAddGuard();
   void revision;
 
   const planned = repo
@@ -38,6 +40,7 @@ export function TodayPlanStrip() {
   }
 
   const log = (m: PlannedMeal) => {
+    if (!allowAdd()) return;
     repo.logPlannedMealToDiary(m.id);
     refresh();
     showFlash(`В дневник: ${m.displayName}`);

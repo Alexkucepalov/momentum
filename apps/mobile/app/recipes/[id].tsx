@@ -16,6 +16,7 @@ import { nutritionForRecipePortion } from '../../../../src/domain/recipeNutritio
 import { ConfirmPortionSheet } from '@/src/features/diary/ConfirmPortionSheet';
 import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
@@ -35,6 +36,7 @@ export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { repo, dateLocal, meal, refresh, revision, showFlash } = useData();
+  const allowAdd = useAddGuard();
   void revision;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [recookOpen, setRecookOpen] = useState(false);
@@ -187,6 +189,7 @@ export default function RecipeDetailScreen() {
         initialGrams={Math.min(200, recipe.cookedYieldG)}
         onClose={() => setConfirmOpen(false)}
         onConfirm={(result) => {
+          if (!allowAdd()) return;
           const snap = portion(
             {
               kcal: result.per100g.energyKcal,
