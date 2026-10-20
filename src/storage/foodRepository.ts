@@ -12,6 +12,10 @@ import {
   type BasketTotal,
 } from '../domain/aggregateShopping';
 import {
+  projectOpenShoppingSpend,
+  type ProjectedShoppingSpend,
+} from '../domain/budgetProjection';
+import {
   buildMonthBudgetSnapshot,
   estimateEatenCostRub,
   sumEatenCost,
@@ -429,6 +433,8 @@ export type FoodRepository = {
   ): ShoppingItem;
   softDeleteShoppingList(listId: string): ShoppingList;
   shoppingBasketTotal(listId: string): BasketTotal;
+  /** Projected spend from open shopping lists (user prices only — never live shelf). */
+  openShoppingProjection(): ProjectedShoppingSpend;
   upsertProductPrice(input: {
     productKey: string;
     priceRub: number;
@@ -2696,7 +2702,9 @@ export function createMemoryFoodRepository(seed?: {
         deletedAt: null,
       };
       shoppingLists.set(list.id, list);
+      // Persist only missing quantities — fully covered lines stay out of the actionable list.
       for (const line of lines) {
+        if (line.needToBuy <= 0) continue;
         const item: ShoppingItem = {
           id: newId(),
           listId: list.id,
@@ -2705,7 +2713,7 @@ export function createMemoryFoodRepository(seed?: {
           unit: line.unit,
           coveredByPantry: line.coveredByPantry,
           needToBuy: line.needToBuy,
-          checked: line.needToBuy <= 0,
+          checked: false,
           priceRub: line.priceRub,
           priceAsOf: line.priceAsOf,
           priceSource: line.priceSource,
@@ -2775,6 +2783,22 @@ export function createMemoryFoodRepository(seed?: {
       }
       notify();
       return { ...list };
+    },
+    openShoppingProjection() {
+      const baskets = [...shoppingLists.values()]
+        .filter((l) => !l.deletedAt)
+        .map((l) => {
+          const total = api.shoppingBasketTotal(l.id);
+          return {
+            status: l.status,
+            deletedAt: l.deletedAt,
+            totalRub: total.totalRub,
+            needLineCount: total.needLineCount,
+            pricedNeedCount: total.pricedNeedCount,
+            label: total.label,
+          };
+        });
+      return projectOpenShoppingSpend(baskets);
     },
     shoppingBasketTotal(listId) {
       const items = api.listShoppingItems(listId).map((i) => ({

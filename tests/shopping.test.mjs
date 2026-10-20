@@ -129,8 +129,51 @@ test('createShoppingListFromPlan merges ingredients; plan≠diary', () => {
   const rice = items.find((i) => i.displayName === 'Рис');
   assert.ok(rice);
   assert.ok(rice.coveredByPantry >= 100);
+  assert.ok(rice.needToBuy > 0);
+  assert.equal(items.every((i) => i.needToBuy > 0), true);
   assert.equal(repo.toSnapshot().version, 14);
   assert.equal(shoppingKey('Рис', 'g'), 'рис|g');
+});
+
+test('fully covered ingredient is not persisted on shopping list', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const r = repo.createRecipe({
+    name: 'Только рис',
+    cookedYieldG: 200,
+    nutritionPer100g: { kcal: 130, protein: 3, fat: 0, carbs: 28 },
+    ingredients: [
+      {
+        displayName: 'Рис',
+        rawGrams: 200,
+        nutritionPer100g: { kcal: 130, protein: 3, fat: 0, carbs: 28 },
+      },
+    ],
+  });
+  repo.upsertPantryItem({
+    displayName: 'Рис',
+    location: 'pantry',
+    unit: 'g',
+    quantityG: 50_000,
+  });
+  const plan = repo.createMealPlanDraft({ startDateLocal: '2026-10-20', days: 3 });
+  for (const m of repo.listPlannedMeals(plan.id)) {
+    repo.replacePlannedMeal(m.id, { recipeId: r.id, displayName: r.name, grams: 200 });
+  }
+  const list = repo.createShoppingListFromPlan(plan.id);
+  assert.equal(repo.listShoppingItems(list.id).length, 0);
+});
+
+test('filterMissingShoppingItems hides covered and checked', () => {
+  const { filterMissingShoppingItems } = mods['domain/aggregateShopping'];
+  const out = filterMissingShoppingItems([
+    { needToBuy: 0, checked: false, id: 'a' },
+    { needToBuy: 10, checked: true, id: 'b' },
+    { needToBuy: 5, checked: false, id: 'c' },
+  ]);
+  assert.deepEqual(
+    out.map((i) => i.id),
+    ['c'],
+  );
 });
 
 test('user price label path via basket total', () => {
