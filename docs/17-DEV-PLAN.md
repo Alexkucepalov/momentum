@@ -12,9 +12,9 @@
 | Sprint 2: UX **docs/IA/wireframes**; UI PR только после approve Today/Food | Auto-merge; live Dispatcher; массовый redesign одним PR |
 | Issues `dogfood`+`p0`/`p1`/`quality` **без** `agent-ready` | Rewrite foodRepository / normalized SQLite «на всякий» |
 
-**Open gate:** Android baseline ещё не измерен — не считать Sprint 1 UX-закрытым.  
+**Open gate:** Android dogfood ещё не прогнан — Sprint 2 не «done» без device.  
 Эталон: открыть → продукт → граммы → дневник.  
-Sprint 2 plan: `docs/quality/SPRINT-2-UX-PLAN.md`.  
+Sprint 2: S2-1 Today merged (#43); S2-2 Food segments (#44). Plan: `docs/quality/SPRINT-2-UX-PLAN.md`.  
 Dispatcher: `DISPATCH_ENABLED=false`, `DISPATCH_DRY_RUN=true`.
 
 ## Цель

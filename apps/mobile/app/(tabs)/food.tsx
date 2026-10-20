@@ -5,7 +5,6 @@ import { useNavigation, useRouter } from 'expo-router';
 
 import { portion } from '../../../../src/domain/nutrition';
 import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
-import { buildWeekNutrition } from '../../../../src/domain/weekNutrition';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DateSwitcher } from '@/src/components/DateSwitcher';
@@ -15,9 +14,7 @@ import { KcalRing } from '@/src/components/KcalRing';
 import { PortionEditModal } from '@/src/components/PortionEditModal';
 import { SaveMealModal } from '@/src/components/SaveMealModal';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
-import { SectionHeader } from '@/src/components/SectionHeader';
 import { UndoBar } from '@/src/components/UndoBar';
-import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
@@ -26,6 +23,10 @@ import {
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
+import {
+  FoodSegmentTabs,
+  type FoodSegment,
+} from '@/src/features/diary/FoodSegmentTabs';
 import { MealSection } from '@/src/features/diary/MealSection';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
@@ -53,6 +54,7 @@ export default function FoodScreen() {
     target: PortionTarget;
     initialGrams: number;
   } | null>(null);
+  const [segment, setSegment] = useState<FoodSegment>('diary');
   const [query, setQuery] = useState('');
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('all');
   const [saveMealSlot, setSaveMealSlot] = useState<MealSlot | null>(null);
@@ -73,26 +75,12 @@ export default function FoodScreen() {
     }
     return map;
   }, [recipes, repo, revision]);
-  const searching = query.trim().length > 0;
   const dailyTargets = {
     energyKcal: profile.dailyEnergyKcal,
     proteinG: profile.dailyProteinG,
     fatG: profile.dailyFatG,
     carbG: profile.dailyCarbG,
   };
-
-  const weekDays = useMemo(
-    () =>
-      buildWeekNutrition({
-        endDateLocal: dateLocal,
-        targetKcal: profile.dailyEnergyKcal,
-        totalsForDate: (d) => {
-          const t = repo.dailyTotals(d);
-          return { energyKcal: t.energyKcal, entryCount: t.entryCount };
-        },
-      }),
-    [repo, dateLocal, profile.dailyEnergyKcal, revision],
-  );
 
   const mealEntries = useMemo(() => {
     const map: Record<MealSlot, FoodEntry[]> = {
@@ -127,19 +115,15 @@ export default function FoodScreen() {
           >
             <Ionicons name="book-outline" size={22} color={colors.text} />
           </Pressable>
-          <Pressable
-            onPress={() => setOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Добавить еду"
-            style={styles.headerBtn}
-            hitSlop={8}
-          >
-            <Ionicons name="add" size={26} color={colors.text} />
-          </Pressable>
         </View>
       ),
     });
   }, [navigation, router]);
+
+  const selectSegment = (next: FoodSegment) => {
+    setSegment(next);
+    if (next === 'diary') setQuery('');
+  };
 
   const onDelete = (entry: FoodEntry) => {
     repo.softDeleteEntry(entry.id);
@@ -220,80 +204,23 @@ export default function FoodScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <KcalRing
-          variant="compact"
-          totals={totals}
-          targets={dailyTargets}
-          activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
-          activityMinutes={repo.activityMinutesForDate(dateLocal)}
-          onSetTarget={() => router.push('/profile')}
-        />
+        <FoodSegmentTabs value={segment} onChange={selectSegment} />
 
-        <Pressable
-          onPress={() => router.push('/plan/eat-now')}
-          style={({ pressed }) => [styles.planBanner, pressed && styles.planBannerPressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Что съесть сейчас по остатку КБЖУ"
-        >
-          <Ionicons name="flash-outline" size={18} color={colors.text} />
-          <View style={styles.planBannerText}>
-            <Text style={styles.planBannerTitle}>Что съесть сейчас?</Text>
-            <Text style={styles.planBannerSub}>Подбор по остатку КБЖУ</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
-
-        <TodayPlanStrip />
-
-        <CopyYesterdayButton />
-
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Яйцо, овсянка, рецепт…"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-            accessibilityLabel="Поиск продукта или рецепта"
-            returnKeyType="search"
-          />
-          {query.length > 0 ? (
-            <Pressable
-              onPress={() => setQuery('')}
-              accessibilityRole="button"
-              accessibilityLabel="Очистить поиск"
-              hitSlop={8}
-            >
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-            </Pressable>
-          ) : null}
-        </View>
-
-        {searching ? (
-          <FoodCatalogList
-            filter={catalogFilter}
-            onFilterChange={setCatalogFilter}
-            products={products}
-            recipes={recipes}
-            recent={recent}
-            frequent={frequent}
-            query={query}
-            recipeIngredientCounts={recipeIngredientCounts}
-            onAddProduct={openProductPortion}
-            onAddRecipe={openRecipePortion}
-            onOpenRecipe={(r) => router.push(`/recipes/${r.id}`)}
-            onBrowseRecipes={() => router.push('/recipes')}
-            onToggleFavorite={(p) => {
-              repo.setFavorite(p.id, !p.isFavorite);
-              refresh();
-            }}
-            onRepeatEntry={repeatEntry}
-          />
-        ) : (
+        {segment === 'diary' ? (
           <>
-            {/* Meals first — week chart is secondary (Sprint 1) */}
-            <SectionHeader title="Дневник" />
+            <KcalRing
+              variant="compact"
+              totals={totals}
+              targets={dailyTargets}
+              activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
+              activityMinutes={repo.activityMinutesForDate(dateLocal)}
+              onSetTarget={() => router.push('/profile')}
+            />
+
+            <TodayPlanStrip />
+
+            <CopyYesterdayButton />
+
             {MEALS.map((slot) => (
               <MealSection
                 key={slot}
@@ -307,13 +234,39 @@ export default function FoodScreen() {
               />
             ))}
 
-            <WeekNutritionStrip
-              days={weekDays}
-              selectedDate={dateLocal}
-              targetKcal={profile.dailyEnergyKcal}
-              onSelectDate={setDateLocal}
-              timeZone={profile.timezone}
-            />
+            <Pressable
+              onPress={() => router.push('/plan/eat-now')}
+              style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+              accessibilityRole="link"
+              accessibilityLabel="Что съесть сейчас"
+            >
+              <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Яйцо, овсянка, рецепт…"
+                placeholderTextColor={colors.textMuted}
+                style={styles.searchInput}
+                accessibilityLabel="Поиск продукта или рецепта"
+                returnKeyType="search"
+              />
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery('')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Очистить поиск"
+                  hitSlop={8}
+                >
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
+            </View>
 
             <FoodCatalogList
               filter={catalogFilter}
@@ -449,23 +402,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  planBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    marginBottom: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+  secondaryLink: {
+    paddingVertical: space.sm,
     minHeight: touchMin,
+    justifyContent: 'center',
+    marginTop: space.sm,
+    marginBottom: space.md,
   },
-  planBannerPressed: { opacity: 0.88 },
-  planBannerText: { flex: 1, gap: 2 },
-  planBannerTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  planBannerSub: { fontSize: type.caption, color: colors.textSecondary },
+  secondaryLinkText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
   footerIcon: {
     width: touchMin,
     height: touchMin,
