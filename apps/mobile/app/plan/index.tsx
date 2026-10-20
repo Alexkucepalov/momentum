@@ -10,7 +10,7 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: '/plan/eat-now' | '/plan/pantry' | '/plan/week' | null;
+  href: '/plan/eat-now' | '/plan/pantry' | '/plan/week' | '/plan/shop' | null;
   soon?: boolean;
 };
 
@@ -46,10 +46,9 @@ const ITEMS: HubItem[] = [
   {
     key: 'shop',
     title: 'Мои покупки',
-    subtitle: 'Скоро · список и бюджет',
+    subtitle: 'Список и оценка цен',
     icon: 'cart-outline',
-    href: null,
-    soon: true,
+    href: '/plan/shop',
   },
 ];
 
@@ -62,7 +61,8 @@ export default function PlanHubScreen() {
         Рецепты · Неделя · Покупки · Бюджет
       </Text>
       <Text style={styles.lead}>
-        Остаток КБЖУ — ориентир для выбора, не запрет на еду.
+        Вечером — что съесть по остатку. В запасах — что дома. В выходные — меню и покупки. Без
+        запретов и выдуманных ккал.
       </Text>
 
       <View style={styles.list} accessibilityRole="list">

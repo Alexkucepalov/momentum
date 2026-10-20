@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -7,6 +7,7 @@ import {
   eatNowInputsFromProducts,
   eatNowInputsFromRecipes,
 } from '../../../../src/domain/buildEatNowInputs';
+import { recipeAtHome, selectEatNowProducts } from '../../../../src/domain/eatNowPool';
 import { hasAnyKnownRemaining, remainingMacros } from '../../../../src/domain/remainingMacros';
 import {
   scoreEatNow,
@@ -27,12 +28,21 @@ import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const FILTERS: { id: EatNowFilterId; label: string }[] = [
-  { id: 'all', label: 'Все' },
+  { id: 'all', label: 'Подходящие' },
   { id: 'at_home', label: 'Дома' },
+  { id: 'to_buy', label: 'Купить' },
   { id: 'no_cook', label: 'Без готовки' },
   { id: 'quick_15', label: 'До 15 мин' },
-  { id: 'more_protein', label: 'Побольше белка' },
+  { id: 'more_protein', label: 'Больше белка' },
 ];
+
+function defaultMealForNow(): MealSlot {
+  const h = new Date().getHours();
+  if (h < 11) return 'breakfast';
+  if (h < 16) return 'lunch';
+  if (h < 21) return 'dinner';
+  return 'snack';
+}
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -99,6 +109,13 @@ export default function EatNowScreen() {
     initialGrams: number;
   } | null>(null);
 
+  const mealSeeded = useRef(false);
+  useEffect(() => {
+    if (mealSeeded.current) return;
+    mealSeeded.current = true;
+    setMeal(defaultMealForNow());
+  }, [setMeal]);
+
   const profile = repo.getProfile();
   const totals = repo.dailyTotals(dateLocal);
   const remaining = useMemo(
@@ -123,34 +140,59 @@ export default function EatNowScreen() {
   const candidates = useMemo(() => {
     const recipes = repo.listRecipes();
     const products = repo.listProducts();
-    const pantryProductIds = new Set(
-      repo
-        .listPantryItems()
-        .map((p) => p.productId)
-        .filter((id): id is string => !!id),
-    );
+    const pantry = repo.listPantryItems();
+    const frequentIds = new Set(repo.listFrequentProducts(24).map((p) => p.id));
     const batches = repo.listCookedBatches({ onlyRemaining: true });
     const batchRecipeIds = new Set(batches.map((b) => b.recipeId));
+    const { atHomeIds, usefulProducts, buyProducts } = selectEatNowProducts({
+      recipes,
+      products,
+      pantry,
+      frequentIds,
+      batchRecipeIds,
+    });
 
     const recipeInputs = eatNowInputsFromRecipes(recipes, (id) => repo.getRecipeIngredients(id), {
-      defaultPrepMinutes: 20,
+      defaultPrepMinutes: 25,
       atHome: false,
-    }).map((c) => ({
-      ...c,
-      atHome: batchRecipeIds.has(c.id),
-    }));
-
-    const productInputs = eatNowInputsFromProducts(products, {
-      atHome: (id) => pantryProductIds.has(id),
+    }).map((c) => {
+      const home = recipeAtHome(c.id, batchRecipeIds);
+      return { ...c, atHome: home, toBuy: !home, prepMinutes: home ? 8 : 25 };
     });
+
+    const usefulInputs = eatNowInputsFromProducts(usefulProducts, {
+      atHome: (id) => atHomeIds.has(id),
+    }).map((c) => ({ ...c, toBuy: !c.atHome }));
+
+    const buyInputs = eatNowInputsFromProducts(buyProducts, { atHome: false }).map((c) => ({
+      ...c,
+      toBuy: true,
+      prepMinutes: 5,
+    }));
 
     const batchInputs = eatNowInputsFromCookedBatches(
       batches,
       (id) => repo.getRecipe(id),
       (id) => repo.getRecipeIngredients(id),
-    );
+    ).map((c) => ({ ...c, toBuy: false }));
 
-    return scoreEatNow([...batchInputs, ...recipeInputs, ...productInputs], remaining, [filter]);
+    const pool =
+      filter === 'to_buy'
+        ? [...buyInputs, ...recipeInputs.filter((r) => r.toBuy)]
+        : filter === 'at_home'
+          ? [...batchInputs, ...recipeInputs.filter((r) => r.atHome), ...usefulInputs.filter((p) => p.atHome)]
+          : [...batchInputs, ...recipeInputs, ...usefulInputs];
+
+    // Dedupe by kind+id (buy may overlap useful).
+    const seen = new Set<string>();
+    const deduped = pool.filter((c) => {
+      const k = `${c.kind}:${c.id}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    return scoreEatNow(deduped, remaining, [filter]).slice(0, 20);
   }, [repo, remaining, filter, revision]);
 
   const openCandidate = (c: EatNowCandidate) => {
@@ -250,13 +292,17 @@ export default function EatNowScreen() {
             compact
             icon="nutrition-outline"
             title="Нет подходящих вариантов"
-            body="Добавьте продукты или рецепты с известными КБЖУ, либо снимите фильтр."
-            actionLabel="К рецептам"
-            onAction={() => router.push('/recipes')}
+            body={
+              filter === 'at_home'
+                ? 'Заполни запасы или отметь приготовленную партию — тогда «Дома» заработает.'
+                : 'Нужны рецепты / избранное / частые продукты с известными КБЖУ. Справочник целиком не сваливаем в ленту.'
+            }
+            actionLabel={filter === 'at_home' ? 'К запасам' : 'К рецептам'}
+            onAction={() => router.push(filter === 'at_home' ? '/plan/pantry' : '/recipes')}
           />
         ) : (
           <View style={styles.cards} accessibilityRole="list">
-            {candidates.slice(0, 24).map((c) => (
+            {candidates.map((c) => (
               <CandidateCard key={`${c.kind}:${c.id}`} candidate={c} onPress={() => openCandidate(c)} />
             ))}
           </View>
