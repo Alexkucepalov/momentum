@@ -1,7 +1,7 @@
 import { recipeHasManualPer100g, recipeManualPer100g, nutritionForRecipePortion } from './recipeNutrition';
 import type { Nutrition } from './nutrition';
 import type { EatNowCandidateInput } from './scoreEatNow';
-import type { FoodProduct, Recipe, RecipeIngredient } from '../storage/types';
+import type { CookedBatch, FoodProduct, Recipe, RecipeIngredient } from '../storage/types';
 
 function productPer100(p: FoodProduct): Nutrition {
   return {
@@ -50,9 +50,8 @@ export function eatNowInputsFromRecipes(
 /** Map products → Eat Now inputs (treat as no-cook ≤5 min). */
 export function eatNowInputsFromProducts(
   products: FoodProduct[],
-  opts?: { atHome?: boolean },
+  opts?: { atHome?: boolean | ((productId: string) => boolean) },
 ): EatNowCandidateInput[] {
-  const atHome = opts?.atHome ?? false;
   const out: EatNowCandidateInput[] = [];
   for (const p of products) {
     if (p.deletedAt) continue;
@@ -60,6 +59,10 @@ export function eatNowInputsFromProducts(
     if (per100.kcal === null && per100.protein === null && per100.fat === null && per100.carbs === null) {
       continue;
     }
+    const atHome =
+      typeof opts?.atHome === 'function'
+        ? opts.atHome(p.id)
+        : (opts?.atHome ?? false);
     out.push({
       id: p.id,
       kind: 'product',
@@ -67,6 +70,38 @@ export function eatNowInputsFromProducts(
       per100,
       prepMinutes: 2,
       atHome,
+    });
+  }
+  return out;
+}
+
+/**
+ * Cooked batches → Eat Now (at home, quick reheat).
+ * Uses recipe nutrition; id is batch id; caller logs via recipeId on open.
+ */
+export function eatNowInputsFromCookedBatches(
+  batches: CookedBatch[],
+  recipesById: Map<string, Recipe> | ((id: string) => Recipe | null),
+  ingredientsByRecipeId: (recipeId: string) => RecipeIngredient[],
+): EatNowCandidateInput[] {
+  const getRecipe =
+    typeof recipesById === 'function'
+      ? recipesById
+      : (id: string) => recipesById.get(id) ?? null;
+  const out: EatNowCandidateInput[] = [];
+  for (const b of batches) {
+    if (b.deletedAt || !(b.remainingG > 0)) continue;
+    const recipe = getRecipe(b.recipeId);
+    if (!recipe || recipe.deletedAt) continue;
+    const per100 = recipePer100(recipe, ingredientsByRecipeId(recipe.id));
+    if (!per100) continue;
+    out.push({
+      id: b.id,
+      kind: 'cooked_batch',
+      title: `${recipe.name} · остаток ${Math.round(b.remainingG)} г`,
+      per100,
+      prepMinutes: 5,
+      atHome: true,
     });
   }
   return out;

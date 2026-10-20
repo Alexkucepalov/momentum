@@ -10,7 +10,7 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: '/plan/eat-now' | null;
+  href: '/plan/eat-now' | '/plan/pantry' | null;
   soon?: boolean;
 };
 
@@ -21,6 +21,13 @@ const ITEMS: HubItem[] = [
     subtitle: 'По остатку КБЖУ',
     icon: 'flash-outline',
     href: '/plan/eat-now',
+  },
+  {
+    key: 'pantry',
+    title: 'Запасы дома',
+    subtitle: 'Холодильник, морозилка, партии',
+    icon: 'cube-outline',
+    href: '/plan/pantry',
   },
   {
     key: 'cook',

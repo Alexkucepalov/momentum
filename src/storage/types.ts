@@ -231,8 +231,40 @@ export type SavedMeal = {
   deletedAt: string | null;
 };
 
+export type PantryLocation = 'fridge' | 'freezer' | 'pantry';
+
+export type PantryUnit = 'g' | 'ml' | 'pcs';
+
+/** User-managed stock at home (offline). Quantities may be null if unknown — never coerced to 0. */
+export type PantryItem = {
+  id: string;
+  displayName: string;
+  productId: string | null;
+  location: PantryLocation;
+  quantityG: number | null;
+  quantityCount: number | null;
+  unit: PantryUnit;
+  expiresOn: string | null;
+  source: 'user';
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+/** Leftover prepared recipe batch. remainingG decreases when diary logs that recipe. */
+export type CookedBatch = {
+  id: string;
+  recipeId: string;
+  cookedAt: string;
+  initialYieldG: number;
+  remainingG: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 export type StoreSnapshot = {
-  version: 9;
+  version: 10;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -246,6 +278,8 @@ export type StoreSnapshot = {
   flexibleHabitEvents: FlexibleHabitEvent[];
   savedMeals: SavedMeal[];
   challenges: Challenge[];
+  pantryItems: PantryItem[];
+  cookedBatches: CookedBatch[];
 };
 
 type LegacyRecipe = Omit<
@@ -285,7 +319,7 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
 
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -316,4 +350,6 @@ export type StoreSnapshotAny = {
   flexibleHabitEvents?: LegacyFlexibleHabitEvent[];
   savedMeals?: SavedMeal[];
   challenges?: Challenge[];
+  pantryItems?: PantryItem[];
+  cookedBatches?: CookedBatch[];
 };

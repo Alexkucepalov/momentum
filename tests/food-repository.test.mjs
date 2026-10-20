@@ -213,7 +213,7 @@ test('water and weight persist in snapshot', () => {
   repo.toggleHabit('2026-10-17', 'walk');
   assert.equal(repo.isHabitDone('2026-10-17', 'walk'), true);
   const snap = repo.toSnapshot();
-  assert.equal(snap.version, 9);
+  assert.equal(snap.version, 10);
   const restored = createMemoryFoodRepository({ snapshot: snap });
   assert.equal(restored.waterMlForDate('2026-10-17'), 500);
   assert.equal(restored.latestWeight()?.kg, 76.4);
