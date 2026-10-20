@@ -74,13 +74,13 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 | Sprint | GitHub | Issue theme | Depends on | Agent-ready? |
 |--------|---------|-------------|------------|--------------|
 | FP-0 | docs PR | Docs / ADR / contracts | — | n/a (docs) |
-| FP-1 | [#13](https://github.com/Alexkucepalov/momentum/issues/13) | Domain: remaining macros + Eat Now scorer + tests | FP-0 | in PR (local) |
-| FP-2 | [#14](https://github.com/Alexkucepalov/momentum/issues/14) | Plan hub UI + Eat Now screen | FP-1 | in PR (local) |
-| FP-3 | [#15](https://github.com/Alexkucepalov/momentum/issues/15) | Pantry + cooked batch remaining | FP-2 | in PR (local) |
-| FP-4 | [#16](https://github.com/Alexkucepalov/momentum/issues/16) | Weekly meal plan drafts (3/5/7) | FP-3 | in PR (local) |
+| FP-1 | [#13](https://github.com/Alexkucepalov/momentum/issues/13) | Domain: remaining macros + Eat Now scorer + tests | FP-0 | Done (#22) |
+| FP-2 | [#14](https://github.com/Alexkucepalov/momentum/issues/14) | Plan hub UI + Eat Now screen | FP-1 | Done (#22) |
+| FP-3 | [#15](https://github.com/Alexkucepalov/momentum/issues/15) | Pantry + cooked batch remaining | FP-2 | Done (#23) |
+| FP-4 | [#16](https://github.com/Alexkucepalov/momentum/issues/16) | Weekly meal plan drafts (3/5/7) | FP-3 | Done (#24) |
 | FP-5 | [#17](https://github.com/Alexkucepalov/momentum/issues/17) | Shopping list aggregate + user prices | FP-4 | Done (#26) |
-| FP-6 | [#18](https://github.com/Alexkucepalov/momentum/issues/18) | Food budget plan/fact + forecast | FP-5 | in PR (this branch) |
-| FP-7 | [#19](https://github.com/Alexkucepalov/momentum/issues/19) | Store preference tags (no scrape) | FP-5 | in PR (this branch) |
+| FP-6 | [#18](https://github.com/Alexkucepalov/momentum/issues/18) | Food budget plan/fact + forecast | FP-5 | Done (#27) |
+| FP-7 | [#19](https://github.com/Alexkucepalov/momentum/issues/19) | Store preference tags (no scrape) | FP-5 | Done (#27) |
 
 После approve: помечать **один** следующий FP issue `agent-ready`; serial dispatcher.
 
