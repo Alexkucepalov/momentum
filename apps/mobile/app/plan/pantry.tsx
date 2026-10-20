@@ -48,6 +48,7 @@ export default function PantryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
 
   const items = repo.listPantryItems();
   const batches = repo.listCookedBatches({ onlyRemaining: true });
@@ -68,7 +69,7 @@ export default function PantryScreen() {
     return map;
   }, [items]);
 
-  const addItem = () => {
+  const addItem = (): boolean => {
     setError(null);
     try {
       const quantity = parseOptionalQty(qty);
@@ -86,8 +87,10 @@ export default function PantryScreen() {
       setLinkedProduct(null);
       refresh();
       showFlash(linkedProduct ? `В запасах: ${linkedProduct.name}` : 'Добавлено в запасы');
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+      return false;
     }
   };
 
@@ -137,91 +140,17 @@ export default function PantryScreen() {
 
   return (
     <FormScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.lead}>
-        Свяжи запас с продуктом из каталога — тогда «Дома» в Eat Now и покупки увидят его. Партия
-        рецепта списывается при записи в дневник.
+      <Text style={styles.section}>
+        Дома {items.length > 0 ? `· ${items.length}` : ''}
       </Text>
-
-      <Text style={styles.section}>Добавить запас</Text>
-      <TextInput
-        value={name}
-        onChangeText={(t) => {
-          setName(t);
-          setLinkedProduct(null);
-        }}
-        placeholder="Например: творог"
-        placeholderTextColor={colors.textMuted}
-        style={styles.input}
-        accessibilityLabel="Название продукта в запасах"
-      />
-      {productSuggestions.length > 0 ? (
-        <View style={styles.suggest}>
-          {productSuggestions.map((p) => (
-            <Pressable
-              key={p.id}
-              onPress={() => {
-                setLinkedProduct(p);
-                setName(p.name);
-              }}
-              style={[styles.suggestChip, linkedProduct?.id === p.id && styles.suggestOn]}
-              accessibilityRole="button"
-              accessibilityLabel={`Связать с ${p.name}`}
-            >
-              <Text style={styles.suggestText}>{p.name}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-      {linkedProduct ? (
-        <Text style={styles.linkOk}>Связано с каталогом · Eat Now «Дома» сработает</Text>
-      ) : null}
-      <TextInput
-        value={qty}
-        onChangeText={setQty}
-        placeholder="Количество (можно пусто = неизвестно)"
-        placeholderTextColor={colors.textMuted}
-        keyboardType="decimal-pad"
-        style={styles.input}
-        accessibilityLabel="Количество"
-      />
-      <View style={styles.row}>
-        {LOCATIONS.map((l) => (
-          <Pressable
-            key={l.id}
-            onPress={() => setLocation(l.id)}
-            style={[styles.chip, location === l.id && styles.chipOn]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: location === l.id }}
-            accessibilityLabel={l.label}
-          >
-            <Text style={[styles.chipText, location === l.id && styles.chipTextOn]}>{l.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={styles.row}>
-        {UNITS.map((u) => (
-          <Pressable
-            key={u.id}
-            onPress={() => setUnit(u.id)}
-            style={[styles.chip, unit === u.id && styles.chipOn]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: unit === u.id }}
-            accessibilityLabel={`Единица ${u.label}`}
-          >
-            <Text style={[styles.chipText, unit === u.id && styles.chipTextOn]}>{u.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <PrimaryButton label="Сохранить в запасы" onPress={addItem} />
-
-      <Text style={styles.section}>Запасы по местам</Text>
       {items.length === 0 ? (
         <EmptyState
           compact
           icon="cube-outline"
           title="Пока пусто"
-          body="Добавь то, что реально есть дома. Без связи с каталогом запас всё равно виден в покупках по имени."
+          body="Добавь то, что реально есть, или подтверди покупку — позиции попадут сюда."
+          actionLabel="Добавить"
+          onAction={() => setAddOpen(true)}
         />
       ) : (
         (['fridge', 'freezer', 'pantry'] as PantryLocation[]).map((loc) =>
@@ -246,6 +175,38 @@ export default function PantryScreen() {
                         {qtyLabel}
                         {item.productId ? ' · в каталоге' : ''}
                       </Text>
+                      <View style={styles.row}>
+                        {LOCATIONS.map((l) => (
+                          <Pressable
+                            key={l.id}
+                            onPress={() => {
+                              repo.upsertPantryItem({
+                                id: item.id,
+                                displayName: item.displayName,
+                                productId: item.productId,
+                                location: l.id,
+                                unit: item.unit,
+                                quantityG: item.quantityG,
+                                quantityCount: item.quantityCount,
+                              });
+                              refresh();
+                            }}
+                            style={[styles.miniChip, item.location === l.id && styles.chipOn]}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: item.location === l.id }}
+                            accessibilityLabel={`${item.displayName}: ${l.label}`}
+                          >
+                            <Text
+                              style={[
+                                styles.miniChipText,
+                                item.location === l.id && styles.chipTextOn,
+                              ]}
+                            >
+                              {l.label.slice(0, 4)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
                       {editing ? (
                         <View style={styles.editRow}>
                           <TextInput
@@ -299,6 +260,99 @@ export default function PantryScreen() {
           ),
         )
       )}
+
+      <Pressable
+        onPress={() => setAddOpen((v) => !v)}
+        style={styles.addToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: addOpen }}
+        accessibilityLabel={addOpen ? 'Скрыть форму добавления' : 'Добавить запас'}
+      >
+        <Text style={styles.addToggleText}>{addOpen ? 'Скрыть форму' : '+ Добавить запас'}</Text>
+      </Pressable>
+
+      {addOpen ? (
+        <View style={styles.addPanel}>
+          <TextInput
+            value={name}
+            onChangeText={(t) => {
+              setName(t);
+              setLinkedProduct(null);
+            }}
+            placeholder="Например: творог"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            accessibilityLabel="Название продукта в запасах"
+          />
+          {productSuggestions.length > 0 ? (
+            <View style={styles.suggest}>
+              {productSuggestions.map((p) => (
+                <Pressable
+                  key={p.id}
+                  onPress={() => {
+                    setLinkedProduct(p);
+                    setName(p.name);
+                  }}
+                  style={[styles.suggestChip, linkedProduct?.id === p.id && styles.suggestOn]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Связать с ${p.name}`}
+                >
+                  <Text style={styles.suggestText}>{p.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          {linkedProduct ? (
+            <Text style={styles.linkOk}>Связано с каталогом</Text>
+          ) : null}
+          <TextInput
+            value={qty}
+            onChangeText={setQty}
+            placeholder="Количество (пусто = неизвестно)"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="decimal-pad"
+            style={styles.input}
+            accessibilityLabel="Количество"
+          />
+          <View style={styles.row}>
+            {LOCATIONS.map((l) => (
+              <Pressable
+                key={l.id}
+                onPress={() => setLocation(l.id)}
+                style={[styles.chip, location === l.id && styles.chipOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: location === l.id }}
+                accessibilityLabel={l.label}
+              >
+                <Text style={[styles.chipText, location === l.id && styles.chipTextOn]}>
+                  {l.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.row}>
+            {UNITS.map((u) => (
+              <Pressable
+                key={u.id}
+                onPress={() => setUnit(u.id)}
+                style={[styles.chip, unit === u.id && styles.chipOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: unit === u.id }}
+                accessibilityLabel={`Единица ${u.label}`}
+              >
+                <Text style={[styles.chipText, unit === u.id && styles.chipTextOn]}>{u.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <PrimaryButton
+            label="Сохранить в запасы"
+            onPress={() => {
+              if (addItem()) setAddOpen(false);
+            }}
+          />
+        </View>
+      ) : null}
 
       <Text style={styles.section}>Приготовленные партии</Text>
       <Text style={styles.hint}>
@@ -375,6 +429,23 @@ export default function PantryScreen() {
 const styles = StyleSheet.create({
   content: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
   lead: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
+  addToggle: {
+    minHeight: touchMin,
+    justifyContent: 'center',
+    paddingVertical: space.sm,
+  },
+  addToggleText: { fontSize: type.body, fontWeight: '800', color: colors.text },
+  addPanel: { gap: space.sm },
+  miniChip: {
+    minHeight: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  miniChipText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
   section: {
     fontSize: type.caption,
     fontWeight: '700',

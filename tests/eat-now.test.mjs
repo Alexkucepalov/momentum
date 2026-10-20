@@ -30,7 +30,20 @@ test('suggest portion from remaining energy', () => {
     { kcal: 120, protein: 10, fat: 5, carbs: 8 },
     { energyKcal: 480, proteinG: 35, fatG: 15, carbG: 50 },
   );
+  // remaining ≤ meal cap → use full remaining for the sitting
   assert.equal(g, 400); // 480/120*100 = 400
+});
+
+test('suggest portion caps large day remaining to one meal', () => {
+  const { mealEnergyBudgetKcal } = mods['domain/scoreEatNow'];
+  assert.equal(mealEnergyBudgetKcal(2200), 700);
+  const g = suggestEatNowPortionGrams(
+    { kcal: 370, protein: 13, fat: 7, carbs: 60 },
+    { energyKcal: 2200, proteinG: 150, fatG: 70, carbG: 220 },
+  );
+  // 700/370*100 ≈ 189 — not ~500g / 1850 kcal of the whole day
+  assert.equal(g, 189);
+  assert.ok(g * 3.7 < 800);
 });
 
 test('suggest portion when already over energy still returns small snack', () => {

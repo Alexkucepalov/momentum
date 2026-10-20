@@ -51,6 +51,25 @@ export type EatNowCandidate = {
 const MIN_G = 40;
 const MAX_G = 500;
 const DEFAULT_G = 150;
+/** One sitting — never treat the whole day's remaining as a single portion. */
+const MEAL_ENERGY_CAP_KCAL = 700;
+const MEAL_PROTEIN_CAP_G = 50;
+const MEAL_DAY_FRACTION = 0.35;
+
+/** Energy budget for one Eat Now suggestion (deterministic). */
+export function mealEnergyBudgetKcal(remainingKcal: number): number {
+  if (!Number.isFinite(remainingKcal)) return DEFAULT_G;
+  if (remainingKcal <= 0) return 80;
+  if (remainingKcal <= MEAL_ENERGY_CAP_KCAL) return remainingKcal;
+  return Math.min(MEAL_ENERGY_CAP_KCAL, Math.round(remainingKcal * MEAL_DAY_FRACTION));
+}
+
+export function mealProteinBudgetG(remainingProteinG: number): number {
+  if (!Number.isFinite(remainingProteinG)) return 25;
+  if (remainingProteinG <= 0) return 15;
+  if (remainingProteinG <= MEAL_PROTEIN_CAP_G) return remainingProteinG;
+  return Math.min(MEAL_PROTEIN_CAP_G, Math.round(remainingProteinG * MEAL_DAY_FRACTION));
+}
 
 function finiteNonNeg(n: number): boolean {
   return Number.isFinite(n) && n >= 0;
@@ -83,20 +102,21 @@ export function suggestEatNowPortionGrams(
   const preferProtein = opts?.preferProtein === true;
 
   if (preferProtein && remaining.proteinG !== null && per100.protein !== null && per100.protein > 0) {
-    const g = (remaining.proteinG / per100.protein) * 100;
+    const targetP = mealProteinBudgetG(remaining.proteinG);
+    const g = (targetP / per100.protein) * 100;
     return clampGrams(g);
   }
 
   if (remaining.energyKcal !== null && per100.kcal !== null && per100.kcal > 0) {
-    const targetKcal = Math.max(remaining.energyKcal, 0);
-    // If already over on energy, still suggest a small default snack portion.
     if (remaining.energyKcal <= 0) return clampGrams(80);
+    const targetKcal = mealEnergyBudgetKcal(remaining.energyKcal);
     const g = (targetKcal / per100.kcal) * 100;
     return clampGrams(g);
   }
 
   if (remaining.proteinG !== null && per100.protein !== null && per100.protein > 0) {
-    const g = (Math.max(remaining.proteinG, 0) / per100.protein) * 100;
+    const targetP = mealProteinBudgetG(remaining.proteinG);
+    const g = (targetP / per100.protein) * 100;
     return clampGrams(g);
   }
 
@@ -168,20 +188,37 @@ function explanationFor(
   input: EatNowCandidateInput,
   matched: EatNowFilterId[],
   fitScore: number | null,
+  portion: MacroFour,
+  remaining: MacroFour,
 ): string {
+  const parts: string[] = [];
   const hint = input.coverageHint?.trim();
-  if (matched.includes('no_cook')) return hint ? `Без готовки · ${hint}` : 'Без готовки';
-  if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
-    return hint ? `Быстрый вариант · ${hint}` : 'Быстрый вариант';
+  if (matched.includes('no_cook')) parts.push('Без готовки');
+  else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
+    parts.push('Быстрый вариант');
+  } else if (input.atHome) {
+    parts.push('Из того, что уже есть');
+  } else if (hint && input.kind === 'recipe') {
+    parts.push('Не хватает ингредиентов');
+  } else if (matched.includes('more_protein')) {
+    parts.push('С акцентом на белок');
+  } else if (fitScore !== null && fitScore >= 0.7) {
+    parts.push('Хорошо ложится в остаток');
+  } else if (input.kind === 'recipe') {
+    parts.push('Из ваших рецептов');
+  } else {
+    parts.push('Из продуктов');
   }
-  if (input.atHome) {
-    return hint ? `Из того, что уже есть · ${hint}` : 'Из того, что уже есть';
+  if (hint) parts.push(hint);
+
+  if (portion.energyKcal !== null && remaining.energyKcal !== null) {
+    if (remaining.energyKcal > 0 && portion.energyKcal > remaining.energyKcal) {
+      parts.push(`порция ~${Math.round(portion.energyKcal)} ккал > остатка ${Math.round(remaining.energyKcal)}`);
+    } else if (remaining.energyKcal > MEAL_ENERGY_CAP_KCAL) {
+      parts.push(`порция на приём ~${Math.round(portion.energyKcal)} ккал`);
+    }
   }
-  if (hint && input.kind === 'recipe') return `Не хватает ингредиентов · ${hint}`;
-  if (matched.includes('more_protein')) return 'С акцентом на белок';
-  if (fitScore !== null && fitScore >= 0.7) return 'Хорошо ложится в остаток';
-  if (input.kind === 'recipe') return 'Из ваших рецептов';
-  return 'Из продуктов';
+  return parts.join(' · ');
 }
 
 /**
@@ -232,7 +269,7 @@ export function scoreEatNow(
       prepMinutes: c.prepMinutes,
       filtersMatched: matched,
       fitScore,
-      explanation: explanationFor(c, matched, fitScore),
+      explanation: explanationFor(c, matched, fitScore, macros, remaining),
     });
   }
 
