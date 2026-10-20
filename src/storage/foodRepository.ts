@@ -24,6 +24,12 @@ import {
 } from '../domain/mealPlanDraft';
 import { portion, type Nutrition } from '../domain/nutrition';
 import { rankProductFrequency } from '../domain/productFrequency';
+import {
+  isConfirmablePurchaseStatus,
+  linesForPantryApply,
+  purchaseFingerprint,
+  resolveExpenseAmountRub,
+} from '../domain/purchaseConfirm';
 import { nutritionForRecipePortion } from '../domain/recipeNutrition';
 import { computeDailyTotals } from './dailyTotals';
 import {
@@ -48,10 +54,15 @@ import type {
   NutritionSource,
   PantryItem,
   PantryLocation,
+  PantrySource,
   PantryUnit,
   PlannedMeal,
   ProductPrice,
   Profile,
+  Purchase,
+  PurchaseLine,
+  PurchaseSourceKind,
+  PurchaseStatus,
   ShoppingItem,
   ShoppingList,
   ShoppingListStatus,
@@ -310,8 +321,44 @@ export type FoodRepository = {
     quantityCount?: number | null;
     unit: PantryUnit;
     expiresOn?: string | null;
+    source?: PantrySource;
   }): PantryItem;
   softDeletePantryItem(pantryItemId: string): PantryItem;
+  listPurchases(): Purchase[];
+  listPurchaseLines(purchaseId: string): PurchaseLine[];
+  findPurchaseByFingerprint(fingerprint: string): Purchase | null;
+  /**
+   * Persist a confirmed purchase in one step: purchase + lines + pantry + optional expense.
+   * Rejects duplicate fingerprints of already-confirmed purchases.
+   * Status must be delivered | fiscal_receipt. Cart/paid alone never writes pantry.
+   */
+  confirmNewPurchase(input: {
+    status: Extract<PurchaseStatus, 'delivered' | 'fiscal_receipt'>;
+    sourceKind: PurchaseSourceKind;
+    purchasedOn: string;
+    storeLabel?: string | null;
+    storePreferenceId?: string | null;
+    totalRub?: number | null;
+    parseConfidence?: number | null;
+    rawPayloadRef?: string | null;
+    expenseCategory?: FoodExpenseCategory;
+    lines: Array<{
+      rawName: string;
+      displayName: string;
+      quantity?: number | null;
+      unit?: PantryUnit | null;
+      packageSizeText?: string | null;
+      unitPriceRub?: number | null;
+      lineTotalRub?: number | null;
+      discountRub?: number | null;
+      isFood: boolean;
+      excluded: boolean;
+      productId?: string | null;
+      barcode?: string | null;
+      retailerSku?: string | null;
+      matchConfidence?: number | null;
+    }>;
+  }): { purchase: Purchase; lines: PurchaseLine[]; pantryItems: PantryItem[]; expense: FoodExpense | null };
   listCookedBatches(opts?: { recipeId?: string; onlyRemaining?: boolean }): CookedBatch[];
   createCookedBatch(input: {
     recipeId: string;
@@ -500,6 +547,7 @@ function normalizePantryItem(raw: PantryItem): PantryItem {
   const location: PantryLocation =
     raw.location === 'freezer' || raw.location === 'pantry' ? raw.location : 'fridge';
   const unit: PantryUnit = raw.unit === 'ml' || raw.unit === 'pcs' ? raw.unit : 'g';
+  const source: PantrySource = raw.source === 'purchase' ? 'purchase' : 'user';
   return {
     id: raw.id,
     displayName: raw.displayName,
@@ -509,7 +557,74 @@ function normalizePantryItem(raw: PantryItem): PantryItem {
     quantityCount: raw.quantityCount ?? null,
     unit,
     expiresOn: raw.expiresOn ?? null,
-    source: 'user',
+    source,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizePurchaseStatus(raw: PurchaseStatus | string | undefined): PurchaseStatus {
+  const allowed: PurchaseStatus[] = [
+    'cart',
+    'submitted',
+    'paid',
+    'delivered',
+    'fiscal_receipt',
+    'cancelled',
+  ];
+  return allowed.includes(raw as PurchaseStatus) ? (raw as PurchaseStatus) : 'cart';
+}
+
+function normalizePurchase(raw: Purchase): Purchase {
+  const sourceKind: PurchaseSourceKind =
+    raw.sourceKind === 'paste' ||
+    raw.sourceKind === 'photo' ||
+    raw.sourceKind === 'screenshots' ||
+    raw.sourceKind === 'qr'
+      ? raw.sourceKind
+      : 'manual';
+  return {
+    id: raw.id,
+    status: normalizePurchaseStatus(raw.status),
+    storePreferenceId: raw.storePreferenceId ?? null,
+    storeLabel: raw.storeLabel ?? null,
+    purchasedOn: raw.purchasedOn,
+    currency: 'RUB',
+    totalRub: raw.totalRub ?? null,
+    sourceKind,
+    fingerprint: raw.fingerprint,
+    rawPayloadRef: raw.rawPayloadRef ?? null,
+    parseConfidence: raw.parseConfidence ?? null,
+    confirmedAt: raw.confirmedAt ?? null,
+    expenseId: raw.expenseId ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizePurchaseLine(raw: PurchaseLine): PurchaseLine {
+  const unit: PantryUnit | null =
+    raw.unit === 'g' || raw.unit === 'ml' || raw.unit === 'pcs' ? raw.unit : null;
+  return {
+    id: raw.id,
+    purchaseId: raw.purchaseId,
+    rawName: raw.rawName,
+    displayName: raw.displayName,
+    quantity: raw.quantity ?? null,
+    unit,
+    packageSizeText: raw.packageSizeText ?? null,
+    unitPriceRub: raw.unitPriceRub ?? null,
+    lineTotalRub: raw.lineTotalRub ?? null,
+    discountRub: raw.discountRub ?? null,
+    isFood: !!raw.isFood,
+    excluded: !!raw.excluded,
+    productId: raw.productId ?? null,
+    barcode: raw.barcode ?? null,
+    retailerSku: raw.retailerSku ?? null,
+    matchConfidence: raw.matchConfidence ?? null,
+    pantryItemId: raw.pantryItemId ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     deletedAt: raw.deletedAt ?? null,
@@ -686,7 +801,7 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   const ts = nowIso();
   const prefs = (raw.storePreferences ?? []).map(normalizeStorePreference);
   return {
-    version: 13,
+    version: 14,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
@@ -713,6 +828,8 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     foodBudgets: (raw.foodBudgets ?? []).map(normalizeFoodBudget),
     foodExpenses: (raw.foodExpenses ?? []).map(normalizeFoodExpense),
     storePreferences: prefs.length > 0 ? prefs : defaultStorePreferences(ts),
+    purchases: (raw.purchases ?? []).map(normalizePurchase),
+    purchaseLines: (raw.purchaseLines ?? []).map(normalizePurchaseLine),
   };
 }
 
@@ -823,6 +940,12 @@ export function createMemoryFoodRepository(seed?: {
         : defaultStorePreferences(nowIso())
     ).map((s) => [s.id, { ...s }]),
   );
+  const purchases = new Map<string, Purchase>(
+    (snap?.purchases ?? []).map((p) => [p.id, { ...p }]),
+  );
+  const purchaseLines = new Map<string, PurchaseLine>(
+    (snap?.purchaseLines ?? []).map((l) => [l.id, { ...l }]),
+  );
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
 
@@ -902,7 +1025,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 13,
+        version: 14,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -929,6 +1052,8 @@ export function createMemoryFoodRepository(seed?: {
         foodBudgets: [...foodBudgets.values()].map((b) => ({ ...b })),
         foodExpenses: [...foodExpenses.values()].map((e) => ({ ...e })),
         storePreferences: [...storePreferences.values()].map((s) => ({ ...s })),
+        purchases: [...purchases.values()].map((p) => ({ ...p })),
+        purchaseLines: [...purchaseLines.values()].map((l) => ({ ...l })),
       };
     },
     getProfile: () => ({ ...profile }),
@@ -1964,6 +2089,10 @@ export function createMemoryFoodRepository(seed?: {
       const ts = nowIso();
       const existing = input.id ? pantryItems.get(input.id) : undefined;
       if (input.id && (!existing || existing.deletedAt)) throw new Error('Pantry item not found');
+      const source: PantrySource =
+        input.source === 'purchase' || input.source === 'user'
+          ? input.source
+          : (existing?.source ?? 'user');
       const item: PantryItem = {
         id: existing?.id ?? newId(),
         displayName: name,
@@ -1974,7 +2103,7 @@ export function createMemoryFoodRepository(seed?: {
           input.quantityCount === undefined ? (existing?.quantityCount ?? null) : input.quantityCount,
         unit: input.unit,
         expiresOn: input.expiresOn === undefined ? (existing?.expiresOn ?? null) : input.expiresOn,
-        source: 'user',
+        source,
         createdAt: existing?.createdAt ?? ts,
         updatedAt: ts,
         deletedAt: null,
@@ -1990,6 +2119,182 @@ export function createMemoryFoodRepository(seed?: {
       item.updatedAt = item.deletedAt;
       notify();
       return { ...item };
+    },
+    listPurchases() {
+      return [...purchases.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({ ...p }))
+        .sort((a, b) => b.purchasedOn.localeCompare(a.purchasedOn) || b.createdAt.localeCompare(a.createdAt));
+    },
+    listPurchaseLines(purchaseId) {
+      return [...purchaseLines.values()]
+        .filter((l) => l.purchaseId === purchaseId && !l.deletedAt)
+        .map((l) => ({ ...l }))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    },
+    findPurchaseByFingerprint(fingerprint) {
+      const hit = [...purchases.values()].find(
+        (p) => !p.deletedAt && p.fingerprint === fingerprint && p.confirmedAt != null,
+      );
+      return hit ? { ...hit } : null;
+    },
+    confirmNewPurchase(input) {
+      if (!isConfirmablePurchaseStatus(input.status)) {
+        throw new Error('Подтверждение только для delivered / fiscal_receipt');
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.purchasedOn)) {
+        throw new Error('purchasedOn must be YYYY-MM-DD');
+      }
+      if (input.totalRub != null) assertNonNegativeFinite(input.totalRub, 'totalRub');
+      if (input.lines.length === 0) throw new Error('Нужна хотя бы одна позиция');
+
+      const draftLines = input.lines.map((l) => {
+        const displayName = l.displayName.trim();
+        if (!displayName) throw new Error('Пустое название позиции');
+        if (l.quantity != null) assertNonNegativeFinite(l.quantity, 'quantity');
+        if (l.lineTotalRub != null) assertNonNegativeFinite(l.lineTotalRub, 'lineTotalRub');
+        if (l.unitPriceRub != null) assertNonNegativeFinite(l.unitPriceRub, 'unitPriceRub');
+        if (l.discountRub != null) assertNonNegativeFinite(l.discountRub, 'discountRub');
+        return {
+          rawName: l.rawName.trim() || displayName,
+          displayName,
+          quantity: l.quantity ?? null,
+          unit: l.unit ?? null,
+          packageSizeText: l.packageSizeText ?? null,
+          unitPriceRub: l.unitPriceRub ?? null,
+          lineTotalRub: l.lineTotalRub ?? null,
+          discountRub: l.discountRub ?? null,
+          isFood: !!l.isFood,
+          excluded: !!l.excluded,
+          productId: l.productId ?? null,
+          barcode: l.barcode ?? null,
+          retailerSku: l.retailerSku ?? null,
+          matchConfidence: l.matchConfidence ?? null,
+        };
+      });
+
+      const fingerprint = purchaseFingerprint({
+        storeLabel: input.storeLabel ?? null,
+        purchasedOn: input.purchasedOn,
+        totalRub: input.totalRub ?? null,
+        lines: draftLines.map((l) => ({
+          displayName: l.displayName,
+          quantity: l.quantity,
+          unit: l.unit,
+          lineTotalRub: l.lineTotalRub,
+          excluded: l.excluded,
+        })),
+      });
+
+      const dup = api.findPurchaseByFingerprint(fingerprint);
+      if (dup) throw new Error('Такая покупка уже подтверждена (дубликат чека)');
+
+      const ts = nowIso();
+      const purchaseId = newId();
+      const createdLines: PurchaseLine[] = [];
+      const createdPantry: PantryItem[] = [];
+
+      for (const l of draftLines) {
+        const line: PurchaseLine = {
+          id: newId(),
+          purchaseId,
+          rawName: l.rawName,
+          displayName: l.displayName,
+          quantity: l.quantity,
+          unit: l.unit,
+          packageSizeText: l.packageSizeText,
+          unitPriceRub: l.unitPriceRub,
+          lineTotalRub: l.lineTotalRub,
+          discountRub: l.discountRub,
+          isFood: l.isFood,
+          excluded: l.excluded,
+          productId: l.productId,
+          barcode: l.barcode,
+          retailerSku: l.retailerSku,
+          matchConfidence: l.matchConfidence,
+          pantryItemId: null,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        purchaseLines.set(line.id, line);
+        createdLines.push(line);
+      }
+
+      for (let i = 0; i < draftLines.length; i++) {
+        const apply = draftLines[i];
+        if (!linesForPantryApply([apply]).length) continue;
+        const unit: PantryUnit = apply.unit ?? 'pcs';
+        if (apply.quantity != null) assertNonNegativeFinite(apply.quantity, 'quantity');
+        const quantityG = unit === 'g' || unit === 'ml' ? apply.quantity : null;
+        const quantityCount = unit === 'pcs' ? apply.quantity : null;
+        const pantry: PantryItem = {
+          id: newId(),
+          displayName: apply.displayName,
+          productId: apply.productId,
+          location: 'pantry',
+          quantityG,
+          quantityCount,
+          unit,
+          expiresOn: null,
+          source: 'purchase',
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        pantryItems.set(pantry.id, pantry);
+        createdPantry.push(pantry);
+        const line = createdLines[i];
+        line.pantryItemId = pantry.id;
+        line.updatedAt = ts;
+        purchaseLines.set(line.id, line);
+      }
+
+      const expenseAmount = resolveExpenseAmountRub({
+        totalRub: input.totalRub ?? null,
+        lines: draftLines,
+      });
+      let expense: FoodExpense | null = null;
+      if (expenseAmount != null) {
+        expense = {
+          id: newId(),
+          amountRub: expenseAmount,
+          category: input.expenseCategory ?? 'groceries',
+          spentOn: input.purchasedOn,
+          note: `Покупка · ${(input.storeLabel ?? 'чек').slice(0, 40)} · ${draftLines.length} поз.`,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        foodExpenses.set(expense.id, expense);
+      }
+
+      const purchase: Purchase = {
+        id: purchaseId,
+        status: input.status,
+        storePreferenceId: input.storePreferenceId ?? null,
+        storeLabel: input.storeLabel ?? null,
+        purchasedOn: input.purchasedOn,
+        currency: 'RUB',
+        totalRub: input.totalRub ?? null,
+        sourceKind: input.sourceKind,
+        fingerprint,
+        rawPayloadRef: input.rawPayloadRef ?? null,
+        parseConfidence: input.parseConfidence ?? null,
+        confirmedAt: ts,
+        expenseId: expense?.id ?? null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      purchases.set(purchase.id, purchase);
+      notify();
+      return {
+        purchase: { ...purchase },
+        lines: createdLines.map((l) => ({ ...purchaseLines.get(l.id)! })),
+        pantryItems: createdPantry.map((p) => ({ ...p })),
+        expense: expense ? { ...expense } : null,
+      };
     },
     listCookedBatches(opts) {
       return [...cookedBatches.values()]
@@ -2676,6 +2981,8 @@ export function createMemoryFoodRepository(seed?: {
       foodBudgets.clear();
       foodExpenses.clear();
       storePreferences.clear();
+      purchases.clear();
+      purchaseLines.clear();
 
       Object.assign(profile, next.profile);
       for (const p of next.products) products.set(p.id, { ...p });
@@ -2707,6 +3014,8 @@ export function createMemoryFoodRepository(seed?: {
       for (const b of next.foodBudgets) foodBudgets.set(b.id, { ...b });
       for (const e of next.foodExpenses) foodExpenses.set(e.id, { ...e });
       for (const s of next.storePreferences) storePreferences.set(s.id, { ...s });
+      for (const p of next.purchases) purchases.set(p.id, { ...p });
+      for (const l of next.purchaseLines) purchaseLines.set(l.id, { ...l });
 
       notify();
       return summarizeSnapshot(next);
@@ -2734,6 +3043,8 @@ export function createMemoryFoodRepository(seed?: {
       foodBudgets.clear();
       foodExpenses.clear();
       storePreferences.clear();
+      purchases.clear();
+      purchaseLines.clear();
       for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;

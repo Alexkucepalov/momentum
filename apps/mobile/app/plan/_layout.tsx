@@ -20,7 +20,7 @@ export default function PlanLayout() {
       <Stack.Screen name="shop" options={{ title: 'Мои покупки' }} />
       <Stack.Screen name="budget" options={{ title: 'Бюджет питания' }} />
       <Stack.Screen name="stores" options={{ title: 'Магазины' }} />
-      <Stack.Screen name="receipt" options={{ title: 'Чек вручную' }} />
+      <Stack.Screen name="receipt" options={{ title: 'Импорт покупки' }} />
     </Stack>
   );
 }

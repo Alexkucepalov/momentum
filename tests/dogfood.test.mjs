@@ -30,7 +30,7 @@ test('repository persists dogfood start in snapshot v5', () => {
   repo.startDogfood('2026-10-10');
   assert.equal(repo.dogfoodStatus('2026-10-17').dayNumber, 8);
   const snap = repo.toSnapshot();
-  assert.equal(snap.version, 13);
+  assert.equal(snap.version, 14);
   assert.equal(snap.profile.dogfoodStartedOn, '2026-10-10');
   const restored = createMemoryFoodRepository({ snapshot: snap });
   assert.equal(restored.dogfoodStatus('2026-10-17').dayNumber, 8);
