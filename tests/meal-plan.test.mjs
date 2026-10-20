@@ -58,7 +58,7 @@ test('create draft does not touch diary totals', () => {
   assert.equal(plan.status, 'draft');
   assert.equal(repo.dailyTotals('2026-10-20').entryCount, before);
   assert.ok(repo.listPlannedMeals(plan.id).length > 0);
-  assert.equal(repo.toSnapshot().version, 12);
+  assert.equal(repo.toSnapshot().version, 13);
 
   const second = repo.createMealPlanDraft({
     startDateLocal: '2026-10-20',

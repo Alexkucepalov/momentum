@@ -12,6 +12,12 @@ import {
   type BasketTotal,
 } from '../domain/aggregateShopping';
 import {
+  buildMonthBudgetSnapshot,
+  estimateEatenCostRub,
+  sumEatenCost,
+  type MonthBudgetSnapshot,
+} from '../domain/foodBudget';
+import {
   buildMealPlanDraft,
   type MealPlanDiversity,
   type MealPlanPeriodDays,
@@ -29,7 +35,10 @@ import type {
   CookedBatch,
   DailyNutritionTargets,
   DailyTotals,
+  FoodBudget,
   FoodEntry,
+  FoodExpense,
+  FoodExpenseCategory,
   FoodProduct,
   HabitCheck,
   HabitKey,
@@ -47,6 +56,8 @@ import type {
   ShoppingList,
   ShoppingListStatus,
   ShoppingPriceSource,
+  StorePreference,
+  StorePreferenceId,
   Recipe,
   RecipeIngredient,
   SavedMeal,
@@ -311,6 +322,8 @@ export type FoodRepository = {
   listMealPlans(): MealPlan[];
   getMealPlan(planId: string): MealPlan | null;
   listPlannedMeals(planId: string): PlannedMeal[];
+  /** Planned meals for a calendar day across active/draft plans (not archived). */
+  listPlannedMealsForDate(dateLocal: string): PlannedMeal[];
   /**
    * Build a draft plan from recipes (does not log diary).
    * Empty recipe list → empty planned meals (allowed).
@@ -365,6 +378,31 @@ export type FoodRepository = {
     storeId?: string | null;
     source?: ShoppingPriceSource;
   }): ProductPrice;
+  getFoodBudget(month: string): FoodBudget | null;
+  setFoodBudget(month: string, limitRub: number): FoodBudget;
+  listFoodExpenses(month: string): FoodExpense[];
+  addFoodExpense(input: {
+    amountRub: number;
+    category: FoodExpenseCategory;
+    spentOn: string;
+    note?: string | null;
+  }): FoodExpense;
+  softDeleteFoodExpense(expenseId: string): FoodExpense;
+  monthBudgetSnapshot(month: string, asOfDateLocal: string): MonthBudgetSnapshot;
+  /**
+   * Amortized cost of diary entries in month using latest user product prices.
+   * Prices for g/ml are treated as ₽ per 1000 g/ml; pcs as ₽ per 1 piece.
+   * Incomplete when any entry lacks a matching price (unknown ≠ 0).
+   */
+  monthEatenCostEstimate(month: string): {
+    totalRub: number | null;
+    knownSumRub: number | null;
+    knownCount: number;
+    totalCount: number;
+    incomplete: boolean;
+  };
+  listStorePreferences(): StorePreference[];
+  setStorePreferenceSelected(storeId: StorePreferenceId, selected: boolean): StorePreference;
   exportAll(): string;
   /**
    * Replace all local data from export JSON (validated).
@@ -571,10 +609,72 @@ function normalizeProductPrice(raw: ProductPrice): ProductPrice {
   };
 }
 
+const DEFAULT_STORES: Array<{ storeId: StorePreferenceId; label: string }> = [
+  { storeId: 'pyaterochka', label: 'Пятёрочка' },
+  { storeId: 'chizhik', label: 'Чижик' },
+  { storeId: 'krasnoe_beloe', label: 'Красное & Белое' },
+  { storeId: 'metro', label: 'METRO' },
+  { storeId: 'samokat', label: 'Самокат' },
+  { storeId: 'perekrestok', label: 'Перекрёсток' },
+  { storeId: 'magnit', label: 'Магнит' },
+  { storeId: 'vkusvill', label: 'ВкусВилл' },
+  { storeId: 'other', label: 'Другие' },
+];
+
+function defaultStorePreferences(updatedAt: string): StorePreference[] {
+  return DEFAULT_STORES.map((s) => ({
+    id: `store:${s.storeId}`,
+    storeId: s.storeId,
+    label: s.label,
+    selected: false,
+    updatedAt,
+  }));
+}
+
+function normalizeFoodBudget(raw: FoodBudget): FoodBudget {
+  return {
+    id: raw.id,
+    month: raw.month,
+    limitRub: raw.limitRub,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeFoodExpense(raw: FoodExpense): FoodExpense {
+  const category: FoodExpenseCategory =
+    raw.category === 'cafe' || raw.category === 'office' || raw.category === 'delivery'
+      ? raw.category
+      : 'groceries';
+  return {
+    id: raw.id,
+    amountRub: raw.amountRub,
+    category,
+    spentOn: raw.spentOn,
+    note: raw.note ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeStorePreference(raw: StorePreference): StorePreference {
+  return {
+    id: raw.id,
+    storeId: raw.storeId,
+    label: raw.label,
+    selected: !!raw.selected,
+    updatedAt: raw.updatedAt,
+  };
+}
+
 function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   if (!raw) return undefined;
+  const ts = nowIso();
+  const prefs = (raw.storePreferences ?? []).map(normalizeStorePreference);
   return {
-    version: 12,
+    version: 13,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
@@ -598,6 +698,9 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     shoppingLists: (raw.shoppingLists ?? []).map(normalizeShoppingList),
     shoppingItems: (raw.shoppingItems ?? []).map(normalizeShoppingItem),
     productPrices: (raw.productPrices ?? []).map(normalizeProductPrice),
+    foodBudgets: (raw.foodBudgets ?? []).map(normalizeFoodBudget),
+    foodExpenses: (raw.foodExpenses ?? []).map(normalizeFoodExpense),
+    storePreferences: prefs.length > 0 ? prefs : defaultStorePreferences(ts),
   };
 }
 
@@ -695,6 +798,19 @@ export function createMemoryFoodRepository(seed?: {
   const productPrices = new Map<string, ProductPrice>(
     (snap?.productPrices ?? []).map((p) => [p.id, { ...p }]),
   );
+  const foodBudgets = new Map<string, FoodBudget>(
+    (snap?.foodBudgets ?? []).map((b) => [b.id, { ...b }]),
+  );
+  const foodExpenses = new Map<string, FoodExpense>(
+    (snap?.foodExpenses ?? []).map((e) => [e.id, { ...e }]),
+  );
+  const storePreferences = new Map<string, StorePreference>(
+    (
+      snap?.storePreferences?.length
+        ? snap.storePreferences
+        : defaultStorePreferences(nowIso())
+    ).map((s) => [s.id, { ...s }]),
+  );
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
 
@@ -774,7 +890,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 12,
+        version: 13,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -798,6 +914,9 @@ export function createMemoryFoodRepository(seed?: {
         shoppingLists: [...shoppingLists.values()].map((l) => ({ ...l })),
         shoppingItems: [...shoppingItems.values()].map((i) => ({ ...i })),
         productPrices: [...productPrices.values()].map((p) => ({ ...p })),
+        foodBudgets: [...foodBudgets.values()].map((b) => ({ ...b })),
+        foodExpenses: [...foodExpenses.values()].map((e) => ({ ...e })),
+        storePreferences: [...storePreferences.values()].map((s) => ({ ...s })),
       };
     },
     getProfile: () => ({ ...profile }),
@@ -1921,6 +2040,26 @@ export function createMemoryFoodRepository(seed?: {
           return order.indexOf(a.meal) - order.indexOf(b.meal);
         });
     },
+    listPlannedMealsForDate(dateLocal) {
+      const activePlanIds = new Set(
+        [...mealPlans.values()]
+          .filter((p) => !p.deletedAt && (p.status === 'draft' || p.status === 'active'))
+          .map((p) => p.id),
+      );
+      return [...plannedMeals.values()]
+        .filter(
+          (m) =>
+            !m.deletedAt &&
+            m.dateLocal === dateLocal &&
+            activePlanIds.has(m.planId) &&
+            m.status !== 'skipped',
+        )
+        .map((m) => ({ ...m }))
+        .sort((a, b) => {
+          const order: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+          return order.indexOf(a.meal) - order.indexOf(b.meal);
+        });
+    },
     createMealPlanDraft(input) {
       if (input.budgetRub != null) assertNonNegativeFinite(input.budgetRub, 'budgetRub');
       const recipePicks = [...recipes.values()]
@@ -2224,9 +2363,14 @@ export function createMemoryFoodRepository(seed?: {
       if (args.priceRub !== null) {
         item.priceSource = item.priceSource ?? 'user';
         const key = shoppingKey(item.displayName, item.unit);
+        // Persist ₽/kg (or ₽/L) for eaten-cost amortization; line price stays on item.
+        let catalogPrice = args.priceRub;
+        if ((item.unit === 'g' || item.unit === 'ml') && item.needToBuy > 0) {
+          catalogPrice = (args.priceRub / item.needToBuy) * 1000;
+        }
         api.upsertProductPrice({
           productKey: key,
-          priceRub: args.priceRub,
+          priceRub: catalogPrice,
           unit: item.unit,
           observedOn: item.priceAsOf ?? nowIso().slice(0, 10),
           source: item.priceSource ?? 'user',
@@ -2298,6 +2442,126 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...row };
     },
+    getFoodBudget(month) {
+      const b = [...foodBudgets.values()].find((x) => !x.deletedAt && x.month === month);
+      return b ? { ...b } : null;
+    },
+    setFoodBudget(month, limitRub) {
+      assertPositiveFinite(limitRub, 'limitRub');
+      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      const ts = nowIso();
+      const existing = [...foodBudgets.values()].find((x) => !x.deletedAt && x.month === month);
+      if (existing) {
+        existing.limitRub = limitRub;
+        existing.updatedAt = ts;
+        notify();
+        return { ...existing };
+      }
+      const row: FoodBudget = {
+        id: newId(),
+        month,
+        limitRub,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      foodBudgets.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    listFoodExpenses(month) {
+      return [...foodExpenses.values()]
+        .filter((e) => !e.deletedAt && e.spentOn.startsWith(month))
+        .map((e) => ({ ...e }))
+        .sort((a, b) => b.spentOn.localeCompare(a.spentOn));
+    },
+    addFoodExpense(input) {
+      assertNonNegativeFinite(input.amountRub, 'amountRub');
+      const ts = nowIso();
+      const row: FoodExpense = {
+        id: newId(),
+        amountRub: input.amountRub,
+        category: input.category,
+        spentOn: input.spentOn,
+        note: input.note?.trim() ? input.note.trim() : null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      foodExpenses.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    softDeleteFoodExpense(expenseId) {
+      const e = foodExpenses.get(expenseId);
+      if (!e || e.deletedAt) throw new Error('Expense not found');
+      e.deletedAt = nowIso();
+      e.updatedAt = e.deletedAt;
+      notify();
+      return { ...e };
+    },
+    monthBudgetSnapshot(month, asOfDateLocal) {
+      const budget = api.getFoodBudget(month);
+      const amounts = api.listFoodExpenses(month).map((e) => e.amountRub);
+      return buildMonthBudgetSnapshot({
+        month,
+        limitRub: budget?.limitRub ?? null,
+        expenseAmounts: amounts,
+        asOfDateLocal,
+      });
+    },
+    monthEatenCostEstimate(month) {
+      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      const priceByKey = new Map<string, ProductPrice>();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const prev = priceByKey.get(pp.productKey);
+        if (!prev || pp.observedOn >= prev.observedOn) priceByKey.set(pp.productKey, pp);
+      }
+      const monthEntries = [...entries.values()].filter(
+        (e) => !e.deletedAt && e.dateLocal.startsWith(month),
+      );
+      const estimates: Array<number | null> = monthEntries.map((e) => {
+        const keyG = shoppingKey(e.displayName, 'g');
+        const keyMl = shoppingKey(e.displayName, 'ml');
+        const keyPcs = shoppingKey(e.displayName, 'pcs');
+        const pp = priceByKey.get(keyG) ?? priceByKey.get(keyMl) ?? priceByKey.get(keyPcs) ?? null;
+        if (!pp) return null;
+        if (pp.unit === 'pcs') {
+          // Diary is grams — cannot amortize piece price honestly.
+          return null;
+        }
+        return estimateEatenCostRub({
+          grams: e.grams,
+          priceRub: pp.priceRub,
+          pricePerUnitG: 1000,
+        });
+      });
+      const summed = sumEatenCost(estimates);
+      return {
+        totalRub: summed.total,
+        knownSumRub: summed.knownSum,
+        knownCount: summed.knownCount,
+        totalCount: summed.totalCount,
+        incomplete: summed.incomplete,
+      };
+    },
+    listStorePreferences() {
+      if (storePreferences.size === 0) {
+        for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
+      }
+      return [...storePreferences.values()]
+        .map((s) => ({ ...s }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+    },
+    setStorePreferenceSelected(storeId, selected) {
+      const row = [...storePreferences.values()].find((s) => s.storeId === storeId);
+      if (!row) throw new Error('Store preference not found');
+      row.selected = selected;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
+    },
     exportAll() {
       return JSON.stringify(
         {
@@ -2333,6 +2597,9 @@ export function createMemoryFoodRepository(seed?: {
       shoppingLists.clear();
       shoppingItems.clear();
       productPrices.clear();
+      foodBudgets.clear();
+      foodExpenses.clear();
+      storePreferences.clear();
 
       Object.assign(profile, next.profile);
       for (const p of next.products) products.set(p.id, { ...p });
@@ -2361,6 +2628,9 @@ export function createMemoryFoodRepository(seed?: {
       for (const l of next.shoppingLists) shoppingLists.set(l.id, { ...l });
       for (const i of next.shoppingItems) shoppingItems.set(i.id, { ...i });
       for (const p of next.productPrices) productPrices.set(p.id, { ...p });
+      for (const b of next.foodBudgets) foodBudgets.set(b.id, { ...b });
+      for (const e of next.foodExpenses) foodExpenses.set(e.id, { ...e });
+      for (const s of next.storePreferences) storePreferences.set(s.id, { ...s });
 
       notify();
       return summarizeSnapshot(next);
@@ -2385,6 +2655,10 @@ export function createMemoryFoodRepository(seed?: {
       shoppingLists.clear();
       shoppingItems.clear();
       productPrices.clear();
+      foodBudgets.clear();
+      foodExpenses.clear();
+      storePreferences.clear();
+      for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;
       profile.dailyEnergyKcal = null;

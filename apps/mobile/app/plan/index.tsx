@@ -10,7 +10,14 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: '/plan/eat-now' | '/plan/pantry' | '/plan/week' | '/plan/shop' | null;
+  href:
+    | '/plan/eat-now'
+    | '/plan/pantry'
+    | '/plan/week'
+    | '/plan/shop'
+    | '/plan/budget'
+    | '/plan/stores'
+    | null;
   soon?: boolean;
 };
 
@@ -30,13 +37,6 @@ const ITEMS: HubItem[] = [
     href: '/plan/pantry',
   },
   {
-    key: 'cook',
-    title: 'Что приготовить?',
-    subtitle: 'Подбор из рецептов',
-    icon: 'restaurant-outline',
-    href: '/plan/eat-now',
-  },
-  {
     key: 'week',
     title: 'Меню на неделю',
     subtitle: '3–7 дней и порции',
@@ -49,6 +49,20 @@ const ITEMS: HubItem[] = [
     subtitle: 'Список и оценка цен',
     icon: 'cart-outline',
     href: '/plan/shop',
+  },
+  {
+    key: 'budget',
+    title: 'Бюджет питания',
+    subtitle: 'Лимит, расходы, прогноз',
+    icon: 'wallet-outline',
+    href: '/plan/budget',
+  },
+  {
+    key: 'stores',
+    title: 'Магазины',
+    subtitle: 'Предпочтения, без live-цен',
+    icon: 'storefront-outline',
+    href: '/plan/stores',
   },
 ];
 

@@ -27,6 +27,7 @@ import {
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
 import { MealSection } from '@/src/features/diary/MealSection';
+import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
@@ -241,6 +242,8 @@ export default function FoodScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
+
+        <TodayPlanStrip />
 
         <CopyYesterdayButton />
 

@@ -343,8 +343,51 @@ export type ProductPrice = {
   deletedAt: string | null;
 };
 
+export type FoodExpenseCategory = 'groceries' | 'cafe' | 'office' | 'delivery';
+
+/** Monthly food spend limit (user-set). */
+export type FoodBudget = {
+  id: string;
+  month: string; // YYYY-MM
+  limitRub: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type FoodExpense = {
+  id: string;
+  amountRub: number;
+  category: FoodExpenseCategory;
+  spentOn: string; // YYYY-MM-DD
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+/** Preferred retailers — tags only, no live catalog. */
+export type StorePreferenceId =
+  | 'pyaterochka'
+  | 'chizhik'
+  | 'krasnoe_beloe'
+  | 'metro'
+  | 'samokat'
+  | 'perekrestok'
+  | 'magnit'
+  | 'vkusvill'
+  | 'other';
+
+export type StorePreference = {
+  id: string;
+  storeId: StorePreferenceId;
+  label: string;
+  selected: boolean;
+  updatedAt: string;
+};
+
 export type StoreSnapshot = {
-  version: 12;
+  version: 13;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -365,6 +408,9 @@ export type StoreSnapshot = {
   shoppingLists: ShoppingList[];
   shoppingItems: ShoppingItem[];
   productPrices: ProductPrice[];
+  foodBudgets: FoodBudget[];
+  foodExpenses: FoodExpense[];
+  storePreferences: StorePreference[];
 };
 
 type LegacyRecipe = Omit<
@@ -404,7 +450,7 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
 
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -442,4 +488,7 @@ export type StoreSnapshotAny = {
   shoppingLists?: ShoppingList[];
   shoppingItems?: ShoppingItem[];
   productPrices?: ProductPrice[];
+  foodBudgets?: FoodBudget[];
+  foodExpenses?: FoodExpense[];
+  storePreferences?: StorePreference[];
 };
