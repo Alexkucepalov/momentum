@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import {
@@ -35,6 +37,7 @@ function statusIcon(
 
 export default function ImportPersonalRecipesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { repo, refresh, showFlash, revision } = useData();
   const previews = useMemo(() => listPersonalRecipePreviews(), []);
   const [scope, setScope] = useState<Scope>('suggested');
@@ -202,13 +205,14 @@ export default function ImportPersonalRecipesScreen() {
         </View>
 
         {visible.length === 0 ? (
-          <View style={styles.empty}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="folder-open-outline" size={28} color={colors.textMuted} />
-            </View>
-            <Text style={styles.emptyTitle}>В этом фильтре пусто</Text>
-            <Text style={styles.emptyBody}>Переключи вкладку выше — или смотри «Все».</Text>
-          </View>
+          <EmptyState
+            compact
+            icon="folder-open-outline"
+            title="В этом фильтре пусто"
+            body="Переключи вкладку выше — или открой «Все»."
+            actionLabel="Показать все"
+            onAction={() => setScope('all')}
+          />
         ) : (
           visible.map((p) => {
             const on = selected.has(p.importKey);
@@ -235,7 +239,9 @@ export default function ImportPersonalRecipesScreen() {
                 ]}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on, disabled: blocked }}
-                accessibilityLabel={p.title}
+                accessibilityLabel={`${p.title}. ${statusLabel(p.status, p.verifiedByUser)}${
+                  blocked ? '. Нельзя импортировать без грамм' : ''
+                }`}
               >
                 <View style={styles.cardHead}>
                   <View style={[styles.checkWrap, on && styles.checkWrapOn]}>
@@ -311,7 +317,7 @@ export default function ImportPersonalRecipesScreen() {
         )}
       </FormScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.lg) }]}>
         <PrimaryButton
           label={
             selectedReady === 0
@@ -320,12 +326,17 @@ export default function ImportPersonalRecipesScreen() {
           }
           onPress={onImport}
           disabled={selectedReady === 0}
+          accessibilityHint={
+            selectedReady === 0
+              ? 'Сначала отметь рецепты с известными граммами'
+              : `Импортирует ${selectedReady} рецептов с id import:`
+          }
         />
         <Pressable
           onPress={() => router.back()}
           style={styles.back}
           accessibilityRole="button"
-          accessibilityLabel="Назад"
+          accessibilityLabel="Назад к рецептам"
         >
           <Text style={styles.backText}>Назад к рецептам</Text>
         </Pressable>
@@ -431,32 +442,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toolText: { fontWeight: '700', fontSize: type.caption, color: colors.text },
-  empty: {
-    padding: space.xxl,
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.lg,
-  },
-  emptyTitle: {
-    fontWeight: '800',
-    fontSize: type.subtitle,
-    color: colors.text,
-    marginBottom: space.sm,
-    textAlign: 'center',
-  },
-  emptyBody: {
-    fontSize: type.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
   card: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -471,51 +456,53 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  cardOn: { borderColor: colors.text, borderWidth: 2, backgroundColor: '#F8F9FA' },
-  cardBlocked: { opacity: 0.6 },
+  cardOn: { borderColor: colors.accent, borderWidth: 2, backgroundColor: colors.accentSoft },
+  cardBlocked: { opacity: 0.62 },
   cardHead: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
   checkWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accentSoft,
+    width: touchMin - 8,
+    height: touchMin - 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkWrapOn: { backgroundColor: colors.primaryButton },
-  cardHeadText: { flex: 1 },
-  title: { fontWeight: '800', fontSize: type.body, color: colors.text },
+  checkWrapOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+  cardHeadText: { flex: 1, gap: 2 },
+  title: { fontWeight: '800', fontSize: type.subtitle, color: colors.text },
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space.xs,
-    marginTop: 6,
+    marginTop: 4,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.background,
     borderRadius: radius.pill,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   status: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
   alreadyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.background,
     borderRadius: radius.pill,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   alreadyText: { fontSize: type.micro, fontWeight: '700', color: colors.success },
   approxBadge: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.background,
     borderRadius: radius.pill,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   approxText: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
   countsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
@@ -533,12 +520,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: space.sm,
   },
-  warn: { flex: 1, fontSize: type.micro, color: colors.textMuted, lineHeight: 16 },
+  warn: { flex: 1, fontSize: type.caption, color: colors.textMuted, lineHeight: 18 },
   footer: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
-    padding: space.lg,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
     gap: space.sm,
   },
   back: { minHeight: touchMin, alignItems: 'center', justifyContent: 'center' },
