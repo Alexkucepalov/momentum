@@ -618,7 +618,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  pressed: { opacity: 0.88 },
   hero: { alignItems: 'center', marginBottom: space.xl },
   avatar: {
     width: 72,
