@@ -1,0 +1,190 @@
+[
+  {
+    "file": "01-today-empty.png",
+    "note": "Сегодня · empty"
+  },
+  {
+    "file": "02-food-empty.png",
+    "note": "Питание · empty"
+  },
+  {
+    "file": "02b-food-search-no-results.png",
+    "note": "Питание · каталог · поиск без результатов"
+  },
+  {
+    "file": "03-activity-empty.png",
+    "note": "Активность · empty"
+  },
+  {
+    "file": "04-progress-empty.png",
+    "note": "Прогресс · empty"
+  },
+  {
+    "file": "05-profile.png",
+    "note": "Профиль"
+  },
+  {
+    "file": "10-recipes-empty.png",
+    "note": "Рецепты · empty"
+  },
+  {
+    "file": "11-recipe-form-empty.png",
+    "note": "Форма нового рецепта"
+  },
+  {
+    "file": "12-recipe-import-text-empty.png",
+    "note": "Импорт из текста · empty"
+  },
+  {
+    "file": "13-recipe-import-personal.png",
+    "note": "Архив личных рецептов"
+  },
+  {
+    "file": "13b-recipe-import-personal-ready.png",
+    "note": "Архив · к импорту"
+  },
+  {
+    "file": "20-plan-hub.png",
+    "note": "План · хаб"
+  },
+  {
+    "file": "21-eat-now-empty.png",
+    "note": "Eat Now · empty"
+  },
+  {
+    "file": "22-pantry-empty.png",
+    "note": "Запасы · empty + форма"
+  },
+  {
+    "file": "23-week-menu-empty.png",
+    "note": "Меню · композер"
+  },
+  {
+    "file": "24-shop-empty.png",
+    "note": "Покупки · empty"
+  },
+  {
+    "file": "25-budget-empty.png",
+    "note": "Бюджет · empty + формы"
+  },
+  {
+    "file": "26-stores.png",
+    "note": "Магазины"
+  },
+  {
+    "file": "27-purchase-import-empty.png",
+    "note": "Импорт покупки · paste"
+  },
+  {
+    "file": "27b-purchase-manual-form.png",
+    "note": "Импорт покупки · вручную"
+  },
+  {
+    "file": "30-modal-add-food.png",
+    "note": "Модалка · Добавить еду"
+  },
+  {
+    "file": "30b-modal-add-food-quick.png",
+    "note": "Модалка · быстрый ввод"
+  },
+  {
+    "file": "31-modal-habit-composer.png",
+    "note": "Модалка · привычка"
+  },
+  {
+    "file": "31b-modal-challenge-composer.png",
+    "note": "Модалка · челлендж"
+  },
+  {
+    "file": "32-modal-workout.png",
+    "note": "Модалка · тренировка"
+  },
+  {
+    "file": "40-recipes-filled.png",
+    "note": "Рецепты · filled"
+  },
+  {
+    "file": "40b-recipes-search.png",
+    "note": "Рецепты · поиск"
+  },
+  {
+    "file": "41-recipe-detail.png",
+    "note": "Рецепт · деталь"
+  },
+  {
+    "file": "41b-recipe-recook-modal.png",
+    "note": "Рецепт · Приготовить снова"
+  },
+  {
+    "file": "41c-recipe-portion-modal.png",
+    "note": "Рецепт · порция в дневник"
+  },
+  {
+    "file": "42-recipe-form.png",
+    "note": "Форма рецепта"
+  },
+  {
+    "file": "43-recipe-import-text-filled.png",
+    "note": "Импорт текста · filled"
+  },
+  {
+    "file": "43b-recipe-import-text-preview.png",
+    "note": "Импорт текста → редактор"
+  },
+  {
+    "file": "50-purchase-paste-filled.png",
+    "note": "Импорт покупки · paste filled"
+  },
+  {
+    "file": "51-purchase-preview.png",
+    "note": "Импорт покупки · превью"
+  },
+  {
+    "file": "52-pantry-after-purchase.png",
+    "note": "Запасы · после покупки"
+  },
+  {
+    "file": "52b-pantry-add-form-filled.png",
+    "note": "Запасы · форма filled"
+  },
+  {
+    "file": "52c-pantry-filled.png",
+    "note": "Запасы · filled"
+  },
+  {
+    "file": "53-week-composer.png",
+    "note": "Меню · композер"
+  },
+  {
+    "file": "54-week-menu-filled.png",
+    "note": "Меню · filled"
+  },
+  {
+    "file": "55-shop-filled.png",
+    "note": "Покупки · filled"
+  },
+  {
+    "file": "56-budget-filled.png",
+    "note": "Бюджет · filled"
+  },
+  {
+    "file": "57-eat-now-filled.png",
+    "note": "Eat Now · filled"
+  },
+  {
+    "file": "58-plan-hub-after.png",
+    "note": "План · хаб после наполнения"
+  },
+  {
+    "file": "60-food-filled.png",
+    "note": "Питание · filled"
+  },
+  {
+    "file": "60b-food-search-results.png",
+    "note": "Питание · поиск с результатами"
+  },
+  {
+    "file": "61-today-filled.png",
+    "note": "Сегодня · filled"
+  }
+]
