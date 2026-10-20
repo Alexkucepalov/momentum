@@ -92,3 +92,28 @@ test('logPlannedMealToDiary is explicit; move and portion work', () => {
   assert.equal(repo.dailyTotals('2026-10-21').entryCount, 1);
   assert.equal(repo.listPlannedMeals(plan.id).find((m) => m.id === meal.id).status, 'logged');
 });
+
+test('addPlannedMeal creates empty draft and never logs diary', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const product = repo.createProduct({
+    name: 'Творог',
+    energyKcal: 90,
+    proteinG: 16,
+    fatG: 2,
+    carbG: 3,
+  });
+  const before = repo.dailyTotals('2026-10-22').entryCount;
+  const planned = repo.addPlannedMeal({
+    dateLocal: '2026-10-22',
+    meal: 'snack',
+    displayName: 'Творог',
+    grams: 150,
+    productId: product.id,
+  });
+  assert.equal(planned.status, 'planned');
+  assert.equal(planned.productId, product.id);
+  assert.equal(repo.dailyTotals('2026-10-22').entryCount, before);
+  const today = repo.listPlannedMealsForDate('2026-10-22');
+  assert.equal(today.length, 1);
+  assert.equal(today[0].displayName, 'Творог');
+});

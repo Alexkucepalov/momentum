@@ -303,7 +303,29 @@ export default function EatNowScreen() {
         ) : (
           <View style={styles.cards} accessibilityRole="list">
             {candidates.map((c) => (
-              <CandidateCard key={`${c.kind}:${c.id}`} candidate={c} onPress={() => openCandidate(c)} />
+              <CandidateCard
+                key={`${c.kind}:${c.id}`}
+                candidate={c}
+                onDiary={() => openCandidate(c)}
+                onPlan={() => {
+                  let recipeId: string | null = c.kind === 'recipe' ? c.id : null;
+                  const productId = c.kind === 'product' ? c.id : null;
+                  if (c.kind === 'cooked_batch') {
+                    recipeId =
+                      repo.listCookedBatches().find((b) => b.id === c.id)?.recipeId ?? null;
+                  }
+                  repo.addPlannedMeal({
+                    dateLocal,
+                    meal,
+                    displayName: c.title,
+                    grams: c.suggestedGrams,
+                    recipeId,
+                    productId,
+                  });
+                  refresh();
+                  showFlash(`В меню: ${c.title}`);
+                }}
+              />
             ))}
           </View>
         )}
@@ -364,10 +386,12 @@ export default function EatNowScreen() {
 
 function CandidateCard({
   candidate: c,
-  onPress,
+  onDiary,
+  onPlan,
 }: {
   candidate: EatNowCandidate;
-  onPress: () => void;
+  onDiary: () => void;
+  onPlan: () => void;
 }) {
   const macros = [
     fmtMacro(c.proteinG, ' г Б'),
@@ -376,12 +400,7 @@ function CandidateCard({
   ].filter(Boolean);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-      accessibilityRole="button"
-      accessibilityLabel={`${c.title}. ${c.suggestedGrams} грамм. ${c.explanation}`}
-    >
+    <View style={styles.card} accessibilityRole="summary" accessibilityLabel={c.title}>
       <View style={styles.cardTop}>
         <Text style={styles.cardTitle}>{c.title}</Text>
         {c.prepMinutes !== null ? (
@@ -394,8 +413,25 @@ function CandidateCard({
         {c.energyKcal !== null ? ` · ${Math.round(c.energyKcal)} ккал` : ''}
         {macros.length ? ` · ${macros.join(' · ')}` : ''}
       </Text>
-      <Text style={styles.cta}>В дневник</Text>
-    </Pressable>
+      <View style={styles.ctaRow}>
+        <Pressable
+          onPress={onDiary}
+          style={({ pressed }) => [styles.ctaPrimary, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`В дневник ${c.title}`}
+        >
+          <Text style={styles.ctaPrimaryText}>В дневник</Text>
+        </Pressable>
+        <Pressable
+          onPress={onPlan}
+          style={({ pressed }) => [styles.ctaSecondary, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`В план ${c.title}`}
+        >
+          <Text style={styles.ctaSecondaryText}>В план</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -453,5 +489,26 @@ const styles = StyleSheet.create({
   time: { fontSize: type.caption, color: colors.textSecondary, fontWeight: '600' },
   cardReason: { fontSize: type.caption, color: colors.textSecondary },
   portion: { fontSize: type.body, color: colors.text, fontWeight: '600', marginTop: 4 },
-  cta: { fontSize: type.caption, fontWeight: '800', color: colors.text, marginTop: 6 },
+  ctaRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
+  ctaPrimary: {
+    flex: 1,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+    paddingHorizontal: space.md,
+  },
+  ctaPrimaryText: { fontSize: type.caption, fontWeight: '800', color: colors.primaryButtonText },
+  ctaSecondary: {
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.lg,
+    backgroundColor: colors.background,
+  },
+  ctaSecondaryText: { fontSize: type.caption, fontWeight: '800', color: colors.text },
 });
