@@ -150,7 +150,7 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <JourneyShortcuts keys={['food', 'recipes', 'activity', 'progress']} />
+        <JourneyShortcuts keys={['food', 'eat-now', 'plan', 'recipes']} />
 
         <KcalRing
           variant="compact"

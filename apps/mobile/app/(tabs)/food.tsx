@@ -109,6 +109,15 @@ export default function FoodScreen() {
       headerRight: () => (
         <View style={styles.headerRow}>
           <Pressable
+            onPress={() => router.push('/plan')}
+            accessibilityRole="button"
+            accessibilityLabel="План питания"
+            style={styles.headerBtn}
+            hitSlop={8}
+          >
+            <Ionicons name="compass-outline" size={22} color={colors.text} />
+          </Pressable>
+          <Pressable
             onPress={() => router.push('/recipes')}
             accessibilityRole="button"
             accessibilityLabel="Рецепты"
@@ -218,6 +227,20 @@ export default function FoodScreen() {
           activityMinutes={repo.activityMinutesForDate(dateLocal)}
           onSetTarget={() => router.push('/profile')}
         />
+
+        <Pressable
+          onPress={() => router.push('/plan/eat-now')}
+          style={({ pressed }) => [styles.planBanner, pressed && styles.planBannerPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Что съесть сейчас по остатку КБЖУ"
+        >
+          <Ionicons name="flash-outline" size={18} color={colors.text} />
+          <View style={styles.planBannerText}>
+            <Text style={styles.planBannerTitle}>Что съесть сейчас?</Text>
+            <Text style={styles.planBannerSub}>Подбор по остатку КБЖУ</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
 
         <CopyYesterdayButton />
 
@@ -423,6 +446,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  planBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    marginBottom: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: touchMin,
+  },
+  planBannerPressed: { opacity: 0.88 },
+  planBannerText: { flex: 1, gap: 2 },
+  planBannerTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  planBannerSub: { fontSize: type.caption, color: colors.textSecondary },
   footerIcon: {
     width: touchMin,
     height: touchMin,
