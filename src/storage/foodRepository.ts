@@ -354,6 +354,18 @@ export type FoodRepository = {
   ): PlannedMeal;
   softDeletePlannedMeal(plannedMealId: string): PlannedMeal;
   /**
+   * Add a planned meal for a calendar day (never diary). Uses draft/active plan
+   * covering the date, or creates an empty 1-day draft.
+   */
+  addPlannedMeal(input: {
+    dateLocal: string;
+    meal: MealSlot;
+    displayName: string;
+    grams: number;
+    recipeId?: string | null;
+    productId?: string | null;
+  }): PlannedMeal;
+  /**
    * Explicitly log a planned meal into the diary. Marks planned status `logged`.
    * Never auto-called on plan create.
    */
@@ -2188,6 +2200,70 @@ export function createMemoryFoodRepository(seed?: {
       m.updatedAt = m.deletedAt;
       notify();
       return { ...m };
+    },
+    addPlannedMeal(input) {
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Display name required');
+      assertPositiveFinite(input.grams, 'grams');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
+        throw new Error('Invalid dateLocal');
+      }
+      const covering = [...mealPlans.values()]
+        .filter(
+          (p) =>
+            !p.deletedAt &&
+            (p.status === 'draft' || p.status === 'active') &&
+            p.startDate <= input.dateLocal &&
+            p.endDate >= input.dateLocal,
+        )
+        .sort((a, b) => {
+          if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+          return b.createdAt.localeCompare(a.createdAt);
+        });
+      let plan = covering[0] ?? null;
+      const ts = nowIso();
+      if (!plan) {
+        for (const prev of mealPlans.values()) {
+          if (!prev.deletedAt && prev.status === 'draft') {
+            prev.status = 'archived';
+            prev.updatedAt = ts;
+          }
+        }
+        plan = {
+          id: newId(),
+          startDate: input.dateLocal,
+          endDate: input.dateLocal,
+          status: 'draft',
+          budgetRub: null,
+          cookSessions: null,
+          diversity: null,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        mealPlans.set(plan.id, plan);
+      }
+      let recipeId = input.recipeId ?? null;
+      let productId = input.productId ?? null;
+      if (recipeId && productId) productId = null;
+      const meal: PlannedMeal = {
+        id: newId(),
+        planId: plan.id,
+        dateLocal: input.dateLocal,
+        meal: input.meal,
+        recipeId,
+        productId,
+        displayName: name,
+        grams: input.grams,
+        status: 'planned',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      plannedMeals.set(meal.id, meal);
+      plan.updatedAt = ts;
+      notify();
+      return { ...meal };
     },
     logPlannedMealToDiary(plannedMealId) {
       const m = plannedMeals.get(plannedMealId);
