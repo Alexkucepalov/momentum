@@ -91,6 +91,7 @@ export function createGitHubClient(
           merged_at: string | null;
           body: string | null;
           title: string;
+          head?: { ref?: string };
         }>
       >('GET', '/pulls?state=open&per_page=100');
       return rows.map((p) => ({
@@ -101,6 +102,7 @@ export function createGitHubClient(
         merged_at: p.merged_at,
         body: p.body,
         title: p.title,
+        headRef: p.head?.ref ?? null,
       }));
     },
 

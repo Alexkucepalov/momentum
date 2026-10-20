@@ -169,6 +169,7 @@ test('selectNextIssue skips issue with open linked PR', () => {
         merged_at: null,
         title: 'feat',
         body: 'Closes #12',
+        headRef: 'feat/12-x',
       },
     ],
     closedIssueNumbers: new Set(),

@@ -121,8 +121,36 @@ async function reconcileRunning(
     const status = (run.status || '').toUpperCase();
     log(`#${issue.number}: Cursor run ${found.state.runId} status=${status}`);
 
-    const prUrl =
+    let prUrl =
       run.git?.branches?.map((b) => b.prUrl).find(Boolean) ?? found.state.prUrl;
+
+    // Fallback: Cursor often finishes with a pushed branch but empty prUrl.
+    if (!prUrl && TERMINAL_OK.has(status)) {
+      const pulls = await gh.listOpenPulls();
+      const linked = pulls.find((p) =>
+        new RegExp(
+          `\\b(?:closes?|fixes?|resolves?)\\s+#${issue.number}\\b|#${issue.number}\\b`,
+          'i',
+        ).test(`${p.title}\n${p.body ?? ''}`),
+      );
+      const byBranch = pulls.find(
+        (p) =>
+          !!p.headRef &&
+          new RegExp(`(?:feat|fix|chore|cursor)/.*${issue.number}`, 'i').test(
+            p.headRef,
+          ),
+      );
+      prUrl = linked?.html_url ?? byBranch?.html_url ?? null;
+      if (!prUrl) {
+        const loose = pulls.find((p) => p.title.includes(`#${issue.number}`));
+        prUrl = loose?.html_url ?? null;
+      }
+      if (!prUrl) {
+        log(
+          `#${issue.number}: no PR in Cursor payload — check remote branch feat/${issue.number}-* and open PR manually`,
+        );
+      }
+    }
 
     if (TERMINAL_OK.has(status)) {
       const next: DispatchState = {
@@ -132,7 +160,7 @@ async function reconcileRunning(
         lastCheckedAt: now().toISOString(),
         failureReason: prUrl
           ? null
-          : 'Run finished without PR URL — founder must check Cursor dashboard',
+          : 'Run finished without PR URL — check cursor/* or feat/<n>-* branch on GitHub',
       };
       await persistState(gh, issue.number, found.commentId, next);
       await gh.removeLabel(issue.number, 'agent-running');
@@ -145,7 +173,7 @@ async function reconcileRunning(
         issue.number,
         prUrl
           ? `Dispatcher: agent finished. PR: ${prUrl} — awaiting human merge.`
-          : 'Dispatcher: agent finished but no PR URL found. Marked needs-human.',
+          : `Dispatcher: agent finished but no PR URL. Look for branch \`feat/${issue.number}-*\` / \`cursor/*\` and open a PR (Closes #${issue.number}).`,
       );
       return 'terminal';
     }
