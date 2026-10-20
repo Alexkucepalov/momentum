@@ -263,8 +263,43 @@ export type CookedBatch = {
   deletedAt: string | null;
 };
 
+export type MealPlanStatus = 'draft' | 'active' | 'archived';
+
+export type MealPlanDiversity = 'balanced' | 'fewer';
+
+/** Weekly (or multi-day) meal plan. Planned meals are never auto-logged as eaten. */
+export type MealPlan = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: MealPlanStatus;
+  budgetRub: number | null;
+  cookSessions: number | null;
+  diversity: MealPlanDiversity | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type PlannedMealStatus = 'planned' | 'logged' | 'skipped';
+
+export type PlannedMeal = {
+  id: string;
+  planId: string;
+  dateLocal: string;
+  meal: MealSlot;
+  recipeId: string | null;
+  productId: string | null;
+  displayName: string;
+  grams: number;
+  status: PlannedMealStatus;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 export type StoreSnapshot = {
-  version: 10;
+  version: 11;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -280,6 +315,8 @@ export type StoreSnapshot = {
   challenges: Challenge[];
   pantryItems: PantryItem[];
   cookedBatches: CookedBatch[];
+  mealPlans: MealPlan[];
+  plannedMeals: PlannedMeal[];
 };
 
 type LegacyRecipe = Omit<
@@ -319,7 +356,7 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
 
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -352,4 +389,6 @@ export type StoreSnapshotAny = {
   challenges?: Challenge[];
   pantryItems?: PantryItem[];
   cookedBatches?: CookedBatch[];
+  mealPlans?: MealPlan[];
+  plannedMeals?: PlannedMeal[];
 };

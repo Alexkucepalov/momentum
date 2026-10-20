@@ -119,5 +119,5 @@ test('v6 recipe migrates optional detail fields', () => {
   assert.equal(r?.description, null);
   assert.equal(r?.photoUri, null);
   assert.equal(r?.energyKcalPer100g, null);
-  assert.equal(repo.toSnapshot().version, 10);
+  assert.equal(repo.toSnapshot().version, 11);
 });

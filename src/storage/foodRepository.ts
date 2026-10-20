@@ -4,6 +4,11 @@ import { mergeCommonFoodCatalog } from '../domain/commonFoodCatalog';
 import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch';
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
+import {
+  buildMealPlanDraft,
+  type MealPlanDiversity,
+  type MealPlanPeriodDays,
+} from '../domain/mealPlanDraft';
 import { portion, type Nutrition } from '../domain/nutrition';
 import { rankProductFrequency } from '../domain/productFrequency';
 import { nutritionForRecipePortion } from '../domain/recipeNutrition';
@@ -21,11 +26,14 @@ import type {
   FoodProduct,
   HabitCheck,
   HabitKey,
+  MealPlan,
+  MealPlanStatus,
   MealSlot,
   NutritionSource,
   PantryItem,
   PantryLocation,
   PantryUnit,
+  PlannedMeal,
   Profile,
   Recipe,
   RecipeIngredient,
@@ -288,6 +296,43 @@ export type FoodRepository = {
     cookedAt?: string;
   }): CookedBatch;
   softDeleteCookedBatch(batchId: string): CookedBatch;
+  listMealPlans(): MealPlan[];
+  getMealPlan(planId: string): MealPlan | null;
+  listPlannedMeals(planId: string): PlannedMeal[];
+  /**
+   * Build a draft plan from recipes (does not log diary).
+   * Empty recipe list → empty planned meals (allowed).
+   */
+  createMealPlanDraft(input: {
+    startDateLocal: string;
+    days: MealPlanPeriodDays;
+    budgetRub?: number | null;
+    cookSessions?: number;
+    diversity?: MealPlanDiversity;
+  }): MealPlan;
+  activateMealPlan(planId: string): MealPlan;
+  archiveMealPlan(planId: string): MealPlan;
+  softDeleteMealPlan(planId: string): MealPlan;
+  updatePlannedMealGrams(plannedMealId: string, grams: number): PlannedMeal;
+  movePlannedMeal(
+    plannedMealId: string,
+    args: { dateLocal: string; meal: MealSlot },
+  ): PlannedMeal;
+  replacePlannedMeal(
+    plannedMealId: string,
+    args: {
+      recipeId?: string | null;
+      productId?: string | null;
+      displayName: string;
+      grams: number;
+    },
+  ): PlannedMeal;
+  softDeletePlannedMeal(plannedMealId: string): PlannedMeal;
+  /**
+   * Explicitly log a planned meal into the diary. Marks planned status `logged`.
+   * Never auto-called on plan create.
+   */
+  logPlannedMealToDiary(plannedMealId: string): FoodEntry;
   exportAll(): string;
   /**
    * Replace all local data from export JSON (validated).
@@ -402,10 +447,46 @@ function normalizeCookedBatch(raw: CookedBatch): CookedBatch {
   };
 }
 
+function normalizeMealPlan(raw: MealPlan): MealPlan {
+  const status: MealPlanStatus =
+    raw.status === 'active' || raw.status === 'archived' ? raw.status : 'draft';
+  return {
+    id: raw.id,
+    startDate: raw.startDate,
+    endDate: raw.endDate,
+    status,
+    budgetRub: raw.budgetRub ?? null,
+    cookSessions: raw.cookSessions ?? null,
+    diversity: raw.diversity === 'fewer' ? 'fewer' : raw.diversity === 'balanced' ? 'balanced' : null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizePlannedMeal(raw: PlannedMeal): PlannedMeal {
+  const status =
+    raw.status === 'logged' || raw.status === 'skipped' ? raw.status : 'planned';
+  return {
+    id: raw.id,
+    planId: raw.planId,
+    dateLocal: raw.dateLocal,
+    meal: raw.meal,
+    recipeId: raw.recipeId ?? null,
+    productId: raw.productId ?? null,
+    displayName: raw.displayName,
+    grams: raw.grams,
+    status,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
 function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   if (!raw) return undefined;
   return {
-    version: 10,
+    version: 11,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
@@ -424,6 +505,8 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     challenges: (raw.challenges ?? []).map((c) => ({ ...c })),
     pantryItems: (raw.pantryItems ?? []).map(normalizePantryItem),
     cookedBatches: (raw.cookedBatches ?? []).map(normalizeCookedBatch),
+    mealPlans: (raw.mealPlans ?? []).map(normalizeMealPlan),
+    plannedMeals: (raw.plannedMeals ?? []).map(normalizePlannedMeal),
   };
 }
 
@@ -506,6 +589,12 @@ export function createMemoryFoodRepository(seed?: {
   const cookedBatches = new Map<string, CookedBatch>(
     (snap?.cookedBatches ?? []).map((b) => [b.id, { ...b }]),
   );
+  const mealPlans = new Map<string, MealPlan>(
+    (snap?.mealPlans ?? []).map((p) => [p.id, { ...p }]),
+  );
+  const plannedMeals = new Map<string, PlannedMeal>(
+    (snap?.plannedMeals ?? []).map((m) => [m.id, { ...m }]),
+  );
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
 
@@ -585,7 +674,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 10,
+        version: 11,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -604,6 +693,8 @@ export function createMemoryFoodRepository(seed?: {
         challenges: [...challenges.values()].map((c) => ({ ...c })),
         pantryItems: [...pantryItems.values()].map((p) => ({ ...p })),
         cookedBatches: [...cookedBatches.values()].map((b) => ({ ...b })),
+        mealPlans: [...mealPlans.values()].map((p) => ({ ...p })),
+        plannedMeals: [...plannedMeals.values()].map((m) => ({ ...m })),
       };
     },
     getProfile: () => ({ ...profile }),
@@ -1705,6 +1796,181 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...batch };
     },
+    listMealPlans() {
+      return [...mealPlans.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({ ...p }))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    getMealPlan(planId) {
+      const p = mealPlans.get(planId);
+      if (!p || p.deletedAt) return null;
+      return { ...p };
+    },
+    listPlannedMeals(planId) {
+      return [...plannedMeals.values()]
+        .filter((m) => m.planId === planId && !m.deletedAt)
+        .map((m) => ({ ...m }))
+        .sort((a, b) => {
+          const d = a.dateLocal.localeCompare(b.dateLocal);
+          if (d !== 0) return d;
+          const order: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+          return order.indexOf(a.meal) - order.indexOf(b.meal);
+        });
+    },
+    createMealPlanDraft(input) {
+      if (input.budgetRub != null) assertNonNegativeFinite(input.budgetRub, 'budgetRub');
+      const recipePicks = [...recipes.values()]
+        .filter((r) => !r.deletedAt)
+        .map((r) => ({
+          id: r.id,
+          name: r.name,
+          defaultGrams: Math.min(200, Math.max(80, Math.round(r.cookedYieldG / 4))),
+        }));
+      const draft = buildMealPlanDraft({
+        startDateLocal: input.startDateLocal,
+        days: input.days,
+        recipes: recipePicks,
+        cookSessions: input.cookSessions ?? 2,
+        diversity: input.diversity ?? 'balanced',
+      });
+      const ts = nowIso();
+      const plan: MealPlan = {
+        id: newId(),
+        startDate: draft.startDateLocal,
+        endDate: draft.endDateLocal,
+        status: 'draft',
+        budgetRub: input.budgetRub ?? null,
+        cookSessions: input.cookSessions ?? 2,
+        diversity: input.diversity ?? 'balanced',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      mealPlans.set(plan.id, plan);
+      for (const line of draft.lines) {
+        const meal: PlannedMeal = {
+          id: newId(),
+          planId: plan.id,
+          dateLocal: line.dateLocal,
+          meal: line.meal,
+          recipeId: line.recipeId,
+          productId: line.productId,
+          displayName: line.displayName,
+          grams: line.grams,
+          status: 'planned',
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        plannedMeals.set(meal.id, meal);
+      }
+      notify();
+      return { ...plan };
+    },
+    activateMealPlan(planId) {
+      const plan = mealPlans.get(planId);
+      if (!plan || plan.deletedAt) throw new Error('Meal plan not found');
+      plan.status = 'active';
+      plan.updatedAt = nowIso();
+      notify();
+      return { ...plan };
+    },
+    archiveMealPlan(planId) {
+      const plan = mealPlans.get(planId);
+      if (!plan || plan.deletedAt) throw new Error('Meal plan not found');
+      plan.status = 'archived';
+      plan.updatedAt = nowIso();
+      notify();
+      return { ...plan };
+    },
+    softDeleteMealPlan(planId) {
+      const plan = mealPlans.get(planId);
+      if (!plan || plan.deletedAt) throw new Error('Meal plan not found');
+      const ts = nowIso();
+      plan.deletedAt = ts;
+      plan.updatedAt = ts;
+      for (const m of plannedMeals.values()) {
+        if (m.planId === planId && !m.deletedAt) {
+          m.deletedAt = ts;
+          m.updatedAt = ts;
+        }
+      }
+      notify();
+      return { ...plan };
+    },
+    updatePlannedMealGrams(plannedMealId, grams) {
+      assertNonNegativeFinite(grams, 'grams');
+      const m = plannedMeals.get(plannedMealId);
+      if (!m || m.deletedAt) throw new Error('Planned meal not found');
+      m.grams = grams;
+      m.updatedAt = nowIso();
+      notify();
+      return { ...m };
+    },
+    movePlannedMeal(plannedMealId, args) {
+      const m = plannedMeals.get(plannedMealId);
+      if (!m || m.deletedAt) throw new Error('Planned meal not found');
+      m.dateLocal = args.dateLocal;
+      m.meal = args.meal;
+      m.updatedAt = nowIso();
+      notify();
+      return { ...m };
+    },
+    replacePlannedMeal(plannedMealId, args) {
+      const m = plannedMeals.get(plannedMealId);
+      if (!m || m.deletedAt) throw new Error('Planned meal not found');
+      const name = args.displayName.trim();
+      if (!name) throw new Error('Display name required');
+      assertNonNegativeFinite(args.grams, 'grams');
+      m.displayName = name;
+      m.grams = args.grams;
+      m.recipeId = args.recipeId === undefined ? m.recipeId : args.recipeId;
+      m.productId = args.productId === undefined ? m.productId : args.productId;
+      m.status = 'planned';
+      m.updatedAt = nowIso();
+      notify();
+      return { ...m };
+    },
+    softDeletePlannedMeal(plannedMealId) {
+      const m = plannedMeals.get(plannedMealId);
+      if (!m || m.deletedAt) throw new Error('Planned meal not found');
+      m.deletedAt = nowIso();
+      m.updatedAt = m.deletedAt;
+      notify();
+      return { ...m };
+    },
+    logPlannedMealToDiary(plannedMealId) {
+      const m = plannedMeals.get(plannedMealId);
+      if (!m || m.deletedAt) throw new Error('Planned meal not found');
+      let entry: FoodEntry;
+      if (m.recipeId) {
+        entry = api.addEntryFromRecipe({
+          recipeId: m.recipeId,
+          dateLocal: m.dateLocal,
+          meal: m.meal,
+          grams: m.grams,
+        });
+      } else if (m.productId) {
+        entry = api.addEntryFromProduct({
+          productId: m.productId,
+          dateLocal: m.dateLocal,
+          meal: m.meal,
+          grams: m.grams,
+        });
+      } else {
+        entry = api.addQuickEntry({
+          dateLocal: m.dateLocal,
+          meal: m.meal,
+          displayName: m.displayName,
+          energyKcal: null,
+        });
+      }
+      m.status = 'logged';
+      m.updatedAt = nowIso();
+      notify();
+      return { ...entry };
+    },
     exportAll() {
       return JSON.stringify(
         {
@@ -1735,6 +2001,8 @@ export function createMemoryFoodRepository(seed?: {
       challenges.clear();
       pantryItems.clear();
       cookedBatches.clear();
+      mealPlans.clear();
+      plannedMeals.clear();
 
       Object.assign(profile, next.profile);
       for (const p of next.products) products.set(p.id, { ...p });
@@ -1758,6 +2026,8 @@ export function createMemoryFoodRepository(seed?: {
       for (const c of next.challenges) challenges.set(c.id, { ...c });
       for (const p of next.pantryItems) pantryItems.set(p.id, { ...p });
       for (const b of next.cookedBatches) cookedBatches.set(b.id, { ...b });
+      for (const p of next.mealPlans) mealPlans.set(p.id, { ...p });
+      for (const m of next.plannedMeals) plannedMeals.set(m.id, { ...m });
 
       notify();
       return summarizeSnapshot(next);
@@ -1777,6 +2047,8 @@ export function createMemoryFoodRepository(seed?: {
       challenges.clear();
       pantryItems.clear();
       cookedBatches.clear();
+      mealPlans.clear();
+      plannedMeals.clear();
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;
       profile.dailyEnergyKcal = null;

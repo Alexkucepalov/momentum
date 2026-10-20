@@ -24,7 +24,7 @@ export function parseExportJson(raw: string): ParseExportResult {
   if (typeof obj.version !== 'number') {
     return { ok: false, error: 'Нет поля version — это не экспорт Momentum' };
   }
-  if (obj.version < 1 || obj.version > 10) {
+  if (obj.version < 1 || obj.version > 11) {
     return { ok: false, error: `Неподдерживаемая версия снимка: ${obj.version}` };
   }
   if (!obj.profile || typeof obj.profile !== 'object') {
