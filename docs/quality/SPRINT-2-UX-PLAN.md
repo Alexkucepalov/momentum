@@ -89,4 +89,4 @@ Nothing-inspired: mono, сильная типографика, один primary 
 2. **Food** сегменты `Дневник` | `Каталог` — **S2-2** после review S2-1.  
 3. Empty plan → text-link; JourneyShortcuts → secondary text links ниже fold.  
 
-**S2-1 merged** (#43) · **S2-2 in progress** (#44). Android dogfood gate still open.
+**S2-1 merged** (#43) · **S2-2 merged** (#45) · **S2-3** sheet polish in flight. Android dogfood gate still open.

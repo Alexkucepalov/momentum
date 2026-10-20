@@ -349,28 +349,9 @@ export function FoodCatalogList({
                     <Ionicons name="nutrition-outline" size={22} color={colors.textMuted} />
                   </View>
                   <View style={styles.cardBody}>
-                    <View style={styles.nameRow}>
-                      <Text style={styles.nameFlex} numberOfLines={2}>
-                        {p.name}
-                      </Text>
-                      <Pressable
-                        onPress={() => onToggleFavorite(p)}
-                        accessibilityRole="button"
-                        accessibilityLabel={
-                          p.isFavorite
-                            ? `Убрать из избранного ${p.name}`
-                            : `Добавить в избранное ${p.name}`
-                        }
-                        hitSlop={8}
-                        style={styles.starHit}
-                      >
-                        <Ionicons
-                          name={p.isFavorite ? 'star' : 'star-outline'}
-                          size={20}
-                          color={p.isFavorite ? colors.fat : colors.textMuted}
-                        />
-                      </Pressable>
-                    </View>
+                    <Text style={styles.nameFlex} numberOfLines={2}>
+                      {p.name}
+                    </Text>
                     <View style={styles.metaRow}>
                       <View
                         style={[
@@ -397,6 +378,23 @@ export function FoodCatalogList({
                       carbG={p.carbG}
                     />
                   </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => onToggleFavorite(p)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    p.isFavorite
+                      ? `Убрать из избранного ${p.name}`
+                      : `Добавить в избранное ${p.name}`
+                  }
+                  hitSlop={8}
+                  style={styles.starHit}
+                >
+                  <Ionicons
+                    name={p.isFavorite ? 'star' : 'star-outline'}
+                    size={20}
+                    color={p.isFavorite ? colors.fat : colors.textMuted}
+                  />
                 </Pressable>
                 <Pressable
                   onPress={() => onAddProduct(p)}
@@ -583,7 +581,6 @@ const styles = StyleSheet.create({
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
   cardBody: { flex: 1, paddingVertical: 2 },
-  nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.xs },
   name: { fontSize: type.body, fontWeight: '700', color: colors.text },
   nameFlex: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text },
   metaRow: {
@@ -610,10 +607,11 @@ const styles = StyleSheet.create({
   },
   meta: { fontSize: type.caption, color: colors.textSecondary },
   starHit: {
-    minWidth: 32,
-    minHeight: 32,
+    minWidth: touchMin,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   addBtn: {
     width: touchMin,
