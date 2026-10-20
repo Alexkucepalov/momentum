@@ -21,6 +21,22 @@ test('rapid five presses → one allow', () => {
   assert.equal(allowed, 1);
 });
 
+test('intentional second add after cooldown is allowed', () => {
+  const g = createAddGuard(500);
+  assert.equal(g.tryAllow(0), true);
+  // Same product again after flash / user pause (≥ cooldown)
+  assert.equal(g.tryAllow(500), true);
+  assert.equal(g.tryAllow(600), false);
+});
+
+test('reset clears lock for next intentional add', () => {
+  const g = createAddGuard(5000);
+  assert.equal(g.tryAllow(0), true);
+  assert.equal(g.tryAllow(10), false);
+  g.reset();
+  assert.equal(g.tryAllow(20), true);
+});
+
 test('invalid cooldown rejected', () => {
   assert.throws(() => createAddGuard(-1));
 });

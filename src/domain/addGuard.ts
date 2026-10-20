@@ -1,12 +1,20 @@
 /**
  * Pure double-submit guard for food adds.
- * UI wraps this in a React ref via `useAddGuard`.
+ * UI: `useAddGuard`.
+ *
+ * Contract:
+ * - Blocks accidental double-fire within `cooldownMs` (default 500).
+ * - Does **not** permanently lock a product: after cooldown, the same
+ *   product/recipe can be added again intentionally (second serving).
+ * - Prefer larger grams / portion sheet for “2×” rather than &lt;500ms double-tap.
  */
 export type AddGuard = {
   /** @returns true if this press may proceed; false if blocked. */
   tryAllow: (nowMs?: number) => boolean;
   /** Test helper — ms until next allow (0 if ready). */
   blockedForMs: (nowMs?: number) => number;
+  /** Clears lock so the next tryAllow succeeds (tests / after intentional UX). */
+  reset: () => void;
 };
 
 export function createAddGuard(cooldownMs = 500): AddGuard {
@@ -22,6 +30,9 @@ export function createAddGuard(cooldownMs = 500): AddGuard {
     },
     blockedForMs(nowMs = Date.now()) {
       return Math.max(0, lockedUntil - nowMs);
+    },
+    reset() {
+      lockedUntil = 0;
     },
   };
 }
