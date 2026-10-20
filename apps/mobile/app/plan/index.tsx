@@ -10,7 +10,7 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: '/plan/eat-now' | '/plan/pantry' | null;
+  href: '/plan/eat-now' | '/plan/pantry' | '/plan/week' | null;
   soon?: boolean;
 };
 
@@ -39,10 +39,9 @@ const ITEMS: HubItem[] = [
   {
     key: 'week',
     title: 'Меню на неделю',
-    subtitle: 'Скоро · 3–7 дней',
+    subtitle: '3–7 дней и порции',
     icon: 'calendar-outline',
-    href: null,
-    soon: true,
+    href: '/plan/week',
   },
   {
     key: 'shop',
