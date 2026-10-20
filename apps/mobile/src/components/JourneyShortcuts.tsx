@@ -8,11 +8,20 @@ type Shortcut = {
   key: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: '/(tabs)/food' | '/(tabs)/activity' | '/(tabs)/progress' | '/(tabs)/profile' | '/recipes';
+  href:
+    | '/(tabs)/food'
+    | '/(tabs)/activity'
+    | '/(tabs)/progress'
+    | '/(tabs)/profile'
+    | '/recipes'
+    | '/plan'
+    | '/plan/eat-now';
 };
 
 const DEFAULT: Shortcut[] = [
   { key: 'food', label: 'Дневник', icon: 'restaurant-outline', href: '/(tabs)/food' },
+  { key: 'plan', label: 'План', icon: 'compass-outline', href: '/plan' },
+  { key: 'eat-now', label: 'Сейчас', icon: 'flash-outline', href: '/plan/eat-now' },
   { key: 'recipes', label: 'Рецепты', icon: 'book-outline', href: '/recipes' },
   { key: 'activity', label: 'Спорт', icon: 'walk-outline', href: '/(tabs)/activity' },
   { key: 'progress', label: 'Прогресс', icon: 'stats-chart-outline', href: '/(tabs)/progress' },
