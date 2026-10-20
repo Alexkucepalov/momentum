@@ -454,6 +454,7 @@ export function AddFoodSheet({
               <SavedMealsPanel
                 meals={savedMeals}
                 onLog={(m) => {
+                  if (!allowAdd()) return;
                   try {
                     const created = repo.logSavedMeal({
                       savedMealId: m.id,
@@ -478,6 +479,7 @@ export function AddFoodSheet({
             {!searching && tab === 'quick' ? (
               <QuickAddForm
                 onSubmit={(values) => {
+                  if (!allowAdd()) return;
                   repo.addQuickEntry({
                     dateLocal,
                     meal,

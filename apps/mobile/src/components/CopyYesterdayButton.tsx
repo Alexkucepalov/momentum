@@ -5,12 +5,14 @@ import {
   repeatableDayFromEntries,
   shiftDateLocal,
 } from '../../../../src/domain/repeatMeal';
+import { useAddGuard } from '../hooks/useAddGuard';
 import { useData } from '../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 /** Copies previous calendar day's linked food entries into the selected day (same meal slots). */
 export function CopyYesterdayButton() {
   const { repo, dateLocal, refresh, showFlash, revision } = useData();
+  const allowAdd = useAddGuard();
   void revision;
   const yesterday = shiftDateLocal(dateLocal, -1);
   const sourceCount = repo.listEntriesForDate(yesterday).length;
@@ -18,6 +20,7 @@ export function CopyYesterdayButton() {
   if (sourceCount === 0) return null;
 
   const onCopy = () => {
+    if (!allowAdd()) return;
     const items = repeatableDayFromEntries(repo.listEntriesForDate(yesterday));
     if (items.length === 0) {
       showFlash('Вчерашние записи без продукта/рецепта — повторить нельзя');

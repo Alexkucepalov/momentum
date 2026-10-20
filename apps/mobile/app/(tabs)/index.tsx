@@ -185,6 +185,7 @@ export default function TodayScreen() {
           onCopyYesterday={
             yesterdayCount > 0
               ? () => {
+                  if (!allowAdd()) return;
                   const yesterday = shiftDateLocal(dateLocal, -1);
                   const items = repeatableDayFromEntries(repo.listEntriesForDate(yesterday));
                   if (items.length === 0) {

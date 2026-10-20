@@ -1,0 +1,10 @@
+# Maestro smoke — run only with Maestro + Android emulator/device.
+# Does NOT run in `npm run verify`.
+# Docs: docs/quality/SMOKE-CHECKLIST.md
+appId: host.exp.exponent
+---
+- launchApp
+# Adjust selectors after first device calibration — labels from a11y.
+- extendedWaitUntil:
+    visible: "Сегодня"
+    timeout: 30000

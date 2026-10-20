@@ -22,6 +22,8 @@
 - `20-FOOD-PLANNER-PRD.md`: Food Planner epic — Eat Now, week menu, pantry, shopping, budget
 - `21-FOOD-PLANNER-UX.md`: Plan hub IA, Eat Now / week / shopping screens, a11y
 - `22-FOOD-PLANNER-DATA.md`: SQLite entities, domain contracts, retailer stubs, test plan
+- `quality/PRODUCT-AUDIT.md`: **Product quality audit hub** (freeze, top-10, JTBD verdict) — start here before new features
+- `quality/`: UX-FLOWS, SCREEN-AUDIT, DESIGN-SYSTEM-AUDIT, PERFORMANCE-BASELINE, TECHNICAL-AUDIT, E2E-TEST-MATRIX, QUALITY-BACKLOG, QUALITY-ROADMAP
 - `fixtures/personal-recipes-expanded.json`: personal recipe archive import (review UI)
 - `reference-momentum-ui.jpg`: visual UI reference board for screens
 - `prompts/`: copy-ready Cursor agent jobs
