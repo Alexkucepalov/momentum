@@ -8,12 +8,13 @@
 
 | Разрешено | Запрещено |
 |-----------|-----------|
-| Sprint 1: baseline fixtures, Node benches, P0 durability/double-submit, repeat timing | Product features / FP-8+ / AI / OCR / live prices |
-| Human review → merge или close polish (#20) | Auto-merge; live Dispatcher |
-| UX Today/Food **после** baseline цифр | Rewrite foodRepository / normalized SQLite «на всякий» |
-| Issues с label `dogfood` + `p0`/`p1` **без** `agent-ready` | Новые `agent-ready` feature Issues |
+| Sprint 1 residual: device dogfood (#36–#37) | Product features / FP-8+ / AI / OCR / live prices |
+| Sprint 2: UX **docs/IA/wireframes**; UI PR только после approve Today/Food | Auto-merge; live Dispatcher; массовый redesign одним PR |
+| Issues `dogfood`+`p0`/`p1`/`quality` **без** `agent-ready` | Rewrite foodRepository / normalized SQLite «на всякий» |
 
-Эталонный сценарий: открыть → привычный продукт → граммы → дневник.  
+**Open gate:** Android baseline ещё не измерен — не считать Sprint 1 UX-закрытым.  
+Эталон: открыть → продукт → граммы → дневник.  
+Sprint 2 plan: `docs/quality/SPRINT-2-UX-PLAN.md`.  
 Dispatcher: `DISPATCH_ENABLED=false`, `DISPATCH_DRY_RUN=true`.
 
 ## Цель
