@@ -6,12 +6,43 @@ export type UnifiedHit =
   | { kind: 'recipe'; recipe: Recipe; score: number }
   | { kind: 'recent'; entry: FoodEntry; score: number };
 
+function normalizeSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function scoreName(name: string, q: string): number {
-  const n = name.toLowerCase();
+  const n = normalizeSearch(name);
+  if (!n || !q) return 0;
   if (n === q) return 100;
   if (n.startsWith(q)) return 80;
   if (n.includes(q)) return 50;
   return 0;
+}
+
+/** Offline aliases for recipes (name tokens + import: key), no invented macros. */
+export function recipeSearchAliases(recipe: Recipe): string[] {
+  const out = new Set<string>();
+  const name = normalizeSearch(recipe.name);
+  if (name) out.add(name);
+  for (const tok of name.split(/[\s,/|+\-–—]+/).filter((t) => t.length >= 3)) {
+    out.add(tok);
+  }
+  if (recipe.id.startsWith('import:')) {
+    const key = normalizeSearch(recipe.id.slice('import:'.length).replace(/[_-]+/g, ' '));
+    if (key) out.add(key);
+    for (const tok of key.split(/\s+/).filter((t) => t.length >= 3)) out.add(tok);
+  }
+  const desc = recipe.description ? normalizeSearch(recipe.description).slice(0, 80) : '';
+  if (desc) {
+    for (const tok of desc.split(/\s+/).filter((t) => t.length >= 4).slice(0, 6)) {
+      out.add(tok);
+    }
+  }
+  return [...out];
 }
 
 function scoreProduct(p: FoodProduct, q: string): number {
@@ -19,6 +50,14 @@ function scoreProduct(p: FoodProduct, q: string): number {
   if (p.brand) s = Math.max(s, scoreName(p.brand, q) * 0.5);
   if (p.barcode && p.barcode.includes(q)) s = Math.max(s, 60);
   for (const alias of commonFoodAliases(p.id)) {
+    s = Math.max(s, scoreName(alias, q));
+  }
+  return s;
+}
+
+function scoreRecipe(r: Recipe, q: string): number {
+  let s = scoreName(r.name, q);
+  for (const alias of recipeSearchAliases(r)) {
     s = Math.max(s, scoreName(alias, q));
   }
   return s;
@@ -35,7 +74,7 @@ export function unifiedFoodSearch(args: {
   recent: FoodEntry[];
   limit?: number;
 }): UnifiedHit[] {
-  const q = args.query.trim().toLowerCase();
+  const q = normalizeSearch(args.query);
   if (!q) return [];
   const limit = args.limit ?? 40;
   const hits: UnifiedHit[] = [];
@@ -49,7 +88,7 @@ export function unifiedFoodSearch(args: {
     if (s > 0) hits.push({ kind: 'product', product: p, score: s });
   }
   for (const r of args.recipes) {
-    const s = scoreName(r.name, q);
+    const s = scoreRecipe(r, q);
     if (s > 0) hits.push({ kind: 'recipe', recipe: r, score: s + 2 });
   }
 
