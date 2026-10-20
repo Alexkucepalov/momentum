@@ -1,6 +1,7 @@
 import { sumActivityKcal } from '../domain/activityEnergy';
 import { buildCookAgainInput, type CookAgainDraft } from '../domain/cookAgain';
 import { mergeCommonFoodCatalog } from '../domain/commonFoodCatalog';
+import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch';
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import { portion, type Nutrition } from '../domain/nutrition';
@@ -13,6 +14,7 @@ import {
   nutritionFromProductFields,
 } from './validation';
 import type {
+  CookedBatch,
   DailyNutritionTargets,
   DailyTotals,
   FoodEntry,
@@ -21,6 +23,9 @@ import type {
   HabitKey,
   MealSlot,
   NutritionSource,
+  PantryItem,
+  PantryLocation,
+  PantryUnit,
   Profile,
   Recipe,
   RecipeIngredient,
@@ -264,6 +269,25 @@ export type FoodRepository = {
   challengeProgress(
     challengeId: string,
   ): { current: number; target: number; ratio: number; status: Challenge['status'] };
+  listPantryItems(): PantryItem[];
+  upsertPantryItem(input: {
+    id?: string;
+    displayName: string;
+    productId?: string | null;
+    location: PantryLocation;
+    quantityG?: number | null;
+    quantityCount?: number | null;
+    unit: PantryUnit;
+    expiresOn?: string | null;
+  }): PantryItem;
+  softDeletePantryItem(pantryItemId: string): PantryItem;
+  listCookedBatches(opts?: { recipeId?: string; onlyRemaining?: boolean }): CookedBatch[];
+  createCookedBatch(input: {
+    recipeId: string;
+    initialYieldG?: number;
+    cookedAt?: string;
+  }): CookedBatch;
+  softDeleteCookedBatch(batchId: string): CookedBatch;
   exportAll(): string;
   /**
    * Replace all local data from export JSON (validated).
@@ -345,10 +369,43 @@ function normalizeFlexibleHabitEvent(
   };
 }
 
+function normalizePantryItem(raw: PantryItem): PantryItem {
+  const location: PantryLocation =
+    raw.location === 'freezer' || raw.location === 'pantry' ? raw.location : 'fridge';
+  const unit: PantryUnit = raw.unit === 'ml' || raw.unit === 'pcs' ? raw.unit : 'g';
+  return {
+    id: raw.id,
+    displayName: raw.displayName,
+    productId: raw.productId ?? null,
+    location,
+    quantityG: raw.quantityG ?? null,
+    quantityCount: raw.quantityCount ?? null,
+    unit,
+    expiresOn: raw.expiresOn ?? null,
+    source: 'user',
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeCookedBatch(raw: CookedBatch): CookedBatch {
+  return {
+    id: raw.id,
+    recipeId: raw.recipeId,
+    cookedAt: raw.cookedAt,
+    initialYieldG: raw.initialYieldG,
+    remainingG: raw.remainingG,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
 function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   if (!raw) return undefined;
   return {
-    version: 9,
+    version: 10,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
@@ -365,6 +422,8 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
       items: m.items.map((i) => ({ ...i })),
     })),
     challenges: (raw.challenges ?? []).map((c) => ({ ...c })),
+    pantryItems: (raw.pantryItems ?? []).map(normalizePantryItem),
+    cookedBatches: (raw.cookedBatches ?? []).map(normalizeCookedBatch),
   };
 }
 
@@ -440,6 +499,12 @@ export function createMemoryFoodRepository(seed?: {
   );
   const challenges = new Map<string, Challenge>(
     (snap?.challenges ?? []).map((c) => [c.id, { ...c }]),
+  );
+  const pantryItems = new Map<string, PantryItem>(
+    (snap?.pantryItems ?? []).map((p) => [p.id, { ...p }]),
+  );
+  const cookedBatches = new Map<string, CookedBatch>(
+    (snap?.cookedBatches ?? []).map((b) => [b.id, { ...b }]),
   );
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
@@ -520,7 +585,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 9,
+        version: 10,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -537,6 +602,8 @@ export function createMemoryFoodRepository(seed?: {
           items: m.items.map((i) => ({ ...i })),
         })),
         challenges: [...challenges.values()].map((c) => ({ ...c })),
+        pantryItems: [...pantryItems.values()].map((p) => ({ ...p })),
+        cookedBatches: [...cookedBatches.values()].map((b) => ({ ...b })),
       };
     },
     getProfile: () => ({ ...profile }),
@@ -972,6 +1039,14 @@ export function createMemoryFoodRepository(seed?: {
         deletedAt: null,
       };
       entries.set(entry.id, entry);
+      const batchId = pickFifoBatchId([...cookedBatches.values()].filter((b) => b.recipeId === recipeId));
+      if (batchId) {
+        const batch = cookedBatches.get(batchId);
+        if (batch && !batch.deletedAt) {
+          batch.remainingG = decreaseCookedRemaining(batch.remainingG, grams);
+          batch.updatedAt = ts;
+        }
+      }
       notify();
       return { ...entry };
     },
@@ -1550,6 +1625,86 @@ export function createMemoryFoodRepository(seed?: {
       }
       return { current, target: c.target, ratio, status: c.status };
     },
+    listPantryItems() {
+      return [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({ ...p }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
+    },
+    upsertPantryItem(input) {
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Pantry name required');
+      if (input.quantityG != null) assertNonNegativeFinite(input.quantityG, 'quantityG');
+      if (input.quantityCount != null) assertNonNegativeFinite(input.quantityCount, 'quantityCount');
+      const ts = nowIso();
+      const existing = input.id ? pantryItems.get(input.id) : undefined;
+      if (input.id && (!existing || existing.deletedAt)) throw new Error('Pantry item not found');
+      const item: PantryItem = {
+        id: existing?.id ?? newId(),
+        displayName: name,
+        productId: input.productId === undefined ? (existing?.productId ?? null) : input.productId,
+        location: input.location,
+        quantityG: input.quantityG === undefined ? (existing?.quantityG ?? null) : input.quantityG,
+        quantityCount:
+          input.quantityCount === undefined ? (existing?.quantityCount ?? null) : input.quantityCount,
+        unit: input.unit,
+        expiresOn: input.expiresOn === undefined ? (existing?.expiresOn ?? null) : input.expiresOn,
+        source: 'user',
+        createdAt: existing?.createdAt ?? ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      pantryItems.set(item.id, item);
+      notify();
+      return { ...item };
+    },
+    softDeletePantryItem(pantryItemId) {
+      const item = pantryItems.get(pantryItemId);
+      if (!item || item.deletedAt) throw new Error('Pantry item not found');
+      item.deletedAt = nowIso();
+      item.updatedAt = item.deletedAt;
+      notify();
+      return { ...item };
+    },
+    listCookedBatches(opts) {
+      return [...cookedBatches.values()]
+        .filter((b) => {
+          if (b.deletedAt) return false;
+          if (opts?.recipeId && b.recipeId !== opts.recipeId) return false;
+          if (opts?.onlyRemaining && !(b.remainingG > 0)) return false;
+          return true;
+        })
+        .map((b) => ({ ...b }))
+        .sort((a, b) => a.cookedAt.localeCompare(b.cookedAt));
+    },
+    createCookedBatch(input) {
+      const recipe = recipes.get(input.recipeId);
+      if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
+      const yieldG = input.initialYieldG ?? recipe.cookedYieldG;
+      assertPositiveFinite(yieldG, 'initialYieldG');
+      const ts = nowIso();
+      const batch: CookedBatch = {
+        id: newId(),
+        recipeId: recipe.id,
+        cookedAt: input.cookedAt ?? ts,
+        initialYieldG: yieldG,
+        remainingG: yieldG,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      cookedBatches.set(batch.id, batch);
+      notify();
+      return { ...batch };
+    },
+    softDeleteCookedBatch(batchId) {
+      const batch = cookedBatches.get(batchId);
+      if (!batch || batch.deletedAt) throw new Error('Cooked batch not found');
+      batch.deletedAt = nowIso();
+      batch.updatedAt = batch.deletedAt;
+      notify();
+      return { ...batch };
+    },
     exportAll() {
       return JSON.stringify(
         {
@@ -1578,6 +1733,8 @@ export function createMemoryFoodRepository(seed?: {
       flexibleHabitEvents.clear();
       savedMeals.clear();
       challenges.clear();
+      pantryItems.clear();
+      cookedBatches.clear();
 
       Object.assign(profile, next.profile);
       for (const p of next.products) products.set(p.id, { ...p });
@@ -1599,6 +1756,8 @@ export function createMemoryFoodRepository(seed?: {
         savedMeals.set(m.id, { ...m, items: m.items.map((i) => ({ ...i })) });
       }
       for (const c of next.challenges) challenges.set(c.id, { ...c });
+      for (const p of next.pantryItems) pantryItems.set(p.id, { ...p });
+      for (const b of next.cookedBatches) cookedBatches.set(b.id, { ...b });
 
       notify();
       return summarizeSnapshot(next);
@@ -1616,6 +1775,8 @@ export function createMemoryFoodRepository(seed?: {
       flexibleHabitEvents.clear();
       savedMeals.clear();
       challenges.clear();
+      pantryItems.clear();
+      cookedBatches.clear();
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;
       profile.dailyEnergyKcal = null;

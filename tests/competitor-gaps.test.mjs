@@ -104,6 +104,6 @@ test('snapshot v8 includes saved meals', () => {
     name: 'Mini',
     items: [{ productId: p.id, recipeId: null, displayName: 'X', grams: 100 }],
   });
-  assert.equal(repo.toSnapshot().version, 9);
+  assert.equal(repo.toSnapshot().version, 10);
   assert.equal(repo.toSnapshot().savedMeals.length, 1);
 });

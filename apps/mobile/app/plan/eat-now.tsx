@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import {
+  eatNowInputsFromCookedBatches,
   eatNowInputsFromProducts,
   eatNowInputsFromRecipes,
 } from '../../../../src/domain/buildEatNowInputs';
@@ -122,23 +123,54 @@ export default function EatNowScreen() {
   const candidates = useMemo(() => {
     const recipes = repo.listRecipes();
     const products = repo.listProducts();
+    const pantryProductIds = new Set(
+      repo
+        .listPantryItems()
+        .map((p) => p.productId)
+        .filter((id): id is string => !!id),
+    );
+    const batches = repo.listCookedBatches({ onlyRemaining: true });
+    const batchRecipeIds = new Set(batches.map((b) => b.recipeId));
+
     const recipeInputs = eatNowInputsFromRecipes(recipes, (id) => repo.getRecipeIngredients(id), {
       defaultPrepMinutes: 20,
-      atHome: true,
-    });
-    // Favorites / frequent feel more "at home"; others as buyable snacks.
-    const favIds = new Set(products.filter((p) => p.isFavorite).map((p) => p.id));
-    const productInputs = eatNowInputsFromProducts(products, { atHome: false }).map((c) => ({
+      atHome: false,
+    }).map((c) => ({
       ...c,
-      atHome: favIds.has(c.id),
-      prepMinutes: 2,
+      atHome: batchRecipeIds.has(c.id),
     }));
-    return scoreEatNow([...recipeInputs, ...productInputs], remaining, [filter]);
+
+    const productInputs = eatNowInputsFromProducts(products, {
+      atHome: (id) => pantryProductIds.has(id),
+    });
+
+    const batchInputs = eatNowInputsFromCookedBatches(
+      batches,
+      (id) => repo.getRecipe(id),
+      (id) => repo.getRecipeIngredients(id),
+    );
+
+    return scoreEatNow([...batchInputs, ...recipeInputs, ...productInputs], remaining, [filter]);
   }, [repo, remaining, filter, revision]);
 
   const openCandidate = (c: EatNowCandidate) => {
+    if (c.kind === 'cooked_batch') {
+      const batch = repo.listCookedBatches().find((b) => b.id === c.id);
+      if (!batch) return;
+      const recipe = repo.getRecipe(batch.recipeId);
+      if (!recipe) return;
+      setPortionTarget({
+        target: {
+          kind: 'recipe',
+          recipe,
+          ingredients: repo.getRecipeIngredients(recipe.id),
+        },
+        initialGrams: Math.min(c.suggestedGrams, Math.max(40, Math.round(batch.remainingG))),
+      });
+      return;
+    }
     if (c.kind === 'recipe') {
-      const recipe = repo.listRecipes().find((r) => r.id === c.id);
+      const recipe = repo.getRecipe(c.id);
       if (!recipe) return;
       setPortionTarget({
         target: {
