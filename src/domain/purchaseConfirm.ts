@@ -66,7 +66,7 @@ function fnv1a(str: string): string {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-/** Sum known line totals for non-excluded lines; null if none known (unknown ≠ 0). */
+/** Sum line totals for non-excluded lines; null if none known (unknown ≠ 0). */
 export function sumKnownPurchaseLineTotals(
   lines: Array<{ lineTotalRub: number | null; excluded: boolean }>,
 ): number | null {
@@ -81,6 +81,11 @@ export function sumKnownPurchaseLineTotals(
   return known === 0 ? null : sum;
 }
 
+/**
+ * Expense amount for a confirmed purchase.
+ * Prefer explicit order total. Otherwise sum lines only when **every** non-excluded
+ * line has a known total — never invent a “complete” sum from partial prices.
+ */
 export function resolveExpenseAmountRub(args: {
   totalRub: number | null;
   lines: Array<{ lineTotalRub: number | null; excluded: boolean }>;
@@ -88,7 +93,16 @@ export function resolveExpenseAmountRub(args: {
   if (args.totalRub != null && Number.isFinite(args.totalRub) && args.totalRub >= 0) {
     return args.totalRub;
   }
-  return sumKnownPurchaseLineTotals(args.lines);
+  const active = args.lines.filter((l) => !l.excluded);
+  if (active.length === 0) return null;
+  let sum = 0;
+  for (const l of active) {
+    if (l.lineTotalRub == null || !Number.isFinite(l.lineTotalRub) || l.lineTotalRub < 0) {
+      return null;
+    }
+    sum += l.lineTotalRub;
+  }
+  return sum;
 }
 
 export type PantryApplyLine = {

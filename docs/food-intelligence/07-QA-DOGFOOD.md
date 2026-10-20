@@ -40,6 +40,11 @@
 
 **Do not** mark device Pass from emulator-only or CI.
 
+## Full chain (slices 1–4)
+
+See **`09-ANDROID-E2E-SMOKE.md`** (Grocery-to-Meal). Integration report: `08-QA-INTEGRATION-REPORT.md`.  
+**Do not** mark product complete until device Pass.
+
 ## Later slices (outline)
 
 | Slice | Dogfood focus |
