@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -72,6 +72,22 @@ export function AddFoodSheet({
   const recipes = repo.listRecipes();
   const products = repo.listProducts();
   const savedMeals = repo.listSavedMeals();
+
+  // Fresh sheet each open — avoid stale search/mode from last session.
+  useEffect(() => {
+    if (!visible) {
+      setQuery('');
+      setTab('recent');
+      setMealPickerOpen(false);
+      setError(null);
+      setName('');
+      setKcal('');
+      setProtein('');
+      setFat('');
+      setCarbs('');
+      setGrams('100');
+    }
+  }, [visible]);
 
   const searching = query.trim().length > 0;
   const showSearch = CATALOG_TABS.includes(tab) || searching;
@@ -291,36 +307,39 @@ export function AddFoodSheet({
             <AddFoodTabs value={tab} onChange={selectCatalogTab} />
           ) : null}
 
-          <View style={styles.actions} accessibilityRole="toolbar">
-            <ActionChip icon="barcode-outline" label="Сканер" onPress={() => setScanOpen(true)} />
-            <ActionChip
-              icon="create-outline"
-              label="Вручную"
-              onPress={() => {
-                setQuery('');
-                setTab('manual');
-              }}
-              active={tab === 'manual'}
-            />
-            <ActionChip
-              icon="flash-outline"
-              label="Быстро"
-              onPress={() => {
-                setQuery('');
-                setTab('quick');
-              }}
-              active={tab === 'quick'}
-            />
-            <ActionChip
-              icon="bookmark-outline"
-              label="Приёмы"
-              onPress={() => {
-                setQuery('');
-                setTab('meals');
-              }}
-              active={tab === 'meals'}
-            />
-          </View>
+          {/* Hide secondary modes while searching — one job: pick a hit */}
+          {!searching ? (
+            <View style={styles.actions} accessibilityRole="toolbar">
+              <ActionChip icon="barcode-outline" label="Сканер" onPress={() => setScanOpen(true)} />
+              <ActionChip
+                icon="create-outline"
+                label="Вручную"
+                onPress={() => {
+                  setQuery('');
+                  setTab('manual');
+                }}
+                active={tab === 'manual'}
+              />
+              <ActionChip
+                icon="flash-outline"
+                label="Быстро"
+                onPress={() => {
+                  setQuery('');
+                  setTab('quick');
+                }}
+                active={tab === 'quick'}
+              />
+              <ActionChip
+                icon="bookmark-outline"
+                label="Приёмы"
+                onPress={() => {
+                  setQuery('');
+                  setTab('meals');
+                }}
+                active={tab === 'meals'}
+              />
+            </View>
+          ) : null}
 
           {error ? (
             <Text style={styles.error} accessibilityLiveRegion="assertive">

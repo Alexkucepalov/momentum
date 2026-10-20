@@ -1,36 +1,19 @@
-# Android UI Smoke Checklist
+# Android UI smoke checklist (#38)
 
-**Status:** protocol only — **not run** in CI unless marked Pass below.  
-Alternative automation: `maestro/food-add-smoke.yaml` (requires Maestro + device/emulator).
+**Env:** dogfood APK `apps/mobile/dist/momentum-dogfood.apk` · see `docs/quality/apk/DOGFOOD-APK.md`  
+**Maestro:** `maestro/food-add-smoke.yaml` (требует калибровки селекторов на device — **pending**)
 
-## Environment
+## Manual (15 мин) — совмещается с `DEVICE-DOGFOOD-15MIN.md`
 
-| Field | Value |
-|-------|-------|
-| Date | |
-| Build | Expo Go / APK dogfood / … |
-| Device / emulator | |
-| Network | online / airplane |
+| # | Шаг | Pass? |
+|---|-----|-------|
+| 1 | Установить APK, открыть app | |
+| 2 | Сегодня: КБЖУ видно, sticky «Добавить еду» | |
+| 3 | Add → поиск привычного → порция → дневник | |
+| 4 | Quick repeat (+) без лишнего confirm | |
+| 5 | Питание: сегмент Дневник → Каталог → поиск | |
+| 6 | Изменить граммы существующей записи | |
+| 7 | Force-stop → reopen → запись на месте (#36) | |
+| 8 | Повтор ≤10s секундомер n≥5 (#37) | |
 
-## Critical path (food log)
-
-| # | Step | Expected | Pass? |
-|---|------|----------|-------|
-| 1 | Cold launch | App opens, Today visible | |
-| 2 | Tap add / recent | Sheet or portion opens | |
-| 3 | Confirm grams | Entry appears in Food diary same day | |
-| 4 | Force-stop app | — | |
-| 5 | Relaunch | Entry still present; totals match | |
-| 6 | Rapid double-tap Add (5×) | ≤1 new entry | |
-
-## Timing (optional stopwatch)
-
-| Metric | Trial 1 | 2 | 3 | Notes |
-|--------|---------|---|---|-------|
-| Repeat recent E2E (s) | | | | Goal ≤10s |
-| Open AddFoodSheet (s) | | | | |
-
-## Sign-off
-
-Tester: ________  Result: Pass / Fail / Partial  
-Evidence: screenshot / video link ________
+**Статус прогона:** pending (нет подтверждённого device run).
