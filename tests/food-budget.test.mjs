@@ -24,8 +24,9 @@ test('sumKnownExpenses unknown ≠ 0', () => {
   assert.deepEqual(sumKnownExpenses([100, 50]), { total: 150, incomplete: false });
 });
 
-test('forecast needs elapsed days', () => {
+test('forecast needs enough elapsed days', () => {
   assert.equal(forecastMonthSpend({ spentRub: 3000, daysElapsed: 0, daysInMonth: 30 }), null);
+  assert.equal(forecastMonthSpend({ spentRub: 3000, daysElapsed: 3, daysInMonth: 30 }), null);
   assert.equal(forecastMonthSpend({ spentRub: 3000, daysElapsed: 10, daysInMonth: 30 }), 9000);
   assert.equal(forecastMonthSpend({ spentRub: null, daysElapsed: 10, daysInMonth: 30 }), null);
 });

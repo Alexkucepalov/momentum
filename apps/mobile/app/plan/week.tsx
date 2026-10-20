@@ -65,7 +65,8 @@ export default function WeekPlanScreen() {
   const meals = activeId ? repo.listPlannedMeals(activeId) : [];
   const daysGrouped = useMemo(() => groupByDate(meals), [meals]);
 
-  const showComposer = composerOpen || !plan;
+  /** Week surface first: composer only when user opens it (or after empty CTA). */
+  const showComposer = composerOpen;
 
   const createDraft = () => {
     setError(null);
@@ -321,7 +322,14 @@ export default function WeekPlanScreen() {
       })}
 
       {!plan && !showComposer ? (
-        <Text style={styles.hint}>Черновика ещё нет — открой форму выше.</Text>
+        <EmptyState
+          compact
+          icon="calendar-outline"
+          title="Нет меню на неделю"
+          body="Собери черновик из своих рецептов. Запланированное не считается съеденным."
+          actionLabel="Собрать меню"
+          onAction={() => setComposerOpen(true)}
+        />
       ) : null}
     </FormScrollView>
   );
