@@ -10,7 +10,15 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: '/plan/eat-now' | '/plan/pantry' | '/plan/week' | '/plan/shop' | '/plan/budget' | '/plan/stores' | '/recipes';
+  href:
+    | '/plan/eat-now'
+    | '/plan/pantry'
+    | '/plan/week'
+    | '/plan/shop'
+    | '/plan/budget'
+    | '/plan/stores'
+    | '/plan/receipt'
+    | '/recipes';
   primary?: boolean;
 };
 
@@ -43,6 +51,13 @@ const PRIMARY: HubItem[] = [
 ];
 
 const SECONDARY: HubItem[] = [
+  {
+    key: 'receipt',
+    title: 'Импорт покупки',
+    subtitle: 'Текст заказа → проверка → запасы',
+    icon: 'receipt-outline',
+    href: '/plan/receipt',
+  },
   {
     key: 'week',
     title: 'Меню на неделю',

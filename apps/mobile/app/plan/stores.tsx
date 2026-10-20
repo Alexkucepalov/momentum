@@ -25,10 +25,12 @@ export default function StoresScreen() {
         onPress={() => router.push('/plan/receipt')}
         style={({ pressed }) => [styles.receipt, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel="Ввести чек вручную"
+        accessibilityLabel="Импорт покупки"
       >
-        <Text style={styles.receiptTitle}>Ввести чек вручную</Text>
-        <Text style={styles.receiptSub}>Строки и суммы подтверждаешь ты — без OCR и угадываний</Text>
+        <Text style={styles.receiptTitle}>Импорт покупки</Text>
+        <Text style={styles.receiptSub}>
+          Текст заказа или строки → проверка → запасы и расход. Без OCR и угадываний
+        </Text>
       </Pressable>
       <View style={styles.list}>
         {stores.map((s) => (

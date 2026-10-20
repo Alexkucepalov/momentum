@@ -1,8 +1,8 @@
 # ADR draft — Purchases, line items, matching (snapshot)
 
-**Status:** Proposed · **founder approval required** before migration  
+**Status:** Accepted (founder: merge #57 + continue, 2026-10-21)  
 **Date:** 2026-10-21  
-**Extends:** ADR-008 Food Planner · snapshot currently **v13**
+**Extends:** ADR-008 Food Planner · snapshot **v14** (issue #58)
 
 ## Context
 
@@ -73,9 +73,9 @@ Only statuses in `{delivered, fiscal_receipt}` (and user-confirmed `paid` if opt
 
 ## Approval checklist
 
-- [ ] Founder OK on v14 fields  
-- [ ] Consent UX for any cloud OCR  
-- [ ] No retailer scrape in scope  
-- [ ] Dogfood plan for slice 1 attached  
+- [x] Founder OK on v14 fields  
+- [ ] Consent UX for any cloud OCR (still required before cloud path)  
+- [x] No retailer scrape in scope  
+- [x] Dogfood plan for slice 1 attached  
 
-**Until approved: implement nothing that bumps snapshot version.**
+**Slice 1 (#58):** paste/manual → preview → confirm → pantry + expense. OCR still blocked without consent.
