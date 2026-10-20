@@ -134,32 +134,33 @@ export default function PurchaseImportScreen() {
       refresh();
       const pantryN = result.pantryItems.length;
       const exp = result.expense ? `${Math.round(result.expense.amountRub)} ₽` : 'без суммы';
-      showFlash(`Покупка: ${pantryN} в запасы · ${exp}`);
-      router.back();
+      showFlash(`Покупка добавлена: ${pantryN} в запасы · ${exp}`);
+      router.replace('/plan/pantry');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
     }
   };
 
   if (step === 'preview') {
+    const pantryCount = lines.filter((l) => !l.excluded && l.isFood).length;
     return (
       <FormScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.lead}>
-          Проверь позиции до подтверждения. Черновик не пишется в запасы. Null-цены не становятся 0.
-        </Text>
+        <Text style={styles.lead}>Проверь позиции. Черновик ещё не в запасах.</Text>
 
+        <Text style={styles.fieldLabel}>Магазин</Text>
         <TextInput
           value={storeLabel}
           onChangeText={setStoreLabel}
-          placeholder="Магазин (необязательно)"
+          placeholder="Необязательно"
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           accessibilityLabel="Магазин"
         />
+        <Text style={styles.fieldLabel}>Итого чека, ₽</Text>
         <TextInput
           value={totalRub}
           onChangeText={setTotalRub}
-          placeholder="Итого ₽ (пусто = сумма известных строк)"
+          placeholder="Пусто = сумма известных строк"
           placeholderTextColor={colors.textMuted}
           keyboardType="decimal-pad"
           style={styles.input}
@@ -181,96 +182,109 @@ export default function PurchaseImportScreen() {
           ))}
         </View>
 
-        {lines.map((line, i) => (
-          <View key={line.key} style={styles.card}>
-            <TextInput
-              value={line.displayName}
-              onChangeText={(t) =>
-                setLines((prev) => prev.map((l, j) => (j === i ? { ...l, displayName: t } : l)))
-              }
-              style={styles.input}
-              accessibilityLabel={`Название позиции ${i + 1}`}
-            />
-            <View style={styles.row}>
+        {lines.map((line, i) => {
+          const unitLabel =
+            line.unit === 'g' ? 'г' : line.unit === 'ml' ? 'мл' : line.unit === 'pcs' ? 'шт' : 'ед.';
+          return (
+            <View key={line.key} style={styles.card}>
+              <Text style={styles.fieldLabel}>Название</Text>
               <TextInput
-                value={line.quantity == null ? '' : String(line.quantity)}
-                onChangeText={(t) => {
-                  const v = t.trim();
-                  const n = v ? Number(v.replace(',', '.')) : null;
-                  setLines((prev) =>
-                    prev.map((l, j) =>
-                      j === i
-                        ? {
-                            ...l,
-                            quantity: v && (n == null || !Number.isFinite(n)) ? l.quantity : n,
-                          }
-                        : l,
-                    ),
-                  );
-                }}
-                placeholder="Кол-во"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                style={[styles.input, styles.half]}
-                accessibilityLabel={`Количество ${i + 1}`}
-              />
-              <TextInput
-                value={line.lineTotalRub == null ? '' : String(line.lineTotalRub)}
-                onChangeText={(t) => {
-                  const v = t.trim();
-                  const n = v ? Number(v.replace(',', '.')) : null;
-                  setLines((prev) =>
-                    prev.map((l, j) =>
-                      j === i
-                        ? {
-                            ...l,
-                            lineTotalRub: v && (n == null || !Number.isFinite(n)) ? l.lineTotalRub : n,
-                          }
-                        : l,
-                    ),
-                  );
-                }}
-                placeholder="₽"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                style={[styles.input, styles.half]}
-                accessibilityLabel={`Сумма ${i + 1}`}
-              />
-            </View>
-            <View style={styles.row}>
-              <Pressable
-                onPress={() =>
-                  setLines((prev) =>
-                    prev.map((l, j) => (j === i ? { ...l, excluded: !l.excluded } : l)),
-                  )
+                value={line.displayName}
+                onChangeText={(t) =>
+                  setLines((prev) => prev.map((l, j) => (j === i ? { ...l, displayName: t } : l)))
                 }
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: line.excluded }}
-                accessibilityLabel={`Исключить позицию ${i + 1}`}
-              >
-                <Text style={styles.link}>{line.excluded ? 'Исключено' : 'Исключить'}</Text>
-              </Pressable>
-              <Pressable
-                onPress={() =>
-                  setLines((prev) =>
-                    prev.map((l, j) => (j === i ? { ...l, isFood: !l.isFood } : l)),
-                  )
-                }
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: line.isFood }}
-                accessibilityLabel={`Еда позиция ${i + 1}`}
-              >
-                <Text style={styles.link}>{line.isFood ? 'Еда → запасы' : 'Не еда'}</Text>
-              </Pressable>
+                style={styles.input}
+                accessibilityLabel={`Название позиции ${i + 1}`}
+              />
+              <View style={styles.fieldsStack}>
+                <View style={styles.fieldBlock}>
+                  <Text style={styles.fieldLabel}>
+                    Количество{line.unit ? ` (${unitLabel})` : ''}
+                  </Text>
+                  <TextInput
+                    value={line.quantity == null ? '' : String(line.quantity)}
+                    onChangeText={(t) => {
+                      const v = t.trim();
+                      const n = v ? Number(v.replace(',', '.')) : null;
+                      setLines((prev) =>
+                        prev.map((l, j) =>
+                          j === i
+                            ? {
+                                ...l,
+                                quantity: v && (n == null || !Number.isFinite(n)) ? l.quantity : n,
+                              }
+                            : l,
+                        ),
+                      );
+                    }}
+                    placeholder="пусто = неизвестно"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                    style={styles.input}
+                    accessibilityLabel={`Количество ${i + 1}${line.unit ? ` ${unitLabel}` : ''}`}
+                  />
+                </View>
+                <View style={styles.fieldBlock}>
+                  <Text style={styles.fieldLabel}>Сумма, ₽</Text>
+                  <TextInput
+                    value={line.lineTotalRub == null ? '' : String(line.lineTotalRub)}
+                    onChangeText={(t) => {
+                      const v = t.trim();
+                      const n = v ? Number(v.replace(',', '.')) : null;
+                      setLines((prev) =>
+                        prev.map((l, j) =>
+                          j === i
+                            ? {
+                                ...l,
+                                lineTotalRub:
+                                  v && (n == null || !Number.isFinite(n)) ? l.lineTotalRub : n,
+                              }
+                            : l,
+                        ),
+                      );
+                    }}
+                    placeholder="пусто = неизвестно"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                    style={styles.input}
+                    accessibilityLabel={`Сумма ${i + 1}`}
+                  />
+                </View>
+              </View>
+              {line.packageSizeText ? (
+                <Text style={styles.meta}>Упаковка: {line.packageSizeText}</Text>
+              ) : null}
+              <View style={styles.rowWrap}>
+                <Pressable
+                  onPress={() =>
+                    setLines((prev) =>
+                      prev.map((l, j) => (j === i ? { ...l, excluded: !l.excluded } : l)),
+                    )
+                  }
+                  style={styles.actionChip}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: line.excluded }}
+                  accessibilityLabel={`Исключить позицию ${i + 1}`}
+                >
+                  <Text style={styles.link}>{line.excluded ? 'Исключено' : 'Исключить'}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    setLines((prev) =>
+                      prev.map((l, j) => (j === i ? { ...l, isFood: !l.isFood } : l)),
+                    )
+                  }
+                  style={styles.actionChip}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: line.isFood }}
+                  accessibilityLabel={`Еда позиция ${i + 1}`}
+                >
+                  <Text style={styles.link}>{line.isFood ? 'Еда → запасы' : 'Не еда'}</Text>
+                </Pressable>
+              </View>
             </View>
-            {line.unit ? (
-              <Text style={styles.meta}>
-                ед.: {line.unit}
-                {line.packageSizeText ? ` · ${line.packageSizeText}` : ''}
-              </Text>
-            ) : null}
-          </View>
-        ))}
+          );
+        })}
 
         {warnings.map((w) => (
           <Text key={w} style={styles.warn}>
@@ -278,14 +292,19 @@ export default function PurchaseImportScreen() {
           </Text>
         ))}
 
-        <Text style={styles.meta}>
-          Расход: {knownExpense == null ? 'неизвестен (null)' : `${Math.round(knownExpense)} ₽`} · в запасы:{' '}
-          {lines.filter((l) => !l.excluded && l.isFood).length}
+        <Text style={styles.summary} accessibilityRole="summary">
+          Расход:{' '}
+          {knownExpense == null ? 'неизвестен' : `${Math.round(knownExpense)} ₽`}
+          {' · '}В запасы: {pantryCount}
         </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <PrimaryButton label="Подтвердить покупку" onPress={confirm} />
-        <Pressable onPress={() => setStep('input')} accessibilityRole="button" accessibilityLabel="Назад к вводу">
+        <Pressable
+          onPress={() => setStep('input')}
+          accessibilityRole="button"
+          accessibilityLabel="Назад к вводу"
+        >
           <Text style={styles.back}>← Изменить ввод</Text>
         </Pressable>
       </FormScrollView>
@@ -338,39 +357,50 @@ export default function PurchaseImportScreen() {
       ) : (
         <>
           {manualLines.map((line, i) => (
-            <View key={i} style={styles.row}>
+            <View key={i} style={styles.manualCard}>
+              <Text style={styles.fieldLabel}>Позиция</Text>
               <TextInput
                 value={line.name}
                 onChangeText={(t) =>
                   setManualLines((prev) => prev.map((l, j) => (j === i ? { ...l, name: t } : l)))
                 }
-                placeholder="Позиция"
+                placeholder="Название"
                 placeholderTextColor={colors.textMuted}
-                style={[styles.input, styles.name]}
+                style={styles.input}
                 accessibilityLabel={`Позиция ${i + 1}`}
               />
-              <TextInput
-                value={line.qty}
-                onChangeText={(t) =>
-                  setManualLines((prev) => prev.map((l, j) => (j === i ? { ...l, qty: t } : l)))
-                }
-                placeholder="шт"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                style={[styles.input, styles.qty]}
-                accessibilityLabel={`Количество ${i + 1}`}
-              />
-              <TextInput
-                value={line.amountRub}
-                onChangeText={(t) =>
-                  setManualLines((prev) => prev.map((l, j) => (j === i ? { ...l, amountRub: t } : l)))
-                }
-                placeholder="₽"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                style={[styles.input, styles.amount]}
-                accessibilityLabel={`Сумма ${i + 1}`}
-              />
+              <View style={styles.fieldsStack}>
+                <View style={styles.fieldBlock}>
+                  <Text style={styles.fieldLabel}>Количество</Text>
+                  <TextInput
+                    value={line.qty}
+                    onChangeText={(t) =>
+                      setManualLines((prev) => prev.map((l, j) => (j === i ? { ...l, qty: t } : l)))
+                    }
+                    placeholder="шт / г / мл"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                    style={styles.input}
+                    accessibilityLabel={`Количество ${i + 1}`}
+                  />
+                </View>
+                <View style={styles.fieldBlock}>
+                  <Text style={styles.fieldLabel}>Сумма, ₽</Text>
+                  <TextInput
+                    value={line.amountRub}
+                    onChangeText={(t) =>
+                      setManualLines((prev) =>
+                        prev.map((l, j) => (j === i ? { ...l, amountRub: t } : l)),
+                      )
+                    }
+                    placeholder="пусто = неизвестно"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                    style={styles.input}
+                    accessibilityLabel={`Сумма ${i + 1}`}
+                  />
+                </View>
+              </View>
             </View>
           ))}
           <Pressable
@@ -389,9 +419,23 @@ export default function PurchaseImportScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
+  content: {
+    padding: space.lg,
+    paddingBottom: space.xxl,
+    gap: space.md,
+    maxWidth: '100%',
+  },
   lead: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
-  row: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
+  fieldLabel: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  fieldsStack: { gap: space.sm, width: '100%' },
+  fieldBlock: { width: '100%', minWidth: 0 },
+  row: { flexDirection: 'row', gap: space.sm, alignItems: 'center', flexWrap: 'wrap' },
+  rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, alignItems: 'center' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
     minHeight: touchMin,
@@ -404,6 +448,7 @@ const styles = StyleSheet.create({
   },
   chipOn: { borderColor: colors.text, backgroundColor: colors.background },
   chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  actionChip: { minHeight: touchMin, justifyContent: 'center' },
   input: {
     minHeight: touchMin,
     borderWidth: 1,
@@ -413,12 +458,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     fontSize: type.body,
     color: colors.text,
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
   },
   paste: { minHeight: 160, paddingVertical: space.md },
-  name: { flex: 1 },
-  qty: { width: 56 },
-  amount: { width: 72 },
-  half: { flex: 1 },
+  name: { flex: 1, minWidth: 0 },
+  qty: { width: 72, maxWidth: '40%', minWidth: 0, flexShrink: 1 },
+  amount: { width: 88, maxWidth: '40%', minWidth: 0, flexShrink: 1 },
+  half: { flex: 1, minWidth: 0, flexShrink: 1 },
   card: {
     gap: space.sm,
     padding: space.md,
@@ -426,10 +474,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    width: '100%',
+    maxWidth: '100%',
+    overflow: 'hidden',
+  },
+  manualCard: {
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    width: '100%',
+    maxWidth: '100%',
   },
   add: { fontSize: type.body, fontWeight: '700', color: colors.accent },
   link: { fontSize: type.caption, fontWeight: '700', color: colors.accent },
   meta: { fontSize: type.caption, color: colors.textSecondary },
+  summary: { fontSize: type.body, fontWeight: '600', color: colors.text },
   warn: { fontSize: type.caption, color: colors.textMuted },
   error: { color: colors.danger, fontSize: type.caption },
   back: { fontSize: type.body, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },

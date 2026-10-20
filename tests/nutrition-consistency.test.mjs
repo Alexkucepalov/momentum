@@ -77,3 +77,17 @@ test('autoKcalStringFromMacroStrings rounds Atwater', () => {
   assert.equal(autoKcalStringFromMacroStrings('10', '5', '25'), '185');
   assert.equal(autoKcalStringFromMacroStrings('10', '', '25'), null);
 });
+
+test('label kcal may differ from Atwater macros (policy: keep label until user edits)', () => {
+  // Bowl-style: declared 140 kcal/100g vs Б12 Ж4 У15 → Atwater 144
+  assert.equal(autoKcalStringFromMacroStrings('12', '4', '15'), '144');
+  assert.equal(
+    nutritionConsistencyHint({
+      energyKcal: 140,
+      proteinG: 12,
+      fatG: 4,
+      carbG: 15,
+    }),
+    null,
+  );
+});

@@ -28,6 +28,8 @@ export function useAutoKcalFromMacros({
   const macrosTouched = useRef(syncFromStart);
   const prevMacros = useRef({ protein, fat, carbs });
   const lastSeed = useRef(seedKey);
+  /** After seedKey change, ignore the next macro fill from the seed effect ('' → values). */
+  const ignoreNextMacroFill = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -36,6 +38,7 @@ export function useAutoKcalFromMacros({
       lastSeed.current = seedKey;
       macrosTouched.current = syncFromStart;
       prevMacros.current = { protein, fat, carbs };
+      ignoreNextMacroFill.current = !syncFromStart;
       return;
     }
 
@@ -44,6 +47,11 @@ export function useAutoKcalFromMacros({
       prevMacros.current.fat !== fat ||
       prevMacros.current.carbs !== carbs;
     prevMacros.current = { protein, fat, carbs };
+
+    if (changed && ignoreNextMacroFill.current) {
+      ignoreNextMacroFill.current = false;
+      return;
+    }
 
     if (changed) {
       macrosTouched.current = true;
