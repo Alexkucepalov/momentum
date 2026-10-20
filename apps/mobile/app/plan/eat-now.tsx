@@ -9,6 +9,10 @@ import {
 } from '../../../../src/domain/buildEatNowInputs';
 import { recipeAtHome, selectEatNowProducts } from '../../../../src/domain/eatNowPool';
 import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
+import {
+  formatPantryCoverageBadge,
+  recipePantryCoverage,
+} from '../../../../src/domain/recipePantryCoverage';
 import { hasAnyKnownRemaining, remainingMacros } from '../../../../src/domain/remainingMacros';
 import {
   scoreEatNow,
@@ -149,8 +153,19 @@ export default function EatNowScreen() {
       defaultPrepMinutes: 25,
       atHome: false,
     }).map((c) => {
-      const home = recipeAtHome(c.id, batchRecipeIds);
-      return { ...c, atHome: home, toBuy: !home, prepMinutes: home ? 8 : 25 };
+      const fromBatch = recipeAtHome(c.id, batchRecipeIds);
+      const ings = repo.getRecipeIngredients(c.id);
+      const coverage = recipePantryCoverage(ings, pantry);
+      const badge = formatPantryCoverageBadge(coverage);
+      const home = fromBatch || coverage.fullyCovered;
+      return {
+        ...c,
+        atHome: home,
+        toBuy: !home,
+        prepMinutes: fromBatch ? 8 : home ? 15 : 25,
+        pantryRatio: coverage.ratio,
+        coverageHint: badge,
+      };
     });
 
     const usefulInputs = eatNowInputsFromProducts(usefulProducts, {

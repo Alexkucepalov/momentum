@@ -26,6 +26,10 @@ export type EatNowCandidateInput = {
   atHome: boolean;
   /** True when suggestion may require a store run (catalog / not in pantry). */
   toBuy?: boolean;
+  /** 0..1 ingredient pantry coverage; null if unknown / N/A. */
+  pantryRatio?: number | null;
+  /** Short RU hint e.g. «3/5 дома». */
+  coverageHint?: string | null;
 };
 
 export type EatNowCandidate = {
@@ -165,11 +169,15 @@ function explanationFor(
   matched: EatNowFilterId[],
   fitScore: number | null,
 ): string {
-  if (matched.includes('no_cook')) return 'Без готовки';
+  const hint = input.coverageHint?.trim();
+  if (matched.includes('no_cook')) return hint ? `Без готовки · ${hint}` : 'Без готовки';
   if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
-    return 'Быстрый вариант';
+    return hint ? `Быстрый вариант · ${hint}` : 'Быстрый вариант';
   }
-  if (input.atHome) return 'Из того, что уже есть';
+  if (input.atHome) {
+    return hint ? `Из того, что уже есть · ${hint}` : 'Из того, что уже есть';
+  }
+  if (hint && input.kind === 'recipe') return `Не хватает ингредиентов · ${hint}`;
   if (matched.includes('more_protein')) return 'С акцентом на белок';
   if (fitScore !== null && fitScore >= 0.7) return 'Хорошо ложится в остаток';
   if (input.kind === 'recipe') return 'Из ваших рецептов';
@@ -228,6 +236,10 @@ export function scoreEatNow(
     });
   }
 
+  const ratioById = new Map(
+    candidates.map((c) => [`${c.kind}:${c.id}`, c.pantryRatio ?? null] as const),
+  );
+
   out.sort((a, b) => {
     if (preferProtein) {
       const pa = a.proteinG;
@@ -241,6 +253,13 @@ export function scoreEatNow(
     if (sa !== null && sb !== null && sa !== sb) return sb - sa;
     if (sa !== null && sb === null) return -1;
     if (sa === null && sb !== null) return 1;
+    const ra = ratioById.get(`${a.kind}:${a.id}`);
+    const rb = ratioById.get(`${b.kind}:${b.id}`);
+    if (ra !== null && ra !== undefined && rb !== null && rb !== undefined && ra !== rb) {
+      return rb - ra;
+    }
+    if (ra != null && rb == null) return -1;
+    if (ra == null && rb != null) return 1;
     return a.title.localeCompare(b.title, 'ru');
   });
 
