@@ -99,6 +99,18 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 После approve: помечать **один** следующий FP issue `agent-ready`; serial dispatcher.
 
+## Epic: Food Intelligence (design package — no code yet)
+
+Документы: `docs/food-intelligence/` (audit → PRD → journeys → IA → sources → ADR purchases → backlog → QA).
+
+**Статус:** design-only PR на ветке `docs/food-intelligence-overhaul`. **Не** начинать slice 1 (import → preview → pantry + expense) до approve ADR + OCR/consent. Quality Freeze для несвязанных фич сохраняется; device dogfood (#36–#38) остаётся open gate.
+
+| Slice | Outcome | Agent-ready? |
+|-------|---------|--------------|
+| Docs 00–07 | Founder review package | n/a (this PR) |
+| FI-1…FI-3 | Purchase confirm → pantry + expense | Only after ADR approve |
+| FI-4+ | OCR / match / Eat Now / plan→shop / budget | Serial after slice 1 dogfood |
+
 ## Backlog (next agent-ready)
 
 Очередь для Cloud triage / label `agent-ready`. Один issue за раз; ≤2 in flight. После merge — перенести в таблицу выше как Done.
