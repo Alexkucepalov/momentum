@@ -163,6 +163,7 @@ export function FoodCatalogList({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
           accessibilityRole="tablist"
+          accessibilityLabel="Фильтры каталога продуктов"
         >
           {filters.map(({ id, label, count, icon }) => {
             const on = filter === id;
@@ -177,11 +178,11 @@ export function FoodCatalogList({
                 ]}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${label}, ${count}`}
+                  accessibilityLabel={`Фильтр ${label}: ${count}`}
               >
                 <Ionicons
                   name={icon}
-                  size={14}
+                  size={16}
                   color={on ? colors.primaryButtonText : colors.textSecondary}
                 />
                 <Text style={[styles.filterText, on && styles.filterTextOn]}>{label}</Text>
@@ -197,7 +198,7 @@ export function FoodCatalogList({
 
       {searching && !anyHits ? (
         <Text style={styles.hint}>
-          Ничего не найдено — попробуй другое слово, справочник, ручной ввод или сканер
+          Ничего не найдено. Попробуй другое слово, просмотри весь каталог или создай продукт вручную
         </Text>
       ) : null}
 
@@ -236,20 +237,20 @@ export function FoodCatalogList({
 
       {showFrequentStrip ? (
         <View style={styles.block}>
-          <Text style={styles.sub}>Частые (локальный индекс)</Text>
+          <Text style={styles.sub}>Частые продукты</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.recentStrip}
           >
             {frequent.slice(0, 12).map((p) => (
-              <Pressable
-                key={`freq-${p.id}`}
-                style={({ pressed }) => [styles.recentCard, pressed && styles.pressed]}
-                onPress={() => onAddProduct(p)}
-                accessibilityRole="button"
-                accessibilityLabel={`Добавить ${p.name}`}
-              >
+                <Pressable
+                  key={`freq-${p.id}`}
+                  style={({ pressed }) => [styles.recentCard, pressed && styles.pressed]}
+                  onPress={() => onAddProduct(p)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Добавить частый продукт ${p.name}`}
+                >
                 <View style={styles.recentIcon}>
                   <Ionicons name="flash-outline" size={16} color={colors.text} />
                 </View>
@@ -328,12 +329,12 @@ export function FoodCatalogList({
           {filteredProducts.length === 0 && !searching && filter !== 'all' ? (
             <Text style={styles.hint}>
               {filter === 'favorites'
-                ? 'Пока нет избранного — нажми ★ у продукта'
-                : 'Создай продукт вручную или со сканера штрихкода'}
+                ? 'Избранных продуктов пока нет. Нажми ★ у продукта, чтобы добавить в избранное'
+                : 'Создай продукт вручную или добавь через сканер штрихкода'}
             </Text>
           ) : filteredProducts.length === 0 && !searching && filter === 'all' ? (
             <Text style={styles.hint}>
-              Создай продукт вручную / сканером или рецепт через «Добавить» → Рецепты
+              Создай первый продукт вручную, через сканер или добавь рецепт
             </Text>
           ) : (
             filteredProducts.map((p) => (
@@ -342,7 +343,7 @@ export function FoodCatalogList({
                   style={styles.cardMain}
                   onPress={() => onAddProduct(p)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Добавить ${p.name}`}
+                  accessibilityLabel={`Добавить продукт ${p.name}, ${p.energyKcal === null ? 'калорийность неизвестна' : `${Math.round(p.energyKcal)} калорий на 100 грамм`}`}
                 >
                   <View style={[styles.thumb, styles.thumbEmpty]}>
                     <Ionicons name="nutrition-outline" size={22} color={colors.textMuted} />
@@ -358,9 +359,9 @@ export function FoodCatalogList({
                         accessibilityLabel={
                           p.isFavorite
                             ? `Убрать из избранного ${p.name}`
-                            : `В избранное ${p.name}`
+                            : `Добавить в избранное ${p.name}`
                         }
-                        hitSlop={6}
+                        hitSlop={8}
                         style={styles.starHit}
                       >
                         <Ionicons
@@ -400,7 +401,7 @@ export function FoodCatalogList({
                 <Pressable
                   onPress={() => onAddProduct(p)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Порция ${p.name}`}
+                  accessibilityLabel={`Добавить порцию ${p.name}`}
                   style={styles.addBtn}
                 >
                   <Ionicons name="add" size={22} color={colors.primaryButtonText} />
@@ -416,8 +417,8 @@ export function FoodCatalogList({
       ) : null}
       {filter === 'frequent' && frequent.length === 0 ? (
         <Text style={styles.hint}>
-          Частые появятся после нескольких записей в дневник — индекс только из твоих логов, без
-          выдуманных продуктов.
+          Частые продукты появятся после нескольких записей в дневник. Индекс строится только из
+          твоих логов
         </Text>
       ) : null}
       {filter === 'recipes' && filteredRecipes.length === 0 ? (
@@ -470,8 +471,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    minHeight: 36,
-    paddingHorizontal: space.sm,
+    minHeight: touchMin,
+    paddingHorizontal: space.md,
     borderRadius: radius.pill,
     backgroundColor: colors.accentSoft,
   },
@@ -501,28 +502,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
-    minHeight: 40,
+    minHeight: touchMin,
   },
   filterChipOn: {
     backgroundColor: colors.primaryButton,
     borderColor: colors.primaryButton,
   },
   pressed: { opacity: 0.88 },
-  filterText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  filterText: { fontSize: type.caption, fontWeight: '800', color: colors.text },
   filterTextOn: { color: colors.primaryButtonText },
   countPill: {
-    minWidth: 22,
-    paddingHorizontal: 6,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 24,
+    paddingHorizontal: 7,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   countPillOn: { backgroundColor: 'rgba(255,255,255,0.22)' },
-  countText: { fontSize: type.micro, fontWeight: '800', color: colors.textSecondary },
+  countText: { fontSize: type.micro, fontWeight: '800', color: colors.text },
   countTextOn: { color: colors.primaryButtonText },
-  hint: { color: colors.textSecondary, lineHeight: 20, marginBottom: space.md },
+  hint: {
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginHorizontal: space.md,
+    marginBottom: space.md,
+  },
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
     width: 140,
@@ -589,19 +596,25 @@ const styles = StyleSheet.create({
   sourcePill: {
     backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
   },
   sourcePillRef: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#D4EDDA',
   },
   sourcePillText: {
     fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.textSecondary,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: 0.3,
   },
   meta: { fontSize: type.caption, color: colors.textSecondary },
-  starHit: { minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' },
+  starHit: {
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addBtn: {
     width: touchMin,
     borderRadius: radius.lg,
