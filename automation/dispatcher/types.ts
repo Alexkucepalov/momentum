@@ -38,6 +38,7 @@ export type GhPull = {
   merged_at: string | null;
   body: string | null;
   title: string;
+  headRef: string | null;
 };
 
 export type DispatcherConfig = {
