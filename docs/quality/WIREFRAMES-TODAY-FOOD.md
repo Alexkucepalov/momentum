@@ -134,12 +134,13 @@ Nothing-inspired: мало рамок, типографика > chips.
 
 ### Acceptance (S2-2 Food)
 
-- [ ] Default segment = **Дневник**  
-- [ ] Каталог не виден одновременно с полным списком слотов (segment switch)  
-- [ ] Sticky + открывает AddFoodSheet  
-- [ ] Поиск живёт в Каталоге (и/или sheet) — без третьей «строки поиска» на Дневнике  
-- [ ] Week strip: оставить compact **или** убрать с default (решение в PR: prefer keep 1 row)  
-- [ ] verify + screenshots + dogfood Flow 3  
+- [x] Default segment = **Дневник**  
+- [x] Каталог не виден одновременно с полным списком слотов (segment switch)  
+- [x] Sticky + открывает AddFoodSheet  
+- [x] Поиск живёт в Каталоге — без строки поиска на Дневнике  
+- [x] Одна date-nav: `DateSwitcher`; `WeekNutritionStrip` убран с Food (дубль)  
+- [ ] verify + screenshots  
+- [ ] dogfood Flow 3 — **pending** (device gate)  
 
 ### Скрыть / перенести
 
