@@ -79,13 +79,6 @@ const SECONDARY: HubItem[] = [
     icon: 'wallet-outline',
     href: '/plan/budget',
   },
-  {
-    key: 'stores',
-    title: 'Магазины',
-    subtitle: 'Предпочтения · без парсинга цен',
-    icon: 'storefront-outline',
-    href: '/plan/stores',
-  },
 ];
 
 function HubRow({ item }: { item: HubItem }) {

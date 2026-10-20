@@ -75,8 +75,7 @@ export default function BudgetScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
-        Три разные метрики: фактически потраченное, прогноз открытых списков покупок и оценка
-        съеденного. Ни одна не выдаётся за live-цену магазина.
+        План / факт / корзина — разные числа. Прогноз месяца только при достаточной истории.
       </Text>
 
       <Text style={styles.month}>{month}</Text>
@@ -121,10 +120,13 @@ export default function BudgetScreen() {
           Прогноз трат до конца месяца:{' '}
           {snap.forecastRub != null
             ? `~${Math.round(snap.forecastRub)} ₽`
-            : 'недостаточно данных'}
+            : 'Пока мало данных для прогноза'}
         </Text>
         <Text style={styles.hint}>
           День {snap.daysElapsed} из {snap.daysInMonth}
+          {snap.forecastRub == null && snap.daysElapsed < 7
+            ? ' · нужно ≥7 дней с расходами'
+            : ''}
           {snap.incomplete ? ' · лимит или суммы неполные' : ''}
           {eaten.incomplete && eaten.totalCount > 0 ? ' · съеденное частично без цен' : ''}
         </Text>

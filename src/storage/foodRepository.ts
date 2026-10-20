@@ -36,6 +36,7 @@ import {
 } from '../domain/purchaseConfirm';
 import { nutritionForRecipePortion } from '../domain/recipeNutrition';
 import { suggestPantryLocation } from '../domain/suggestPantryLocation';
+import { reconcileShoppingWithPurchaseLines } from '../domain/shoppingReconcile';
 import { computeDailyTotals } from './dailyTotals';
 import {
   assertNonNegativeFinite,
@@ -425,8 +426,24 @@ export type FoodRepository = {
   listShoppingLists(): ShoppingList[];
   getShoppingList(listId: string): ShoppingList | null;
   listShoppingItems(listId: string): ShoppingItem[];
+  /** Empty open list for manual lines. */
+  createEmptyShoppingList(title?: string): ShoppingList;
   /** Build list from meal plan ingredients; does not invent prices. */
   createShoppingListFromPlan(planId: string, title?: string): ShoppingList;
+  /** Missing ingredients for one recipe vs pantry (portion = cookedYield). */
+  createShoppingListFromRecipe(recipeId: string, title?: string): ShoppingList;
+  addShoppingItem(input: {
+    listId: string;
+    displayName: string;
+    quantity: number;
+    unit: PantryUnit;
+    productId?: string | null;
+  }): ShoppingItem;
+  /**
+   * After a confirmed purchase: reduce needToBuy / check off matching open-list lines.
+   * Unknown purchase qty does not auto-cover.
+   */
+  reconcileOpenShoppingWithPurchase(purchaseId: string): { patched: number };
   setShoppingItemChecked(itemId: string, checked: boolean): ShoppingItem;
   setShoppingItemPrice(
     itemId: string,
@@ -2295,6 +2312,7 @@ export function createMemoryFoodRepository(seed?: {
         deletedAt: null,
       };
       purchases.set(purchase.id, purchase);
+      api.reconcileOpenShoppingWithPurchase(purchase.id);
       notify();
       return {
         purchase: { ...purchase },
@@ -2624,6 +2642,157 @@ export function createMemoryFoodRepository(seed?: {
         .filter((i) => i.listId === listId && !i.deletedAt)
         .map((i) => ({ ...i }))
         .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
+    },
+    createEmptyShoppingList(title) {
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId: null,
+        title: (title?.trim() || 'Список покупок').slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      notify();
+      return { ...list };
+    },
+    createShoppingListFromRecipe(recipeId, title) {
+      const recipe = recipes.get(recipeId);
+      if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
+      const ings = ingredients.get(recipeId) ?? [];
+      const ingInputs = ings.map((ing) => ({
+        displayName: ing.displayName,
+        quantity: ing.rawGrams,
+        unit: 'g' as const,
+        productId: ing.productId,
+      }));
+      const pantryCov = [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({
+          displayName: p.displayName,
+          productId: p.productId,
+          quantityG: p.quantityG,
+          quantityCount: p.quantityCount,
+          unit: p.unit,
+        }));
+      const priceMap = new Map<
+        string,
+        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+      >();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const existing = priceMap.get(pp.productKey);
+        if (!existing || pp.observedOn >= existing.priceAsOf) {
+          priceMap.set(pp.productKey, {
+            priceRub: pp.priceRub,
+            priceAsOf: pp.observedOn,
+            priceSource: pp.source,
+          });
+        }
+      }
+      const lines = aggregateShopping(ingInputs, pantryCov, priceMap);
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId: null,
+        title: (title?.trim() || `Покупки · ${recipe.name}`).slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      for (const line of lines) {
+        if (line.needToBuy <= 0) continue;
+        const item: ShoppingItem = {
+          id: newId(),
+          listId: list.id,
+          displayName: line.displayName,
+          quantity: line.quantity,
+          unit: line.unit,
+          coveredByPantry: line.coveredByPantry,
+          needToBuy: line.needToBuy,
+          checked: false,
+          priceRub: line.priceRub,
+          priceAsOf: line.priceAsOf,
+          priceSource: line.priceSource,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        shoppingItems.set(item.id, item);
+      }
+      notify();
+      return { ...list };
+    },
+    addShoppingItem(input) {
+      const list = shoppingLists.get(input.listId);
+      if (!list || list.deletedAt) throw new Error('Shopping list not found');
+      assertPositiveFinite(input.quantity, 'quantity');
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Название позиции обязательно');
+      const ts = nowIso();
+      const item: ShoppingItem = {
+        id: newId(),
+        listId: input.listId,
+        displayName: name.slice(0, 120),
+        quantity: input.quantity,
+        unit: input.unit,
+        coveredByPantry: 0,
+        needToBuy: input.quantity,
+        checked: false,
+        priceRub: null,
+        priceAsOf: null,
+        priceSource: null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingItems.set(item.id, item);
+      list.updatedAt = ts;
+      notify();
+      return { ...item };
+    },
+    reconcileOpenShoppingWithPurchase(purchaseId) {
+      const purchase = purchases.get(purchaseId);
+      if (!purchase || purchase.deletedAt) return { patched: 0 };
+      const lines = [...purchaseLines.values()].filter(
+        (l) => l.purchaseId === purchaseId && !l.deletedAt,
+      );
+      const purchasePayload = lines.map((l) => ({
+        displayName: l.displayName,
+        quantity: l.quantity,
+        unit: l.unit,
+        excluded: l.excluded,
+        isFood: l.isFood,
+      }));
+      let patched = 0;
+      for (const list of shoppingLists.values()) {
+        if (list.deletedAt || list.status !== 'open') continue;
+        const items = [...shoppingItems.values()]
+          .filter((i) => i.listId === list.id && !i.deletedAt)
+          .map((i) => ({
+            id: i.id,
+            displayName: i.displayName,
+            unit: i.unit,
+            needToBuy: i.needToBuy,
+            checked: i.checked,
+          }));
+        const patches = reconcileShoppingWithPurchaseLines(items, purchasePayload);
+        const ts = nowIso();
+        for (const p of patches) {
+          const item = shoppingItems.get(p.itemId);
+          if (!item || item.deletedAt) continue;
+          item.needToBuy = p.needToBuy;
+          item.checked = p.checked;
+          item.updatedAt = ts;
+          patched += 1;
+        }
+        if (patches.length) list.updatedAt = ts;
+      }
+      return { patched };
     },
     createShoppingListFromPlan(planId, title) {
       const plan = mealPlans.get(planId);

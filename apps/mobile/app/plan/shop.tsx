@@ -29,6 +29,9 @@ export default function ShopScreen() {
   const [error, setError] = useState<string | null>(null);
   const [lastCheckedId, setLastCheckedId] = useState<string | null>(null);
   const [onlyMissing, setOnlyMissing] = useState(true);
+  const [manualName, setManualName] = useState('');
+  const [manualQty, setManualQty] = useState('1');
+  const [manualUnit, setManualUnit] = useState<'g' | 'ml' | 'pcs'>('pcs');
 
   const activeListId = listId ?? lists[0]?.id ?? null;
   const list = activeListId ? repo.getShoppingList(activeListId) : null;
@@ -57,12 +60,99 @@ export default function ShopScreen() {
     }
   };
 
+  const createEmpty = () => {
+    setError(null);
+    try {
+      const created = repo.createEmptyShoppingList('Мой список');
+      setListId(created.id);
+      refresh();
+      showFlash('Пустой список готов');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось создать список');
+    }
+  };
+
+  const addManual = () => {
+    setError(null);
+    try {
+      let id = activeListId;
+      if (!id) {
+        id = repo.createEmptyShoppingList('Мой список').id;
+        setListId(id);
+      }
+      const qty = Number(manualQty.replace(',', '.'));
+      repo.addShoppingItem({
+        listId: id,
+        displayName: manualName,
+        quantity: qty,
+        unit: manualUnit,
+      });
+      setManualName('');
+      setManualQty('1');
+      refresh();
+      showFlash('Позиция в списке');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось добавить');
+    }
+  };
+
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
-        Список из меню — только недостающее после запасов. Цену вводи сам: оценка с датой, не «цена
-        сегодня».
+        Корзина из меню или руками. Цену вводи сам — оценка с датой, не «цена сегодня».
       </Text>
+
+      <PrimaryButton label="Новый пустой список" onPress={createEmpty} />
+      <Pressable
+        onPress={() => router.push('/plan/receipt')}
+        style={styles.linkRow}
+        accessibilityRole="button"
+        accessibilityLabel="Импорт покупки"
+      >
+        <Text style={styles.linkText}>Купил → импорт в запасы</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => router.push('/plan/stores')}
+        style={styles.linkRow}
+        accessibilityRole="button"
+        accessibilityLabel="Предпочтения магазинов"
+      >
+        <Text style={styles.linkMuted}>Магазины (предпочтения)</Text>
+      </Pressable>
+
+      <Text style={styles.section}>Добавить вручную</Text>
+      <TextInput
+        value={manualName}
+        onChangeText={setManualName}
+        placeholder="Название"
+        placeholderTextColor={colors.textMuted}
+        style={styles.input}
+        accessibilityLabel="Название позиции"
+      />
+      <View style={styles.row}>
+        <TextInput
+          value={manualQty}
+          onChangeText={setManualQty}
+          placeholder="Кол-во"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="decimal-pad"
+          style={[styles.input, styles.qtyInput]}
+          accessibilityLabel="Количество"
+        />
+        {(['g', 'ml', 'pcs'] as const).map((u) => (
+          <Pressable
+            key={u}
+            onPress={() => setManualUnit(u)}
+            style={[styles.unitChip, manualUnit === u && styles.unitChipOn]}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: manualUnit === u }}
+            accessibilityLabel={u === 'pcs' ? 'шт' : u}
+          >
+            <Text style={styles.unitChipText}>{u === 'pcs' ? 'шт' : u}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <PrimaryButton label="В список" onPress={addManual} />
 
       <Text style={styles.section}>Из меню</Text>
       {plans.length === 0 ? (
@@ -70,7 +160,7 @@ export default function ShopScreen() {
           compact
           icon="calendar-outline"
           title="Нет плана"
-          body="Сначала составь меню на неделю — оттуда соберём корзину."
+          body="Можно вести список вручную выше — или собрать из меню."
           actionLabel="К меню"
           onAction={() => router.push('/plan/week')}
         />
@@ -245,6 +335,35 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   content: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
   lead: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
+  linkRow: { minHeight: touchMin, justifyContent: 'center' },
+  linkText: { fontSize: type.body, fontWeight: '700', color: colors.text },
+  linkMuted: { fontSize: type.caption, fontWeight: '600', color: colors.textSecondary },
+  input: {
+    minHeight: touchMin,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: space.md,
+    backgroundColor: colors.surface,
+    fontSize: type.body,
+    color: colors.text,
+    width: '100%',
+  },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'center' },
+  qtyInput: { flex: 1, minWidth: 72 },
+  unitChip: {
+    minHeight: touchMin,
+    minWidth: 44,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  unitChipOn: { borderColor: colors.text, backgroundColor: colors.background },
+  unitChipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   section: {
     fontSize: type.caption,
     fontWeight: '700',
