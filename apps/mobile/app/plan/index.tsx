@@ -10,111 +10,112 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href:
-    | '/plan/eat-now'
-    | '/plan/pantry'
-    | '/plan/week'
-    | '/plan/shop'
-    | '/plan/budget'
-    | '/plan/stores'
-    | null;
-  soon?: boolean;
+  href: '/plan/eat-now' | '/plan/pantry' | '/plan/week' | '/plan/shop' | '/plan/budget' | '/plan/stores' | '/recipes';
+  primary?: boolean;
 };
 
-const ITEMS: HubItem[] = [
+/** Primary = daily loop; secondary = planning/money — same screens, clearer hierarchy. */
+const PRIMARY: HubItem[] = [
   {
     key: 'eat-now',
     title: 'Что съесть сейчас?',
-    subtitle: 'По остатку КБЖУ',
+    subtitle: 'Подбор по остатку КБЖУ · рецепты и запасы',
     icon: 'flash-outline',
     href: '/plan/eat-now',
+    primary: true,
+  },
+  {
+    key: 'recipes',
+    title: 'Рецепты',
+    subtitle: 'Библиотека, импорт, повтор готовки',
+    icon: 'book-outline',
+    href: '/recipes',
+    primary: true,
   },
   {
     key: 'pantry',
     title: 'Запасы дома',
-    subtitle: 'Холодильник, морозилка, партии',
+    subtitle: 'Что есть · для Eat Now и покупок',
     icon: 'cube-outline',
     href: '/plan/pantry',
+    primary: true,
   },
+];
+
+const SECONDARY: HubItem[] = [
   {
     key: 'week',
     title: 'Меню на неделю',
-    subtitle: '3–7 дней и порции',
+    subtitle: 'План порций · не дневник',
     icon: 'calendar-outline',
     href: '/plan/week',
   },
   {
     key: 'shop',
-    title: 'Мои покупки',
-    subtitle: 'Список и оценка цен',
+    title: 'Покупки',
+    subtitle: 'Список из меню и запасов',
     icon: 'cart-outline',
     href: '/plan/shop',
   },
   {
     key: 'budget',
     title: 'Бюджет питания',
-    subtitle: 'Лимит, расходы, прогноз',
+    subtitle: 'Лимит и расходы · без live-цен',
     icon: 'wallet-outline',
     href: '/plan/budget',
   },
   {
     key: 'stores',
     title: 'Магазины',
-    subtitle: 'Предпочтения, без live-цен',
+    subtitle: 'Предпочтения · без парсинга цен',
     icon: 'storefront-outline',
     href: '/plan/stores',
   },
 ];
 
-export default function PlanHubScreen() {
+function HubRow({ item }: { item: HubItem }) {
   const router = useRouter();
+  return (
+    <Pressable
+      onPress={() => router.push(item.href)}
+      style={({ pressed }) => [styles.card, item.primary && styles.cardPrimary, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}. ${item.subtitle}`}
+    >
+      <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
+        <Ionicons name={item.icon} size={22} color={colors.text} />
+      </View>
+      <View style={styles.cardText}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardSub}>{item.subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+    </Pressable>
+  );
+}
 
+export default function PlanHubScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.kicker} accessibilityRole="header">
-        Рецепты · Неделя · Покупки · Бюджет
+        План питания
       </Text>
       <Text style={styles.lead}>
-        Вечером — что съесть по остатку. В запасах — что дома. В выходные — меню и покупки. Без
-        запретов и выдуманных ккал.
+        Сейчас — что съесть. Рецепты и запасы рядом. Меню и покупки — когда планируешь неделю.
       </Text>
 
+      <Text style={styles.section}>Сейчас</Text>
       <View style={styles.list} accessibilityRole="list">
-        {ITEMS.map((item) => {
-          const disabled = item.soon || !item.href;
-          return (
-            <Pressable
-              key={item.key}
-              disabled={disabled}
-              onPress={() => {
-                if (item.href) router.push(item.href);
-              }}
-              style={({ pressed }) => [
-                styles.card,
-                disabled && styles.cardSoon,
-                pressed && !disabled && styles.pressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityState={{ disabled }}
-              accessibilityLabel={
-                disabled ? `${item.title}. Пока недоступно` : `${item.title}. ${item.subtitle}`
-              }
-            >
-              <View style={styles.iconWrap}>
-                <Ionicons name={item.icon} size={22} color={colors.text} />
-              </View>
-              <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSub}>{item.subtitle}</Text>
-              </View>
-              {!disabled ? (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              ) : (
-                <Text style={styles.soon}>Скоро</Text>
-              )}
-            </Pressable>
-          );
-        })}
+        {PRIMARY.map((item) => (
+          <HubRow key={item.key} item={item} />
+        ))}
+      </View>
+
+      <Text style={styles.section}>Неделя и деньги</Text>
+      <View style={styles.list} accessibilityRole="list">
+        {SECONDARY.map((item) => (
+          <HubRow key={item.key} item={item} />
+        ))}
       </View>
     </FormScrollView>
   );
@@ -128,15 +129,23 @@ const styles = StyleSheet.create({
   },
   kicker: {
     fontSize: type.caption,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textSecondary,
     letterSpacing: 0.2,
   },
   lead: {
     fontSize: type.body,
     color: colors.textSecondary,
-    marginBottom: space.sm,
+    marginBottom: space.xs,
     lineHeight: 22,
+  },
+  section: {
+    marginTop: space.sm,
+    fontSize: type.micro,
+    fontWeight: '800',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   list: { gap: space.sm },
   card: {
@@ -151,7 +160,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cardSoon: { opacity: 0.72 },
+  cardPrimary: {
+    borderColor: colors.text,
+  },
   pressed: { opacity: 0.88 },
   iconWrap: {
     width: 40,
@@ -161,8 +172,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconWrapPrimary: {
+    backgroundColor: colors.accentSoft,
+  },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
   cardSub: { fontSize: type.caption, color: colors.textSecondary },
-  soon: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
 });

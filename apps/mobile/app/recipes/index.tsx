@@ -82,10 +82,14 @@ export default function RecipesIndexScreen() {
             </View>
             <View style={styles.hubHeaderText}>
               <Text style={styles.hubHint}>Добавить рецепт</Text>
-              <Text style={styles.hubLead}>Три пути — вручную, из текста или из архива</Text>
+              <Text style={styles.hubLead}>Вручную · из текста · из архива</Text>
             </View>
           </View>
           <RecipeHubActions />
+          <Text style={styles.discoveryHint}>
+            Нужен готовый продукт без готовки? Питание → Каталог. Повторить вчерашнее — Сегодня →
+            Недавно.
+          </Text>
         </View>
 
         <View style={styles.searchBox}>
@@ -290,6 +294,12 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     color: colors.textSecondary,
     lineHeight: 18,
+  },
+  discoveryHint: {
+    marginTop: space.md,
+    fontSize: type.micro,
+    color: colors.textMuted,
+    lineHeight: 16,
   },
   headerBtn: {
     minWidth: touchMin,
