@@ -11,6 +11,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 
+import {
+  formatPantryCoverageBadge,
+  recipePantryCoverage,
+} from '../../../../src/domain/recipePantryCoverage';
 import { recipeHasManualPer100g } from '../../../../src/domain/recipeNutrition';
 import type { Recipe } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
@@ -33,6 +37,8 @@ export default function RecipesIndexScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const recipes = repo.listRecipes();
+  const pantry = repo.listPantryItems();
+  const pantryNonEmpty = pantry.length > 0;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -180,13 +186,18 @@ export default function RecipesIndexScreen() {
             />
           )
         }
-        renderItem={({ item }) => (
-          <RecipeCard
-            recipe={item}
-            ingredientCount={repo.getRecipeIngredients(item.id).length}
-            onPress={() => router.push(`/recipes/${item.id}`)}
-          />
-        )}
+        renderItem={({ item }) => {
+          const ings = repo.getRecipeIngredients(item.id);
+          const coverage = pantryNonEmpty ? recipePantryCoverage(ings, pantry) : null;
+          return (
+            <RecipeCard
+              recipe={item}
+              ingredientCount={ings.length}
+              pantryBadge={coverage ? formatPantryCoverageBadge(coverage) : null}
+              onPress={() => router.push(`/recipes/${item.id}`)}
+            />
+          );
+        }}
       />
     </View>
   );
@@ -195,10 +206,12 @@ export default function RecipesIndexScreen() {
 function RecipeCard({
   recipe,
   ingredientCount,
+  pantryBadge,
   onPress,
 }: {
   recipe: Recipe;
   ingredientCount: number;
+  pantryBadge: string | null;
   onPress: () => void;
 }) {
   const hasManual = recipeHasManualPer100g(recipe);
@@ -208,7 +221,7 @@ function RecipeCard({
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Рецепт ${recipe.name}`}
+      accessibilityLabel={`Рецепт ${recipe.name}${pantryBadge ? `, ${pantryBadge}` : ''}`}
     >
       {recipe.photoUri ? (
         <Image source={{ uri: recipe.photoUri }} style={styles.thumb} />
@@ -226,7 +239,12 @@ function RecipeCard({
           <Text style={styles.cardTitle} numberOfLines={2}>
             {recipe.name}
           </Text>
-          {fromArchive ? (
+          {pantryBadge ? (
+            <View style={styles.badge}>
+              <Ionicons name="cube-outline" size={11} color={colors.textSecondary} />
+              <Text style={styles.badgeText}>{pantryBadge}</Text>
+            </View>
+          ) : fromArchive ? (
             <View style={styles.badge}>
               <Ionicons name="library-outline" size={11} color={colors.textSecondary} />
               <Text style={styles.badgeText}>архив</Text>
