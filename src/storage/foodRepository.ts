@@ -5,6 +5,13 @@ import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch'
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
+  aggregateShopping,
+  estimateBasketTotal,
+  scaleIngredientGrams,
+  shoppingKey,
+  type BasketTotal,
+} from '../domain/aggregateShopping';
+import {
   buildMealPlanDraft,
   type MealPlanDiversity,
   type MealPlanPeriodDays,
@@ -34,7 +41,12 @@ import type {
   PantryLocation,
   PantryUnit,
   PlannedMeal,
+  ProductPrice,
   Profile,
+  ShoppingItem,
+  ShoppingList,
+  ShoppingListStatus,
+  ShoppingPriceSource,
   Recipe,
   RecipeIngredient,
   SavedMeal,
@@ -333,6 +345,26 @@ export type FoodRepository = {
    * Never auto-called on plan create.
    */
   logPlannedMealToDiary(plannedMealId: string): FoodEntry;
+  listShoppingLists(): ShoppingList[];
+  getShoppingList(listId: string): ShoppingList | null;
+  listShoppingItems(listId: string): ShoppingItem[];
+  /** Build list from meal plan ingredients; does not invent prices. */
+  createShoppingListFromPlan(planId: string, title?: string): ShoppingList;
+  setShoppingItemChecked(itemId: string, checked: boolean): ShoppingItem;
+  setShoppingItemPrice(
+    itemId: string,
+    args: { priceRub: number | null; priceAsOf?: string | null; priceSource?: ShoppingPriceSource | null },
+  ): ShoppingItem;
+  softDeleteShoppingList(listId: string): ShoppingList;
+  shoppingBasketTotal(listId: string): BasketTotal;
+  upsertProductPrice(input: {
+    productKey: string;
+    priceRub: number;
+    unit: PantryUnit;
+    observedOn: string;
+    storeId?: string | null;
+    source?: ShoppingPriceSource;
+  }): ProductPrice;
   exportAll(): string;
   /**
    * Replace all local data from export JSON (validated).
@@ -483,10 +515,66 @@ function normalizePlannedMeal(raw: PlannedMeal): PlannedMeal {
   };
 }
 
+function normalizeShoppingList(raw: ShoppingList): ShoppingList {
+  const status: ShoppingListStatus =
+    raw.status === 'done' || raw.status === 'archived' ? raw.status : 'open';
+  return {
+    id: raw.id,
+    planId: raw.planId ?? null,
+    title: raw.title,
+    status,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeShoppingItem(raw: ShoppingItem): ShoppingItem {
+  const unit: PantryUnit = raw.unit === 'ml' || raw.unit === 'pcs' ? raw.unit : 'g';
+  const priceSource: ShoppingPriceSource | null =
+    raw.priceSource === 'user' || raw.priceSource === 'receipt' || raw.priceSource === 'estimate'
+      ? raw.priceSource
+      : null;
+  return {
+    id: raw.id,
+    listId: raw.listId,
+    displayName: raw.displayName,
+    quantity: raw.quantity,
+    unit,
+    coveredByPantry: raw.coveredByPantry ?? 0,
+    needToBuy: raw.needToBuy ?? raw.quantity,
+    checked: !!raw.checked,
+    priceRub: raw.priceRub ?? null,
+    priceAsOf: raw.priceAsOf ?? null,
+    priceSource,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeProductPrice(raw: ProductPrice): ProductPrice {
+  const unit: PantryUnit = raw.unit === 'ml' || raw.unit === 'pcs' ? raw.unit : 'g';
+  const source: ShoppingPriceSource =
+    raw.source === 'receipt' || raw.source === 'estimate' ? raw.source : 'user';
+  return {
+    id: raw.id,
+    productKey: raw.productKey,
+    storeId: raw.storeId ?? null,
+    priceRub: raw.priceRub,
+    unit,
+    observedOn: raw.observedOn,
+    source,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
 function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   if (!raw) return undefined;
   return {
-    version: 11,
+    version: 12,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
@@ -507,6 +595,9 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     cookedBatches: (raw.cookedBatches ?? []).map(normalizeCookedBatch),
     mealPlans: (raw.mealPlans ?? []).map(normalizeMealPlan),
     plannedMeals: (raw.plannedMeals ?? []).map(normalizePlannedMeal),
+    shoppingLists: (raw.shoppingLists ?? []).map(normalizeShoppingList),
+    shoppingItems: (raw.shoppingItems ?? []).map(normalizeShoppingItem),
+    productPrices: (raw.productPrices ?? []).map(normalizeProductPrice),
   };
 }
 
@@ -595,6 +686,15 @@ export function createMemoryFoodRepository(seed?: {
   const plannedMeals = new Map<string, PlannedMeal>(
     (snap?.plannedMeals ?? []).map((m) => [m.id, { ...m }]),
   );
+  const shoppingLists = new Map<string, ShoppingList>(
+    (snap?.shoppingLists ?? []).map((l) => [l.id, { ...l }]),
+  );
+  const shoppingItems = new Map<string, ShoppingItem>(
+    (snap?.shoppingItems ?? []).map((i) => [i.id, { ...i }]),
+  );
+  const productPrices = new Map<string, ProductPrice>(
+    (snap?.productPrices ?? []).map((p) => [p.id, { ...p }]),
+  );
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
 
@@ -674,7 +774,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 11,
+        version: 12,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -695,6 +795,9 @@ export function createMemoryFoodRepository(seed?: {
         cookedBatches: [...cookedBatches.values()].map((b) => ({ ...b })),
         mealPlans: [...mealPlans.values()].map((p) => ({ ...p })),
         plannedMeals: [...plannedMeals.values()].map((m) => ({ ...m })),
+        shoppingLists: [...shoppingLists.values()].map((l) => ({ ...l })),
+        shoppingItems: [...shoppingItems.values()].map((i) => ({ ...i })),
+        productPrices: [...productPrices.values()].map((p) => ({ ...p })),
       };
     },
     getProfile: () => ({ ...profile }),
@@ -1971,6 +2074,223 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...entry };
     },
+    listShoppingLists() {
+      return [...shoppingLists.values()]
+        .filter((l) => !l.deletedAt)
+        .map((l) => ({ ...l }))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    getShoppingList(listId) {
+      const l = shoppingLists.get(listId);
+      if (!l || l.deletedAt) return null;
+      return { ...l };
+    },
+    listShoppingItems(listId) {
+      return [...shoppingItems.values()]
+        .filter((i) => i.listId === listId && !i.deletedAt)
+        .map((i) => ({ ...i }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
+    },
+    createShoppingListFromPlan(planId, title) {
+      const plan = mealPlans.get(planId);
+      if (!plan || plan.deletedAt) throw new Error('Meal plan not found');
+      const planned = [...plannedMeals.values()].filter(
+        (m) => m.planId === planId && !m.deletedAt && m.status !== 'skipped',
+      );
+      const ingInputs: Array<{
+        displayName: string;
+        quantity: number;
+        unit: 'g' | 'ml' | 'pcs';
+        productId?: string | null;
+      }> = [];
+      for (const pm of planned) {
+        if (pm.recipeId) {
+          const recipe = recipes.get(pm.recipeId);
+          if (!recipe || recipe.deletedAt) continue;
+          const ings = ingredients.get(pm.recipeId) ?? [];
+          for (const ing of ings) {
+            const qty = scaleIngredientGrams(ing.rawGrams, recipe.cookedYieldG, pm.grams);
+            ingInputs.push({
+              displayName: ing.displayName,
+              quantity: qty,
+              unit: 'g',
+              productId: ing.productId,
+            });
+          }
+        } else if (pm.productId) {
+          const product = products.get(pm.productId);
+          ingInputs.push({
+            displayName: product?.name ?? pm.displayName,
+            quantity: pm.grams,
+            unit: 'g',
+            productId: pm.productId,
+          });
+        } else {
+          ingInputs.push({
+            displayName: pm.displayName,
+            quantity: pm.grams,
+            unit: 'g',
+          });
+        }
+      }
+      const pantryCov = [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({
+          displayName: p.displayName,
+          productId: p.productId,
+          quantityG: p.quantityG,
+          quantityCount: p.quantityCount,
+          unit: p.unit,
+        }));
+      const priceMap = new Map<
+        string,
+        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+      >();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const existing = priceMap.get(pp.productKey);
+        if (!existing || pp.observedOn >= existing.priceAsOf) {
+          priceMap.set(pp.productKey, {
+            priceRub: pp.priceRub,
+            priceAsOf: pp.observedOn,
+            priceSource: pp.source,
+          });
+        }
+      }
+      const lines = aggregateShopping(ingInputs, pantryCov, priceMap);
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId,
+        title: (title?.trim() || `Покупки ${plan.startDate}–${plan.endDate}`).slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      for (const line of lines) {
+        const item: ShoppingItem = {
+          id: newId(),
+          listId: list.id,
+          displayName: line.displayName,
+          quantity: line.quantity,
+          unit: line.unit,
+          coveredByPantry: line.coveredByPantry,
+          needToBuy: line.needToBuy,
+          checked: line.needToBuy <= 0,
+          priceRub: line.priceRub,
+          priceAsOf: line.priceAsOf,
+          priceSource: line.priceSource,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        shoppingItems.set(item.id, item);
+      }
+      notify();
+      return { ...list };
+    },
+    setShoppingItemChecked(itemId, checked) {
+      const item = shoppingItems.get(itemId);
+      if (!item || item.deletedAt) throw new Error('Shopping item not found');
+      item.checked = checked;
+      item.updatedAt = nowIso();
+      notify();
+      return { ...item };
+    },
+    setShoppingItemPrice(itemId, args) {
+      const item = shoppingItems.get(itemId);
+      if (!item || item.deletedAt) throw new Error('Shopping item not found');
+      if (args.priceRub !== null) assertNonNegativeFinite(args.priceRub, 'priceRub');
+      item.priceRub = args.priceRub;
+      item.priceAsOf = args.priceAsOf === undefined ? item.priceAsOf : args.priceAsOf;
+      item.priceSource =
+        args.priceSource === undefined
+          ? args.priceRub === null
+            ? null
+            : (item.priceSource ?? 'user')
+          : args.priceSource;
+      if (args.priceRub !== null && !item.priceAsOf) {
+        item.priceAsOf = nowIso().slice(0, 10);
+      }
+      if (args.priceRub !== null) {
+        item.priceSource = item.priceSource ?? 'user';
+        const key = shoppingKey(item.displayName, item.unit);
+        api.upsertProductPrice({
+          productKey: key,
+          priceRub: args.priceRub,
+          unit: item.unit,
+          observedOn: item.priceAsOf ?? nowIso().slice(0, 10),
+          source: item.priceSource ?? 'user',
+        });
+      }
+      item.updatedAt = nowIso();
+      notify();
+      return { ...item };
+    },
+    softDeleteShoppingList(listId) {
+      const list = shoppingLists.get(listId);
+      if (!list || list.deletedAt) throw new Error('Shopping list not found');
+      const ts = nowIso();
+      list.deletedAt = ts;
+      list.updatedAt = ts;
+      for (const i of shoppingItems.values()) {
+        if (i.listId === listId && !i.deletedAt) {
+          i.deletedAt = ts;
+          i.updatedAt = ts;
+        }
+      }
+      notify();
+      return { ...list };
+    },
+    shoppingBasketTotal(listId) {
+      const items = api.listShoppingItems(listId).map((i) => ({
+        key: shoppingKey(i.displayName, i.unit),
+        displayName: i.displayName,
+        quantity: i.quantity,
+        unit: i.unit,
+        coveredByPantry: i.coveredByPantry,
+        needToBuy: i.checked ? 0 : i.needToBuy,
+        priceRub: i.priceRub,
+        priceAsOf: i.priceAsOf,
+        priceSource: i.priceSource,
+      }));
+      return estimateBasketTotal(items);
+    },
+    upsertProductPrice(input) {
+      assertNonNegativeFinite(input.priceRub, 'priceRub');
+      const key = input.productKey.trim();
+      if (!key) throw new Error('productKey required');
+      const ts = nowIso();
+      const existing = [...productPrices.values()].find(
+        (p) => !p.deletedAt && p.productKey === key && (p.storeId ?? null) === (input.storeId ?? null),
+      );
+      if (existing) {
+        existing.priceRub = input.priceRub;
+        existing.unit = input.unit;
+        existing.observedOn = input.observedOn;
+        existing.source = input.source ?? 'user';
+        existing.updatedAt = ts;
+        notify();
+        return { ...existing };
+      }
+      const row: ProductPrice = {
+        id: newId(),
+        productKey: key,
+        storeId: input.storeId ?? null,
+        priceRub: input.priceRub,
+        unit: input.unit,
+        observedOn: input.observedOn,
+        source: input.source ?? 'user',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      productPrices.set(row.id, row);
+      notify();
+      return { ...row };
+    },
     exportAll() {
       return JSON.stringify(
         {
@@ -2003,6 +2323,9 @@ export function createMemoryFoodRepository(seed?: {
       cookedBatches.clear();
       mealPlans.clear();
       plannedMeals.clear();
+      shoppingLists.clear();
+      shoppingItems.clear();
+      productPrices.clear();
 
       Object.assign(profile, next.profile);
       for (const p of next.products) products.set(p.id, { ...p });
@@ -2028,6 +2351,9 @@ export function createMemoryFoodRepository(seed?: {
       for (const b of next.cookedBatches) cookedBatches.set(b.id, { ...b });
       for (const p of next.mealPlans) mealPlans.set(p.id, { ...p });
       for (const m of next.plannedMeals) plannedMeals.set(m.id, { ...m });
+      for (const l of next.shoppingLists) shoppingLists.set(l.id, { ...l });
+      for (const i of next.shoppingItems) shoppingItems.set(i.id, { ...i });
+      for (const p of next.productPrices) productPrices.set(p.id, { ...p });
 
       notify();
       return summarizeSnapshot(next);
@@ -2049,6 +2375,9 @@ export function createMemoryFoodRepository(seed?: {
       cookedBatches.clear();
       mealPlans.clear();
       plannedMeals.clear();
+      shoppingLists.clear();
+      shoppingItems.clear();
+      productPrices.clear();
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;
       profile.dailyEnergyKcal = null;

@@ -298,8 +298,53 @@ export type PlannedMeal = {
   deletedAt: string | null;
 };
 
+export type ShoppingListStatus = 'open' | 'done' | 'archived';
+
+export type ShoppingPriceSource = 'user' | 'receipt' | 'estimate';
+
+export type ShoppingList = {
+  id: string;
+  planId: string | null;
+  title: string;
+  status: ShoppingListStatus;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type ShoppingItem = {
+  id: string;
+  listId: string;
+  displayName: string;
+  quantity: number;
+  unit: PantryUnit;
+  coveredByPantry: number;
+  needToBuy: number;
+  checked: boolean;
+  priceRub: number | null;
+  priceAsOf: string | null;
+  priceSource: ShoppingPriceSource | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+/** User-observed price for a shopping key (never shown as live «сегодня» alone). */
+export type ProductPrice = {
+  id: string;
+  productKey: string;
+  storeId: string | null;
+  priceRub: number;
+  unit: PantryUnit;
+  observedOn: string;
+  source: ShoppingPriceSource;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 export type StoreSnapshot = {
-  version: 11;
+  version: 12;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -317,6 +362,9 @@ export type StoreSnapshot = {
   cookedBatches: CookedBatch[];
   mealPlans: MealPlan[];
   plannedMeals: PlannedMeal[];
+  shoppingLists: ShoppingList[];
+  shoppingItems: ShoppingItem[];
+  productPrices: ProductPrice[];
 };
 
 type LegacyRecipe = Omit<
@@ -356,7 +404,7 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
 
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -391,4 +439,7 @@ export type StoreSnapshotAny = {
   cookedBatches?: CookedBatch[];
   mealPlans?: MealPlan[];
   plannedMeals?: PlannedMeal[];
+  shoppingLists?: ShoppingList[];
+  shoppingItems?: ShoppingItem[];
+  productPrices?: ProductPrice[];
 };
