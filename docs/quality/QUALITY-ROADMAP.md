@@ -13,30 +13,21 @@
 
 ## Утверждённая последовательность
 
-### Этап 1 — Baseline (сейчас)
+### Этап 1 — Baseline
 
-- Синтетические datasets (D0…D10k и т.д.)
-- Node benchmarks (отдельно от emulator/device)
-- Android UI smoke (Maestro или ручной протокол)
-- **Q-P1-04** — замер повторного добавления (≤10 с) на устройстве/эмуляторе
+- Node fixtures/benches — **сделано** (#39)  
+- Android dogfood 15 мин — **OPEN GATE** (`DEVICE-DOGFOOD-15MIN.md`)  
+- Q-P1-04 / Q-P0-01 device — pending  
 
-**Exit:** таблица baseline заполнена хотя бы для Node + протокол device; ничего не выдаём за device без прогона.
+### Этап 2 — Reliability (частично)
 
-### Этап 2 — Reliability
+- Q-P0-02 double-submit — **код в main**; device §2a/2b pending  
+- Kill-app — pending device  
 
-- **Q-P0-01** persist / kill-app / restart  
-- **Q-P0-02** double-submit  
-- Offline add path  
+### Этап 3 — UX Sprint 2 (проектирование → код после approve)
 
-**Exit:** сохранность и отсутствие дублей подтверждены в подходящей среде.
-
-### Этап 3 — Упростить core food UX
-
-- **Q-P1-01** Today hierarchy  
-- **Q-P1-02** Food diary vs catalog  
-- Discovery confusion (где рецепт?) — продуктовый фокус, не рефакторинг ради LOC  
-
-**Каждое UX-изменение:** проблема → as-is → to-be → −N действий → screenshots → тесты → perf impact.
+См. **`SPRINT-2-UX-PLAN.md`**. Сначала IA + wireframes Today/Food; код только после согласования.  
+Android gate остаётся открытым: UI PR ≠ Done без dogfood.
 
 ### Этап 4 — Узкие места (по данным baseline)
 

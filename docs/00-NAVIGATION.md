@@ -23,7 +23,8 @@
 - `21-FOOD-PLANNER-UX.md`: Plan hub IA, Eat Now / week / shopping screens, a11y
 - `22-FOOD-PLANNER-DATA.md`: SQLite entities, domain contracts, retailer stubs, test plan
 - `quality/PRODUCT-AUDIT.md`: **Product quality audit hub** (freeze, top-10, JTBD verdict) — start here before new features
-- `quality/`: UX-FLOWS, SCREEN-AUDIT, DESIGN-SYSTEM-AUDIT, PERFORMANCE-BASELINE, TECHNICAL-AUDIT, E2E-TEST-MATRIX, QUALITY-BACKLOG, QUALITY-ROADMAP
+- `quality/SPRINT-2-UX-PLAN.md`: **Sprint 2 UX redesign plan** (IA, flows, wireframes Today/Food — approve before UI PRs)
+- `quality/`: UX-FLOWS, SCREEN-AUDIT, DESIGN-SYSTEM-AUDIT, PERFORMANCE-BASELINE, TECHNICAL-AUDIT, E2E-TEST-MATRIX, QUALITY-BACKLOG, QUALITY-ROADMAP, DEVICE-DOGFOOD-15MIN, SPRINT-2-*
 - `fixtures/personal-recipes-expanded.json`: personal recipe archive import (review UI)
 - `reference-momentum-ui.jpg`: visual UI reference board for screens
 - `prompts/`: copy-ready Cursor agent jobs
