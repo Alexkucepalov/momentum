@@ -1,0 +1,50 @@
+{
+  "retailer": "metro",
+  "date": "2026-10-19",
+  "items": [
+    {
+      "name": "Говядина вырезка охлажденная",
+      "brand": null,
+      "quantity": 1.850,
+      "unit": "кг",
+      "weight_g": 1850,
+      "price_per_kg_rub": 899.00,
+      "price_rub": 1663.15,
+      "discount_rub": null,
+      "final_price_rub": 1663.15
+    },
+    {
+      "name": "Сыр Пармезан Grana Padano",
+      "brand": "Grana Padano",
+      "quantity": 0.350,
+      "unit": "кг",
+      "weight_g": 350,
+      "price_per_kg_rub": 1299.00,
+      "price_rub": 454.65,
+      "discount_rub": null,
+      "final_price_rub": 454.65
+    },
+    {
+      "name": "Паста Barilla Spaghetti",
+      "brand": "Barilla",
+      "quantity": 2,
+      "unit": "шт",
+      "weight_g": 1000,
+      "price_rub": 149.00,
+      "discount_rub": null,
+      "final_price_rub": 298.00
+    },
+    {
+      "name": "Оливковое масло Borges Extra Virgin",
+      "brand": "Borges",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 500,
+      "price_rub": 599.00,
+      "discount_rub": 50.00,
+      "final_price_rub": 549.00
+    }
+  ],
+  "total_rub": 2964.80,
+  "payment_method": "card"
+}

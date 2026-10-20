@@ -1,0 +1,61 @@
+{
+  "retailer": "samokat",
+  "date": "2026-10-20",
+  "items": [
+    {
+      "name": "Бананы",
+      "brand": null,
+      "quantity": 1.120,
+      "unit": "кг",
+      "weight_g": 1120,
+      "price_per_kg_rub": 89.90,
+      "price_rub": 100.69,
+      "discount_rub": null,
+      "final_price_rub": 100.69
+    },
+    {
+      "name": "Кефир 1% Простоквашино",
+      "brand": "Простоквашино",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 930,
+      "price_rub": 79.99,
+      "discount_rub": null,
+      "final_price_rub": 79.99
+    },
+    {
+      "name": "Помидоры черри",
+      "brand": null,
+      "quantity": 0.250,
+      "unit": "кг",
+      "weight_g": 250,
+      "price_per_kg_rub": 299.00,
+      "price_rub": 74.75,
+      "discount_rub": null,
+      "final_price_rub": 74.75
+    },
+    {
+      "name": "Огурцы свежие",
+      "brand": null,
+      "quantity": 0.400,
+      "unit": "кг",
+      "weight_g": 400,
+      "price_per_kg_rub": 149.00,
+      "price_rub": 59.60,
+      "discount_rub": null,
+      "final_price_rub": 59.60
+    },
+    {
+      "name": "Сметана 20% Домик в деревне",
+      "brand": "Домик в деревне",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 315,
+      "price_rub": 109.00,
+      "discount_rub": 15.00,
+      "final_price_rub": 94.00
+    }
+  ],
+  "total_rub": 409.03,
+  "payment_method": "card"
+}

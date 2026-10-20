@@ -1,0 +1,125 @@
+# Food Planner E2E Smoke Test
+# Issue #67: FI Quality Sprint
+# Status: PENDING — not yet run on real device (no fake pass per AGENTS.md)
+#
+# Prerequisites:
+# - APK built via `npm run build:apk:local`
+# - Maestro installed: `curl -Ls "https://get.maestro.mobile.dev" | bash`
+# - Android device/emulator with USB debugging enabled
+#
+# Run: `maestro test maestro/food-planner-smoke.yaml`
+
+appId: com.momentumblueprint
+
+---
+# Test Flow: Grocery → Pantry → Eat Now → Week Plan → Shopping → Budget
+
+- launchApp
+
+# 1. Purchase → Pantry (simulate receipt entry)
+- tapOn: "План"
+- assertVisible: "План питания"
+- tapOn: "Запасы дома"
+- assertVisible: "Добавить запас"
+
+- inputText: "Молоко"
+- tapOn:
+    text: "Простоквашино"
+    index: 0  # First suggestion from catalog
+- inputText: "930"  # Quantity in grams
+- tapOn: "Холодильник"
+- tapOn: "Сохранить в запасы"
+- assertVisible: "В запасах: Молоко Простоквашино"
+
+# Verify pantry item appears
+- scroll
+- assertVisible: "Молоко Простоквашино"
+- assertVisible: "930 г"
+
+# 2. Eat Now — pantry-based recommendation
+- tapOn: "< Назад"  # or back gesture
+- tapOn: "Что съесть сейчас?"
+- assertVisible: "Условный остаток на сегодня"
+- assertVisible: "Фильтры"
+
+# Select "at home" filter
+- tapOn: "Дома"
+- scroll
+
+# Should see products from pantry (at least milk if linked to catalog)
+# Note: Exact item visibility depends on profile targets and catalog linkage
+# This is a smoke test — we verify UI renders, not specific recommendations
+
+# 3. Add planned meal (Plan → not diary)
+- tapOn: "< Назад"
+- tapOn: "Меню на неделю"
+- assertVisible: "Черновик меню"
+- assertVisible: "Создать план"
+
+# Create 3-day draft
+- inputText: "3"
+- tapOn: "Создать черновик"
+- assertVisible: "План создан"
+
+# Verify plan appears
+- scroll
+- assertVisible: "draft"
+
+# 4. Shopping list from plan
+- tapOn: "< Назад"
+- tapOn: "Покупки"
+- assertVisible: "Списки покупок"
+- assertVisible: "Создать из плана"
+
+# Select the draft plan
+- tapOn: "Создать из плана"
+- assertVisible: "Список из плана"
+
+# Verify shopping items aggregate (may be empty if no plan meals)
+- scroll
+- assertVisible: "Итого:"
+
+# 5. Budget — verify no auto-spend on pantry add
+- tapOn: "< Назад"
+- tapOn: "Бюджет питания"
+- assertVisible: "Лимит на месяц"
+
+# Set budget for current month
+- inputText: "10000"
+- tapOn: "Сохранить лимит"
+- assertVisible: "Лимит сохранён"
+
+# Verify pantry addition did NOT create expense (total = 0 or prior value)
+# This validates "pantry/expense no double-write" acceptance criterion
+- assertVisible: "Потрачено: 0 ₽"
+
+# 6. Verify planned ≠ eaten (Food diary totals)
+- tapOn: "< Назад"
+- tapOn: "< Назад"
+- tapOn: "Еда"  # Go to Food tab
+- assertVisible: "Дневник"
+
+# Daily totals should be 0 (or existing value) despite plan existing
+# This validates "planned meals do not affect dailyTotals" acceptance criterion
+- assertVisible: "0 ккал"  # or existing total; plan should NOT add kcal
+
+# 7. Log a planned meal → verify it THEN appears in diary
+- tapOn: "< Назад"
+- tapOn: "План"
+- tapOn: "Меню на неделю"
+- scroll
+
+# Open a planned meal (if any exist from draft)
+# This step is optional — actual plan may be empty; smoke test ensures UI renders
+# Real validation requires user to manually add a planned meal first
+
+# Final validation: Back to home
+- tapOn: "< Назад"
+- tapOn: "Сегодня"
+- assertVisible: "Сводка"
+- assertVisible: "Добавить еду"
+
+# TEST RESULT: PENDING
+# This script is syntactically complete but NOT YET RUN on real device.
+# Per AGENTS.md: "Pass only after real device — do not fake."
+# Next step: Founder dogfood on physical Android device; update this comment with PASS/FAIL.

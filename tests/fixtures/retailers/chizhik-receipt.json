@@ -1,0 +1,49 @@
+{
+  "retailer": "chizhik",
+  "date": "2026-10-18",
+  "items": [
+    {
+      "name": "Гречка ядрица Мистраль",
+      "brand": "Мистраль",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 800,
+      "price_rub": 119.99,
+      "discount_rub": null,
+      "final_price_rub": 119.99
+    },
+    {
+      "name": "Масло подсолнечное Слобода",
+      "brand": "Слобода",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 900,
+      "price_rub": 145.00,
+      "discount_rub": 10.00,
+      "final_price_rub": 135.00
+    },
+    {
+      "name": "Сахар песок вес",
+      "brand": null,
+      "quantity": 2.000,
+      "unit": "кг",
+      "weight_g": 2000,
+      "price_per_kg_rub": 55.00,
+      "price_rub": 110.00,
+      "discount_rub": null,
+      "final_price_rub": 110.00
+    },
+    {
+      "name": "Яйца С0 10шт",
+      "brand": null,
+      "quantity": 1,
+      "unit": "упак",
+      "weight_g": null,
+      "price_rub": 99.90,
+      "discount_rub": null,
+      "final_price_rub": 99.90
+    }
+  ],
+  "total_rub": 464.89,
+  "payment_method": "card"
+}

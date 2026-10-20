@@ -387,7 +387,7 @@ export type StorePreference = {
 };
 
 export type StoreSnapshot = {
-  version: 13;
+  version: 14;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -450,7 +450,7 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
 
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
   profile: Omit<
     Profile,
     | 'waterTargetMl'

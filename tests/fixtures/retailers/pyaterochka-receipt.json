@@ -1,0 +1,60 @@
+{
+  "retailer": "pyaterochka",
+  "date": "2026-10-15",
+  "items": [
+    {
+      "name": "Молоко Простоквашино 3.2%",
+      "brand": "Простоквашино",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 930,
+      "price_rub": 89.99,
+      "discount_rub": null,
+      "final_price_rub": 89.99
+    },
+    {
+      "name": "Хлеб Бородинский нарезной",
+      "brand": null,
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 400,
+      "price_rub": 45.50,
+      "discount_rub": 5.00,
+      "final_price_rub": 40.50
+    },
+    {
+      "name": "Яблоки Голден вес",
+      "brand": null,
+      "quantity": 1.250,
+      "unit": "кг",
+      "weight_g": 1250,
+      "price_per_kg_rub": 119.90,
+      "price_rub": 149.88,
+      "discount_rub": null,
+      "final_price_rub": 149.88
+    },
+    {
+      "name": "Творог 5% Домик в деревне",
+      "brand": "Домик в деревне",
+      "quantity": 1,
+      "unit": "шт",
+      "weight_g": 200,
+      "price_rub": 85.00,
+      "discount_rub": null,
+      "final_price_rub": 85.00
+    },
+    {
+      "name": "Куриная грудка охлажденная",
+      "brand": null,
+      "quantity": 0.650,
+      "unit": "кг",
+      "weight_g": 650,
+      "price_per_kg_rub": 399.00,
+      "price_rub": 259.35,
+      "discount_rub": null,
+      "final_price_rub": 259.35
+    }
+  ],
+  "total_rub": 624.72,
+  "payment_method": "card"
+}
