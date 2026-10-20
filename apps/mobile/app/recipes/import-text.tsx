@@ -4,13 +4,27 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 
-import { parseRecipeText } from '../../../../src/domain/parseRecipeText';
+import {
+  parseRecipeText,
+  type ParsedRecipeIngredient,
+} from '../../../../src/domain/parseRecipeText';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { parsedRecipeToFormInitial } from '@/src/features/recipes/parsedRecipeToFormInitial';
 import { setRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
+
+/** Per-100g macros from parser only — never invent. */
+function formatPer100g(ing: ParsedRecipeIngredient): string {
+  const parts: string[] = [];
+  if (ing.energyKcalPer100g != null) parts.push(`${ing.energyKcalPer100g} ккал`);
+  if (ing.proteinGPer100g != null) parts.push(`Б ${ing.proteinGPer100g}`);
+  if (ing.fatGPer100g != null) parts.push(`Ж ${ing.fatGPer100g}`);
+  if (ing.carbGPer100g != null) parts.push(`У ${ing.carbGPer100g}`);
+  if (parts.length === 0) return '';
+  return ` · ${parts.join(' · ')}/100г`;
+}
 
 export default function ImportRecipeTextScreen() {
   const router = useRouter();
@@ -115,12 +129,16 @@ export default function ImportRecipeTextScreen() {
           </Text>
           <Text style={styles.previewLine}>Ингредиентов: {preview.ingredients.length}</Text>
           {preview.ingredients.slice(0, 8).map((ing, i) => (
-            <Text key={`${ing.displayName}-${i}`} style={styles.previewItem}>
+            <Text
+              key={`${ing.displayName}-${i}`}
+              style={styles.previewItem}
+              accessibilityLabel={`${ing.displayName}${
+                ing.rawGrams != null ? `, ${ing.rawGrams} грамм` : ''
+              }${formatPer100g(ing)}`}
+            >
               · {ing.displayName}
               {ing.rawGrams != null ? ` · ${ing.rawGrams} г` : ' · г —'}
-              {ing.energyKcalPer100g != null
-                ? ` · ${ing.energyKcalPer100g} ккал/100г`
-                : ''}
+              {formatPer100g(ing)}
             </Text>
           ))}
           {preview.ingredients.length > 8 ? (
@@ -132,13 +150,13 @@ export default function ImportRecipeTextScreen() {
             </Text>
           ))}
           <Text style={styles.hint}>
-            Строки «N ккал · Б/Ж/У» склеиваем с продуктом выше и пересчитываем на 100 г.
-            Цифры не выдумываем — только то, что есть в тексте.
+            Строки «N ккал · Б/Ж/У» склеиваем с продуктом выше и показываем уже на 100 г (не сырую
+            порцию). Пустые Б/Ж/У — неизвестны, не ноль. Цифры только из текста.
           </Text>
         </View>
       ) : (
         <Text style={styles.idleHint}>
-          Подсказка: строки вида «куриная грудка — 200 г» распознаются лучше всего.
+          Дневник: «продукт — 180 г» и строка «297 ккал · Б …» → в превью ккал и БЖУ на 100 г.
         </Text>
       )}
 
