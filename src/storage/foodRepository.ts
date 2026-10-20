@@ -373,8 +373,23 @@ export type FoodRepository = {
   listShoppingLists(): ShoppingList[];
   getShoppingList(listId: string): ShoppingList | null;
   listShoppingItems(listId: string): ShoppingItem[];
+  /** Create an empty shopping list for manual entry. */
+  createEmptyShoppingList(title: string): ShoppingList;
+  /** Add item manually to existing list; pantry coverage computed. */
+  addShoppingItemManual(
+    listId: string,
+    input: { displayName: string; quantity: number; unit: PantryUnit },
+  ): ShoppingItem;
   /** Build list from meal plan ingredients; does not invent prices. */
   createShoppingListFromPlan(planId: string, title?: string): ShoppingList;
+  /** Build list from single recipe (scaled by servings), pantry-aware. */
+  createShoppingListFromRecipe(recipeId: string, servings: number, title?: string): ShoppingList;
+  /** Reconcile purchase: check off / reduce matching open shopping items. Returns affected items. */
+  reconcilePurchase(input: {
+    displayName: string;
+    quantity: number;
+    unit: PantryUnit;
+  }): { checkedItems: ShoppingItem[]; reducedItems: ShoppingItem[] };
   setShoppingItemChecked(itemId: string, checked: boolean): ShoppingItem;
   setShoppingItemPrice(
     itemId: string,
@@ -2412,6 +2427,195 @@ export function createMemoryFoodRepository(seed?: {
       }
       notify();
       return { ...list };
+    },
+    createEmptyShoppingList(title) {
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId: null,
+        title: (title?.trim() || 'Ручной список').slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      notify();
+      return { ...list };
+    },
+    addShoppingItemManual(listId, input) {
+      const list = shoppingLists.get(listId);
+      if (!list || list.deletedAt) throw new Error('Shopping list not found');
+      assertNonNegativeFinite(input.quantity, 'quantity');
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Item name required');
+      const pantryCov = [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({
+          displayName: p.displayName,
+          productId: p.productId,
+          quantityG: p.quantityG,
+          quantityCount: p.quantityCount,
+          unit: p.unit,
+        }));
+      const priceMap = new Map<
+        string,
+        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+      >();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const existing = priceMap.get(pp.productKey);
+        if (!existing || pp.observedOn >= existing.priceAsOf) {
+          priceMap.set(pp.productKey, {
+            priceRub: pp.priceRub,
+            priceAsOf: pp.observedOn,
+            priceSource: pp.source,
+          });
+        }
+      }
+      const lines = aggregateShopping(
+        [{ displayName: name, quantity: input.quantity, unit: input.unit }],
+        pantryCov,
+        priceMap,
+      );
+      const line = lines[0];
+      if (!line) throw new Error('Failed to aggregate item');
+      const ts = nowIso();
+      const item: ShoppingItem = {
+        id: newId(),
+        listId,
+        displayName: line.displayName,
+        quantity: line.quantity,
+        unit: line.unit,
+        coveredByPantry: line.coveredByPantry,
+        needToBuy: line.needToBuy,
+        checked: line.needToBuy <= 0,
+        priceRub: line.priceRub,
+        priceAsOf: line.priceAsOf,
+        priceSource: line.priceSource,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingItems.set(item.id, item);
+      notify();
+      return { ...item };
+    },
+    createShoppingListFromRecipe(recipeId, servings, title) {
+      assertPositiveFinite(servings, 'servings');
+      const recipe = recipes.get(recipeId);
+      if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
+      const ings = ingredients.get(recipeId) ?? [];
+      const ingInputs: Array<{
+        displayName: string;
+        quantity: number;
+        unit: 'g' | 'ml' | 'pcs';
+        productId?: string | null;
+      }> = [];
+      const totalGrams = recipe.cookedYieldG * servings;
+      for (const ing of ings) {
+        const qty = scaleIngredientGrams(ing.rawGrams, recipe.cookedYieldG, totalGrams);
+        ingInputs.push({
+          displayName: ing.displayName,
+          quantity: qty,
+          unit: 'g',
+          productId: ing.productId,
+        });
+      }
+      const pantryCov = [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({
+          displayName: p.displayName,
+          productId: p.productId,
+          quantityG: p.quantityG,
+          quantityCount: p.quantityCount,
+          unit: p.unit,
+        }));
+      const priceMap = new Map<
+        string,
+        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+      >();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const existing = priceMap.get(pp.productKey);
+        if (!existing || pp.observedOn >= existing.priceAsOf) {
+          priceMap.set(pp.productKey, {
+            priceRub: pp.priceRub,
+            priceAsOf: pp.observedOn,
+            priceSource: pp.source,
+          });
+        }
+      }
+      const lines = aggregateShopping(ingInputs, pantryCov, priceMap);
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId: null,
+        title: (title?.trim() || `${recipe.name} · ${servings}×`).slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      for (const line of lines) {
+        const item: ShoppingItem = {
+          id: newId(),
+          listId: list.id,
+          displayName: line.displayName,
+          quantity: line.quantity,
+          unit: line.unit,
+          coveredByPantry: line.coveredByPantry,
+          needToBuy: line.needToBuy,
+          checked: line.needToBuy <= 0,
+          priceRub: line.priceRub,
+          priceAsOf: line.priceAsOf,
+          priceSource: line.priceSource,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        shoppingItems.set(item.id, item);
+      }
+      notify();
+      return { ...list };
+    },
+    reconcilePurchase(input) {
+      assertNonNegativeFinite(input.quantity, 'quantity');
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Item name required');
+      const key = shoppingKey(name, input.unit);
+      const checked: ShoppingItem[] = [];
+      const reduced: ShoppingItem[] = [];
+      const openLists = [...shoppingLists.values()].filter(
+        (l) => !l.deletedAt && l.status === 'open',
+      );
+      let remaining = input.quantity;
+      for (const list of openLists) {
+        const listItems = [...shoppingItems.values()]
+          .filter((i) => i.listId === list.id && !i.deletedAt && !i.checked)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        for (const item of listItems) {
+          if (remaining <= 0) break;
+          const itemKey = shoppingKey(item.displayName, item.unit);
+          if (itemKey !== key) continue;
+          if (item.needToBuy <= 0) continue;
+          if (item.needToBuy <= remaining) {
+            item.checked = true;
+            item.updatedAt = nowIso();
+            remaining -= item.needToBuy;
+            checked.push({ ...item });
+          } else {
+            const oldNeed = item.needToBuy;
+            item.needToBuy = oldNeed - remaining;
+            item.updatedAt = nowIso();
+            remaining = 0;
+            reduced.push({ ...item });
+          }
+        }
+      }
+      notify();
+      return { checkedItems: checked, reducedItems: reduced };
     },
     setShoppingItemChecked(itemId, checked) {
       const item = shoppingItems.get(itemId);
