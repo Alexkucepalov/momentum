@@ -91,9 +91,9 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 | Priority | Issue | Acceptance (кратко) |
 |----------|-------|---------------------|
 | — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
-| 1 | Parse diary-style recipe paste hardening | Регрессия: текст «продукт — N г» + строка «ккал · Б/Ж/У» + «Итого … г» → 3 ингр., yield из Итого, КБЖУ/100г из порции; тесты в `tests/parse-recipe-text.test.mjs` зелёные |
+| 1 | ~~Parse diary-style recipe paste hardening~~ | Done (#28) |
 | 2 | Catalog / Recipes / Archive visual polish QA | Проверить Food catalog, `/recipes`, `/recipes/import-personal` на a11y labels, empty states, без shame copy; скриншоты в PR; точечные фиксы spacing/contrast |
-| 3 | Import-text preview shows per-100g macros | Экран «Из текста»: в предпросмотре видны ккал/100г когда парсер их извлёк; hint актуален; без выдуманных цифр |
+| 3 | Import-text preview shows per-100g macros | in PR — ккал + БЖУ/100г в превью; hint про склейку |
 | 4 | Agent smoke / docs sync | После cloud setup: issue+PR pipeline documented in `automation/setup-status.md`; `npm run verify` в README/AGENTS |
 | 5 | Offline recipe search aliases (optional) | Alias-поиск по личным `import:` рецептам в unified search; тесты; без сети |
 
