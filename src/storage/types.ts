@@ -235,6 +235,8 @@ export type PantryLocation = 'fridge' | 'freezer' | 'pantry';
 
 export type PantryUnit = 'g' | 'ml' | 'pcs';
 
+export type PantrySource = 'user' | 'purchase';
+
 /** User-managed stock at home (offline). Quantities may be null if unknown — never coerced to 0. */
 export type PantryItem = {
   id: string;
@@ -245,7 +247,7 @@ export type PantryItem = {
   quantityCount: number | null;
   unit: PantryUnit;
   expiresOn: string | null;
-  source: 'user';
+  source: PantrySource;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -386,8 +388,60 @@ export type StorePreference = {
   updatedAt: string;
 };
 
+export type PurchaseStatus =
+  | 'cart'
+  | 'submitted'
+  | 'paid'
+  | 'delivered'
+  | 'fiscal_receipt'
+  | 'cancelled';
+
+export type PurchaseSourceKind = 'manual' | 'paste' | 'photo' | 'screenshots' | 'qr';
+
+export type Purchase = {
+  id: string;
+  status: PurchaseStatus;
+  storePreferenceId: StorePreferenceId | null;
+  storeLabel: string | null;
+  purchasedOn: string;
+  currency: 'RUB';
+  totalRub: number | null;
+  sourceKind: PurchaseSourceKind;
+  fingerprint: string;
+  rawPayloadRef: string | null;
+  parseConfidence: number | null;
+  confirmedAt: string | null;
+  expenseId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type PurchaseLine = {
+  id: string;
+  purchaseId: string;
+  rawName: string;
+  displayName: string;
+  quantity: number | null;
+  unit: PantryUnit | null;
+  packageSizeText: string | null;
+  unitPriceRub: number | null;
+  lineTotalRub: number | null;
+  discountRub: number | null;
+  isFood: boolean;
+  excluded: boolean;
+  productId: string | null;
+  barcode: string | null;
+  retailerSku: string | null;
+  matchConfidence: number | null;
+  pantryItemId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 export type StoreSnapshot = {
-  version: 13;
+  version: 14;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -411,6 +465,8 @@ export type StoreSnapshot = {
   foodBudgets: FoodBudget[];
   foodExpenses: FoodExpense[];
   storePreferences: StorePreference[];
+  purchases: Purchase[];
+  purchaseLines: PurchaseLine[];
 };
 
 type LegacyRecipe = Omit<
@@ -450,7 +506,7 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
 
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -491,4 +547,6 @@ export type StoreSnapshotAny = {
   foodBudgets?: FoodBudget[];
   foodExpenses?: FoodExpense[];
   storePreferences?: StorePreference[];
+  purchases?: Purchase[];
+  purchaseLines?: PurchaseLine[];
 };

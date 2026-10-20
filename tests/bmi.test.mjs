@@ -50,5 +50,5 @@ test('profile daily targets and height migrate to v6', () => {
   assert.equal(p.heightCm, 180);
   assert.equal(p.dailyEnergyKcal, 2200);
   assert.equal(p.dailyProteinG, 140);
-  assert.equal(repo.toSnapshot().version, 13);
+  assert.equal(repo.toSnapshot().version, 14);
 });

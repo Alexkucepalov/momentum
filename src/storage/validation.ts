@@ -2,7 +2,7 @@ import { validateNutrition, type Nutrition } from '../domain/nutrition';
 
 export function assertNonNegativeFinite(value: number, label: string): void {
   if (!Number.isFinite(value) || value < 0) {
-    throw new Error(`Invalid ${label}`);
+    throw new Error(`${label} must be non-negative and finite`);
   }
 }
 
