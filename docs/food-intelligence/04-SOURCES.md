@@ -22,7 +22,8 @@
 
 | Approach | Feasibility RU | Privacy | Cost | Verdict |
 |----------|----------------|---------|------|---------|
-| On-device ML Kit / Apple Vision / similar | Moderate for clear screenshots; weaker for crumpled fiscal receipts | Best | Free/device | **Prefer for screenshots** |
+| On-device ML Kit Text Recognition v2 | **Cyrillic not supported** (Latin/CJK/… only) | Best | Free | **Not viable for RU** — see `10-FEASIBILITY-OCR-CATALOG.md` |
+| On-device Tesseract-rus / similar | Spike required | Best | Free + APK size | Candidate after dogfood |
 | Paste text from delivery apps | High | Best | Free | **Ship in slice 1** |
 | Cloud Vision / LLM parse | Higher accuracy possible | Requires **consent** + no logs of raw receipts in our telemetry | Paid | Optional fallback behind consent; founder approval for spend |
 | Fiscal QR (ФНС) | Needs lawful verification path | Sensitive | TBD | Research only; no fake “verified” badge |

@@ -47,7 +47,7 @@ test('confirmable statuses only delivered / fiscal_receipt', () => {
   assert.equal(isConfirmablePurchaseStatus('fiscal_receipt'), true);
 });
 
-test('resolveExpenseAmountRub prefers total then known lines; null if unknown', () => {
+test('resolveExpenseAmountRub prefers total; partial line prices → null expense', () => {
   assert.equal(resolveExpenseAmountRub({ totalRub: 100, lines: [] }), 100);
   assert.equal(
     resolveExpenseAmountRub({
@@ -57,7 +57,17 @@ test('resolveExpenseAmountRub prefers total then known lines; null if unknown', 
         { lineTotalRub: null, excluded: false },
       ],
     }),
-    40,
+    null,
+  );
+  assert.equal(
+    resolveExpenseAmountRub({
+      totalRub: null,
+      lines: [
+        { lineTotalRub: 40, excluded: false },
+        { lineTotalRub: 10, excluded: false },
+      ],
+    }),
+    50,
   );
   assert.equal(
     resolveExpenseAmountRub({

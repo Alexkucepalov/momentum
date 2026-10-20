@@ -22,7 +22,7 @@
 - `20-FOOD-PLANNER-PRD.md`: Food Planner epic — Eat Now, week menu, pantry, shopping, budget
 - `21-FOOD-PLANNER-UX.md`: Plan hub IA, Eat Now / week / shopping screens, a11y
 - `22-FOOD-PLANNER-DATA.md`: SQLite entities, domain contracts, retailer stubs, test plan
-- `food-intelligence/`: **Food Intelligence overhaul** (audit → PRD → journeys → IA → sources → ADR purchases → backlog → QA) — design package; approve before implementation
+- `food-intelligence/`: **Food Intelligence** (audit → PRD → journeys → IA → sources → ADR → backlog → QA → integration report → Android smoke → OCR/catalog feasibility)
 - `quality/PRODUCT-AUDIT.md`: **Product quality audit hub** (freeze, top-10, JTBD verdict) — start here before new features
 - `quality/SPRINT-2-UX-PLAN.md`: **Sprint 2 UX redesign plan** (IA, flows, wireframes Today/Food — approve before UI PRs)
 - `quality/`: UX-FLOWS, SCREEN-AUDIT, DESIGN-SYSTEM-AUDIT, PERFORMANCE-BASELINE, TECHNICAL-AUDIT, E2E-TEST-MATRIX, QUALITY-BACKLOG, QUALITY-ROADMAP, DEVICE-DOGFOOD-15MIN, SPRINT-2-*

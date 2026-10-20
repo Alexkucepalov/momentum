@@ -22,6 +22,9 @@
 | [05-ADR-PURCHASES.md](./05-ADR-PURCHASES.md) | ADR draft: purchases & matching (needs approval) |
 | [06-BACKLOG.md](./06-BACKLOG.md) | Prioritized vertical slices |
 | [07-QA-DOGFOOD.md](./07-QA-DOGFOOD.md) | QA + Android dogfood plan |
+| [08-QA-INTEGRATION-REPORT.md](./08-QA-INTEGRATION-REPORT.md) | Quality Sprint report (slices 1–4) |
+| [09-ANDROID-E2E-SMOKE.md](./09-ANDROID-E2E-SMOKE.md) | Device smoke — Pass only on phone |
+| [10-FEASIBILITY-OCR-CATALOG.md](./10-FEASIBILITY-OCR-CATALOG.md) | OCR / OFF / retailer feasibility |
 
 ## Existing baseline (code)
 
