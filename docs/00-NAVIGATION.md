@@ -19,6 +19,9 @@
 - `17-DEV-PLAN.md`: living dogfood development plan (current sprint, DoD, order)
 - `18-COMPETITOR-GAPS.md`: competitor convenience gaps → prioritized Momentum features
 - `19-SMART-RECIPE-IMPORT.md`: text/photo → recipe draft; AI boundaries; Phase 0 local parser
+- `20-FOOD-PLANNER-PRD.md`: Food Planner epic — Eat Now, week menu, pantry, shopping, budget
+- `21-FOOD-PLANNER-UX.md`: Plan hub IA, Eat Now / week / shopping screens, a11y
+- `22-FOOD-PLANNER-DATA.md`: SQLite entities, domain contracts, retailer stubs, test plan
 - `fixtures/personal-recipes-expanded.json`: personal recipe archive import (review UI)
 - `reference-momentum-ui.jpg`: visual UI reference board for screens
 - `prompts/`: copy-ready Cursor agent jobs

@@ -65,12 +65,32 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 Обновлять колонку Status после merge каждого PR.
 
+## Epic: Food Planner (priority over AI trainer / deep sports)
+
+Документы: `20-FOOD-PLANNER-PRD.md`, `21-FOOD-PLANNER-UX.md`, `22-FOOD-PLANNER-DATA.md`, ADR-008.
+
+**Статус:** docs + GitHub Issues (`food-planner`). **Не** ставить `agent-ready` и **не** начинать реализацию до явного approve основателя.
+
+| Sprint | GitHub | Issue theme | Depends on | Agent-ready? |
+|--------|---------|-------------|------------|--------------|
+| FP-0 | docs PR | Docs / ADR / contracts | — | n/a (docs) |
+| FP-1 | [#13](https://github.com/Alexkucepalov/momentum/issues/13) | Domain: remaining macros + Eat Now scorer + tests | FP-0 | **blocked** |
+| FP-2 | [#14](https://github.com/Alexkucepalov/momentum/issues/14) | Plan hub UI + Eat Now screen | FP-1 | **blocked** |
+| FP-3 | [#15](https://github.com/Alexkucepalov/momentum/issues/15) | Pantry + cooked batch remaining | FP-2 | **blocked** |
+| FP-4 | [#16](https://github.com/Alexkucepalov/momentum/issues/16) | Weekly meal plan drafts (3/5/7) | FP-3 | **blocked** |
+| FP-5 | [#17](https://github.com/Alexkucepalov/momentum/issues/17) | Shopping list aggregate + user prices | FP-4 | **blocked** |
+| FP-6 | [#18](https://github.com/Alexkucepalov/momentum/issues/18) | Food budget plan/fact + amortized cost | FP-5 | **blocked** |
+| FP-7 | [#19](https://github.com/Alexkucepalov/momentum/issues/19) | Store tags + receipt stubs (no scrape) | FP-5 | **blocked** |
+
+После approve: помечать **один** следующий FP issue `agent-ready`; serial dispatcher.
+
 ## Backlog (next agent-ready)
 
 Очередь для Cloud triage / label `agent-ready`. Один issue за раз; ≤2 in flight. После merge — перенести в таблицу выше как Done.
 
 | Priority | Issue | Acceptance (кратко) |
 |----------|-------|---------------------|
+| — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
 | 1 | Parse diary-style recipe paste hardening | Регрессия: текст «продукт — N г» + строка «ккал · Б/Ж/У» + «Итого … г» → 3 ингр., yield из Итого, КБЖУ/100г из порции; тесты в `tests/parse-recipe-text.test.mjs` зелёные |
 | 2 | Catalog / Recipes / Archive visual polish QA | Проверить Food catalog, `/recipes`, `/recipes/import-personal` на a11y labels, empty states, без shame copy; скриншоты в PR; точечные фиксы spacing/contrast |
 | 3 | Import-text preview shows per-100g macros | Экран «Из текста»: в предпросмотре видны ккал/100г когда парсер их извлёк; hint актуален; без выдуманных цифр |
