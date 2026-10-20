@@ -71,3 +71,61 @@ test('empty query returns no hits', () => {
     [],
   );
 });
+
+test('recipe aliases + import: key match offline without inventing macros', () => {
+  const { recipeSearchAliases } = mods['domain/unifiedFoodSearch'];
+  const importRecipe = {
+    id: 'import:chicken-bowl-lunch',
+    name: 'Боул с курицей',
+    cookedYieldG: 500,
+    description: 'рис и овощи',
+    instructions: null,
+    photoUri: null,
+    energyKcalPer100g: null,
+    proteinGPer100g: null,
+    fatGPer100g: null,
+    carbGPer100g: null,
+    createdAt: '',
+    updatedAt: '',
+    deletedAt: null,
+  };
+  const aliases = recipeSearchAliases(importRecipe);
+  assert.ok(aliases.some((a) => a.includes('куриц') || a === 'курицей'));
+  assert.ok(aliases.some((a) => a.includes('chicken') || a.includes('bowl')));
+
+  const hitsByAlias = unifiedFoodSearch({
+    query: 'chicken',
+    products: [],
+    recipes: [importRecipe],
+    recent: [],
+  });
+  assert.ok(hitsByAlias.some((h) => h.kind === 'recipe' && h.recipe.id === importRecipe.id));
+
+  // Token from RU name still finds recipe; products keep separate ranking.
+  const hitsRu = unifiedFoodSearch({
+    query: 'боул',
+    products: [
+      {
+        id: 'p1',
+        name: 'Боул микс сухой',
+        brand: null,
+        barcode: null,
+        energyKcal: 100,
+        proteinG: 10,
+        fatG: 1,
+        carbG: 10,
+        source: 'user',
+        isFavorite: false,
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+      },
+    ],
+    recipes: [importRecipe],
+    recent: [],
+  });
+  assert.ok(hitsRu.some((h) => h.kind === 'product'));
+  assert.ok(hitsRu.some((h) => h.kind === 'recipe'));
+  const recipeHit = hitsRu.find((h) => h.kind === 'recipe');
+  assert.equal(recipeHit.recipe.energyKcalPer100g, null);
+});
