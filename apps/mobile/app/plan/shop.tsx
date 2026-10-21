@@ -23,6 +23,7 @@ export default function ShopScreen() {
   void revision;
 
   const plans = repo.listMealPlans();
+  const recipes = repo.listRecipes();
   const lists = repo.listShoppingLists();
   const [listId, setListId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({});
@@ -57,6 +58,23 @@ export default function ShopScreen() {
       showFlash('Список покупок собран');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось собрать список');
+    }
+  };
+
+  const buildFromRecipe = (recipeId: string) => {
+    setError(null);
+    try {
+      const created = repo.createShoppingListFromRecipe(recipeId);
+      setListId(created.id);
+      refresh();
+      const need = repo.listShoppingItems(created.id).filter((i) => i.needToBuy > 0).length;
+      showFlash(
+        need > 0
+          ? `Из рецепта: ${need} к покупке (с учётом запасов)`
+          : 'Всё из рецепта уже в запасах',
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось собрать из рецепта');
     }
   };
 
@@ -153,6 +171,33 @@ export default function ShopScreen() {
         ))}
       </View>
       <PrimaryButton label="В список" onPress={addManual} />
+
+      <Text style={styles.section}>Из рецепта</Text>
+      {recipes.length === 0 ? (
+        <EmptyState
+          compact
+          icon="book-outline"
+          title="Нет рецептов"
+          body="Добавь рецепт — список соберёт только то, чего нет в запасах."
+          actionLabel="К рецептам"
+          onAction={() => router.push('/recipes')}
+        />
+      ) : (
+        <View style={styles.list}>
+          {recipes.slice(0, 8).map((r) => (
+            <Pressable
+              key={r.id}
+              onPress={() => buildFromRecipe(r.id)}
+              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Собрать покупки из рецепта ${r.name}`}
+            >
+              <Text style={styles.cardTitle}>{r.name}</Text>
+              <Text style={styles.cardSub}>Недостающее · с учётом запасов</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       <Text style={styles.section}>Из меню</Text>
       {plans.length === 0 ? (

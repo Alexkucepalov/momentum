@@ -33,6 +33,37 @@ test('unknown purchase qty does not auto-cover', () => {
   assert.equal(patches.length, 0);
 });
 
+test('createShoppingListFromRecipe keeps only pantry gaps', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const recipe = repo.createRecipe({
+    name: 'Овсянка',
+    cookedYieldG: 300,
+    ingredients: [
+      {
+        displayName: 'Овсянка',
+        rawGrams: 80,
+        nutritionPer100g: { kcal: 350, protein: 12, fat: 6, carbs: 60 },
+      },
+      {
+        displayName: 'Молоко',
+        rawGrams: 200,
+        nutritionPer100g: { kcal: 52, protein: 3, fat: 2.5, carbs: 5 },
+      },
+    ],
+  });
+  repo.upsertPantryItem({
+    displayName: 'Овсянка',
+    location: 'pantry',
+    quantityG: 100,
+    unit: 'g',
+  });
+  const list = repo.createShoppingListFromRecipe(recipe.id);
+  const items = repo.listShoppingItems(list.id);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].displayName, 'Молоко');
+  assert.equal(items[0].needToBuy, 200);
+});
+
 test('repo: empty list + manual item + purchase reconcile', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
   const list = repo.createEmptyShoppingList('Тест');
