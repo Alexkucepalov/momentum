@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
 import { localDateKey } from '../../../../src/storage/validation';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { JourneyShortcuts } from '@/src/components/JourneyShortcuts';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
@@ -36,6 +36,7 @@ function profileToFields(profile: {
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { repo, refresh, revision, showFlash, setDateLocal } = useData();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
@@ -266,7 +267,32 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <JourneyShortcuts keys={['food', 'recipes', 'progress']} />
+        <View style={styles.secondaryLinks} accessibilityRole="summary">
+          <Pressable
+            onPress={() => router.push('/(tabs)/food')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Питание"
+          >
+            <Text style={styles.secondaryLinkText}>Питание →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/recipes')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Рецепты"
+          >
+            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(tabs)/progress')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Прогресс"
+          >
+            <Text style={styles.secondaryLinkText}>Прогресс →</Text>
+          </Pressable>
+        </View>
 
         <SettingsCard
           title="КБЖУ на день"
@@ -578,6 +604,20 @@ function PrivacyRow({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg },
+  secondaryLinks: {
+    marginBottom: space.lg,
+    gap: space.xs,
+  },
+  secondaryLink: {
+    paddingVertical: space.sm,
+    minHeight: touchMin,
+    justifyContent: 'center',
+  },
+  secondaryLinkText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
   hero: { alignItems: 'center', marginBottom: space.xl },
   avatar: {
     width: 72,
