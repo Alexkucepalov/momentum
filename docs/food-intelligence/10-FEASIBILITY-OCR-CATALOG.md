@@ -9,7 +9,8 @@
 |--------|---------|---------|------|-----|
 | **Paste from delivery apps** | High | Best (local) | Free | **Shipped (slice 1) — primary** |
 | **ML Kit Text Recognition v2 (on-device)** | **Cyrillic not in supported scripts** (Latin/CJK/Devanagari/Japanese/Korean only, Google docs 2025–26) | On-device | Free | **Not viable for RU receipts as-is** |
-| **On-device Tesseract / similar with `rus` model** | Possible; quality varies; APK size ↑ | On-device | Free / eng | Candidate after dogfood; spike required |
+| **On-device ExecuTorch OCR_RUSSIAN** (#84) | Cyrillic; quality varies on Samokat/METRO UI | On-device (+ optional model download) | Free + native size | **Shipped** — preview-edit required |
+| **Tesseract-rus** | Possible alternative | On-device | Free + APK | Superseded by ExecuTorch for this slice |
 | **Apple Vision (iOS later)** | Check Cyrillic support before committing | On-device | Free | Spike when iOS |
 | **Cloud Vision / LLM structure** | Higher on messy RU receipts | **Consent required**; no raw receipt in telemetry | Paid | Founder approval only |
 | **ФНС fiscal QR** | Verification ≠ product OCR | Highly sensitive | TBD legal | Research; no fake badge |
@@ -85,7 +86,7 @@ Dogfood и матчинг заказов **требуют** ассортимен
 ## 7. Recommended sequence (after Android dogfood Pass)
 
 1. Close UX/import defects from dogfood notes.  
-2. Keep paste-first; spike **Tesseract-rus** (or equivalent) on-device — **not** ML Kit v2 for Cyrillic.  
+2. Paste remains fallback; **on-device ExecuTorch OCR_RUSSIAN** shipped (#84) — **not** ML Kit v2 for Cyrillic.  
 3. Cloud OCR only with consent + spend approve.  
 4. OFF barcode enrichment with attribution.  
 5. **Parallel BD (founder):** licensed catalog ingest for **METRO → Самокат → Яндекс Лавка** (P0 product necessity). Agents do not scrape; stop with `needs-human` until contract/API exists. See [`11-RETAILER-CATALOG-INGEST-ANALYSIS.md`](./11-RETAILER-CATALOG-INGEST-ANALYSIS.md) (VkusVill MCP as reference; BD templates; forbidden gray APIs).

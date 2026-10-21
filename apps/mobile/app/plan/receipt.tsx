@@ -1,14 +1,20 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { parsePurchasePaste, type ParsedPurchaseLineDraft } from '../../../../src/domain/parsePurchasePaste';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import {
+  pickPurchaseScreenshotFromLibrary,
+  takePurchaseScreenshot,
+} from '@/src/media/purchaseScreenshot';
+import { usePurchaseScreenshotOcr } from '@/src/ocr/usePurchaseScreenshotOcr';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 type Step = 'input' | 'preview';
+type InputMode = 'paste' | 'manual' | 'screenshot';
 
 type PreviewLine = ParsedPurchaseLineDraft & { key: string };
 
@@ -17,14 +23,14 @@ function toPreviewLines(lines: ParsedPurchaseLineDraft[]): PreviewLine[] {
 }
 
 /**
- * Purchase import slice 1: paste or manual lines → editable preview → confirm.
- * No OCR / cloud AI. Unconfirmed draft never writes pantry.
+ * Purchase import: paste / manual / on-device screenshot OCR → preview → confirm.
+ * Unconfirmed draft never writes pantry. OCR stays on device (no cloud).
  */
 export default function PurchaseImportScreen() {
   const router = useRouter();
   const { repo, dateLocal, refresh, showFlash } = useData();
   const [step, setStep] = useState<Step>('input');
-  const [mode, setMode] = useState<'paste' | 'manual'>('paste');
+  const [mode, setMode] = useState<InputMode>('paste');
   const [paste, setPaste] = useState('');
   const [manualLines, setManualLines] = useState([{ name: '', amountRub: '', qty: '' }]);
   const [storeLabel, setStoreLabel] = useState('');
@@ -34,6 +40,25 @@ export default function PurchaseImportScreen() {
   const [parseConfidence, setParseConfidence] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<'delivered' | 'fiscal_receipt'>('delivered');
+  const [ocrBusy, setOcrBusy] = useState(false);
+
+  const ocr = usePurchaseScreenshotOcr(mode === 'screenshot');
+
+  const applyParsedPreview = (
+    parsed: ReturnType<typeof parsePurchasePaste>,
+    extraWarnings: string[] = [],
+  ) => {
+    if (parsed.lines.length === 0) {
+      setError(parsed.warnings[0] ?? 'Нет позиций');
+      return;
+    }
+    setStoreLabel(parsed.storeLabel ?? '');
+    setTotalRub(parsed.totalRub != null ? String(parsed.totalRub) : '');
+    setLines(toPreviewLines(parsed.lines));
+    setWarnings([...extraWarnings, ...parsed.warnings]);
+    setParseConfidence(parsed.parseConfidence);
+    setStep('preview');
+  };
 
   const knownExpense = useMemo(() => {
     const fromTotal = totalRub.trim() ? Number(totalRub.replace(',', '.')) : null;
@@ -50,17 +75,28 @@ export default function PurchaseImportScreen() {
 
   const goPreviewFromPaste = () => {
     setError(null);
-    const parsed = parsePurchasePaste(paste);
-    if (parsed.lines.length === 0) {
-      setError(parsed.warnings[0] ?? 'Нет позиций');
-      return;
+    applyParsedPreview(parsePurchasePaste(paste));
+  };
+
+  const runScreenshotOcr = async (source: 'library' | 'camera') => {
+    setError(null);
+    setOcrBusy(true);
+    try {
+      const uri =
+        source === 'library'
+          ? await pickPurchaseScreenshotFromLibrary()
+          : await takePurchaseScreenshot();
+      if (!uri) return;
+      const ocrResult = await ocr.recognizeUri(uri);
+      setPaste(ocrResult.text);
+      applyParsedPreview(parsePurchasePaste(ocrResult.text), [
+        'OCR на устройстве — проверь строки (Самокат/METRO часто шумят).',
+      ]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось разобрать скрин');
+    } finally {
+      setOcrBusy(false);
     }
-    setStoreLabel(parsed.storeLabel ?? '');
-    setTotalRub(parsed.totalRub != null ? String(parsed.totalRub) : '');
-    setLines(toPreviewLines(parsed.lines));
-    setWarnings(parsed.warnings);
-    setParseConfidence(parsed.parseConfidence);
-    setStep('preview');
   };
 
   const goPreviewFromManual = () => {
@@ -111,9 +147,11 @@ export default function PurchaseImportScreen() {
       if (totalRub.trim() && (total == null || !Number.isFinite(total) || total < 0)) {
         throw new Error('Итого: число ≥ 0 или пусто');
       }
+      const sourceKind =
+        mode === 'screenshot' ? 'screenshots' : mode === 'paste' ? 'paste' : 'manual';
       const result = repo.confirmNewPurchase({
         status: confirmStatus,
-        sourceKind: mode === 'paste' ? 'paste' : 'manual',
+        sourceKind,
         purchasedOn: dateLocal,
         storeLabel: storeLabel.trim() || null,
         totalRub: total,
@@ -314,8 +352,8 @@ export default function PurchaseImportScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
-        Вставь текст заказа или введи строки вручную. Фото/OCR — позже. Без подтверждения запасы не
-        меняются.
+        Текст заказа, скрин корзины Самокат/METRO (OCR на устройстве) или ручной ввод. Без
+        подтверждения запасы не меняются.
       </Text>
 
       <View style={styles.statusRow}>
@@ -326,7 +364,16 @@ export default function PurchaseImportScreen() {
           accessibilityState={{ selected: mode === 'paste' }}
           accessibilityLabel="Вставить текст"
         >
-          <Text style={styles.chipText}>Текст заказа</Text>
+          <Text style={styles.chipText}>Текст</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setMode('screenshot')}
+          style={[styles.chip, mode === 'screenshot' && styles.chipOn]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: mode === 'screenshot' }}
+          accessibilityLabel="Скрин заказа"
+        >
+          <Text style={styles.chipText}>Скрин</Text>
         </Pressable>
         <Pressable
           onPress={() => setMode('manual')}
@@ -353,6 +400,47 @@ export default function PurchaseImportScreen() {
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <PrimaryButton label="К проверке" onPress={goPreviewFromPaste} />
+        </>
+      ) : mode === 'screenshot' ? (
+        <>
+          <Text style={styles.hint}>
+            Скрин заказа или корзины. Текст распознаётся на телефоне (кириллица). Качество плавает —
+            на preview поправь строки. Фото никуда не уходит.
+          </Text>
+          {ocr.downloadProgress > 0 && ocr.downloadProgress < 1 ? (
+            <Text style={styles.meta} accessibilityLiveRegion="polite">
+              Загрузка модели OCR… {Math.round(ocr.downloadProgress * 100)}%
+            </Text>
+          ) : null}
+          {ocr.modelError ? (
+            <Text style={styles.warn}>
+              Модель OCR: {ocr.modelError.message}. Можно вставить текст вкладкой «Текст».
+            </Text>
+          ) : null}
+          {ocrBusy || ocr.isGenerating ? (
+            <View style={styles.ocrBusy} accessibilityLabel="Распознавание">
+              <ActivityIndicator color={colors.accent} />
+              <Text style={styles.meta}>Распознаю скрин…</Text>
+            </View>
+          ) : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <PrimaryButton
+            label="Выбрать скрин из галереи"
+            onPress={() => void runScreenshotOcr('library')}
+            disabled={ocrBusy || ocr.isGenerating}
+          />
+          <PrimaryButton
+            label="Снять камерой"
+            onPress={() => void runScreenshotOcr('camera')}
+            disabled={ocrBusy || ocr.isGenerating}
+          />
+          <Pressable
+            onPress={() => setMode('paste')}
+            accessibilityRole="button"
+            accessibilityLabel="Перейти к вставке текста"
+          >
+            <Text style={styles.back}>Не разобрал → вставить текст</Text>
+          </Pressable>
         </>
       ) : (
         <>
@@ -493,7 +581,9 @@ const styles = StyleSheet.create({
   },
   add: { fontSize: type.body, fontWeight: '700', color: colors.accent },
   link: { fontSize: type.caption, fontWeight: '700', color: colors.accent },
+  hint: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 20 },
   meta: { fontSize: type.caption, color: colors.textSecondary },
+  ocrBusy: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   summary: { fontSize: type.body, fontWeight: '600', color: colors.text },
   warn: { fontSize: type.caption, color: colors.textMuted },
   error: { color: colors.danger, fontSize: type.caption },

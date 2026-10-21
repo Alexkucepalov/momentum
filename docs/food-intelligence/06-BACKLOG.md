@@ -10,16 +10,18 @@
 | **2** | Pantry ↔ Recipes ↔ Eat Now coverage | #60 / PR #63 | **Done** |
 | **3** | Weekly plan → shopping missing-only | #61 / #64 | **Done** |
 | **4** | Budget: actual / projected shop / consumed | #62 / #64 | **Done** |
-| **3b** | Shopping variants (empty / recipe / reconcile) | #69 | This PR |
+| **3b** | Shopping variants (empty / recipe / reconcile) | #69 / #83 | **Done** |
 | **5** | Enrichment (OFF / Open Prices) | Consent + rate limits | Deferred |
-| **6** | OCR / multi-screenshot / QR | Consent + lawful path | Deferred `needs-human` |
+| **6a** | Screenshot OCR on-device (free, RU) | #84 | This PR |
+| **6b** | OCR multi-screenshot / cloud / QR | Consent + spend | Deferred `needs-human` |
 
 ## Issue-ready candidates (draft titles)
 
 1. **FI-1** Schema ADR approve + `purchases` / `purchase_lines` migration v14 + domain types  
 2. **FI-2** Manual + paste import → PurchasePreview screen (no OCR yet)  
 3. **FI-3** Confirm purchase → pantry lines + FoodExpense (dedupe fingerprint)  
-4. **FI-4** Photo / screenshot OCR pipeline (on-device first; cloud only with consent)  
+4. **FI-4** Photo / screenshot OCR — **#84 on-device free**; cloud still deferred  
+
 5. **FI-5** Product match: GTIN → name normalize → confidence UI · **#81 purchase→catalog upsert (ship)**  
 6. **FI-6** Eat Now / Recipes ranking by pantry coverage  
 7. **FI-7** Plan → shopping reconcile packages  
