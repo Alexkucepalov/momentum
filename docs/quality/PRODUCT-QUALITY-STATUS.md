@@ -1,8 +1,8 @@
 # Product Quality Status — overnight overhaul
 
-**Дата:** 2026-10-21  
-**main SHA: `4b1884edd2ca922fc0957057f72f4b701bbfd9db`
-**Verdict:** ключевые P0/P1 из Visual Audit закрыты в коде и влиты в `main`. **Android device Pass не утверждается** — нужен dogfood на телефоне. APK обновляется отдельно.
+**Дата:** 2026-10-21 (утро)  
+**main SHA:** `e18dba3`  
+**Verdict:** ключевые P0/P1 + morning UX (week edit / recipe density) в `main`. **Android device Pass не утверждается** — нужен dogfood на телефоне.
 
 ---
 
@@ -13,6 +13,9 @@
 | [#72](https://github.com/Alexkucepalov/momentum/pull/72) | purchase preview layout + recipe kcal seed | P0 overflow; label kcal vs Atwater |
 | [#73](https://github.com/Alexkucepalov/momentum/pull/73) | Eat Now meal portions + pantry-first | P1 meal cap ~700 kcal; pantry inventory first; location suggest |
 | [#74](https://github.com/Alexkucepalov/momentum/pull/74) | shopping / budget / week UX | empty+manual shop; forecast ≥7d; week CTA; stores demoted |
+| [#75](https://github.com/Alexkucepalov/momentum/pull/75)–[#76](https://github.com/Alexkucepalov/momentum/pull/76) | border-box + docs/after | preview clip; status pack |
+| [#53](https://github.com/Alexkucepalov/momentum/pull/53)/[#56](https://github.com/Alexkucepalov/momentum/pull/56) | QS tokens + Profile links | merged morning |
+| [#77](https://github.com/Alexkucepalov/momentum/pull/77) | week edit-mode + recipe density | view/edit meals; compact library |
 
 ---
 
@@ -43,12 +46,10 @@
 
 ## Known remaining UX (not DONE)
 
-- Recipe cards / editor still heavy (P1 polish deferred).
-- Week meal row still has many actions (edit-mode collapse partial).
 - Eat Now empty still nudges goals (candidates still listed).
 - Analog product merge intentionally not auto.
-- Conflicting cloud PRs #70/#71 superseded by #72–#74 — close manually if still open.
 - Dispatcher still `DISPATCH_ENABLED=false`.
+- Physical Android Visual Audit column `A` empty.
 
 ---
 
@@ -57,17 +58,16 @@
 1. Install fresh dogfood APK (`docs/quality/apk/DOGFOOD-APK.md`).
 2. Purchase paste → preview (320–390dp) → pantry locations.
 3. Eat Now with high remaining → meal-sized portion.
-4. Shop without week plan.
+4. Shop without week plan; week «Изменить» reveals secondary actions.
 5. Budget early-month → «мало данных».
 
 ---
 
 ## Next prioritized tasks
 
-1. Android dogfood pack → mark Visual Audit `A` column.
-2. Recipe library card density + import text “only ambiguous fields”.
-3. Week meal edit-mode vs view-mode.
-4. Close stale cloud PRs #70/#71/#53–#56 after review.
+1. **Android dogfood** → mark Visual Audit `A` (blocked without device/adb).
+2. Eat Now empty / goals UX soften.
+3. Optional: rebuild release asset on GitHub Releases.
 
 ---
 
