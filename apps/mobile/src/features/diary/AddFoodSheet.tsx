@@ -90,7 +90,7 @@ export function AddFoodSheet({
   }, [visible]);
 
   const searching = query.trim().length > 0;
-  const showSearch = CATALOG_TABS.includes(tab) || searching;
+  const showSearch = true;
 
   const searchHits = useMemo(
     () =>
