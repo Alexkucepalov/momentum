@@ -1,7 +1,7 @@
-build_date: 2026-10-20T22:49:29Z
+build_date: 2026-10-21T07:07:15Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 140448854
-sha256: 97b87766086a6eb11a21d2d01b0e2936baf46b93e8337703c82656d8d871f2e8
-git: 4b1884edd2ca922fc0957057f72f4b701bbfd9db
-includes: overnight P0/P1 (#72–#75) — purchase layout, Eat Now meal portions, pantry-first, shopping/budget/week
+bytes: 140414406
+sha256: 518a6c2c2b494e9aa2be819b90c16a88811054155efb6ee2b7968f31fd1692d4
+git: 3425e3891b75791d46254bd2cd49ae0ec99639ae
+includes: morning main (#72–#78) — FI P0/P1 + week edit + recipe density + QS tokens
 dogfood_gate: pending
