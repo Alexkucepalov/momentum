@@ -23,7 +23,7 @@ export type CommonFoodSeed = {
 
 const TS = '2026-10-19T00:00:00.000Z';
 
-/** ~50 staples people log every week. */
+/** ~60+ staples people log every week. */
 export const COMMON_FOOD_CATALOG: readonly CommonFoodSeed[] = [
   // Белки
   { id: 'seed:egg', name: 'Яйцо куриное', aliases: ['яйца', 'яйцо'], energyKcal: 157, proteinG: 12.6, fatG: 10.6, carbG: 1.1 },
@@ -56,6 +56,13 @@ export const COMMON_FOOD_CATALOG: readonly CommonFoodSeed[] = [
   { id: 'seed:bread-wheat', name: 'Хлеб пшеничный', aliases: ['хлеб', 'батон'], energyKcal: 265, proteinG: 9, fatG: 3.2, carbG: 49 },
   { id: 'seed:bread-rye', name: 'Хлеб ржаной', aliases: ['чёрный хлеб', 'бородинский'], energyKcal: 217, proteinG: 6.6, fatG: 1.2, carbG: 41 },
   { id: 'seed:tortilla', name: 'Тортилья пшеничная', aliases: ['лепёшка', 'тортилья'], energyKcal: 312, proteinG: 8.2, fatG: 7.1, carbG: 52 },
+  { id: 'seed:quinoa-cooked', name: 'Киноа варёная', aliases: ['киноа', 'кинва'], energyKcal: 120, proteinG: 4.4, fatG: 1.9, carbG: 21 },
+
+  // Бобовые
+  { id: 'seed:lentils-cooked', name: 'Чечевица варёная', aliases: ['чечевица'], energyKcal: 116, proteinG: 9, fatG: 0.4, carbG: 20 },
+  { id: 'seed:chickpeas-cooked', name: 'Нут варёный', aliases: ['нут', 'турецкий горох'], energyKcal: 164, proteinG: 8.9, fatG: 2.6, carbG: 27 },
+  { id: 'seed:beans-cooked', name: 'Фасоль варёная', aliases: ['фасоль'], energyKcal: 127, proteinG: 8.7, fatG: 0.5, carbG: 23 },
+  { id: 'seed:peas-green', name: 'Горох зелёный', aliases: ['горох', 'горошек'], energyKcal: 81, proteinG: 5.4, fatG: 0.4, carbG: 14 },
 
   // Овощи / фрукты
   { id: 'seed:cucumber', name: 'Огурец', aliases: ['огурцы'], energyKcal: 15, proteinG: 0.7, fatG: 0.1, carbG: 3.6 },
@@ -64,11 +71,24 @@ export const COMMON_FOOD_CATALOG: readonly CommonFoodSeed[] = [
   { id: 'seed:carrot', name: 'Морковь', aliases: ['морковка'], energyKcal: 41, proteinG: 0.9, fatG: 0.2, carbG: 9.6 },
   { id: 'seed:onion', name: 'Лук репчатый', aliases: ['лук'], energyKcal: 40, proteinG: 1.1, fatG: 0.1, carbG: 9.3 },
   { id: 'seed:broccoli', name: 'Брокколи', aliases: [], energyKcal: 34, proteinG: 2.8, fatG: 0.4, carbG: 7 },
+  { id: 'seed:pepper', name: 'Перец болгарский', aliases: ['перец', 'паприка'], energyKcal: 27, proteinG: 1, fatG: 0.3, carbG: 6 },
+  { id: 'seed:zucchini', name: 'Кабачок', aliases: ['цуккини'], energyKcal: 17, proteinG: 1.2, fatG: 0.3, carbG: 3.1 },
   { id: 'seed:banana', name: 'Банан', aliases: ['бананы'], energyKcal: 89, proteinG: 1.1, fatG: 0.3, carbG: 23 },
   { id: 'seed:apple', name: 'Яблоко', aliases: ['яблоки'], energyKcal: 52, proteinG: 0.3, fatG: 0.2, carbG: 14 },
-  { id: 'seed:orange', name: 'Апельсин', aliases: [], energyKcal: 47, proteinG: 0.9, fatG: 0.1, carbG: 12 },
+  { id: 'seed:orange', name: 'Апельсин', aliases: ['апельсины'], energyKcal: 47, proteinG: 0.9, fatG: 0.1, carbG: 12 },
   { id: 'seed:berries-mix', name: 'Ягоды смешанные', aliases: ['черника', 'клубника', 'ягоды'], energyKcal: 43, proteinG: 0.7, fatG: 0.3, carbG: 10 },
   { id: 'seed:avocado', name: 'Авокадо', aliases: [], energyKcal: 160, proteinG: 2, fatG: 15, carbG: 9 },
+  { id: 'seed:grapes', name: 'Виноград', aliases: [], energyKcal: 69, proteinG: 0.7, fatG: 0.2, carbG: 18 },
+  { id: 'seed:pear', name: 'Груша', aliases: ['груши'], energyKcal: 57, proteinG: 0.4, fatG: 0.1, carbG: 15 },
+  { id: 'seed:mango', name: 'Манго', aliases: [], energyKcal: 60, proteinG: 0.8, fatG: 0.4, carbG: 15 },
+  { id: 'seed:spinach', name: 'Шпинат свежий', aliases: ['шпинат'], energyKcal: 23, proteinG: 2.9, fatG: 0.4, carbG: 3.6 },
+  { id: 'seed:lettuce', name: 'Салат листовой', aliases: ['салат', 'латук'], energyKcal: 15, proteinG: 1.4, fatG: 0.2, carbG: 2.9 },
+
+  // Орехи / семена
+  { id: 'seed:almonds', name: 'Миндаль', aliases: [], energyKcal: 579, proteinG: 21, fatG: 49.9, carbG: 21.6 },
+  { id: 'seed:walnuts', name: 'Грецкий орех', aliases: ['орехи', 'грецкие'], energyKcal: 654, proteinG: 15.2, fatG: 65.2, carbG: 13.7 },
+  { id: 'seed:cashews', name: 'Кешью', aliases: [], energyKcal: 553, proteinG: 18.2, fatG: 43.8, carbG: 30.2 },
+  { id: 'seed:sunflower-seeds', name: 'Семечки подсолнечника', aliases: ['семечки'], energyKcal: 584, proteinG: 20.8, fatG: 51.5, carbG: 20 },
 
   // Жиры / прочее
   { id: 'seed:oil-sunflower', name: 'Масло подсолнечное', aliases: ['растительное масло', 'масло раст'], energyKcal: 884, proteinG: 0, fatG: 100, carbG: 0 },
