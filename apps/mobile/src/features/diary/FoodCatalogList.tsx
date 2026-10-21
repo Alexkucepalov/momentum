@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   sourcePillRef: {
-    backgroundColor: '#D4EDDA',
+    backgroundColor: colors.successSoft,
   },
   sourcePillText: {
     fontSize: type.micro,

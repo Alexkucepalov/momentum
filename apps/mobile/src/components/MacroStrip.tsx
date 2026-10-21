@@ -66,5 +66,5 @@ const styles = StyleSheet.create({
   letter: { fontSize: type.micro, fontWeight: '800' },
   value: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   kcalValue: { fontSize: type.caption, fontWeight: '800', color: colors.primaryButtonText },
-  kcalUnit: { fontSize: type.micro, fontWeight: '600', color: '#D1D5DB' },
+  kcalUnit: { fontSize: type.micro, fontWeight: '600', color: colors.textMuted },
 });
