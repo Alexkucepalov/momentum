@@ -57,6 +57,8 @@ export default function WeekPlanScreen() {
   const [planId, setPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  /** View mode by default — secondary actions only for the meal being edited. */
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
 
   const plans = repo.listMealPlans().filter((p) => p.status !== 'archived');
   const activeId =
@@ -265,6 +267,10 @@ export default function WeekPlanScreen() {
                 key={m.id}
                 meal={m}
                 macros={macrosFor(m)}
+                editing={editingMealId === m.id}
+                onToggleEdit={() =>
+                  setEditingMealId((cur) => (cur === m.id ? null : m.id))
+                }
                 onPortion={() => {
                   const idx = PORTION_STEPS.findIndex((g) => g >= m.grams);
                   const next =
@@ -314,6 +320,7 @@ export default function WeekPlanScreen() {
                   repo.logPlannedMealToDiary(m.id);
                   refresh();
                   showFlash(`В дневник: ${m.displayName}`);
+                  setEditingMealId(null);
                 }}
               />
             ))}
@@ -338,6 +345,8 @@ export default function WeekPlanScreen() {
 function PlannedMealRow({
   meal: m,
   macros,
+  editing,
+  onToggleEdit,
   onPortion,
   onMoveDay,
   onMoveSlot,
@@ -346,6 +355,8 @@ function PlannedMealRow({
 }: {
   meal: PlannedMeal;
   macros: string;
+  editing: boolean;
+  onToggleEdit: () => void;
   onPortion: () => void;
   onMoveDay: (delta: number) => void;
   onMoveSlot: () => void;
@@ -361,14 +372,22 @@ function PlannedMealRow({
         {m.status === 'logged' ? ' · в дневнике' : ''}
       </Text>
       {m.status !== 'logged' ? (
-        <View style={styles.actions}>
-          <Action label="Порция" onPress={onPortion} />
-          <Action label="← день" onPress={() => onMoveDay(-1)} />
-          <Action label="день →" onPress={() => onMoveDay(1)} />
-          <Action label="Слот" onPress={onMoveSlot} />
-          <Action label="Замена" onPress={onReplace} />
-          <Action label="В дневник" onPress={onLog} primary />
-        </View>
+        editing ? (
+          <View style={styles.actions}>
+            <Action label="Порция" onPress={onPortion} />
+            <Action label="← день" onPress={() => onMoveDay(-1)} />
+            <Action label="день →" onPress={() => onMoveDay(1)} />
+            <Action label="Слот" onPress={onMoveSlot} />
+            <Action label="Замена" onPress={onReplace} />
+            <Action label="В дневник" onPress={onLog} primary />
+            <Action label="Готово" onPress={onToggleEdit} />
+          </View>
+        ) : (
+          <View style={styles.actions}>
+            <Action label="В дневник" onPress={onLog} primary />
+            <Action label="Изменить" onPress={onToggleEdit} />
+          </View>
+        )
       ) : null}
     </View>
   );

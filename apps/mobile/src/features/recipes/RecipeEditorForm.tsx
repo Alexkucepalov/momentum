@@ -220,22 +220,6 @@ export function RecipeEditorForm({
 
   return (
     <View>
-      <Pressable
-        style={styles.photoBox}
-        onPress={attachPhoto}
-        accessibilityRole="button"
-        accessibilityLabel={photoUri ? 'Изменить фото рецепта' : 'Добавить фото рецепта'}
-      >
-        {photoUri ? (
-          <Image source={{ uri: photoUri }} style={styles.photo} accessibilityIgnoresInvertColors />
-        ) : (
-          <View style={styles.photoEmpty}>
-            <Ionicons name="camera-outline" size={28} color={colors.textMuted} />
-            <Text style={styles.photoHint}>Фото блюда</Text>
-          </View>
-        )}
-      </Pressable>
-
       <Text style={styles.blockLabel}>1. Название и выход</Text>
       <Field label="Название" value={name} onChangeText={setName} placeholder="например Сырники" />
       <Field
@@ -246,7 +230,7 @@ export function RecipeEditorForm({
         placeholder="500"
       />
 
-      <Text style={styles.blockLabel}>2. Ингредиенты (таблица)</Text>
+      <Text style={styles.blockLabel}>2. Ингредиенты</Text>
       <Text style={styles.lead}>
         Структурированный список с массой и КБЖУ на 100 г. Описание в свободном тексте не участвует в
         расчёте.
@@ -359,6 +343,23 @@ export function RecipeEditorForm({
         multiline
       />
 
+      <Text style={styles.blockLabel}>5. Фото (необязательно)</Text>
+      <Pressable
+        style={styles.photoBox}
+        onPress={attachPhoto}
+        accessibilityRole="button"
+        accessibilityLabel={photoUri ? 'Изменить фото рецепта' : 'Добавить фото рецепта'}
+      >
+        {photoUri ? (
+          <Image source={{ uri: photoUri }} style={styles.photo} accessibilityIgnoresInvertColors />
+        ) : (
+          <View style={styles.photoEmpty}>
+            <Ionicons name="camera-outline" size={22} color={colors.textMuted} />
+            <Text style={styles.photoHint}>Добавить фото</Text>
+          </View>
+        )}
+      </Pressable>
+
       {error ? (
         <Text style={styles.error} accessibilityLiveRegion="assertive">
           {error}
@@ -404,13 +405,13 @@ function Field({
 
 const styles = StyleSheet.create({
   photoBox: {
-    height: 180,
+    height: 120,
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: space.lg,
+    marginBottom: space.md,
   },
   photo: { width: '100%', height: '100%' },
   photoEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.sm },
