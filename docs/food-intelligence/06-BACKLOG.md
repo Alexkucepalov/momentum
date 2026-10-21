@@ -19,7 +19,7 @@
 2. **FI-2** Manual + paste import → PurchasePreview screen (no OCR yet)  
 3. **FI-3** Confirm purchase → pantry lines + FoodExpense (dedupe fingerprint)  
 4. **FI-4** Photo / screenshot OCR pipeline (on-device first; cloud only with consent)  
-5. **FI-5** Product match: GTIN → name normalize → confidence UI  
+5. **FI-5** Product match: GTIN → name normalize → confidence UI · **#81 purchase→catalog upsert (ship)**  
 6. **FI-6** Eat Now / Recipes ranking by pantry coverage  
 7. **FI-7** Plan → shopping reconcile packages  
 8. **FI-8** Budget views: actual vs projected vs consumed  

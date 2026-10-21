@@ -154,8 +154,68 @@ test('confirmNewPurchase writes pantry + expense; duplicate blocked', () => {
   assert.equal(repo.listPantryItems().length, 2);
   assert.equal(repo.listFoodExpenses('2026-10').length, 1);
 
+  // Catalog upsert: food lines linked to products; bag skipped.
+  const foodLines = first.lines.filter((l) => l.isFood && !l.excluded);
+  assert.equal(foodLines.length, 2);
+  assert.ok(foodLines.every((l) => l.productId != null));
+  assert.ok(first.pantryItems.every((p) => p.productId != null));
+  assert.equal(foodLines[0].productId, first.pantryItems[0].productId);
+
   assert.throws(() => repo.confirmNewPurchase(input), /дубликат/i);
   assert.equal(repo.listPantryItems().length, 2);
+});
+
+test('confirmNewPurchase rematches catalog on later purchase; prices observed', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'Europe/Moscow' });
+  const a = repo.confirmNewPurchase({
+    status: 'delivered',
+    sourceKind: 'paste',
+    purchasedOn: '2026-10-20',
+    storeLabel: 'Самокат',
+    totalRub: 89,
+    lines: [
+      {
+        rawName: 'Греческий йогурт 300г',
+        displayName: 'Греческий йогурт',
+        quantity: 300,
+        unit: 'g',
+        lineTotalRub: 89,
+        isFood: true,
+        excluded: false,
+      },
+    ],
+  });
+  const productId = a.lines[0].productId;
+  assert.ok(productId);
+  const product = repo.listProducts().find((p) => p.id === productId);
+  assert.ok(product);
+  assert.equal(product.name, 'Греческий йогурт');
+  assert.equal(product.energyKcal, null);
+
+  const b = repo.confirmNewPurchase({
+    status: 'delivered',
+    sourceKind: 'paste',
+    purchasedOn: '2026-10-21',
+    storeLabel: 'Самокат',
+    totalRub: 95,
+    lines: [
+      {
+        rawName: 'Греческий йогурт 300г',
+        displayName: 'Греческий йогурт',
+        quantity: 300,
+        unit: 'g',
+        lineTotalRub: 95,
+        isFood: true,
+        excluded: false,
+      },
+    ],
+  });
+  assert.equal(b.lines[0].productId, productId);
+  assert.equal(b.lines[0].matchConfidence, 1);
+  assert.equal(repo.listProducts().filter((p) => p.name === 'Греческий йогурт').length, 1);
+
+  const prices = repo.toSnapshot().productPrices.filter((p) => !p.deletedAt);
+  assert.ok(prices.some((p) => p.observedOn === '2026-10-21' && Math.abs(p.priceRub - 95 / 300) < 1e-9));
 });
 
 test('null prices stay null; no expense when totals unknown', () => {

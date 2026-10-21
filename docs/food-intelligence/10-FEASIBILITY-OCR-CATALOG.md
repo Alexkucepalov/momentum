@@ -39,14 +39,30 @@ Observation-dated prices only. Label «наблюдение · дата», never
 
 ## 4. Russian retailer catalogs
 
+### Product necessity (founder priority)
+
+Dogfood и матчинг заказов **требуют** ассортимента уровня реальных витрин доставки/гипермаркета. Приоритетные источники каталога:
+
+| Priority | Retailer | Role |
+|----------|----------|------|
+| P0 | **METRO** | Крупный формат, вес/фасовки |
+| P0 | **Самокат** | Q-commerce заказы → paste/import |
+| P0 | **Яндекс Лавка** | Q-commerce; соседний ассортимент |
+
+**Необходимость ingest / «парсинга каталога»:** да (название, фасовка, barcode/SKU если есть, цена только с датой наблюдения).  
+**Канал:** официальный API / partner feed / лицензированный дамп после BD+legal.  
+**Не канал:** неавторизованный scrape HTML/app, MitM, серые дампы — даже если founder «разрешил» внутри репо.
+
 | Retailer | Public product API for our use? | Verdict |
 |----------|----------------------------------|---------|
-| Пятёрочка / Чижик (X5) | Not verified public | **Blocked** without license |
-| METRO | B2B feeds possible via partnership | `needs-human` BD |
-| Самокат | App/session typically | No scrape |
-| Красное&Белое / others | Same | No scrape |
+| **METRO** | Not verified public; B2B feed possible | **P0 need** · `needs-human` BD · no scrape |
+| **Самокат** | App/session typically | **P0 need** · `needs-human` BD · no scrape |
+| **Яндекс Лавка** | App/session typically | **P0 need** · `needs-human` BD · no scrape |
+| Пятёрочка / Чижик (X5) | Not verified public | Secondary · blocked without license |
+| Красное&Белое / others | Same | Secondary · no scrape |
 
-**Allowed without contract:** user-confirmed purchase lines (first-party), OFF/Open Prices, manual catalog.
+**Allowed without contract:** user-confirmed purchase lines (first-party), OFF/Open Prices, manual catalog.  
+**After contract:** one retailer vertical at a time → local SQLite seed → match on purchase confirm.
 
 ## 5. Privacy & consent
 
@@ -72,6 +88,6 @@ Observation-dated prices only. Label «наблюдение · дата», never
 2. Keep paste-first; spike **Tesseract-rus** (or equivalent) on-device — **not** ML Kit v2 for Cyrillic.  
 3. Cloud OCR only with consent + spend approve.  
 4. OFF barcode enrichment with attribution.  
-5. BD for licensed retailer feeds — parallel, not blocking.
+5. **Parallel BD (founder):** licensed catalog ingest for **METRO → Самокат → Яндекс Лавка** (P0 product necessity). Agents do not scrape; stop with `needs-human` until contract/API exists. See [`11-RETAILER-CATALOG-INGEST-ANALYSIS.md`](./11-RETAILER-CATALOG-INGEST-ANALYSIS.md) (VkusVill MCP as reference; BD templates; forbidden gray APIs).
 
-**Hard stops unchanged:** no scrape, no unpaid cloud AI in product, no production secret changes.
+**Hard stops unchanged:** no unauthorized scrape, no unpaid cloud AI in product, no production secret changes. Founder priority ≠ retailer authorization.
