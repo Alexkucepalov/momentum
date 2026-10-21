@@ -53,10 +53,10 @@
 
 | Approach | Feasibility RU | Privacy | Cost | Verdict |
 |----------|----------------|---------|------|---------|
-| On-device ML Kit Text Recognition v2 | **Cyrillic not supported** | Best | Free | **Not viable for RU** — see `10-FEASIBILITY-OCR-CATALOG.md` |
-| On-device Tesseract-rus / similar | Spike required | Best | Free + APK size | Candidate after dogfood |
-| Paste text from delivery apps | High | Best | Free | **Ship in slice 1** — primary bridge until retailer feeds exist |
-| Cloud Vision / LLM parse | Higher accuracy possible | Consent + no raw receipts in telemetry | Paid | Optional; founder approval |
+| On-device ML Kit Text Recognition v2 | **Cyrillic not supported** | Best | Free | **Not viable for RU** |
+| **On-device ExecuTorch OCR_RUSSIAN** (#84) | Cyrillic yes | Image local; model weights may download once | Free + APK/native size | **Shipped** — screenshot mode; see `12-SCREENSHOT-OCR-ANDROID.md` |
+| Paste text from delivery apps | High | Best | Free | **Still primary reliable path** if OCR noisy |
+| Cloud Vision / LLM parse | Higher accuracy possible | Consent + no raw receipts in telemetry | Paid | Deferred |
 | Fiscal QR (ФНС) | Needs lawful path | Sensitive | TBD | Research only |
 
 ## Explicit non-sources (until licensed)
