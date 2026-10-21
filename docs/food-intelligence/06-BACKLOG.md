@@ -8,8 +8,9 @@
 |------:|-------|---------|--------|
 | **1** | Purchase import → preview → pantry + expense | #58 / PR #59 | **Done** |
 | **2** | Pantry ↔ Recipes ↔ Eat Now coverage | #60 / PR #63 | **Done** |
-| **3** | Weekly plan → shopping missing-only | #61 | This PR |
-| **4** | Budget: actual / projected shop / consumed | #62 | This PR |
+| **3** | Weekly plan → shopping missing-only | #61 / #64 | **Done** |
+| **4** | Budget: actual / projected shop / consumed | #62 / #64 | **Done** |
+| **3b** | Shopping variants (empty / recipe / reconcile) | #69 | This PR |
 | **5** | Enrichment (OFF / Open Prices) | Consent + rate limits | Deferred |
 | **6** | OCR / multi-screenshot / QR | Consent + lawful path | Deferred `needs-human` |
 
