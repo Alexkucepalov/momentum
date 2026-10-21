@@ -28,6 +28,7 @@ import {
 } from '../domain/mealPlanDraft';
 import { portion, type Nutrition } from '../domain/nutrition';
 import { rankProductFrequency } from '../domain/productFrequency';
+import { matchPurchaseProduct } from '../domain/matchPurchaseProduct';
 import {
   isConfirmablePurchaseStatus,
   linesForPantryApply,
@@ -2172,7 +2173,7 @@ export function createMemoryFoodRepository(seed?: {
       if (input.totalRub != null) assertNonNegativeFinite(input.totalRub, 'totalRub');
       if (input.lines.length === 0) throw new Error('Нужна хотя бы одна позиция');
 
-      const draftLines = input.lines.map((l) => {
+      const validatedLines = input.lines.map((l) => {
         const displayName = l.displayName.trim();
         if (!displayName) throw new Error('Пустое название позиции');
         if (l.quantity != null) assertNonNegativeFinite(l.quantity, 'quantity');
@@ -2201,7 +2202,7 @@ export function createMemoryFoodRepository(seed?: {
         storeLabel: input.storeLabel ?? null,
         purchasedOn: input.purchasedOn,
         totalRub: input.totalRub ?? null,
-        lines: draftLines.map((l) => ({
+        lines: validatedLines.map((l) => ({
           displayName: l.displayName,
           quantity: l.quantity,
           unit: l.unit,
@@ -2212,6 +2213,38 @@ export function createMemoryFoodRepository(seed?: {
 
       const dup = api.findPurchaseByFingerprint(fingerprint);
       if (dup) throw new Error('Такая покупка уже подтверждена (дубликат чека)');
+
+      // After dedupe: match or create catalog products (nutrition stays null unless matched seed/OFF).
+      const catalogSnapshot = api.listProducts();
+      const draftLines = validatedLines.map((l) => {
+        let productId = l.productId;
+        let matchConfidence = l.matchConfidence;
+        if (l.isFood && !l.excluded) {
+          const match = matchPurchaseProduct(
+            { displayName: l.displayName, barcode: l.barcode, productId },
+            catalogSnapshot,
+          );
+          if (match.productId) {
+            productId = match.productId;
+            matchConfidence = match.confidence;
+          } else {
+            const digits = l.barcode?.replace(/\D/g, '') ?? '';
+            const created = api.createProduct({
+              name: l.displayName,
+              barcode: /^\d{8,14}$/.test(digits) ? digits : null,
+              energyKcal: null,
+              proteinG: null,
+              fatG: null,
+              carbG: null,
+              source: 'user',
+            });
+            productId = created.id;
+            matchConfidence = null;
+            catalogSnapshot.push(created);
+          }
+        }
+        return { ...l, productId, matchConfidence };
+      });
 
       const ts = nowIso();
       const purchaseId = newId();
@@ -2243,6 +2276,29 @@ export function createMemoryFoodRepository(seed?: {
         };
         purchaseLines.set(line.id, line);
         createdLines.push(line);
+
+        // Price observation only when unit + price known — never invent.
+        if (l.isFood && !l.excluded && l.unit) {
+          let unitPrice = l.unitPriceRub;
+          if (
+            unitPrice == null &&
+            l.lineTotalRub != null &&
+            l.quantity != null &&
+            l.quantity > 0
+          ) {
+            unitPrice = l.lineTotalRub / l.quantity;
+          }
+          if (unitPrice != null) {
+            api.upsertProductPrice({
+              productKey: shoppingKey(l.displayName, l.unit),
+              priceRub: unitPrice,
+              unit: l.unit,
+              observedOn: input.purchasedOn,
+              source: 'user',
+              storeId: input.storePreferenceId ?? null,
+            });
+          }
+        }
       }
 
       for (let i = 0; i < draftLines.length; i++) {

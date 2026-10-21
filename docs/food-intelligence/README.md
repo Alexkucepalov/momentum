@@ -18,7 +18,8 @@
 | [01-PRD.md](./01-PRD.md) | Product requirements |
 | [02-JOURNEYS.md](./02-JOURNEYS.md) | End-to-end journeys |
 | [03-IA-WIREFRAMES.md](./03-IA-WIREFRAMES.md) | IA + wireframes + states |
-| [04-SOURCES.md](./04-SOURCES.md) | Catalog / retail source matrix |
+| [04-SOURCES.md](./04-SOURCES.md) | Catalog / retail source matrix · **P0 need:** METRO / Самокат / Лавка via licensed ingest only |
+| [11-RETAILER-CATALOG-INGEST-ANALYSIS.md](./11-RETAILER-CATALOG-INGEST-ANALYSIS.md) | **How to get catalogs:** VkusVill MCP эталон; METRO/Самокат/Лавка — каналы, BD, запрет scrape |
 | [05-ADR-PURCHASES.md](./05-ADR-PURCHASES.md) | ADR draft: purchases & matching (needs approval) |
 | [06-BACKLOG.md](./06-BACKLOG.md) | Prioritized vertical slices |
 | [07-QA-DOGFOOD.md](./07-QA-DOGFOOD.md) | QA + Android dogfood plan |
