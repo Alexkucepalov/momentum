@@ -82,20 +82,7 @@ export default function RecipesIndexScreen() {
     <View style={styles.root}>
       <View style={styles.top}>
         <View style={styles.hubCard}>
-          <View style={styles.hubHeader}>
-            <View style={styles.hubIconWrap}>
-              <Ionicons name="add-circle" size={24} color={colors.text} />
-            </View>
-            <View style={styles.hubHeaderText}>
-              <Text style={styles.hubHint}>Добавить рецепт</Text>
-              <Text style={styles.hubLead}>Вручную · из текста · из архива</Text>
-            </View>
-          </View>
           <RecipeHubActions />
-          <Text style={styles.discoveryHint}>
-            Нужен готовый продукт без готовки? Питание → Каталог. Повторить вчерашнее — Сегодня →
-            Недавно.
-          </Text>
         </View>
 
         <View style={styles.searchBox}>
@@ -229,7 +216,7 @@ function RecipeCard({
         <View style={[styles.thumb, styles.thumbEmpty, fromArchive && styles.thumbArchive]}>
           <Ionicons
             name={fromArchive ? 'library-outline' : 'restaurant-outline'}
-            size={26}
+            size={20}
             color={colors.textMuted}
           />
         </View>
@@ -273,51 +260,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   top: { paddingHorizontal: space.lg, paddingTop: space.md },
   hubCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  hubHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.md,
-    marginBottom: space.lg,
-  },
-  hubIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hubHeaderText: {
-    flex: 1,
-  },
-  hubHint: {
-    fontSize: type.caption,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  hubLead: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  discoveryHint: {
-    marginTop: space.md,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    lineHeight: 16,
+    marginBottom: space.md,
   },
   headerBtn: {
     minWidth: touchMin,
@@ -388,49 +331,42 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
+    gap: space.sm,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.md,
-    minHeight: touchMin + 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    padding: space.md,
+    marginBottom: space.sm,
+    minHeight: touchMin,
   },
   thumb: {
-    width: 84,
-    height: 84,
-    borderRadius: radius.lg,
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  thumbArchive: { backgroundColor: '#F0F4F8' },
-  cardBody: { flex: 1, gap: 6 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, marginBottom: 2 },
-  cardTitle: { flex: 1, fontSize: type.body, fontWeight: '800', color: colors.text, lineHeight: 20 },
+  thumbArchive: { backgroundColor: colors.accentSoft },
+  cardBody: { flex: 1, gap: 2 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  cardTitle: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text, lineHeight: 20 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
     backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   badgeText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
-  cardMeta: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 16, marginBottom: 4 },
+  cardMeta: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 16 },
   chevron: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.accentSoft,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  pressed: { opacity: 0.85 },
 });
