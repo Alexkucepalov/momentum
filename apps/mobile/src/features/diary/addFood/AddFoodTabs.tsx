@@ -39,8 +39,8 @@ export function AddFoodTabs({
           >
             <Ionicons
               name={on ? icons.on : icons.off}
-              size={16}
-              color={on ? colors.primaryButtonText : colors.text}
+              size={18}
+              color={on ? colors.primaryButtonText : colors.textSecondary}
             />
             <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
               {t.label}
@@ -55,7 +55,7 @@ export function AddFoodTabs({
 const styles = StyleSheet.create({
   wrap: {
     marginHorizontal: space.lg,
-    marginBottom: space.sm,
+    marginBottom: space.md,
     backgroundColor: colors.accentSoft,
     borderRadius: radius.lg,
     padding: 4,
@@ -66,17 +66,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: space.sm,
+    gap: 6,
+    paddingVertical: space.md,
     paddingHorizontal: space.xs,
     borderRadius: radius.md,
-    minHeight: 48,
+    minHeight: 56,
   },
   tabOn: {
     backgroundColor: colors.primaryButton,
   },
   label: {
-    fontSize: type.micro,
+    fontSize: type.caption,
     fontWeight: '700',
     color: colors.textSecondary,
   },

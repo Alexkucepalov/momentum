@@ -129,7 +129,7 @@ export function BarcodeLookupSheet({
     setSourceNote(sourceLabel);
     setConfirmGrams(repo.lastGramsForProduct(p.id) ?? DEFAULT_GRAMS);
     setMessage(
-      `Найдено: ${p.name}\n${sourceLabel}\nПока не в дневнике — укажи, сколько съел с этой упаковки.`,
+      `Найдено: ${p.name}\n${sourceLabel}\nУкажи порцию в граммах.`,
     );
     setConfirm(true);
   };

@@ -35,6 +35,12 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'mine', 'recipes'];
+const MODE_TABS: AddFoodTab[] = ['manual', 'quick', 'meals'];
+const MODE_TITLES: Record<'manual' | 'quick' | 'meals', string> = {
+  manual: 'Вручную',
+  quick: 'Быстрый ввод',
+  meals: 'Приёмы',
+};
 
 export function AddFoodSheet({
   visible,
@@ -95,7 +101,9 @@ export function AddFoodSheet({
   }, [visible]);
 
   const searching = query.trim().length > 0;
-  const showSearch = true;
+  const inCatalog = CATALOG_TABS.includes(tab);
+  const inMode = MODE_TABS.includes(tab);
+  const showSearch = inCatalog || searching;
 
   const searchHits = useMemo(
     () =>
@@ -224,7 +232,17 @@ export function AddFoodSheet({
 
   const selectCatalogTab = (next: AddFoodTab) => {
     setTab(next);
-    // Keep query when switching catalog tabs; clear when leaving forms later.
+  };
+
+  const openMode = (next: 'manual' | 'quick' | 'meals') => {
+    setQuery('');
+    setError(null);
+    setTab(next);
+  };
+
+  const backToCatalog = () => {
+    setTab('recent');
+    setError(null);
   };
 
   return (
@@ -285,7 +303,6 @@ export function AddFoodSheet({
             </View>
           ) : null}
 
-          {/* Search first on catalog tabs — one box for products + recipes */}
           {showSearch ? (
             <View style={styles.searchBox}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
@@ -314,41 +331,24 @@ export function AddFoodSheet({
             </View>
           ) : null}
 
-          {!searching && CATALOG_TABS.includes(tab) ? (
+          {!searching && inCatalog ? (
             <AddFoodTabs value={tab} onChange={selectCatalogTab} />
           ) : null}
 
-          {/* Hide secondary modes while searching — one job: pick a hit */}
-          {!searching ? (
-            <View style={styles.actions} accessibilityRole="toolbar">
-              <ActionChip icon="barcode-outline" label="Сканер" onPress={() => setScanOpen(true)} />
-              <ActionChip
-                icon="create-outline"
-                label="Вручную"
-                onPress={() => {
-                  setQuery('');
-                  setTab('manual');
-                }}
-                active={tab === 'manual'}
-              />
-              <ActionChip
-                icon="flash-outline"
-                label="Быстро"
-                onPress={() => {
-                  setQuery('');
-                  setTab('quick');
-                }}
-                active={tab === 'quick'}
-              />
-              <ActionChip
-                icon="bookmark-outline"
-                label="Приёмы"
-                onPress={() => {
-                  setQuery('');
-                  setTab('meals');
-                }}
-                active={tab === 'meals'}
-              />
+          {!searching && inMode ? (
+            <View style={styles.modeHeader}>
+              <Pressable
+                onPress={backToCatalog}
+                style={styles.modeBack}
+                accessibilityRole="button"
+                accessibilityLabel="Назад к списку"
+              >
+                <Ionicons name="chevron-back" size={20} color={colors.text} />
+                <Text style={styles.modeBackText}>К списку</Text>
+              </Pressable>
+              <Text style={styles.modeTitle} accessibilityRole="header">
+                {MODE_TITLES[tab as 'manual' | 'quick' | 'meals']}
+              </Text>
             </View>
           ) : null}
 
@@ -363,69 +363,69 @@ export function AddFoodSheet({
               searchHits.length === 0 ? (
                 <EmptyHint
                   title="Ничего не найдено"
-                  body="Сбрось фильтр поиска или добавь продукт вручную — нули за тебя не придумаем."
+                  body="Сбрось поиск или добавь вручную — нули не выдумываем."
                   actionLabel="Ввести вручную"
-                  onAction={() => setTab('manual')}
+                  onAction={() => openMode('manual')}
                   secondaryActionLabel="Быстрый ввод"
-                  onSecondaryAction={() => setTab('quick')}
+                  onSecondaryAction={() => openMode('quick')}
                 />
               ) : (
-                <>
-                  <Text style={styles.tip}>Справочник, свои продукты, рецепты и недавние</Text>
-                  {searchHits.map((hit) => {
-                    if (hit.kind === 'recent') {
-                      const e = hit.entry;
-                      return (
-                        <FoodPickRow
-                          key={`r-${e.id}`}
-                          title={e.displayName}
-                          meta={`Последняя порция · ${e.grams} г · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
-                          icon={e.recipeId ? 'restaurant-outline' : 'time-outline'}
-                          onPress={() => openRecentConfirm(e)}
-                          onQuickAdd={
-                            e.productId || e.recipeId ? () => quickAddEntry(e) : undefined
-                          }
-                          accessibilityLabel={`Выбрать порцию ${e.displayName}`}
-                        />
-                      );
-                    }
-                    if (hit.kind === 'product') {
-                      const p = hit.product;
-                      const last = repo.lastGramsForProduct(p.id);
-                      return (
-                        <FoodPickRow
-                          key={`p-${p.id}`}
-                          title={p.name}
-                          meta={
-                            last != null
-                              ? `Последняя порция · ${last} г`
-                              : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
-                          }
-                          icon="nutrition-outline"
-                          onPress={() =>
-                            openProductConfirm(p, defaultProductPortionGrams(last))
-                          }
-                          onQuickAdd={() =>
-                            quickAddProduct(p, defaultProductPortionGrams(last))
-                          }
-                          accessibilityLabel={`Выбрать порцию ${p.name}`}
-                        />
-                      );
-                    }
-                    const r = hit.recipe;
+                searchHits.map((hit) => {
+                  if (hit.kind === 'recent') {
+                    const e = hit.entry;
                     return (
                       <FoodPickRow
-                        key={`rc-${r.id}`}
-                        title={r.name}
-                        meta={`Рецепт · выход ${r.cookedYieldG} г`}
-                        icon="restaurant-outline"
-                        onPress={() => openRecipeConfirm(r)}
-                        onQuickAdd={() => quickAddRecipe(r)}
-                        accessibilityLabel={`Выбрать порцию ${r.name}`}
+                        key={`r-${e.id}`}
+                        title={e.displayName}
+                        meta={`Последняя порция · ${e.grams} г · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
+                        icon={e.recipeId ? 'restaurant-outline' : 'time-outline'}
+                        tone={e.recipeId ? 'recipe' : 'recent'}
+                        onPress={() => openRecentConfirm(e)}
+                        onQuickAdd={
+                          e.productId || e.recipeId ? () => quickAddEntry(e) : undefined
+                        }
+                        accessibilityLabel={`Выбрать порцию ${e.displayName}`}
                       />
                     );
-                  })}
-                </>
+                  }
+                  if (hit.kind === 'product') {
+                    const p = hit.product;
+                    const last = repo.lastGramsForProduct(p.id);
+                    return (
+                      <FoodPickRow
+                        key={`p-${p.id}`}
+                        title={p.name}
+                        meta={
+                          last != null
+                            ? `Последняя порция · ${last} г`
+                            : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
+                        }
+                        icon="nutrition-outline"
+                        tone="product"
+                        onPress={() =>
+                          openProductConfirm(p, defaultProductPortionGrams(last))
+                        }
+                        onQuickAdd={() =>
+                          quickAddProduct(p, defaultProductPortionGrams(last))
+                        }
+                        accessibilityLabel={`Выбрать порцию ${p.name}`}
+                      />
+                    );
+                  }
+                  const r = hit.recipe;
+                  return (
+                    <FoodPickRow
+                      key={`rc-${r.id}`}
+                      title={r.name}
+                      meta={`Рецепт · выход ${r.cookedYieldG} г`}
+                      icon="restaurant-outline"
+                      tone="recipe"
+                      onPress={() => openRecipeConfirm(r)}
+                      onQuickAdd={() => quickAddRecipe(r)}
+                      accessibilityLabel={`Выбрать порцию ${r.name}`}
+                    />
+                  );
+                })
               )
             ) : null}
 
@@ -433,27 +433,23 @@ export function AddFoodSheet({
               recent.length === 0 ? (
                 <EmptyHint
                   title="Пока нет недавних"
-                  body="Ищи по названию (есть справочник обычных продуктов), сканер или быстрый ввод — повтор потом в один тап «+»."
+                  body="Поиск, сканер или быстрый ввод — потом повтор одним «+»."
                 />
               ) : (
-                <>
-                  <Text style={styles.tip}>
-                    «+» — сразу с прошлой порцией. Строка — изменить граммы.
-                  </Text>
-                  {recent.map((e) => (
-                    <FoodPickRow
-                      key={e.id}
-                      title={e.displayName}
-                      meta={`Последняя порция · ${e.grams} г · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
-                      icon={e.recipeId ? 'restaurant-outline' : 'nutrition-outline'}
-                      onPress={() => openRecentConfirm(e)}
-                      onQuickAdd={
-                        e.productId || e.recipeId ? () => quickAddEntry(e) : undefined
-                      }
-                      accessibilityLabel={`Выбрать порцию ${e.displayName}`}
-                    />
-                  ))}
-                </>
+                recent.map((e) => (
+                  <FoodPickRow
+                    key={e.id}
+                    title={e.displayName}
+                    meta={`Последняя порция · ${e.grams} г · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
+                    icon={e.recipeId ? 'restaurant-outline' : 'time-outline'}
+                    tone={e.recipeId ? 'recipe' : 'recent'}
+                    onPress={() => openRecentConfirm(e)}
+                    onQuickAdd={
+                      e.productId || e.recipeId ? () => quickAddEntry(e) : undefined
+                    }
+                    accessibilityLabel={`Выбрать порцию ${e.displayName}`}
+                  />
+                ))
               )
             ) : null}
 
@@ -461,34 +457,32 @@ export function AddFoodSheet({
               favorites.length === 0 ? (
                 <EmptyHint
                   title="Нет избранного"
-                  body="На вкладке Питание нажми ★ у продукта — он появится здесь."
+                  body="На вкладке Питание нажми ★ у продукта."
                 />
               ) : (
-                <>
-                  <Text style={styles.tip}>«+» добавляет последнюю или 100 г. Строка — порция.</Text>
-                  {favorites.map((p) => {
-                    const last = repo.lastGramsForProduct(p.id);
-                    return (
-                      <FoodPickRow
-                        key={p.id}
-                        title={p.name}
-                        meta={
-                          last != null
-                            ? `Последняя порция · ${last} г`
-                            : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
-                        }
-                        icon="star-outline"
-                        onPress={() =>
-                          openProductConfirm(p, defaultProductPortionGrams(last))
-                        }
-                        onQuickAdd={() =>
-                          quickAddProduct(p, defaultProductPortionGrams(last))
-                        }
-                        accessibilityLabel={`Выбрать порцию ${p.name}`}
-                      />
-                    );
-                  })}
-                </>
+                favorites.map((p) => {
+                  const last = repo.lastGramsForProduct(p.id);
+                  return (
+                    <FoodPickRow
+                      key={p.id}
+                      title={p.name}
+                      meta={
+                        last != null
+                          ? `Последняя порция · ${last} г`
+                          : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
+                      }
+                      icon="star"
+                      tone="favorite"
+                      onPress={() =>
+                        openProductConfirm(p, defaultProductPortionGrams(last))
+                      }
+                      onQuickAdd={() =>
+                        quickAddProduct(p, defaultProductPortionGrams(last))
+                      }
+                      accessibilityLabel={`Выбрать порцию ${p.name}`}
+                    />
+                  );
+                })
               )
             ) : null}
 
@@ -496,43 +490,39 @@ export function AddFoodSheet({
               mineProducts.length === 0 ? (
                 <EmptyHint
                   title="Нет своих продуктов"
-                  body="План → Мои продукты: вставь список названий. КБЖУ можно дописать позже — не выдумываем."
+                  body="План → Мои продукты. КБЖУ можно дописать позже."
                 />
               ) : (
-                <>
-                  <Text style={styles.tip}>
-                    Свои позиции. Без КБЖУ — порция всё равно спросит граммы, ккал останутся неизвестны.
-                  </Text>
-                  {mineProducts.map((p) => {
-                    const last = repo.lastGramsForProduct(p.id);
-                    const unknown =
-                      p.energyKcal == null &&
-                      p.proteinG == null &&
-                      p.fatG == null &&
-                      p.carbG == null;
-                    return (
-                      <FoodPickRow
-                        key={p.id}
-                        title={p.name}
-                        meta={
-                          unknown
-                            ? 'КБЖУ неизвестны'
-                            : last != null
-                              ? `Последняя порция · ${last} г`
-                              : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
-                        }
-                        icon="basket-outline"
-                        onPress={() =>
-                          openProductConfirm(p, defaultProductPortionGrams(last))
-                        }
-                        onQuickAdd={() =>
-                          quickAddProduct(p, defaultProductPortionGrams(last))
-                        }
-                        accessibilityLabel={`Выбрать порцию ${p.name}`}
-                      />
-                    );
-                  })}
-                </>
+                mineProducts.map((p) => {
+                  const last = repo.lastGramsForProduct(p.id);
+                  const unknown =
+                    p.energyKcal == null &&
+                    p.proteinG == null &&
+                    p.fatG == null &&
+                    p.carbG == null;
+                  return (
+                    <FoodPickRow
+                      key={p.id}
+                      title={p.name}
+                      meta={
+                        unknown
+                          ? 'КБЖУ неизвестны'
+                          : last != null
+                            ? `Последняя порция · ${last} г`
+                            : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
+                      }
+                      icon="basket-outline"
+                      tone="product"
+                      onPress={() =>
+                        openProductConfirm(p, defaultProductPortionGrams(last))
+                      }
+                      onQuickAdd={() =>
+                        quickAddProduct(p, defaultProductPortionGrams(last))
+                      }
+                      accessibilityLabel={`Выбрать порцию ${p.name}`}
+                    />
+                  );
+                })
               )
             ) : null}
 
@@ -602,46 +592,34 @@ export function AddFoodSheet({
 
             {!searching && tab === 'recipes' ? (
               <>
-                <View style={styles.recipesShortcuts}>
-                  <Pressable
-                    style={styles.recipesLink}
+                <View style={styles.recipesChips} accessibilityRole="toolbar">
+                  <RecipeChip
+                    icon="book-outline"
+                    label="Все"
                     onPress={() => {
                       onClose();
                       router.push('/recipes');
                     }}
-                    accessibilityRole="button"
                     accessibilityLabel="Открыть раздел рецептов"
-                  >
-                    <Ionicons name="book-outline" size={18} color={colors.text} />
-                    <Text style={styles.recipesLinkText}>Все рецепты</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                  </Pressable>
-                  <Pressable
-                    style={styles.recipesLink}
+                  />
+                  <RecipeChip
+                    icon="document-text-outline"
+                    label="Из текста"
                     onPress={() => {
                       onClose();
                       router.push('/recipes/import-text');
                     }}
-                    accessibilityRole="button"
                     accessibilityLabel="Создать рецепт из текста"
-                  >
-                    <Ionicons name="document-text-outline" size={18} color={colors.text} />
-                    <Text style={styles.recipesLinkText}>Из текста</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                  </Pressable>
-                  <Pressable
-                    style={styles.recipesLink}
+                  />
+                  <RecipeChip
+                    icon="library-outline"
+                    label="Архив"
                     onPress={() => {
                       onClose();
                       router.push('/recipes/import-personal');
                     }}
-                    accessibilityRole="button"
                     accessibilityLabel="Мой архив рецептов"
-                  >
-                    <Ionicons name="library-outline" size={18} color={colors.text} />
-                    <Text style={styles.recipesLinkText}>Мой архив</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                  </Pressable>
+                  />
                 </View>
                 <RecipesPanel
                   recipes={recipes}
@@ -658,6 +636,34 @@ export function AddFoodSheet({
               </>
             ) : null}
           </FormScrollView>
+
+          {!searching ? (
+            <View style={styles.dock} accessibilityRole="toolbar">
+              <DockItem
+                icon="barcode-outline"
+                label="Сканер"
+                onPress={() => setScanOpen(true)}
+              />
+              <DockItem
+                icon="create-outline"
+                label="Вручную"
+                onPress={() => openMode('manual')}
+                active={tab === 'manual'}
+              />
+              <DockItem
+                icon="flash-outline"
+                label="Быстро"
+                onPress={() => openMode('quick')}
+                active={tab === 'quick'}
+              />
+              <DockItem
+                icon="bookmark-outline"
+                label="Приёмы"
+                onPress={() => openMode('meals')}
+                active={tab === 'meals'}
+              />
+            </View>
+          ) : null}
         </View>
       </SwipeToDismissSheet>
 
@@ -785,7 +791,7 @@ function EmptyHint({
   );
 }
 
-function ActionChip({
+function DockItem({
   icon,
   label,
   onPress,
@@ -798,14 +804,44 @@ function ActionChip({
 }) {
   return (
     <Pressable
-      style={[styles.actionChip, active && styles.actionChipOn]}
+      style={[styles.dockItem, active && styles.dockItemOn]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!active }}
       accessibilityLabel={label}
     >
-      <Ionicons name={icon} size={16} color={active ? colors.primaryButtonText : colors.text} />
-      <Text style={[styles.actionLabel, active && styles.actionLabelOn]}>{label}</Text>
+      <Ionicons
+        name={icon}
+        size={20}
+        color={active ? colors.primaryButtonText : colors.text}
+      />
+      <Text style={[styles.dockLabel, active && styles.dockLabelOn]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function RecipeChip({
+  icon,
+  label,
+  onPress,
+  accessibilityLabel,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+}) {
+  return (
+    <Pressable
+      style={styles.recipeChip}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
+      <Ionicons name={icon} size={16} color={colors.fat} />
+      <Text style={styles.recipeChipText}>{label}</Text>
     </Pressable>
   );
 }
@@ -815,33 +851,87 @@ const styles = StyleSheet.create({
     minHeight: 420,
   },
   scroll: {
-    maxHeight: 560,
+    maxHeight: 520,
+    flexGrow: 1,
   },
-  actions: {
+  dock: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: space.sm,
     paddingHorizontal: space.lg,
-    marginBottom: space.sm,
+    paddingTop: space.sm,
+    paddingBottom: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
   },
-  actionChip: {
-    flexDirection: 'row',
+  dockItem: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    paddingHorizontal: space.md,
+    minHeight: touchMin + 4,
     paddingVertical: space.sm,
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 36,
   },
-  actionChipOn: {
+  dockItemOn: {
     backgroundColor: colors.primaryButton,
     borderColor: colors.primaryButton,
   },
-  actionLabel: { fontSize: type.micro, fontWeight: '700', color: colors.text },
-  actionLabelOn: { color: colors.primaryButtonText },
+  dockLabel: {
+    fontSize: type.micro,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  dockLabelOn: { color: colors.primaryButtonText },
+  modeHeader: {
+    paddingHorizontal: space.lg,
+    marginBottom: space.md,
+    gap: space.xs,
+  },
+  modeBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 2,
+    minHeight: 36,
+    marginLeft: -4,
+  },
+  modeBackText: {
+    fontSize: type.caption,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  modeTitle: {
+    fontSize: type.subtitle,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  recipesChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginBottom: space.md,
+  },
+  recipeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    minHeight: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.toneRecipeBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  recipeChipText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.text,
+  },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -917,28 +1007,8 @@ const styles = StyleSheet.create({
   mealOptTextOn: { color: colors.primaryButtonText },
   body: {
     paddingHorizontal: space.lg,
-    paddingBottom: 48,
+    paddingBottom: space.lg,
   },
-  tip: {
-    fontSize: type.caption,
-    color: colors.textMuted,
-    marginBottom: space.md,
-    lineHeight: 18,
-  },
-  recipesShortcuts: { gap: space.sm, marginBottom: space.md },
-  recipesLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    minHeight: touchMin,
-    marginBottom: space.md,
-  },
-  recipesLinkText: { flex: 1, fontWeight: '700', color: colors.text, fontSize: type.body },
   error: {
     color: colors.danger,
     paddingHorizontal: space.lg,

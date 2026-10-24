@@ -224,7 +224,10 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   top: { paddingHorizontal: space.lg, paddingTop: space.md },
   hubCard: {
-    marginBottom: space.md,
+    marginBottom: space.lg,
+    paddingBottom: space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerBtn: {
     minWidth: touchMin,

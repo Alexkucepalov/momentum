@@ -223,11 +223,6 @@ export function ConfirmPortionSheet({
         <Text style={styles.meta}>
           {source} · в {mealLabel}
         </Text>
-        <Text style={styles.portionLead}>
-          {target.kind === 'recipe'
-            ? 'Сколько съел этой порции? КБЖУ ниже — на указанные граммы готового блюда, не на весь выход рецепта.'
-            : 'Сколько съел с упаковки? КБЖУ ниже пересчитаются на эти граммы — не на всю пачку.'}
-        </Text>
 
         <View
           onLayout={(e) => {
@@ -242,17 +237,23 @@ export function ConfirmPortionSheet({
             <MacroField label="У" value={carbs} onChangeText={setCarbs} onFocus={scrollMacrosIntoView} />
           </View>
           <Text style={styles.hint}>
-            Пустое = неизвестно (не ноль). Если заданы Б, Ж и У — ккал считаются как 4×Б+9×Ж+4×У
-            (этикетку при открытии не перезаписываем, пока не меняешь макросы).
+            Пустое = неизвестно (не 0). При Б+Ж+У ккал = 4×Б+9×Ж+4×У.
           </Text>
         </View>
 
         <View style={styles.preview}>
-          <Text style={styles.previewKcal}>{fmt(nutrition?.kcal ?? null)}</Text>
-          <Text style={styles.previewUnit}>ккал в порции</Text>
+          <View style={styles.previewTop}>
+            <Text style={styles.previewKcal}>{fmt(nutrition?.kcal ?? null)}</Text>
+            <Text style={styles.previewUnit}>ккал в порции</Text>
+          </View>
           <Text style={styles.previewMacros}>
             Б {fmt(nutrition?.protein ?? null)} · Ж {fmt(nutrition?.fat ?? null)} · У{' '}
             {fmt(nutrition?.carbs ?? null)}
+          </Text>
+          <Text style={styles.previewHint}>
+            {target.kind === 'recipe'
+              ? 'На граммы готового блюда, не на весь выход'
+              : 'На съеденные граммы, не на всю упаковку'}
           </Text>
         </View>
         {consistencyHint ? <Text style={styles.consistency}>{consistencyHint}</Text> : null}
@@ -321,28 +322,30 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: space.xs,
   },
-  portionLead: {
-    fontSize: type.caption,
-    color: colors.text,
-    fontWeight: '600',
-    lineHeight: 18,
-    marginBottom: space.md,
-  },
   preview: {
+    marginBottom: space.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.preview,
+    gap: space.xs,
+  },
+  previewTop: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    flexWrap: 'wrap',
     gap: space.sm,
-    marginBottom: space.md,
-    paddingVertical: space.sm,
   },
   previewKcal: { fontSize: 28, fontWeight: '800', color: colors.text },
   previewUnit: { fontSize: type.caption, color: colors.textSecondary, fontWeight: '600' },
   previewMacros: {
-    flex: 1,
     fontSize: type.body,
     color: colors.textSecondary,
     fontWeight: '600',
+  },
+  previewHint: {
+    fontSize: type.micro,
+    color: colors.textMuted,
+    marginTop: space.xs,
   },
   section: {
     fontSize: type.caption,

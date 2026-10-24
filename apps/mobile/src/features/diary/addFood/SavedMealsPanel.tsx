@@ -27,7 +27,6 @@ export function SavedMealsPanel({
 
   return (
     <View>
-      <Text style={styles.tip}>Тап — добавить все позиции в текущий приём пищи.</Text>
       {meals.map((m) => (
         <View key={m.id} style={styles.row}>
           <Pressable
@@ -37,7 +36,7 @@ export function SavedMealsPanel({
             accessibilityLabel={`Добавить сохранённый приём ${m.name}`}
           >
             <View style={styles.icon}>
-              <Ionicons name="bookmark-outline" size={18} color={colors.text} />
+              <Ionicons name="bookmark" size={18} color={colors.toneFavoriteFg} />
             </View>
             <View style={styles.body}>
               <Text style={styles.name} numberOfLines={1}>
@@ -62,12 +61,6 @@ export function SavedMealsPanel({
 }
 
 const styles = StyleSheet.create({
-  tip: {
-    fontSize: type.caption,
-    color: colors.textMuted,
-    marginBottom: space.md,
-    lineHeight: 18,
-  },
   empty: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -100,10 +93,10 @@ const styles = StyleSheet.create({
     minHeight: touchMin,
   },
   icon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.accentSoft,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.toneFavoriteBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: space.sm,

@@ -20,6 +20,12 @@ export const colors = {
   ringFill: '#111111',
   success: '#16A34A',
   successSoft: '#D4EDDA',
+  /** Soft wells for Add Food row accents (paired with labels/icons). */
+  toneRecentBg: '#EEF2FF',
+  toneFavoriteBg: '#FEF3C7',
+  toneFavoriteFg: '#B45309',
+  toneProductBg: '#DCFCE7',
+  toneRecipeBg: '#FFEDD5',
   textOnInverse: '#FFFFFF',
   shadow: '#000000',
   warning: '#FBBF24',

@@ -144,7 +144,7 @@ export function RecipesPanel({
                 <Image source={{ uri: r.photoUri }} style={styles.thumb} />
               ) : (
                 <View style={[styles.thumb, styles.thumbEmpty]}>
-                  <Ionicons name="restaurant-outline" size={20} color={colors.textMuted} />
+                  <Ionicons name="restaurant-outline" size={20} color={colors.fat} />
                 </View>
               )}
               <View style={styles.recipeBody}>
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.toneRecipeBg,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
   recipeBody: { flex: 1 },

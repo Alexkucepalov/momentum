@@ -81,7 +81,7 @@ export function RecipeHubActions({
               accessibilityLabel={`${a.title}. ${a.subtitle}`}
             >
               <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
-                <Ionicons name={a.icon} size={compact ? 16 : 22} color={colors.text} />
+                <Ionicons name={a.icon} size={compact ? 16 : 22} color={colors.fat} />
               </View>
               <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
                 {a.title}
@@ -133,10 +133,10 @@ const styles = StyleSheet.create({
   cardCompact: { minHeight: 44, paddingVertical: 8 },
   pressed: { opacity: 0.88 },
   iconWrap: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.toneRecipeBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
