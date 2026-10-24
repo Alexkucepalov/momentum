@@ -22,7 +22,7 @@ test('UX-01: recipe default uses last else min(200, yield)', () => {
   assert.equal(defaultRecipePortionGrams(90, 500), 90);
 });
 
-test('UX-01: lastGramsForRecipe matches newest diary serving', () => {
+test('UX-01: lastGramsForRecipe matches newest diary serving', async () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
   const recipe = repo.createRecipe({
     name: 'Каша',
@@ -36,6 +36,8 @@ test('UX-01: lastGramsForRecipe matches newest diary serving', () => {
     meal: 'breakfast',
     grams: 120,
   });
+  // Ensure createdAt ordering is stable across fast CI hosts.
+  await new Promise((r) => setTimeout(r, 5));
   repo.addEntryFromRecipe({
     recipeId: recipe.id,
     dateLocal: '2026-10-21',
