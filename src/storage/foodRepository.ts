@@ -246,6 +246,7 @@ export type FoodRepository = {
   addWeight(kg: number, weighedAt?: string): WeightEntry;
   listWeights(limit?: number): WeightEntry[];
   latestWeight(): WeightEntry | null;
+  softDeleteWeight(weightId: string): WeightEntry;
   toggleHabit(dateLocal: string, habitKey: HabitKey): HabitCheck;
   isHabitDone(dateLocal: string, habitKey: HabitKey): boolean;
   addWorkout(input: {
@@ -910,7 +911,10 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.waterEntries ?? []).map((w) => [w.id, { ...w }]),
   );
   const weightEntries = new Map<string, WeightEntry>(
-    (snap?.weightEntries ?? []).map((w) => [w.id, { ...w }]),
+    (snap?.weightEntries ?? []).map((w) => [
+      w.id,
+      { ...w, deletedAt: w.deletedAt ?? null },
+    ]),
   );
   const habitChecks = new Map<string, HabitCheck>(
     (snap?.habitChecks ?? []).map((h) => [h.id, { ...h }]),
@@ -1735,6 +1739,7 @@ export function createMemoryFoodRepository(seed?: {
         weighedAt: ts,
         kg,
         createdAt: nowIso(),
+        deletedAt: null,
       };
       weightEntries.set(entry.id, entry);
       notify();
@@ -1742,12 +1747,20 @@ export function createMemoryFoodRepository(seed?: {
     },
     listWeights(limit = 30) {
       return [...weightEntries.values()]
+        .filter((w) => w.deletedAt == null)
         .sort((a, b) => b.weighedAt.localeCompare(a.weighedAt))
         .slice(0, limit);
     },
     latestWeight() {
       const list = api.listWeights(1);
       return list[0] ?? null;
+    },
+    softDeleteWeight(weightId) {
+      const entry = weightEntries.get(weightId);
+      if (!entry || entry.deletedAt) throw new Error('Weight entry not found');
+      entry.deletedAt = nowIso();
+      notify();
+      return { ...entry };
     },
     toggleHabit(dateLocal, habitKey) {
       const id = habitId(dateLocal, habitKey);
