@@ -4,15 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import {
+  defaultProductPortionGrams,
+} from '../../../../src/domain/defaultPortionGrams';
+import {
   buildHabitWeekMarks,
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
+import { portion } from '../../../../src/domain/nutrition';
 import { localDateKey } from '../../../../src/storage/validation';
 import {
   repeatableDayFromEntries,
   shiftDateLocal,
 } from '../../../../src/domain/repeatMeal';
-import type { FoodProduct } from '../../../../src/storage/types';
+import type { FoodProduct, Recipe } from '../../../../src/storage/types';
 import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
@@ -250,7 +254,7 @@ export default function TodayScreen() {
             <SectionHeader title="Избранное" />
             <Text style={styles.favHint}>Сначала порция — в дневник только после подтверждения</Text>
             {favorites.map((p) => {
-              const lastG = repo.lastGramsForProduct(p.id) ?? 100;
+              const lastG = defaultProductPortionGrams(repo.lastGramsForProduct(p.id));
               return (
                 <Pressable
                   key={p.id}
@@ -326,19 +330,47 @@ export default function TodayScreen() {
         initialGrams={portionTarget?.initialGrams}
         onClose={() => setPortionTarget(null)}
         onConfirm={(result) => {
-          if (!portionTarget || portionTarget.target.kind !== 'product') return;
+          if (!portionTarget) return;
           if (!allowAdd()) return;
-          const product = portionTarget.target.product as FoodProduct;
-          repo.updateProductNutrition(product.id, result.per100g);
-          repo.addEntryFromProduct({
-            productId: product.id,
+          if (portionTarget.target.kind === 'product') {
+            const product = portionTarget.target.product as FoodProduct;
+            repo.updateProductNutrition(product.id, result.per100g);
+            repo.addEntryFromProduct({
+              productId: product.id,
+              dateLocal,
+              meal,
+              grams: result.grams,
+            });
+            refresh();
+            setPortionTarget(null);
+            showFlash(`Добавлено: ${product.name}`);
+            return;
+          }
+          const recipe = portionTarget.target.recipe as Recipe;
+          const snap = portion(
+            {
+              kcal: result.per100g.energyKcal,
+              protein: result.per100g.proteinG,
+              fat: result.per100g.fatG,
+              carbs: result.per100g.carbG,
+            },
+            result.grams,
+          );
+          repo.addEntryFromRecipe({
+            recipeId: recipe.id,
             dateLocal,
             meal,
             grams: result.grams,
+            nutritionSnapshot: {
+              energyKcal: snap.kcal,
+              proteinG: snap.protein,
+              fatG: snap.fat,
+              carbG: snap.carbs,
+            },
           });
           refresh();
           setPortionTarget(null);
-          showFlash(`Добавлено: ${product.name}`);
+          showFlash(`Добавлено: ${recipe.name}`);
         }}
       />
       <FlashBar />

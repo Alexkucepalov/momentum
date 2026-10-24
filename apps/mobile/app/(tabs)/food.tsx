@@ -3,6 +3,10 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 
+import {
+  defaultProductPortionGrams,
+  defaultRecipePortionGrams,
+} from '../../../../src/domain/defaultPortionGrams';
 import { portion } from '../../../../src/domain/nutrition';
 import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
@@ -136,26 +140,26 @@ export default function FoodScreen() {
     setOpen(true);
   };
 
+  /** UX-01: recent/repeat opens ConfirmPortion — same pipeline as catalog (+). */
   const repeatEntry = (e: FoodEntry) => {
-    if (!allowAdd()) return;
     if (e.productId) {
-      repo.addEntryFromProduct({
-        productId: e.productId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    } else if (e.recipeId) {
-      repo.addEntryFromRecipe({
-        recipeId: e.recipeId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    } else {
+      const product = products.find((p) => p.id === e.productId);
+      if (!product) return;
+      setPortionTarget({ target: { kind: 'product', product }, initialGrams: e.grams });
       return;
     }
-    refresh();
+    if (e.recipeId) {
+      const recipe = recipes.find((r) => r.id === e.recipeId);
+      if (!recipe) return;
+      setPortionTarget({
+        target: {
+          kind: 'recipe',
+          recipe,
+          ingredients: repo.getRecipeIngredients(recipe.id),
+        },
+        initialGrams: e.grams,
+      });
+    }
   };
 
   const repeatMealSlot = (slot: MealSlot) => {
@@ -183,14 +187,17 @@ export default function FoodScreen() {
   };
 
   const openProductPortion = (p: FoodProduct) => {
-    setPortionTarget({ target: { kind: 'product', product: p }, initialGrams: 100 });
+    setPortionTarget({
+      target: { kind: 'product', product: p },
+      initialGrams: defaultProductPortionGrams(repo.lastGramsForProduct(p.id)),
+    });
   };
 
   const openRecipePortion = (r: Recipe) => {
     const ingredients = repo.getRecipeIngredients(r.id);
     setPortionTarget({
       target: { kind: 'recipe', recipe: r, ingredients },
-      initialGrams: Math.min(200, r.cookedYieldG),
+      initialGrams: defaultRecipePortionGrams(repo.lastGramsForRecipe(r.id), r.cookedYieldG),
     });
   };
 
