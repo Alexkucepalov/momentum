@@ -51,7 +51,6 @@ export default function WeekPlanScreen() {
   void revision;
 
   const [days, setDays] = useState<MealPlanPeriodDays>(7);
-  const [budget, setBudget] = useState('3500');
   const [cookSessions, setCookSessions] = useState('2');
   const [diversity, setDiversity] = useState<MealPlanDiversity>('balanced');
   const [planId, setPlanId] = useState<string | null>(null);
@@ -77,16 +76,12 @@ export default function WeekPlanScreen() {
         setError('Нужен хотя бы один рецепт — иначе план будет пустым.');
         return;
       }
-      const budgetRub = budget.trim() === '' ? null : Number(budget.replace(',', '.'));
-      if (budgetRub !== null && (!Number.isFinite(budgetRub) || budgetRub < 0)) {
-        throw new Error('Бюджет: число ≥ 0 или пусто');
-      }
       const sessions = Number(cookSessions);
       if (!Number.isInteger(sessions) || sessions < 1) throw new Error('Готовок: целое ≥ 1');
       const created = repo.createMealPlanDraft({
         startDateLocal: dateLocal,
         days,
-        budgetRub,
+        budgetRub: null,
         cookSessions: sessions,
         diversity,
       });
@@ -124,7 +119,6 @@ export default function WeekPlanScreen() {
           <Text style={styles.planMeta}>
             {plan.status === 'draft' ? 'черновик' : plan.status === 'active' ? 'активный' : plan.status}
             {plan.cookSessions != null ? ` · ${plan.cookSessions} готовок` : ''}
-            {plan.budgetRub != null ? ` · ориентир ${Math.round(plan.budgetRub)} ₽` : ''}
           </Text>
           <View style={styles.row}>
             {plan.status === 'draft' ? (
@@ -141,14 +135,6 @@ export default function WeekPlanScreen() {
                 <Text style={styles.chipText}>Активировать</Text>
               </Pressable>
             ) : null}
-            <Pressable
-              onPress={() => router.push('/plan/shop')}
-              style={styles.chip}
-              accessibilityRole="button"
-              accessibilityLabel="Собрать покупки"
-            >
-              <Text style={styles.chipText}>Покупки</Text>
-            </Pressable>
             <Pressable
               onPress={() => setComposerOpen((v) => !v)}
               style={styles.chip}
@@ -193,17 +179,6 @@ export default function WeekPlanScreen() {
               </Pressable>
             ))}
           </View>
-
-          <Text style={styles.label}>Ориентир бюджета (₽, не списывается)</Text>
-          <TextInput
-            value={budget}
-            onChangeText={setBudget}
-            keyboardType="number-pad"
-            placeholder="3500"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            accessibilityLabel="Бюджет на продукты"
-          />
 
           <Text style={styles.label}>Готовок (сколько раз готовишь за период)</Text>
           <TextInput

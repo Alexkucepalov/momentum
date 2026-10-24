@@ -187,36 +187,22 @@ function matchesFilters(
 function explanationFor(
   input: EatNowCandidateInput,
   matched: EatNowFilterId[],
-  fitScore: number | null,
-  portion: MacroFour,
-  remaining: MacroFour,
+  _fitScore: number | null,
+  _portion: MacroFour,
+  _remaining: MacroFour,
 ): string {
   const parts: string[] = [];
-  const hint = input.coverageHint?.trim();
   if (matched.includes('no_cook')) parts.push('Без готовки');
   else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
     parts.push('Быстрый вариант');
-  } else if (input.atHome) {
-    parts.push('Из того, что уже есть');
-  } else if (hint && input.kind === 'recipe') {
-    parts.push('Не хватает ингредиентов');
   } else if (matched.includes('more_protein')) {
     parts.push('С акцентом на белок');
-  } else if (fitScore !== null && fitScore >= 0.7) {
-    parts.push('Хорошо ложится в остаток');
+  } else if (input.kind === 'cooked_batch') {
+    parts.push('Готовая партия');
   } else if (input.kind === 'recipe') {
     parts.push('Из ваших рецептов');
   } else {
-    parts.push('Из продуктов');
-  }
-  if (hint) parts.push(hint);
-
-  if (portion.energyKcal !== null && remaining.energyKcal !== null) {
-    if (remaining.energyKcal > 0 && portion.energyKcal > remaining.energyKcal) {
-      parts.push(`порция ~${Math.round(portion.energyKcal)} ккал > остатка ${Math.round(remaining.energyKcal)}`);
-    } else if (remaining.energyKcal > MEAL_ENERGY_CAP_KCAL) {
-      parts.push(`порция на приём ~${Math.round(portion.energyKcal)} ккал`);
-    }
+    parts.push('Из ваших продуктов');
   }
   return parts.join(' · ');
 }
