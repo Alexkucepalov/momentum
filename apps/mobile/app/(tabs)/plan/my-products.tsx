@@ -7,6 +7,10 @@ import {
   parseProductListText,
   type ParsedProductListItem,
 } from '../../../../../src/domain/parseProductListText';
+import {
+  formatProductImportSummary,
+  productHasAnyKnownMacro,
+} from '../../../../../src/domain/productImportSummary';
 import type { FoodProduct } from '../../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
@@ -22,8 +26,10 @@ export default function MyProductsScreen() {
   void revision;
   const allowAdd = useAddGuard();
   const [raw, setRaw] = useState('');
+  const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [lastImportSummary, setLastImportSummary] = useState<string | null>(null);
   const [editing, setEditing] = useState<FoodProduct | null>(null);
   const [editName, setEditName] = useState('');
   const [editKcal, setEditKcal] = useState('');
@@ -70,14 +76,24 @@ export default function MyProductsScreen() {
     }
   };
 
-  const mine = useMemo(
-    () =>
-      repo
-        .listProducts()
-        .filter((p) => p.source === 'user' || p.isFavorite)
-        .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
-    [repo, revision],
-  );
+  const frequentRank = useMemo(() => {
+    const list = repo.listFrequentProducts(48);
+    return new Map(list.map((p, i) => [p.id, list.length - i]));
+  }, [repo, revision]);
+
+  const mine = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase('ru');
+    return repo
+      .listProducts()
+      .filter((p) => p.source === 'user' || p.isFavorite)
+      .filter((p) => (q ? p.name.toLocaleLowerCase('ru').includes(q) : true))
+      .sort((a, b) => {
+        const ra = frequentRank.get(a.id) ?? 0;
+        const rb = frequentRank.get(b.id) ?? 0;
+        if (ra !== rb) return rb - ra;
+        return a.name.localeCompare(b.name, 'ru');
+      });
+  }, [repo, revision, query, frequentRank]);
 
   const preview = useMemo(() => {
     const t = raw.trim();
@@ -118,30 +134,43 @@ export default function MyProductsScreen() {
     );
     let created = 0;
     let skipped = 0;
+    let withMacros = 0;
+    let needFill = 0;
     for (const item of parsed.items) {
       const key = item.name.trim().toLocaleLowerCase('ru');
       if (existing.has(key)) {
         skipped += 1;
         continue;
       }
-      repo.createProduct({
-        name: item.name.trim(),
+      const macros = {
         energyKcal: item.energyKcal,
         proteinG: item.proteinG,
         fatG: item.fatG,
         carbG: item.carbG,
+      };
+      repo.createProduct({
+        name: item.name.trim(),
+        ...macros,
         source: 'user',
       });
       existing.add(key);
       created += 1;
+      if (productHasAnyKnownMacro(macros)) withMacros += 1;
+      else needFill += 1;
     }
 
     setError(null);
     setRaw('');
     setImportOpen(false);
     refresh();
-    const skipNote = skipped > 0 ? ` · пропущено дублей: ${skipped}` : '';
-    showFlash(`В каталог: ${created}${skipNote}`);
+    const summary = formatProductImportSummary({
+      created,
+      withMacros,
+      needFill,
+      skippedDuplicates: skipped,
+    });
+    setLastImportSummary(summary);
+    showFlash(summary);
   };
 
   return (
@@ -215,21 +244,55 @@ export default function MyProductsScreen() {
         </View>
       ) : null}
 
+      {lastImportSummary ? (
+        <View style={styles.summaryBanner} accessibilityRole="summary">
+          <Text style={styles.summaryText}>{lastImportSummary}</Text>
+          <Pressable
+            onPress={() => setLastImportSummary(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Скрыть сводку импорта"
+            hitSlop={8}
+          >
+            <Text style={styles.summaryDismiss}>Скрыть</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       <Text style={styles.section}>В каталоге · {mine.length}</Text>
+      {mine.length > 0 || query.trim() ? (
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={16} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Поиск по названию"
+            placeholderTextColor={colors.textMuted}
+            style={styles.searchInput}
+            accessibilityLabel="Поиск своих продуктов"
+          />
+        </View>
+      ) : null}
       {mine.length === 0 ? (
         <EmptyState
           compact
           icon="basket-outline"
-          title="Пока пусто"
-          body="Добавьте списком то, что покупаете регулярно — потом быстро в дневник и Eat Now."
-          actionLabel="Добавить списком"
-          onAction={() => setImportOpen(true)}
+          title={query.trim() ? 'Ничего не найдено' : 'Пока пусто'}
+          body={
+            query.trim()
+              ? 'Сбрось поиск или добавь продукт списком.'
+              : 'Добавьте списком то, что покупаете регулярно — потом быстро в дневник и Eat Now.'
+          }
+          actionLabel={query.trim() ? 'Сбросить поиск' : 'Добавить списком'}
+          onAction={() => {
+            if (query.trim()) setQuery('');
+            else setImportOpen(true);
+          }}
         />
       ) : (
         <View style={styles.list} accessibilityRole="list">
           {mine.map((p) => {
-            const unknown =
-              p.energyKcal == null && p.proteinG == null && p.fatG == null && p.carbG == null;
+            const unknown = !productHasAnyKnownMacro(p);
+            const frequent = frequentRank.has(p.id);
             return (
               <View
                 key={p.id}
@@ -238,7 +301,9 @@ export default function MyProductsScreen() {
                 accessibilityLabel={p.name}
               >
                 <View style={styles.cardHead}>
-                  <Text style={styles.cardTitle}>{p.name}</Text>
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {p.name}
+                  </Text>
                   <Pressable
                     onPress={() => {
                       repo.setFavorite(p.id, !p.isFavorite);
@@ -255,6 +320,11 @@ export default function MyProductsScreen() {
                     />
                   </Pressable>
                 </View>
+                {frequent ? (
+                  <Text style={styles.freqBadge}>
+                    {unknown ? 'Часто · уточни КБЖУ' : 'Часто используемый'}
+                  </Text>
+                ) : null}
                 {unknown ? (
                   <Text style={styles.warn}>КБЖУ неизвестны — Eat Now пропустит, пока не допишете</Text>
                 ) : (
@@ -272,7 +342,9 @@ export default function MyProductsScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`Изменить ${p.name}`}
                   >
-                    <Text style={styles.actionText}>Изменить</Text>
+                    <Text style={styles.actionText}>
+                      {unknown && frequent ? 'Дополнить КБЖУ' : 'Изменить'}
+                    </Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -428,6 +500,30 @@ const styles = StyleSheet.create({
   previewName: { fontSize: type.body, fontWeight: '600', color: colors.text },
   previewMeta: { fontSize: type.caption, color: colors.textMuted },
   warn: { fontSize: type.caption, color: colors.textSecondary },
+  summaryBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.accentSoft,
+  },
+  summaryText: { flex: 1, fontSize: type.caption, fontWeight: '700', color: colors.text, lineHeight: 18 },
+  summaryDismiss: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: touchMin,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   section: {
     marginTop: space.sm,
     fontSize: type.micro,
@@ -436,19 +532,25 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  list: { gap: space.sm },
+  list: { gap: space.xs },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.md,
-    gap: 6,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    gap: 4,
   },
-  cardTitle: { flex: 1, fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  cardTitle: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  freqBadge: {
+    fontSize: type.micro,
+    fontWeight: '800',
+    color: colors.textSecondary,
+  },
   iconBtn: { minWidth: touchMin, minHeight: touchMin, alignItems: 'center', justifyContent: 'center' },
-  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: 4 },
+  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: 2 },
   dangerText: { color: colors.danger },
   field: {
     flex: 1,

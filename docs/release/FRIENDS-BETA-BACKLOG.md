@@ -2,7 +2,7 @@
 
 Maps product audit M-01…M-20 to repo work. Avoid duplicating closed GitHub issues; device work stays on #92/#93/#38.
 
-**Sprint issues:** [#120](https://github.com/Alexkucepalov/momentum/issues/120) → [#122](https://github.com/Alexkucepalov/momentum/issues/122) → [#124](https://github.com/Alexkucepalov/momentum/issues/124) → [#127](https://github.com/Alexkucepalov/momentum/issues/127)
+**Sprint issues:** #120 → #122 → #124 → #127 → [#130](https://github.com/Alexkucepalov/momentum/issues/130)
 
 ## P0 — Reliability and data correctness
 

@@ -146,17 +146,19 @@ export default function RecipeDetailScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerHint}>В дневник попадёт в текущий приём: {MEAL_LABELS[meal]}</Text>
-          <PrimaryButton label="Добавить порцию в дневник" onPress={() => setConfirmOpen(true)} />
+          <Text style={styles.footerHint}>
+            Съеденная порция → дневник ({MEAL_LABELS[meal]}). Партия — отдельная заготовка, не лог еды.
+          </Text>
+          <PrimaryButton label="Добавить съеденную порцию" onPress={() => setConfirmOpen(true)} />
 
           <Pressable
             style={styles.editBtn}
             onPress={() => setRecookOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel="Приготовить снова"
+            accessibilityLabel="Создать приготовленную партию"
           >
             <Ionicons name="flame-outline" size={18} color={colors.text} />
-            <Text style={styles.editBtnText}>Приготовить снова</Text>
+            <Text style={styles.editBtnText}>Приготовить партию</Text>
           </Pressable>
 
           <Pressable
@@ -224,7 +226,7 @@ export default function RecipeDetailScreen() {
         onConfirm={(draft) => {
           const batch = repo.cookAgainRecipe(recipe.id, draft, dateLocal);
           refresh();
-          showFlash(`Партия: ${batch.name}`);
+          showFlash(`Партия создана (рецепт не изменён): ${batch.name}`);
           setRecookOpen(false);
           router.replace(`/recipes/${batch.id}`);
         }}

@@ -104,7 +104,7 @@ export function RecookRecipeSheet({
       <FormScrollView variant="sheet" contentContainerStyle={styles.body}>
         <View style={styles.header}>
           <Text style={styles.title} accessibilityRole="header">
-            Приготовить снова
+            Новая приготовленная партия
           </Text>
           <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Закрыть">
             <Text style={styles.close}>Закрыть</Text>
@@ -112,8 +112,8 @@ export function RecookRecipeSheet({
         </View>
 
         <Text style={styles.lead}>
-          Укажи фактические граммы ингредиентов и вес готового блюда. Создастся отдельная партия —
-          исходный рецепт не изменится. Потом добавляй в дневник по 250–350 г.
+          Партия ≠ съеденная порция и ≠ правка рецепта. Укажи граммы ингредиентов и выход готового —
+          исходный рецепт останется как был. В дневник потом добавляй порцию отдельно.
         </Text>
 
         {ingredients.length > 0 ? (
@@ -167,7 +167,7 @@ export function RecookRecipeSheet({
           </Text>
         ) : null}
 
-        <PrimaryButton label="Создать партию" onPress={submit} />
+        <PrimaryButton label="Создать партию (рецепт не меняется)" onPress={submit} />
       </FormScrollView>
     </SwipeToDismissSheet>
   );
