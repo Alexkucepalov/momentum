@@ -477,3 +477,234 @@ test('listRecentEntries dedupes same product+grams', () => {
   assert.equal(same250.length, 1);
   assert.equal(recent.filter((e) => e.productId === product.id).length, 2);
 });
+
+const RETAINED_V14_KEYS = [
+  'pantryItems',
+  'shoppingLists',
+  'shoppingItems',
+  'productPrices',
+  'foodBudgets',
+  'foodExpenses',
+  'purchases',
+  'purchaseLines',
+  'storePreferences',
+];
+
+function retainedV14Slice(snap) {
+  return Object.fromEntries(RETAINED_V14_KEYS.map((k) => [k, snap[k]]));
+}
+
+test('legacy snapshot normalizes to v14 with empty retained arrays', () => {
+  const repo = createMemoryFoodRepository({
+    snapshot: {
+      version: 9,
+      profile: {
+        id: 'p',
+        timezone: 'UTC',
+        locale: 'ru',
+        units: 'metric',
+      },
+      products: [],
+      recipes: [],
+      ingredients: [],
+      entries: [],
+    },
+  });
+  const snap = repo.toSnapshot();
+  assert.equal(snap.version, 14);
+  assert.deepEqual(snap.pantryItems, []);
+  assert.deepEqual(snap.cookedBatches, []);
+  assert.deepEqual(snap.shoppingLists, []);
+  assert.deepEqual(snap.shoppingItems, []);
+  assert.deepEqual(snap.productPrices, []);
+  assert.deepEqual(snap.foodBudgets, []);
+  assert.deepEqual(snap.foodExpenses, []);
+  assert.deepEqual(snap.purchases, []);
+  assert.deepEqual(snap.purchaseLines, []);
+});
+
+test('v14 retained arrays round-trip through toSnapshot and export/import', () => {
+  const ts = '2026-10-21T12:00:00.000Z';
+  const pantryItems = [
+    {
+      id: 'pantry-1',
+      displayName: 'Творог',
+      productId: null,
+      location: 'fridge',
+      quantityG: 400,
+      quantityCount: null,
+      unit: 'g',
+      expiresOn: '2026-10-28',
+      source: 'purchase',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const shoppingLists = [
+    {
+      id: 'list-1',
+      planId: null,
+      title: 'Неделя',
+      status: 'open',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const shoppingItems = [
+    {
+      id: 'sitem-1',
+      listId: 'list-1',
+      displayName: 'Молоко',
+      quantity: 1,
+      unit: 'ml',
+      coveredByPantry: 0,
+      needToBuy: 1,
+      checked: false,
+      priceRub: 89,
+      priceAsOf: '2026-10-21',
+      priceSource: 'user',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const productPrices = [
+    {
+      id: 'price-1',
+      productKey: 'молоко|ml',
+      storeId: 'samokat',
+      priceRub: 89,
+      unit: 'ml',
+      observedOn: '2026-10-21',
+      source: 'user',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const foodBudgets = [
+    {
+      id: 'budget-1',
+      month: '2026-10',
+      limitRub: 30000,
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const foodExpenses = [
+    {
+      id: 'exp-1',
+      amountRub: 1200,
+      category: 'groceries',
+      spentOn: '2026-10-21',
+      note: 'Самокат',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const purchases = [
+    {
+      id: 'pur-1',
+      status: 'delivered',
+      storePreferenceId: 'store:samokat',
+      storeLabel: 'Самокат',
+      purchasedOn: '2026-10-21',
+      currency: 'RUB',
+      totalRub: 1200,
+      sourceKind: 'paste',
+      fingerprint: 'fp-synthetic-114',
+      rawPayloadRef: null,
+      parseConfidence: 0.9,
+      confirmedAt: ts,
+      expenseId: 'exp-1',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const purchaseLines = [
+    {
+      id: 'pline-1',
+      purchaseId: 'pur-1',
+      rawName: 'Молоко 1 л',
+      displayName: 'Молоко',
+      quantity: 1000,
+      unit: 'ml',
+      packageSizeText: '1 л',
+      unitPriceRub: 89,
+      lineTotalRub: 89,
+      discountRub: null,
+      isFood: true,
+      excluded: false,
+      productId: null,
+      barcode: null,
+      retailerSku: null,
+      matchConfidence: null,
+      pantryItemId: 'pantry-1',
+      createdAt: ts,
+      updatedAt: ts,
+      deletedAt: null,
+    },
+  ];
+  const storePreferences = [
+    {
+      id: 'store:samokat',
+      storeId: 'samokat',
+      label: 'Самокат',
+      selected: true,
+      updatedAt: ts,
+    },
+  ];
+
+  const synthetic = {
+    version: 14,
+    profile: {
+      id: 'local-profile',
+      timezone: 'UTC',
+      locale: 'ru',
+      units: 'metric',
+    },
+    products: [],
+    recipes: [],
+    ingredients: [],
+    entries: [],
+    pantryItems,
+    shoppingLists,
+    shoppingItems,
+    productPrices,
+    foodBudgets,
+    foodExpenses,
+    purchases,
+    purchaseLines,
+    storePreferences,
+  };
+
+  const expected = retainedV14Slice({
+    pantryItems,
+    shoppingLists,
+    shoppingItems,
+    productPrices,
+    foodBudgets,
+    foodExpenses,
+    purchases,
+    purchaseLines,
+    storePreferences,
+  });
+
+  const repo = createMemoryFoodRepository({ snapshot: synthetic });
+  const snap = repo.toSnapshot();
+  assert.equal(snap.version, 14);
+  assert.deepEqual(retainedV14Slice(snap), expected);
+
+  const json = repo.exportAll();
+  const imported = createMemoryFoodRepository({ timezone: 'UTC' });
+  imported.importAll(json);
+  const afterImport = imported.toSnapshot();
+  assert.equal(afterImport.version, 14);
+  assert.deepEqual(retainedV14Slice(afterImport), expected);
+});
+
