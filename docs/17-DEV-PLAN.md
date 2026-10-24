@@ -178,6 +178,7 @@ npm run verify
 cd apps/mobile && npm run build:apk:local
 # → apps/mobile/dist/momentum-dogfood.apk  (release + embedded JS; Metro не нужен)
 # FORCE_PREBUILD=1 — пересоздать android/
+# APK_ABIS=arm64-v8a,x86_64 — добавить ABI для эмулятора (по умолчанию только arm64-v8a)
 ```
 
 EAS cloud (нужен `eas login` + `eas init` для `projectId`):
