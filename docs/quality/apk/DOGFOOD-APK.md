@@ -1,8 +1,8 @@
-build_date: 2026-10-24T11:40:34Z
+build_date: 2026-10-24T12:04:13Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 140414470
-sha256: a8451a497de716132adc14da9d82f3a6a84edfd018b2ffa400206c4a0c0dc8fb
-git: 2b773f5 (branch chore/cleanup-ocr-orphans, before merge)
-includes: Plan surface cut + My products (#106); OCR and native executorch removed (#108); UX-01; UX-03; FI-01 spec
-size_note: 220094421 → 140414470 bytes (−36%) after removing react-native-executorch
+bytes: 58052938
+sha256: 042eebfe5b11e4624a8a597f329208544d32513f428dbe062604fa9132b6d4ba
+git: 69b6198
+includes: Plan tab + My products v2 + Today Eat Now CTA (#117/#116); pantry/shop/budget repo API removed (#115/#114); OCR removed; Eat Now 2.0; arm64-only
+size_note: ~210 MB → 134 MB (OCR) → 58 MB (arm64-only dogfood)
 dogfood_gate: pending
