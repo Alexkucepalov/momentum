@@ -2,20 +2,23 @@
 
 Источник истины для сессий разработки. Cursor plan — зеркало; при расхождении править этот файл. Читать вместе с `AGENTS.md` перед каждым issue.
 
-## Quality Freeze (утверждён 2026-10-20, 2–3 недели)
+## Release Lock — Friends Beta 1.0 (утверждён 2026-10-24)
 
-**Режим:** product quality first — `docs/quality/QUALITY-ROADMAP.md` (утверждённая последовательность).
+**Источник статуса:** `docs/release/FRIENDS-BETA-STATUS.md` (READY / BLOCKED).  
+**Сейчас:** BLOCKED — ждём human Android Pass (#92/#93), не новый аудит/редизайн.
 
 | Разрешено | Запрещено |
 |-----------|-----------|
-| Sprint 1 residual: device dogfood (#36–#37) | Product features / FP-8+ / AI / OCR / live prices |
-| Sprint 2: UX **docs/IA/wireframes**; UI PR только после approve Today/Food | Auto-merge; live Dispatcher; массовый redesign одним PR |
-| Issues `dogfood`+`p0`/`p1`/`quality` **без** `agent-ready` | Rewrite foodRepository / normalized SQLite «на всякий» |
+| Device-proven bugfixes; data-loss; status/APK meta | Новый roadmap, полный редизайн, новые вкладки |
+| Закрытие B1–B3 из FRIENDS-BETA-STATUS | Pantry/shop/budget (ADR-009); backend; auth; AI workflows |
+| `npm run verify` + dogfood APK rebuild | Бесконечные P2 polish «на всякий» |
 
-**Open gate:** Android dogfood ещё не прогнан — Sprint 2 не «done» без device.  
-Эталон: открыть → продукт → граммы → дневник.  
-Sprint 2: S2-1 Today merged (#43); S2-2 Food segments (#44). Plan: `docs/quality/SPRINT-2-UX-PLAN.md`.  
+**Эталон релиза:** установить APK → пропустить цели → продукт → граммы → дневник → повтор → force-stop → данные на месте.  
 Dispatcher: `DISPATCH_ENABLED=false`, `DISPATCH_DRY_RUN=true`.
+
+### Quality Freeze (архив 2026-10-20)
+
+Прежний quality-first режим заменён Release Lock выше. Исторические Sprint 1–2: см. git history / `docs/quality/`.
 
 ## Цель
 
@@ -119,9 +122,9 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 | Priority | Issue | Acceptance (кратко) |
 |----------|-------|---------------------|
-| ★ | [#130](https://github.com/Alexkucepalov/momentum/issues/130) Friends Beta P1 | My products import summary + cook-batch wording |
-| — | ~~[#127](https://github.com/Alexkucepalov/momentum/issues/127)~~ … ~~[#120](https://github.com/Alexkucepalov/momentum/issues/120)~~ | Done (#128 / #125 / #123 / #121) |
-| 2 | [#92](https://github.com/Alexkucepalov/momentum/issues/92) / [#93](https://github.com/Alexkucepalov/momentum/issues/93) | Device gates — `needs-human` |
+| ★ | [#92](https://github.com/Alexkucepalov/momentum/issues/92) / [#93](https://github.com/Alexkucepalov/momentum/issues/93) | **Release gate** — Android Pass (`FRIENDS-BETA-STATUS.md`) |
+| — | Friends Beta code prep #120–#130 | Done (#121–#131); stop feature loop |
+| — | Release status doc | `docs/release/FRIENDS-BETA-STATUS.md` |
 | — | ~~[#116](https://github.com/Alexkucepalov/momentum/issues/116)~~ / ~~[#114](https://github.com/Alexkucepalov/momentum/issues/114)~~ | Done (#117 / #115) |
 | — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
 | 1 | ~~Parse diary-style recipe paste hardening~~ | Done (#28) |
