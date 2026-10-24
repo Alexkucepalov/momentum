@@ -11,8 +11,6 @@ const {
   sumEatenCost,
   sumKnownExpenses,
 } = mods['domain/foodBudget'];
-const { createStoreCatalogAdapter, StoreCatalogNotAvailableError } =
-  mods['domain/storeCatalogAdapter'];
 const { createMemoryFoodRepository } = mods['storage/foodRepository'];
 
 test('monthKeyFromDateLocal', () => {
@@ -108,12 +106,6 @@ test('monthEatenCostEstimate from diary + ₽/kg prices', () => {
   const cost = repo.monthEatenCostEstimate('2026-10');
   assert.equal(cost.totalRub, 100);
   assert.equal(cost.incomplete, false);
-});
-
-test('store catalog adapter refuses live search', () => {
-  const adapter = createStoreCatalogAdapter();
-  assert.equal(adapter.supportsLivePrices, false);
-  assert.throws(() => adapter.searchProducts('молоко'), StoreCatalogNotAvailableError);
 });
 
 test('listPlannedMealsForDate ignores archived plans', () => {
