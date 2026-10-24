@@ -1,8 +1,8 @@
-build_date: 2026-10-24T12:40:35Z
+build_date: 2026-10-24T12:48:40Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 58053594
-sha256: 06afbc8301937f6b9f0bfa4105ced48d32f036d994052c11e2a08fa04f1ea795
-git: 13822c2
-includes: Friends Beta #121 P0 + #122 recipe densify / Eat Now empty CTAs / tester backup notes; arm64-only
+bytes: 58058854
+sha256: 54a872d66e1f6f59fc23ca89acb2bbee5da2936b9114ceb7e33d77e31baa40e3
+git: a490037
+includes: Friends Beta #121/#123/#125 (P0+P1 import draft, catalog densify, profile macro hint); arm64-only
 size_note: ~58 MB arm64-only dogfood
 dogfood_gate: pending
