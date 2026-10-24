@@ -1,6 +1,6 @@
 # Known issues — Friends Beta
 
-Last updated: 2026-10-24 · [#127](https://github.com/Alexkucepalov/momentum/issues/127) after #121–#126
+Last updated: 2026-10-24 · [#130](https://github.com/Alexkucepalov/momentum/issues/130) after #121–#129
 
 ## Fixed in #121 (merged)
 
@@ -37,12 +37,20 @@ Last updated: 2026-10-24 · [#127](https://github.com/Alexkucepalov/momentum/iss
 | Eat Now overclaims fit | Explanation: no day remaining compare / incomplete KBJU / already ready |
 | Empty week draft weak | EmptyState with rebuild + Eat Now |
 
+## Fixed / improved in #130
+
+| Issue | Fix |
+|-------|-----|
+| My products import opaque | Summary: added / with KBJU / need fill / duplicates |
+| Hard to find own products | Search + frequent-first sort; denser rows; nudge unknown frequent |
+| Cook again vs portion confused | «Партия» vs «съеденная порция»; recipe unchanged |
+
 ## Open / accepted for beta
 
 | Issue | Severity | Notes |
 |-------|----------|-------|
 | Android device Pass not run | Blocker | #92/#93/#38 needs-human |
-| Add Food multi-path still denser than ideal wireframe | P1 | Search miss now actionable; further simplify post-device |
+| Add Food multi-path still denser than ideal wireframe | P1 | Further simplify after device feedback |
 | Week menu generator repeats | P2 | Prefer manual edit for beta |
 | Expo Web screenshots only for visual pack | Info | Not Android evidence |
 
