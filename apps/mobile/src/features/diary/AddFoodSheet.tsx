@@ -11,6 +11,10 @@ import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeLookupSheet } from './BarcodeLookupSheet';
+import {
+  defaultProductPortionGrams,
+  defaultRecipePortionGrams,
+} from '../../../../../src/domain/defaultPortionGrams';
 import { ConfirmPortionSheet, type PortionTarget } from './ConfirmPortionSheet';
 import { AddFoodTabs } from './addFood/AddFoodTabs';
 import { FoodPickRow } from './addFood/FoodPickRow';
@@ -150,15 +154,21 @@ export function AddFoodSheet({
     finishQuick(`Добавлено: ${r.name}`);
   };
 
-  const openProductConfirm = (product: FoodProduct, initialGrams = 100) => {
-    setConfirm({ target: { kind: 'product', product }, initialGrams });
+  const openProductConfirm = (product: FoodProduct, initialGrams?: number) => {
+    setConfirm({
+      target: { kind: 'product', product },
+      initialGrams:
+        initialGrams ?? defaultProductPortionGrams(repo.lastGramsForProduct(product.id)),
+    });
   };
 
   const openRecipeConfirm = (recipe: Recipe, initialGrams?: number) => {
     const ings = repo.getRecipeIngredients(recipe.id);
     setConfirm({
       target: { kind: 'recipe', recipe, ingredients: ings },
-      initialGrams: initialGrams ?? Math.min(200, recipe.cookedYieldG),
+      initialGrams:
+        initialGrams ??
+        defaultRecipePortionGrams(repo.lastGramsForRecipe(recipe.id), recipe.cookedYieldG),
     });
   };
 
@@ -387,8 +397,12 @@ export function AddFoodSheet({
                               : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
                           }
                           icon="nutrition-outline"
-                          onPress={() => openProductConfirm(p, last ?? 100)}
-                          onQuickAdd={() => quickAddProduct(p, last ?? 100)}
+                          onPress={() =>
+                            openProductConfirm(p, defaultProductPortionGrams(last))
+                          }
+                          onQuickAdd={() =>
+                            quickAddProduct(p, defaultProductPortionGrams(last))
+                          }
                           accessibilityLabel={`Выбрать порцию ${p.name}`}
                         />
                       );
@@ -459,8 +473,12 @@ export function AddFoodSheet({
                             : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
                         }
                         icon="star-outline"
-                        onPress={() => openProductConfirm(p, last ?? 100)}
-                        onQuickAdd={() => quickAddProduct(p, last ?? 100)}
+                        onPress={() =>
+                          openProductConfirm(p, defaultProductPortionGrams(last))
+                        }
+                        onQuickAdd={() =>
+                          quickAddProduct(p, defaultProductPortionGrams(last))
+                        }
                         accessibilityLabel={`Выбрать порцию ${p.name}`}
                       />
                     );

@@ -177,6 +177,8 @@ export type FoodRepository = {
   listRecentEntries(limit?: number): FoodEntry[];
   /** Last logged grams for a product (for scan auto-portion), or null. */
   lastGramsForProduct(productId: string): number | null;
+  /** Last logged grams for a recipe serving, or null. */
+  lastGramsForRecipe(recipeId: string): number | null;
   addEntryFromProduct(args: {
     productId: string;
     dateLocal: string;
@@ -1310,6 +1312,16 @@ export function createMemoryFoodRepository(seed?: {
     lastGramsForProduct(productId) {
       const hit = [...entries.values()]
         .filter((e) => e.deletedAt == null && e.productId === productId && e.grams > 0)
+        .sort((a, b) => {
+          const byTime = b.createdAt.localeCompare(a.createdAt);
+          if (byTime !== 0) return byTime;
+          return b.id.localeCompare(a.id);
+        })[0];
+      return hit ? hit.grams : null;
+    },
+    lastGramsForRecipe(recipeId) {
+      const hit = [...entries.values()]
+        .filter((e) => e.deletedAt == null && e.recipeId === recipeId && e.grams > 0)
         .sort((a, b) => {
           const byTime = b.createdAt.localeCompare(a.createdAt);
           if (byTime !== 0) return byTime;
