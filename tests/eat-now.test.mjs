@@ -158,3 +158,53 @@ test('more_protein prefers higher protein density portion', () => {
   );
   assert.equal(ranked[0].id, 'high');
 });
+
+test('scoreEatNow prefers last logged portion over remaining sizing', () => {
+  const remaining = { energyKcal: 600, proteinG: 40, fatG: 20, carbG: 60, incomplete: false };
+  const per100 = { kcal: 121, protein: 17, fat: 5, carbs: 3 };
+  const [withLast] = scoreEatNow(
+    [{ id: 'p1', kind: 'product', title: 'Творог', per100, prepMinutes: 2, lastGrams: 180 }],
+    remaining,
+  );
+  assert.equal(withLast.suggestedGrams, 180);
+  assert.equal(withLast.fromLastPortion, true);
+  assert.match(withLast.explanation, /Как в прошлый раз/);
+  assert.equal(withLast.energyKcal, 121 * 1.8);
+
+  const [noLast] = scoreEatNow(
+    [{ id: 'p1', kind: 'product', title: 'Творог', per100, prepMinutes: 2, lastGrams: null }],
+    remaining,
+  );
+  assert.equal(noLast.fromLastPortion, false);
+  assert.equal(noLast.suggestedGrams, suggestEatNowPortionGrams(per100, remaining));
+});
+
+test('usableLastGrams rejects invalid values (unknown ≠ 0)', () => {
+  const { usableLastGrams } = mods['domain/scoreEatNow'];
+  assert.equal(usableLastGrams(null), null);
+  assert.equal(usableLastGrams(0), null);
+  assert.equal(usableLastGrams(-50), null);
+  assert.equal(usableLastGrams(Number.NaN), null);
+  assert.equal(usableLastGrams(149.6), 150);
+});
+
+test('candidate carries recipe photo; search matches title', () => {
+  const { matchesEatNowQuery } = mods['domain/eatNowPool'];
+  const [c] = scoreEatNow(
+    [
+      {
+        id: 'r1',
+        kind: 'recipe',
+        title: 'Курица с рисом',
+        per100: { kcal: 140, protein: 15, fat: 4, carbs: 12 },
+        prepMinutes: 25,
+        photoUri: 'file:///synthetic/r1.jpg',
+      },
+    ],
+    { energyKcal: null, proteinG: null, fatG: null, carbG: null, incomplete: true },
+  );
+  assert.equal(c.photoUri, 'file:///synthetic/r1.jpg');
+  assert.equal(matchesEatNowQuery('Курица с рисом', 'КУРИ'), true);
+  assert.equal(matchesEatNowQuery('Курица с рисом', '  '), true);
+  assert.equal(matchesEatNowQuery('Курица с рисом', 'творог'), false);
+});

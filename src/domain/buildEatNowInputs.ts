@@ -40,6 +40,7 @@ export function eatNowInputsFromRecipes(
       title: r.name,
       per100,
       prepMinutes: prep,
+      photoUri: r.photoUri ?? null,
     });
   }
   return out;
@@ -91,6 +92,7 @@ export function eatNowInputsFromCookedBatches(
       title: `${recipe.name} · остаток ${Math.round(b.remainingG)} г`,
       per100,
       prepMinutes: 5,
+      photoUri: recipe.photoUri ?? null,
     });
   }
   return out;

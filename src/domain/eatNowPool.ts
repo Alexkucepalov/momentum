@@ -45,6 +45,13 @@ export function selectEatNowProducts(opts: EatNowPoolOptions): FoodProduct[] {
   );
 }
 
+/** Case-insensitive substring match on the visible title; empty query matches all. */
+export function matchesEatNowQuery(title: string, query: string): boolean {
+  const q = query.trim().toLocaleLowerCase('ru');
+  if (!q) return true;
+  return title.toLocaleLowerCase('ru').includes(q);
+}
+
 /** Recipes with leftovers are reheat-quick. */
 export function recipeHasBatch(recipeId: string, batchRecipeIds: Set<string>): boolean {
   return batchRecipeIds.has(recipeId);

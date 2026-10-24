@@ -16,6 +16,9 @@ export type EatNowCandidateInput = {
   /** Nutrition per 100 g of the edible item. */
   per100: Nutrition;
   prepMinutes: number | null;
+  /** Last logged portion of this item; preferred over remaining-based sizing. */
+  lastGrams?: number | null;
+  photoUri?: string | null;
 };
 
 export type EatNowCandidate = {
@@ -23,6 +26,9 @@ export type EatNowCandidate = {
   kind: EatNowSourceKind;
   title: string;
   suggestedGrams: number;
+  /** True when suggestedGrams came from the last logged portion. */
+  fromLastPortion: boolean;
+  photoUri: string | null;
   energyKcal: number | null;
   proteinG: number | null;
   fatG: number | null;
@@ -163,8 +169,19 @@ function matchesFilters(
   return { ok: true, matched };
 }
 
-function explanationFor(input: EatNowCandidateInput, matched: EatNowFilterId[]): string {
+/** Valid last portion in grams, or null. */
+export function usableLastGrams(lastGrams: number | null | undefined): number | null {
+  if (lastGrams == null || !Number.isFinite(lastGrams) || lastGrams <= 0) return null;
+  return Math.round(lastGrams);
+}
+
+function explanationFor(
+  input: EatNowCandidateInput,
+  matched: EatNowFilterId[],
+  fromLastPortion: boolean,
+): string {
   const parts: string[] = [];
+  if (fromLastPortion) parts.push('Как в прошлый раз');
   if (matched.includes('no_cook')) parts.push('Без готовки');
   else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
     parts.push('Быстрый вариант');
@@ -197,11 +214,16 @@ export function scoreEatNow(
     const { ok, matched } = matchesFilters(c, filters);
     if (!ok) continue;
 
+    const last = usableLastGrams(c.lastGrams);
     let suggestedGrams: number;
-    try {
-      suggestedGrams = suggestEatNowPortionGrams(c.per100, remaining, { preferProtein });
-    } catch {
-      continue;
+    if (last !== null) {
+      suggestedGrams = last;
+    } else {
+      try {
+        suggestedGrams = suggestEatNowPortionGrams(c.per100, remaining, { preferProtein });
+      } catch {
+        continue;
+      }
     }
 
     let n: Nutrition;
@@ -221,6 +243,8 @@ export function scoreEatNow(
       kind: c.kind,
       title: c.title,
       suggestedGrams,
+      fromLastPortion: last !== null,
+      photoUri: c.photoUri ?? null,
       energyKcal: macros.energyKcal,
       proteinG: macros.proteinG,
       fatG: macros.fatG,
@@ -228,7 +252,7 @@ export function scoreEatNow(
       prepMinutes: c.prepMinutes,
       filtersMatched: matched,
       fitScore,
-      explanation: explanationFor(c, matched),
+      explanation: explanationFor(c, matched, last !== null),
     });
   }
 
