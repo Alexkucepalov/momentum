@@ -4,6 +4,7 @@
  * Expects JAVA_HOME + ANDROID_HOME (or ~/.momentum-build toolchain).
  *
  * FORCE_PREBUILD=1 — wipe android/ and re-run expo prebuild.
+ * APK_ABIS=arm64-v8a,x86_64 — native ABIs to package (default arm64-v8a: real phones).
  */
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
@@ -14,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const toolRoot = join(homedir(), '.momentum-build');
 const forcePrebuild = process.env.FORCE_PREBUILD === '1';
+const abis = (process.env.APK_ABIS ?? 'arm64-v8a').trim();
 
 function resolveJavaHome() {
   if (process.env.JAVA_HOME && existsSync(join(process.env.JAVA_HOME, 'bin', 'java'))) {
@@ -98,7 +100,10 @@ if (!existsSync(gradlew)) {
 }
 
 // Release embeds index.android.bundle — debug APK expects Metro and fails on device.
-run(gradlew, ['assembleRelease', '--no-daemon'], { cwd: androidDir });
+console.log(`ABIs: ${abis}`);
+run(gradlew, ['assembleRelease', '--no-daemon', `-PreactNativeArchitectures=${abis}`], {
+  cwd: androidDir,
+});
 
 const apkDir = join(androidDir, 'app', 'build', 'outputs', 'apk', 'release');
 const apkName = readdirSync(apkDir).find((name) => name.endsWith('.apk'));
