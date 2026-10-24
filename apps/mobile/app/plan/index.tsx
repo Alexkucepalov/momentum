@@ -12,25 +12,18 @@ type HubItem = {
   icon: keyof typeof Ionicons.glyphMap;
   href:
     | '/plan/eat-now'
-    | '/plan/pantry'
     | '/plan/week'
-    | '/plan/shop'
-    | '/plan/budget'
-    | '/plan/stores'
-    | '/plan/receipt'
+    | '/plan/my-products'
     | '/recipes';
-  primary?: boolean;
 };
 
-/** Primary = daily loop; secondary = planning/money — same screens, clearer hierarchy. */
-const PRIMARY: HubItem[] = [
+const ITEMS: HubItem[] = [
   {
     key: 'eat-now',
     title: 'Что съесть сейчас?',
-    subtitle: 'Подбор по остатку КБЖУ · рецепты и запасы',
+    subtitle: 'Подбор по твоим рецептам и продуктам',
     icon: 'flash-outline',
     href: '/plan/eat-now',
-    primary: true,
   },
   {
     key: 'recipes',
@@ -38,25 +31,13 @@ const PRIMARY: HubItem[] = [
     subtitle: 'Библиотека, импорт, повтор готовки',
     icon: 'book-outline',
     href: '/recipes',
-    primary: true,
   },
   {
-    key: 'pantry',
-    title: 'Запасы дома',
-    subtitle: 'Что есть · для Eat Now и покупок',
-    icon: 'cube-outline',
-    href: '/plan/pantry',
-    primary: true,
-  },
-];
-
-const SECONDARY: HubItem[] = [
-  {
-    key: 'receipt',
-    title: 'Импорт покупки',
-    subtitle: 'Текст заказа → проверка → запасы',
-    icon: 'receipt-outline',
-    href: '/plan/receipt',
+    key: 'my-products',
+    title: 'Мои продукты',
+    subtitle: 'Добавить список · КБЖУ если знаешь',
+    icon: 'basket-outline',
+    href: '/plan/my-products',
   },
   {
     key: 'week',
@@ -65,20 +46,6 @@ const SECONDARY: HubItem[] = [
     icon: 'calendar-outline',
     href: '/plan/week',
   },
-  {
-    key: 'shop',
-    title: 'Покупки',
-    subtitle: 'Список из меню и запасов',
-    icon: 'cart-outline',
-    href: '/plan/shop',
-  },
-  {
-    key: 'budget',
-    title: 'Бюджет питания',
-    subtitle: 'Лимит и расходы · без live-цен',
-    icon: 'wallet-outline',
-    href: '/plan/budget',
-  },
 ];
 
 function HubRow({ item }: { item: HubItem }) {
@@ -86,11 +53,11 @@ function HubRow({ item }: { item: HubItem }) {
   return (
     <Pressable
       onPress={() => router.push(item.href)}
-      style={({ pressed }) => [styles.card, item.primary && styles.cardPrimary, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
-      <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
+      <View style={styles.iconWrap}>
         <Ionicons name={item.icon} size={22} color={colors.text} />
       </View>
       <View style={styles.cardText}>
@@ -109,19 +76,11 @@ export default function PlanHubScreen() {
         План питания
       </Text>
       <Text style={styles.lead}>
-        Сейчас — что съесть. Рецепты и запасы рядом. Меню и покупки — когда планируешь неделю.
+        Что съесть сейчас — из твоих рецептов и продуктов. Меню на неделю — когда планируешь заранее.
       </Text>
 
-      <Text style={styles.section}>Сейчас</Text>
       <View style={styles.list} accessibilityRole="list">
-        {PRIMARY.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
-      </View>
-
-      <Text style={styles.section}>Неделя и деньги</Text>
-      <View style={styles.list} accessibilityRole="list">
-        {SECONDARY.map((item) => (
+        {ITEMS.map((item) => (
           <HubRow key={item.key} item={item} />
         ))}
       </View>
@@ -168,9 +127,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cardPrimary: {
-    borderColor: colors.text,
-  },
   pressed: { opacity: 0.88 },
   iconWrap: {
     width: 40,
@@ -179,9 +135,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconWrapPrimary: {
-    backgroundColor: colors.accentSoft,
   },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },

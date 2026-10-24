@@ -7,8 +7,6 @@ import {
 
 export type EatNowFilterId =
   | 'all'
-  | 'at_home'
-  | 'to_buy'
   | 'no_cook'
   | 'quick_15'
   | 'more_protein';
@@ -164,14 +162,7 @@ function matchesFilters(
 
   const matched: EatNowFilterId[] = [];
   for (const f of active) {
-    if (f === 'at_home') {
-      if (!input.atHome) return { ok: false, matched };
-      matched.push(f);
-    } else if (f === 'to_buy') {
-      const buy = input.toBuy === true || input.atHome === false;
-      if (!buy) return { ok: false, matched };
-      matched.push(f);
-    } else if (f === 'no_cook') {
+    if (f === 'no_cook') {
       if (input.prepMinutes === null || input.prepMinutes > 5) return { ok: false, matched };
       matched.push(f);
     } else if (f === 'quick_15') {
@@ -192,24 +183,21 @@ function explanationFor(
   remaining: MacroFour,
 ): string {
   const parts: string[] = [];
-  const hint = input.coverageHint?.trim();
-  if (matched.includes('no_cook')) parts.push('Без готовки');
-  else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
+  if (matched.includes('no_cook')) {
+    parts.push('Без готовки');
+  } else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
     parts.push('Быстрый вариант');
-  } else if (input.atHome) {
-    parts.push('Из того, что уже есть');
-  } else if (hint && input.kind === 'recipe') {
-    parts.push('Не хватает ингредиентов');
   } else if (matched.includes('more_protein')) {
     parts.push('С акцентом на белок');
   } else if (fitScore !== null && fitScore >= 0.7) {
     parts.push('Хорошо ложится в остаток');
   } else if (input.kind === 'recipe') {
     parts.push('Из ваших рецептов');
+  } else if (input.kind === 'cooked_batch') {
+    parts.push('Готовая партия');
   } else {
     parts.push('Из продуктов');
   }
-  if (hint) parts.push(hint);
 
   if (portion.energyKcal !== null && remaining.energyKcal !== null) {
     if (remaining.energyKcal > 0 && portion.energyKcal > remaining.energyKcal) {
