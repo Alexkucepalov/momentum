@@ -1,7 +1,17 @@
 import { portion, recipePortion, type Nutrition } from './nutrition';
 import type { Recipe, RecipeIngredient } from '../storage/types';
 
-/** True when the recipe has at least one user-entered per-100g value. */
+/**
+ * POLICY (Q-05 / Momentum 2.0): single source for recipe KBJU in UI and diary.
+ *
+ * 1. If the recipe has any user-entered finished per-100g field → use those (portion scale).
+ * 2. Else if there are ingredients → derive from ingredient macros + cookedYieldG.
+ * 3. Else → all null (unknown ≠ 0). Never invent values; never show raw
+ *    `recipe.energyKcalPer100g` alone when ingredients would yield a different number.
+ *
+ * All list cards, detail, Eat Now, portion sheets, and `addEntryFromRecipe` must use
+ * `nutritionForRecipePortion` (or `nutritionPer100gCooked`).
+ */
 export function recipeHasManualPer100g(recipe: Pick<
   Recipe,
   'energyKcalPer100g' | 'proteinGPer100g' | 'fatGPer100g' | 'carbGPer100g'
@@ -54,4 +64,37 @@ export function nutritionForRecipePortion(
     recipe.cookedYieldG,
     servedGrams,
   );
+}
+
+/** Display / compare per 100 g cooked — same policy as portion logging. */
+export function nutritionPer100gCooked(
+  recipe: Recipe,
+  ingredients: RecipeIngredient[],
+): Nutrition {
+  return nutritionForRecipePortion(recipe, ingredients, 100);
+}
+
+/** Map domain Nutrition → MacroStrip props. */
+export function macrosForStrip(n: Nutrition): {
+  energyKcal: number | null;
+  proteinG: number | null;
+  fatG: number | null;
+  carbG: number | null;
+} {
+  return {
+    energyKcal: n.kcal,
+    proteinG: n.protein,
+    fatG: n.fat,
+    carbG: n.carbs,
+  };
+}
+
+/** Absolute difference for UI consistency checks (null vs number = mismatch). */
+export function nutritionKcalDelta(
+  a: Nutrition,
+  b: Nutrition,
+): number | null {
+  if (a.kcal === null && b.kcal === null) return 0;
+  if (a.kcal === null || b.kcal === null) return null;
+  return Math.abs(a.kcal - b.kcal);
 }

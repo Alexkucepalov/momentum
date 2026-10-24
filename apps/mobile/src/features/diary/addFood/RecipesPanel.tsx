@@ -3,7 +3,11 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 
 import { recipePortion } from '../../../../../../src/domain/nutrition';
-import type { Recipe } from '../../../../../../src/storage/types';
+import {
+  macrosForStrip,
+  nutritionPer100gCooked,
+} from '../../../../../../src/domain/recipeNutrition';
+import type { Recipe, RecipeIngredient } from '../../../../../../src/storage/types';
 import { MacroStrip } from '../../../components/MacroStrip';
 import { PrimaryButton } from '../../../components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
@@ -12,12 +16,14 @@ import { emptyIngredient, type DraftIngredient } from './types';
 export function RecipesPanel({
   recipes,
   getIngredientCount,
+  getRecipeIngredients,
   onPickRecipe,
   onQuickAddRecipe,
   onCreateRecipe,
 }: {
   recipes: Recipe[];
   getIngredientCount: (recipeId: string) => number;
+  getRecipeIngredients: (recipeId: string) => RecipeIngredient[];
   onPickRecipe: (recipe: Recipe) => void;
   onQuickAddRecipe: (recipe: Recipe) => void;
   onCreateRecipe: (input: {
@@ -123,6 +129,9 @@ export function RecipesPanel({
 
       {recipes.map((r) => {
         const ingCount = getIngredientCount(r.id);
+        const per100 = macrosForStrip(
+          nutritionPer100gCooked(r, getRecipeIngredients(r.id)),
+        );
         return (
           <View key={r.id} style={styles.recipeCard}>
             <Pressable
@@ -145,12 +154,7 @@ export function RecipesPanel({
                 <Text style={styles.recipeMeta}>
                   Выход {r.cookedYieldG} г · {ingCount} ингр.
                 </Text>
-                <MacroStrip
-                  energyKcal={r.energyKcalPer100g}
-                  proteinG={r.proteinGPer100g}
-                  fatG={r.fatGPer100g}
-                  carbG={r.carbGPer100g}
-                />
+                <MacroStrip {...per100} />
               </View>
             </Pressable>
             <Pressable

@@ -15,8 +15,12 @@ import {
   formatPantryCoverageBadge,
   recipePantryCoverage,
 } from '../../../../src/domain/recipePantryCoverage';
-import { recipeHasManualPer100g } from '../../../../src/domain/recipeNutrition';
-import type { Recipe } from '../../../../src/storage/types';
+import {
+  macrosForStrip,
+  nutritionPer100gCooked,
+  recipeHasManualPer100g,
+} from '../../../../src/domain/recipeNutrition';
+import type { Recipe, RecipeIngredient } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
@@ -179,7 +183,7 @@ export default function RecipesIndexScreen() {
           return (
             <RecipeCard
               recipe={item}
-              ingredientCount={ings.length}
+              ingredients={ings}
               pantryBadge={coverage ? formatPantryCoverageBadge(coverage) : null}
               onPress={() => router.push(`/recipes/${item.id}`)}
             />
@@ -192,17 +196,18 @@ export default function RecipesIndexScreen() {
 
 function RecipeCard({
   recipe,
-  ingredientCount,
+  ingredients,
   pantryBadge,
   onPress,
 }: {
   recipe: Recipe;
-  ingredientCount: number;
+  ingredients: RecipeIngredient[];
   pantryBadge: string | null;
   onPress: () => void;
 }) {
   const hasManual = recipeHasManualPer100g(recipe);
   const fromArchive = isArchiveRecipe(recipe);
+  const per100 = macrosForStrip(nutritionPer100gCooked(recipe, ingredients));
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
@@ -239,15 +244,10 @@ function RecipeCard({
           ) : null}
         </View>
         <Text style={styles.cardMeta} numberOfLines={1}>
-          {recipe.cookedYieldG} г готового · {ingredientCount} ингр.
+          {recipe.cookedYieldG} г готового · {ingredients.length} ингр.
           {hasManual ? ' · КБЖУ вручную' : ''}
         </Text>
-        <MacroStrip
-          energyKcal={recipe.energyKcalPer100g}
-          proteinG={recipe.proteinGPer100g}
-          fatG={recipe.fatGPer100g}
-          carbG={recipe.carbGPer100g}
-        />
+        <MacroStrip {...per100} />
       </View>
       <View style={styles.chevron}>
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
