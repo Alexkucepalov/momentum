@@ -8,7 +8,7 @@ import {
   eatNowInputsFromProducts,
   eatNowInputsFromRecipes,
 } from '../../../../src/domain/buildEatNowInputs';
-import { recipeAtHome, selectEatNowProducts } from '../../../../src/domain/eatNowPool';
+import { recipeHasBatch, selectEatNowProducts } from '../../../../src/domain/eatNowPool';
 import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
 import { remainingMacros } from '../../../../src/domain/remainingMacros';
 import {
@@ -101,38 +101,19 @@ export default function EatNowScreen() {
     const frequentIds = new Set(repo.listFrequentProducts(24).map((p) => p.id));
     const batches = repo.listCookedBatches({ onlyRemaining: true });
     const batchRecipeIds = new Set(batches.map((b) => b.recipeId));
-    const { usefulProducts } = selectEatNowProducts({
-      recipes,
-      products,
-      pantry: [],
-      frequentIds,
-      batchRecipeIds,
-    });
+    const usefulProducts = selectEatNowProducts({ products, frequentIds });
 
     const recipeInputs = eatNowInputsFromRecipes(recipes, (id) => repo.getRecipeIngredients(id), {
       defaultPrepMinutes: 25,
-      atHome: false,
-    }).map((c) => {
-      const fromBatch = recipeAtHome(c.id, batchRecipeIds);
-      return {
-        ...c,
-        atHome: fromBatch,
-        toBuy: false,
-        prepMinutes: fromBatch ? 8 : c.prepMinutes,
-        pantryRatio: null,
-        coverageHint: null,
-      };
-    });
+    }).map((c) => (recipeHasBatch(c.id, batchRecipeIds) ? { ...c, prepMinutes: 8 } : c));
 
-    const usefulInputs = eatNowInputsFromProducts(usefulProducts, {
-      atHome: () => false,
-    }).map((c) => ({ ...c, toBuy: false, coverageHint: null, pantryRatio: null }));
+    const usefulInputs = eatNowInputsFromProducts(usefulProducts);
 
     const batchInputs = eatNowInputsFromCookedBatches(
       batches,
       (id) => repo.getRecipe(id),
       (id) => repo.getRecipeIngredients(id),
-    ).map((c) => ({ ...c, toBuy: false, coverageHint: null, pantryRatio: null }));
+    );
 
     const pool = [...batchInputs, ...recipeInputs, ...usefulInputs];
     const seen = new Set<string>();

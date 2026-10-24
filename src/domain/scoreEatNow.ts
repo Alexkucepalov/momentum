@@ -5,13 +5,7 @@ import {
   type MacroRemaining,
 } from './remainingMacros';
 
-export type EatNowFilterId =
-  | 'all'
-  | 'at_home'
-  | 'to_buy'
-  | 'no_cook'
-  | 'quick_15'
-  | 'more_protein';
+export type EatNowFilterId = 'all' | 'no_cook' | 'quick_15' | 'more_protein';
 
 export type EatNowSourceKind = 'recipe' | 'product' | 'cooked_batch' | 'combo';
 
@@ -22,14 +16,6 @@ export type EatNowCandidateInput = {
   /** Nutrition per 100 g of the edible item. */
   per100: Nutrition;
   prepMinutes: number | null;
-  /** True when pantry / leftovers imply available without shopping. */
-  atHome: boolean;
-  /** True when suggestion may require a store run (catalog / not in pantry). */
-  toBuy?: boolean;
-  /** 0..1 ingredient pantry coverage; null if unknown / N/A. */
-  pantryRatio?: number | null;
-  /** Short RU hint e.g. «3/5 дома». */
-  coverageHint?: string | null;
 };
 
 export type EatNowCandidate = {
@@ -164,14 +150,7 @@ function matchesFilters(
 
   const matched: EatNowFilterId[] = [];
   for (const f of active) {
-    if (f === 'at_home') {
-      if (!input.atHome) return { ok: false, matched };
-      matched.push(f);
-    } else if (f === 'to_buy') {
-      const buy = input.toBuy === true || input.atHome === false;
-      if (!buy) return { ok: false, matched };
-      matched.push(f);
-    } else if (f === 'no_cook') {
+    if (f === 'no_cook') {
       if (input.prepMinutes === null || input.prepMinutes > 5) return { ok: false, matched };
       matched.push(f);
     } else if (f === 'quick_15') {
@@ -184,13 +163,7 @@ function matchesFilters(
   return { ok: true, matched };
 }
 
-function explanationFor(
-  input: EatNowCandidateInput,
-  matched: EatNowFilterId[],
-  _fitScore: number | null,
-  _portion: MacroFour,
-  _remaining: MacroFour,
-): string {
+function explanationFor(input: EatNowCandidateInput, matched: EatNowFilterId[]): string {
   const parts: string[] = [];
   if (matched.includes('no_cook')) parts.push('Без готовки');
   else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
@@ -255,13 +228,9 @@ export function scoreEatNow(
       prepMinutes: c.prepMinutes,
       filtersMatched: matched,
       fitScore,
-      explanation: explanationFor(c, matched, fitScore, macros, remaining),
+      explanation: explanationFor(c, matched),
     });
   }
-
-  const ratioById = new Map(
-    candidates.map((c) => [`${c.kind}:${c.id}`, c.pantryRatio ?? null] as const),
-  );
 
   out.sort((a, b) => {
     if (preferProtein) {
@@ -276,13 +245,6 @@ export function scoreEatNow(
     if (sa !== null && sb !== null && sa !== sb) return sb - sa;
     if (sa !== null && sb === null) return -1;
     if (sa === null && sb !== null) return 1;
-    const ra = ratioById.get(`${a.kind}:${a.id}`);
-    const rb = ratioById.get(`${b.kind}:${b.id}`);
-    if (ra !== null && ra !== undefined && rb !== null && rb !== undefined && ra !== rb) {
-      return rb - ra;
-    }
-    if (ra != null && rb == null) return -1;
-    if (ra == null && rb != null) return 1;
     return a.title.localeCompare(b.title, 'ru');
   });
 
