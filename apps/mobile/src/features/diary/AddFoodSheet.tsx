@@ -363,7 +363,11 @@ export function AddFoodSheet({
               searchHits.length === 0 ? (
                 <EmptyHint
                   title="Ничего не найдено"
-                  body="Попробуй другое название или добавь продукт вручную / быстро."
+                  body="Сбрось фильтр поиска или добавь продукт вручную — нули за тебя не придумаем."
+                  actionLabel="Ввести вручную"
+                  onAction={() => setTab('manual')}
+                  secondaryActionLabel="Быстрый ввод"
+                  onSecondaryAction={() => setTab('quick')}
                 />
               ) : (
                 <>
@@ -738,11 +742,45 @@ export function AddFoodSheet({
   );
 }
 
-function EmptyHint({ title, body }: { title: string; body: string }) {
+function EmptyHint({
+  title,
+  body,
+  actionLabel,
+  onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
+}: {
+  title: string;
+  body: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
+}) {
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyBody}>{body}</Text>
+      {actionLabel && onAction ? (
+        <Pressable
+          onPress={onAction}
+          style={({ pressed }) => [styles.emptyAction, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+        >
+          <Text style={styles.emptyActionText}>{actionLabel}</Text>
+        </Pressable>
+      ) : null}
+      {secondaryActionLabel && onSecondaryAction ? (
+        <Pressable
+          onPress={onSecondaryAction}
+          style={({ pressed }) => [styles.emptySecondary, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={secondaryActionLabel}
+        >
+          <Text style={styles.emptySecondaryText}>{secondaryActionLabel}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -924,4 +962,35 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 22,
   },
+  emptyAction: {
+    marginTop: space.md,
+    minHeight: touchMin,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
+  },
+  emptyActionText: {
+    fontWeight: '800',
+    color: colors.primaryButtonText,
+    fontSize: type.body,
+  },
+  emptySecondary: {
+    marginTop: space.sm,
+    minHeight: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
+  },
+  emptySecondaryText: {
+    fontWeight: '700',
+    color: colors.text,
+    fontSize: type.caption,
+  },
+  pressed: { opacity: 0.88 },
 });

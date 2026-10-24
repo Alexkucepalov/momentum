@@ -226,7 +226,16 @@ export default function WeekPlanScreen() {
       ) : null}
 
       {plan && daysGrouped.length === 0 ? (
-        <Text style={styles.hint}>Пустой черновик — добавь рецепты и создай снова.</Text>
+        <EmptyState
+          compact
+          icon="calendar-outline"
+          title="Пустой черновик меню"
+          body="Запланированное не считается съеденным. Добавь рецепты и собери план снова — или возьми вариант из «Что съесть сейчас?»."
+          actionLabel="Собрать снова"
+          onAction={() => setComposerOpen(true)}
+          secondaryActionLabel="Что съесть сейчас"
+          onSecondaryAction={() => router.push('/plan/eat-now')}
+        />
       ) : null}
 
       {daysGrouped.map(({ date, items }) => {

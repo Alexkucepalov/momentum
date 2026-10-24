@@ -265,7 +265,7 @@ export function ConfirmPortionSheet({
           </Text>
         ) : null}
 
-        <PrimaryButton label="Добавить в дневник" onPress={submit} />
+        <PrimaryButton label={`Добавить ${Math.round(grams)} г в дневник`} onPress={submit} />
       </FormScrollView>
     </SwipeToDismissSheet>
   );
