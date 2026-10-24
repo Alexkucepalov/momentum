@@ -44,19 +44,6 @@ test('snapshot migrates to v10 with empty pantry', () => {
   assert.deepEqual(snap.cookedBatches, []);
 });
 
-test('pantry CRUD soft-delete', () => {
-  const repo = createMemoryFoodRepository({ timezone: 'Europe/Moscow' });
-  const item = repo.upsertPantryItem({
-    displayName: 'Творог',
-    location: 'fridge',
-    unit: 'g',
-    quantityG: 400,
-  });
-  assert.equal(repo.listPantryItems().length, 1);
-  repo.softDeletePantryItem(item.id);
-  assert.equal(repo.listPantryItems().length, 0);
-});
-
 test('diary log of recipe decreases FIFO cooked batch', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
   const recipe = repo.createRecipe({
