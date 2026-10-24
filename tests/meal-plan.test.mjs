@@ -117,3 +117,18 @@ test('addPlannedMeal creates empty draft and never logs diary', () => {
   assert.equal(today.length, 1);
   assert.equal(today[0].displayName, 'Творог');
 });
+
+test('listPlannedMealsForDate ignores archived plans', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  repo.createRecipe({
+    name: 'Овсянка',
+    cookedYieldG: 400,
+    nutritionPer100g: { kcal: 90, protein: 4, fat: 2, carbs: 14 },
+  });
+  const a = repo.createMealPlanDraft({ startDateLocal: '2026-10-20', days: 3 });
+  const b = repo.createMealPlanDraft({ startDateLocal: '2026-10-20', days: 3 });
+  assert.equal(repo.getMealPlan(a.id)?.status, 'archived');
+  assert.equal(repo.getMealPlan(b.id)?.status, 'draft');
+  const today = repo.listPlannedMealsForDate('2026-10-20');
+  assert.ok(today.every((m) => m.planId === b.id));
+});
