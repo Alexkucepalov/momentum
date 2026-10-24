@@ -39,19 +39,9 @@ export default function RecipesIndexScreen() {
   const recipes = repo.listRecipes();
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => router.push('/recipes/new')}
-          accessibilityRole="button"
-          accessibilityLabel="Новый рецепт вручную"
-          style={styles.headerBtn}
-        >
-          <Ionicons name="add" size={26} color={colors.text} />
-        </Pressable>
-      ),
-    });
-  }, [navigation, router]);
+    // Single create path lives in RecipeHubActions — no duplicate header +.
+    navigation.setOptions({ headerRight: () => null });
+  }, [navigation]);
 
   const counts = useMemo(() => {
     let archive = 0;

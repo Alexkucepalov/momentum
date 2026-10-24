@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
@@ -36,7 +35,6 @@ function profileToFields(profile: {
 }
 
 export default function ProfileScreen() {
-  const router = useRouter();
   const { repo, refresh, revision, showFlash, setDateLocal } = useData();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
@@ -265,49 +263,6 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.summaryEmpty}>Цели пока не заданы — всё опционально</Text>
           )}
-        </View>
-
-        <View style={styles.secondaryLinks} accessibilityRole="summary">
-          <Pressable
-            onPress={() => router.push('/(tabs)/food')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Питание"
-          >
-            <Text style={styles.secondaryLinkText}>Питание →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/recipes')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Рецепты"
-          >
-            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(tabs)/progress')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Прогресс"
-          >
-            <Text style={styles.secondaryLinkText}>Прогресс →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/plan')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="План"
-          >
-            <Text style={styles.secondaryLinkText}>План →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(tabs)/activity')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Активность"
-          >
-            <Text style={styles.secondaryLinkText}>Активность →</Text>
-          </Pressable>
         </View>
 
         <SettingsCard

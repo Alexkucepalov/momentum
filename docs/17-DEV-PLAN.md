@@ -119,9 +119,9 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 | Priority | Issue | Acceptance (кратко) |
 |----------|-------|---------------------|
-| ★ | [#116](https://github.com/Alexkucepalov/momentum/issues/116) Remaining dogfood UX | Today CTA, Plan tab, My products v2, «Мои» в AddFood |
-| 2 | [#114](https://github.com/Alexkucepalov/momentum/issues/114) Repo cleanup | Удалить pantry/shop/budget API (snapshot soft-retain) — отдельный PR |
-| 3 | [#92](https://github.com/Alexkucepalov/momentum/issues/92) / [#93](https://github.com/Alexkucepalov/momentum/issues/93) | Device gates — `needs-human` |
+| ★ | [#120](https://github.com/Alexkucepalov/momentum/issues/120) Friends Beta sprint | Audit/backlog/release docs; P0 copy/data/Eat Now search; no device Pass |
+| 2 | [#92](https://github.com/Alexkucepalov/momentum/issues/92) / [#93](https://github.com/Alexkucepalov/momentum/issues/93) | Device gates — `needs-human` |
+| — | ~~[#116](https://github.com/Alexkucepalov/momentum/issues/116)~~ / ~~[#114](https://github.com/Alexkucepalov/momentum/issues/114)~~ | Done (#117 / #115) |
 | — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
 | 1 | ~~Parse diary-style recipe paste hardening~~ | Done (#28) |
 | 2 | Catalog / Recipes / Archive visual polish QA | Open #5 + PR #20 (review); **no new agent-ready** — quality freeze |
