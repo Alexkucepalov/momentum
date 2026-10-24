@@ -12,6 +12,7 @@ import {
   repeatableDayFromEntries,
   shiftDateLocal,
 } from '../../../../src/domain/repeatMeal';
+import { shouldShowTargetsOnboarding } from '../../../../src/domain/targetsOnboarding';
 import type { FoodProduct } from '../../../../src/storage/types';
 import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
@@ -32,6 +33,7 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
+import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
@@ -84,6 +86,7 @@ export default function TodayScreen() {
   const favorites = repo.listFavorites().slice(0, 4);
   const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
+  const showTargetsOnboarding = shouldShowTargetsOnboarding(profile);
   const today = localDateKey(new Date(), profile.timezone);
   const activityMinutes = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
@@ -315,6 +318,19 @@ export default function TodayScreen() {
         </View>
       </ScreenFooter>
 
+      <TargetsOnboardingSheet
+        visible={showTargetsOnboarding}
+        onSkip={() => {
+          repo.dismissTargetsOnboardingPrompt();
+          refresh();
+          showFlash('Цели можно задать в Профиле');
+        }}
+        onSave={(values) => {
+          repo.setDailyNutritionTargets(values);
+          refresh();
+          showFlash('Цели сохранены');
+        }}
+      />
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
       <BarcodeLookupSheet visible={barcodeOpen} onClose={() => setBarcodeOpen(false)} />
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
