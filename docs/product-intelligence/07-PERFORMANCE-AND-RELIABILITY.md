@@ -70,7 +70,7 @@ UNVERIFIED Android lifecycle.
 5. TalkBack / a11y Pass  
 6. Safe-area / keyboard avoidance on physical device  
 7. OCR accuracy on real Samokat/METRO screenshots (synthetic only in CI)  
-8. Dogfood APK install smoke from `DOGFOOD-APK.md` on founder phone  
+8. Dogfood APK install smoke from `DOGFOOD-APK.md` on founder phone (`dogfood_gate: pending`; APK ~210–220MB, build includes #85 OCR + #87 weight)  
 
 ---
 

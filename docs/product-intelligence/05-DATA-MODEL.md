@@ -29,10 +29,10 @@ flowchart LR
 | Field | Notes |
 |-------|-------|
 | id, timezone, locale, units | Singleton-ish |
-| waterTargetMl | null = hidden |
-| heightCm | BMI optional |
+| waterTargetMl | null = hidden in UI; normalize may default missing legacy → `2000` |
+| heightCm | BMI optional (informational, no shame) |
 | dailyEnergyKcal / Protein/Fat/Carb | **null ≠ 0**; user-set only |
-| dogfoodStartedOn | Gate helper |
+| dogfoodStartedOn | 14-day founder gate helper |
 
 **Lifecycle:** created with store; edited in Profile. No delete.
 
@@ -53,9 +53,11 @@ Ingredient: productId?, displayName, rawGrams, macros nullable.
 
 ### FoodEntry (diary)
 
-dateLocal, meal slot, productId?/recipeId?, displayName, grams, **nutrition snapshot at log time**, source, soft delete.
+dateLocal, meal slot, productId?/recipeId?, displayName, grams, **nutrition fields copied at log time**, source, soft delete.
 
-**Invariant:** **Planned ≠ eaten** — planned meals are separate (`PlannedMeal`).
+**Invariant:** **Planned ≠ eaten** — diary only via explicit `logPlannedMealToDiary` (then `PlannedMeal.status = 'logged'`). Totals use `FoodEntry` only.
+
+**Nuance (FACT):** `updateEntryGrams` **recalculates** macros from current product/recipe card (or scales quick entry) — not a forever-frozen historical snapshot on gram edit. Cook/recipe edits do not retroactively rewrite other entries.
 
 ### WaterEntry / WeightEntry / Workout / HabitCheck / FlexibleHabit*
 
@@ -129,9 +131,12 @@ erDiagram
 | Entry stores snapshot macros | `FoodEntry` fields |
 | Planned ≠ eaten | `PlannedMeal` vs `FoodEntry` |
 | Raw vs cooked | `rawGrams` vs `cookedYieldG` / batch |
-| Soft delete preferred | `deletedAt` |
+| Soft delete preferred | `deletedAt` ISO; lists filter null |
+| Undo | **Only** diary: `undoDeleteEntry` |
+| Cascade soft-delete | Meal plan → planned meals; shopping list → items |
+| Hard / no soft API | WaterEntry, HabitCheck, FlexibleHabitEvent, RecipeIngredient, StorePreference |
 | No invented agent macros | AGENTS / product rules |
-| Purchase confirm idempotency | Domain helpers — re-import dupe risk if user confirms twice **HYPOTHESIS** partial mitigations |
+| Purchase confirm | `purchaseConfirm` fingerprint/gates; unconfirmed cart does not write pantry; double-confirm dupe **HYPOTHESIS** |
 
 ---
 

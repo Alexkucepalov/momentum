@@ -8,29 +8,29 @@
 
 | Layer | What | Status |
 |-------|------|--------|
-| Unit / domain Node | `tests/*.mjs` (~45 files) | Primary safety net |
+| Unit / domain Node | **44** suite `.mjs` + `loadTsModules.mjs` helper | Primary safety net |
 | `npm run verify` | typecheck + test + security + mobile tsc | Gate before PR |
 | Expo web Visual Audit | 47 PNG + after/ | OBSERVED UX evidence |
 | Maestro | `maestro/food-add-smoke.yaml` skeleton | Not Pass |
-| Android device | #36–#38 open | **Missing Pass** |
+| Android device | #36–#38 open; APK `dogfood_gate: pending` | **Missing Pass** |
 | E2E matrix | `docs/quality/E2E-TEST-MATRIX.md` | Spec > execution |
 
 ---
 
 ## Domain coverage (strong)
 
-Examples with dedicated tests (FACT — filenames under `tests/`):
+**44 suites** under `tests/` (FACT inventory from audit explore), including:
 
-- Nutrition / unknown≠0  
-- Eat Now scoring  
-- Purchase parse / confirm / catalog upsert  
-- Shopping reconcile  
-- Recipe parse / nutrition  
-- Budget projection  
-- OCR text clean fixtures  
-- Weight soft delete / trends  
+- `nutrition` / `nutrition-consistency` / `nutrition-flow-sprint2` — unknown≠0  
+- `eat-now` / `eat-now-pool` — scorer + pool  
+- `purchase-import` / `match-purchase-product` / `fi-grocery-to-meal` / `clean-ocr-purchase-text`  
+- `shopping` / `shopping-reconcile` / `pantry` / `meal-plan`  
+- `parse-recipe-text` / `recipe-detail` / `recipe-pantry-coverage` / `cook-again`  
+- `food-budget` / `budget-projection`  
+- `weight-delete` / `weight-trend` / `repeat-meal` / `unified-food-search`  
+- `food-repository` / `import-export` / `add-guard` / `dispatcher`  
 
-Exact count fluctuates with PRs; PERFORMANCE-BASELINE cited 172–213+ tests historically.
+Historical verify run sizes: ~172–213+ tests (PERFORMANCE-BASELINE / PR notes).
 
 ---
 

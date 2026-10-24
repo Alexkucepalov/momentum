@@ -18,32 +18,48 @@
 
 ---
 
-## Nested routes (inventory)
+## Nested routes (inventory) — FACT file → URL
 
-### Plan stack (`apps/mobile/app/plan/`)
+`(tabs)` **не** в URL. Root Stack: `(tabs)` | `recipes` | `plan`.
 
-- `index` — hub links  
-- `eat-now`  
-- `pantry`  
-- `shopping`  
-- `budget`  
-- `receipt` (purchase import + OCR mode)  
-- meal plan / menu routes (week planner)
+| File | URL |
+|------|-----|
+| `(tabs)/index` | `/` Сегодня |
+| `(tabs)/food` | `/food` |
+| `(tabs)/activity` | `/activity` |
+| `(tabs)/progress` | `/progress` |
+| `(tabs)/profile` | `/profile` |
+| `plan/index` | `/plan` |
+| `plan/eat-now` | `/plan/eat-now` |
+| `plan/pantry` | `/plan/pantry` |
+| `plan/week` | `/plan/week` |
+| `plan/shop` | `/plan/shop` |
+| `plan/budget` | `/plan/budget` |
+| `plan/stores` | `/plan/stores` — **не в хабе `/plan`**; вход с `/plan/shop` |
+| `plan/receipt` | `/plan/receipt` |
+| `recipes/index` | `/recipes` |
+| `recipes/new` | `/recipes/new` |
+| `recipes/import-text` | `/recipes/import-text` |
+| `recipes/import-personal` | `/recipes/import-personal` |
+| `recipes/[id]` | `/recipes/:id` |
+| `recipes/edit/[id]` | `/recipes/edit/:id` |
 
-### Recipes (`apps/mobile/app/recipes/`)
+**~20 screen routes** (+ `+not-found`). Route-based modal screens **нет**.
 
-- list / detail  
-- `new`  
-- `import`  
-- cook / batch related screens
+### Overlays (local `visible` state, not routes)
 
-### Modals / sheets
+| Sheet/modal | Mount points (examples) |
+|-------------|-------------------------|
+| `AddFoodSheet` | Today, Food |
+| `ConfirmPortionSheet` | Today, Food, Eat Now, recipe detail, nested in AddFood/Barcode |
+| `BarcodeLookupSheet` → optional `LabelCaptureSheet` | Today, Food, nested AddFood |
+| `DayCalendarSheet` | Today, Food, Activity |
+| `WorkoutFormSheet` | Activity |
+| `RecookRecipeSheet` | Recipe detail |
+| `SaveMealModal` / `PortionEditModal` | Food |
+| Profile paste `Modal` | Profile import |
 
-- Portion / meal pickers (UI components)  
-- Confirm dialogs on destructive/soft-delete  
-- Preview sheets for purchase import  
-
-Exact modal vs push varies by screen — see screen audit.
+`JourneyShortcuts` component exists but **is not imported on screens** (removed from Today fold).
 
 ---
 
@@ -63,7 +79,7 @@ flowchart TB
     PH[plan/index]
     EN[eat-now]
     PA[pantry]
-    SH[shopping]
+    SH[shop]
     BU[budget]
     RC[receipt]
     MP[meal-plan]

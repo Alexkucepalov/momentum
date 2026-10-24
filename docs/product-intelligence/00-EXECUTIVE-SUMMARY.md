@@ -7,7 +7,7 @@
 | **HEAD message** | Merge PR #88 chore(apk) dogfood APK meta |
 | **Snapshot schema** | **v14** (`StoreSnapshot.version`) |
 | **Evidence class** | Code + unit tests + Expo web Visual Audit Pack (47 PNG) |
-| **Android device Pass** | **Not claimed** — issues #36–#38 open |
+| **Android device Pass** | **Not claimed** — issues #36–#38 open; APK `dogfood_gate: pending` |
 
 **Label legend used across this pack:** FACT · OBSERVED · HYPOTHESIS · UNVERIFIED · PROPOSED
 

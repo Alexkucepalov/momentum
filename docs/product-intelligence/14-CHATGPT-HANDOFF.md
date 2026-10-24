@@ -235,11 +235,10 @@ Analytics (local-only plan): [`10-ANALYTICS-STRATEGY.md`](./10-ANALYTICS-STRATEG
 
 | Item | Count |
 |------|-------|
-| Route files under `apps/mobile/app` | 25 |
+| Route/screen files (tabs+plan+recipes) | ~20 URLs; 25 app files incl. layouts |
 | Domain modules `src/domain/*.ts` | 42 |
-| Root storage/integration ts | +7 |
-| Feature/UI tsx (components+features) | ~55 |
-| Test files `tests/*.mjs` | ~45 |
+| Overlays | Sheets/modals via local state (not route modals) |
+| Test suites `tests/*.mjs` | 44 + 1 helper |
 | Visual audit PNGs | 47 (+ after/ subset) |
 | Capability rows inventoried | 90+ |
 | Journeys mapped | 18 |
