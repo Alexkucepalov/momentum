@@ -182,7 +182,11 @@ export default function PurchaseImportScreen() {
   if (step === 'preview') {
     const pantryCount = lines.filter((l) => !l.excluded && l.isFood).length;
     return (
-      <FormScrollView contentContainerStyle={styles.content}>
+      <FormScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        accessibilityLabel="Проверка покупки"
+      >
         <Text style={styles.lead}>Проверь позиции. Черновик ещё не в запасах.</Text>
 
         <Text style={styles.fieldLabel}>Магазин</Text>
@@ -234,6 +238,7 @@ export default function PurchaseImportScreen() {
                 style={styles.input}
                 accessibilityLabel={`Название позиции ${i + 1}`}
               />
+              {/* Qty/sum stacked (not side-by-side) so 320dp never forces H-scroll — Q-04 */}
               <View style={styles.fieldsStack}>
                 <View style={styles.fieldBlock}>
                   <Text style={styles.fieldLabel}>
@@ -290,7 +295,9 @@ export default function PurchaseImportScreen() {
                 </View>
               </View>
               {line.packageSizeText ? (
-                <Text style={styles.meta}>Упаковка: {line.packageSizeText}</Text>
+                <Text style={styles.meta} numberOfLines={3}>
+                  Упаковка: {line.packageSizeText}
+                </Text>
               ) : null}
               <View style={styles.rowWrap}>
                 <Pressable
@@ -507,24 +514,45 @@ export default function PurchaseImportScreen() {
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
+  },
   content: {
     padding: space.lg,
     paddingBottom: space.xxl,
     gap: space.md,
+    width: '100%',
     maxWidth: '100%',
+    alignSelf: 'stretch',
   },
-  lead: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
+  lead: {
+    fontSize: type.body,
+    color: colors.textSecondary,
+    lineHeight: 22,
+    flexShrink: 1,
+  },
   fieldLabel: {
     fontSize: type.caption,
     fontWeight: '700',
     color: colors.textSecondary,
     marginBottom: 4,
+    flexShrink: 1,
   },
-  fieldsStack: { gap: space.sm, width: '100%' },
-  fieldBlock: { width: '100%', minWidth: 0 },
-  row: { flexDirection: 'row', gap: space.sm, alignItems: 'center', flexWrap: 'wrap' },
-  rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, alignItems: 'center' },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  fieldsStack: { gap: space.sm, width: '100%', maxWidth: '100%', alignSelf: 'stretch' },
+  fieldBlock: { width: '100%', maxWidth: '100%', minWidth: 0, alignSelf: 'stretch' },
+  row: { flexDirection: 'row', gap: space.sm, alignItems: 'center', flexWrap: 'wrap', width: '100%' },
+  rowWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.md,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: '100%',
+  },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, width: '100%', maxWidth: '100%' },
   chip: {
     minHeight: touchMin,
     paddingHorizontal: space.md,
@@ -533,10 +561,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     justifyContent: 'center',
     backgroundColor: colors.surface,
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   chipOn: { borderColor: colors.text, backgroundColor: colors.background },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  actionChip: { minHeight: touchMin, justifyContent: 'center' },
+  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text, flexShrink: 1 },
+  actionChip: { minHeight: touchMin, justifyContent: 'center', maxWidth: '100%', flexShrink: 1 },
   input: {
     minHeight: touchMin,
     borderWidth: 1,
@@ -550,8 +580,9 @@ const styles = StyleSheet.create({
     width: '100%' as unknown as number,
     maxWidth: '100%' as unknown as number,
     minWidth: 0,
-    // RN Web: include padding/border in width so fields don't clip card edges.
-    ...( { boxSizing: 'border-box' } as object ),
+    flexShrink: 1,
+    // RN Web: include padding/border in width so fields don't clip card edges (Q-04 / #75).
+    ...({ boxSizing: 'border-box' } as object),
   },
   paste: { minHeight: 160, paddingVertical: space.md },
   name: { flex: 1, minWidth: 0 },
@@ -567,6 +598,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     width: '100%',
     maxWidth: '100%',
+    alignSelf: 'stretch',
     overflow: 'hidden',
   },
   manualCard: {
@@ -578,14 +610,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     width: '100%',
     maxWidth: '100%',
+    alignSelf: 'stretch',
+    overflow: 'hidden',
   },
   add: { fontSize: type.body, fontWeight: '700', color: colors.accent },
-  link: { fontSize: type.caption, fontWeight: '700', color: colors.accent },
-  hint: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 20 },
-  meta: { fontSize: type.caption, color: colors.textSecondary },
-  ocrBusy: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  summary: { fontSize: type.body, fontWeight: '600', color: colors.text },
-  warn: { fontSize: type.caption, color: colors.textMuted },
-  error: { color: colors.danger, fontSize: type.caption },
+  link: { fontSize: type.caption, fontWeight: '700', color: colors.accent, flexShrink: 1 },
+  hint: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 20, flexShrink: 1 },
+  meta: { fontSize: type.caption, color: colors.textSecondary, flexShrink: 1 },
+  ocrBusy: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
+  summary: { fontSize: type.body, fontWeight: '600', color: colors.text, flexShrink: 1 },
+  warn: { fontSize: type.caption, color: colors.textMuted, flexShrink: 1 },
+  error: { color: colors.danger, fontSize: type.caption, flexShrink: 1 },
   back: { fontSize: type.body, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
 });
