@@ -179,6 +179,31 @@ test('scoreEatNow prefers last logged portion over remaining sizing', () => {
   assert.equal(noLast.suggestedGrams, suggestEatNowPortionGrams(per100, remaining));
 });
 
+test('scoreEatNow explanation never claims fit when remaining unknown', () => {
+  const per100 = { kcal: 121, protein: 17, fat: 5, carbs: 3 };
+  const [c] = scoreEatNow(
+    [{ id: 'p1', kind: 'product', title: 'Творог', per100, prepMinutes: 2 }],
+    { energyKcal: null, proteinG: null, fatG: null, carbG: null, incomplete: true },
+  );
+  assert.equal(c.fitScore, null);
+  assert.match(c.explanation, /Без сравнения с остатком дня/);
+  assert.ok(!/укладыва/i.test(c.explanation));
+
+  const [batch] = scoreEatNow(
+    [
+      {
+        id: 'b1',
+        kind: 'cooked_batch',
+        title: 'Партия каши',
+        per100,
+        prepMinutes: 5,
+      },
+    ],
+    { energyKcal: 500, proteinG: 30, fatG: 20, carbG: 40, incomplete: false },
+  );
+  assert.match(batch.explanation, /Уже готово/);
+});
+
 test('usableLastGrams rejects invalid values (unknown ≠ 0)', () => {
   const { usableLastGrams } = mods['domain/scoreEatNow'];
   assert.equal(usableLastGrams(null), null);

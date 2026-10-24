@@ -1,6 +1,6 @@
 # Known issues — Friends Beta
 
-Last updated: 2026-10-24 · [#124](https://github.com/Alexkucepalov/momentum/issues/124) after #121/#123
+Last updated: 2026-10-24 · [#127](https://github.com/Alexkucepalov/momentum/issues/127) after #121–#126
 
 ## Fixed in #121 (merged)
 
@@ -28,12 +28,21 @@ Last updated: 2026-10-24 · [#124](https://github.com/Alexkucepalov/momentum/iss
 | Catalog cards oversized | Denser Food catalog rows |
 | Macro targets vs 4/9/4 unexplained | Soft Profile hint; goals stay independent |
 
+## Fixed / improved in #127
+
+| Issue | Fix |
+|-------|-----|
+| Add Food search dead-end | Empty → manual / quick actions |
+| Portion confirm unclear grams | Primary CTA «Добавить N г» |
+| Eat Now overclaims fit | Explanation: no day remaining compare / incomplete KBJU / already ready |
+| Empty week draft weak | EmptyState with rebuild + Eat Now |
+
 ## Open / accepted for beta
 
 | Issue | Severity | Notes |
 |-------|----------|-------|
 | Android device Pass not run | Blocker | #92/#93/#38 needs-human |
-| Add Food multi-path still denser than ideal wireframe | P1 | Unified sheet exists; further simplify post-device feedback |
+| Add Food multi-path still denser than ideal wireframe | P1 | Search miss now actionable; further simplify post-device |
 | Week menu generator repeats | P2 | Prefer manual edit for beta |
 | Expo Web screenshots only for visual pack | Info | Not Android evidence |
 

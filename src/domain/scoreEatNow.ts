@@ -179,20 +179,26 @@ function explanationFor(
   input: EatNowCandidateInput,
   matched: EatNowFilterId[],
   fromLastPortion: boolean,
+  opts: { fitScore: number | null; remainingComparable: boolean },
 ): string {
   const parts: string[] = [];
+  if (input.kind === 'cooked_batch') parts.push('Уже готово');
   if (fromLastPortion) parts.push('Как в прошлый раз');
   if (matched.includes('no_cook')) parts.push('Без готовки');
   else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
     parts.push('Быстрый вариант');
   } else if (matched.includes('more_protein')) {
     parts.push('С акцентом на белок');
-  } else if (input.kind === 'cooked_batch') {
-    parts.push('Готовая партия');
   } else if (input.kind === 'recipe') {
     parts.push('Из ваших рецептов');
-  } else {
+  } else if (input.kind !== 'cooked_batch') {
     parts.push('Из ваших продуктов');
+  }
+  // Never claim a KBJU fit when remaining or item macros cannot be compared.
+  if (!opts.remainingComparable) {
+    parts.push('Без сравнения с остатком дня');
+  } else if (opts.fitScore === null) {
+    parts.push('КБЖУ неполные — точный fit недоступен');
   }
   return parts.join(' · ');
 }
@@ -234,9 +240,8 @@ export function scoreEatNow(
     }
 
     const macros = nutritionToMacros(n);
-    const fitScore = hasAnyKnownRemaining(remaining)
-      ? computeFitScore(macros, remaining)
-      : null;
+    const remainingComparable = hasAnyKnownRemaining(remaining);
+    const fitScore = remainingComparable ? computeFitScore(macros, remaining) : null;
 
     out.push({
       id: c.id,
@@ -252,7 +257,10 @@ export function scoreEatNow(
       prepMinutes: c.prepMinutes,
       filtersMatched: matched,
       fitScore,
-      explanation: explanationFor(c, matched, last !== null),
+      explanation: explanationFor(c, matched, last !== null, {
+        fitScore,
+        remainingComparable,
+      }),
     });
   }
 

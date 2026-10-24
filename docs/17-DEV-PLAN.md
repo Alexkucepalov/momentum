@@ -119,8 +119,8 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 | Priority | Issue | Acceptance (кратко) |
 |----------|-------|---------------------|
-| ★ | [#124](https://github.com/Alexkucepalov/momentum/issues/124) Friends Beta P1 | Import-text draft persist, catalog densify, profile macro hint |
-| — | ~~[#122](https://github.com/Alexkucepalov/momentum/issues/122)~~ / ~~[#120](https://github.com/Alexkucepalov/momentum/issues/120)~~ | Done (#123 / #121) |
+| ★ | [#127](https://github.com/Alexkucepalov/momentum/issues/127) Friends Beta P1 | Add Food empty CTA, portion grams label, Eat Now explain |
+| — | ~~[#124](https://github.com/Alexkucepalov/momentum/issues/124)~~ / ~~[#122](https://github.com/Alexkucepalov/momentum/issues/122)~~ / ~~[#120](https://github.com/Alexkucepalov/momentum/issues/120)~~ | Done (#125 / #123 / #121) |
 | 2 | [#92](https://github.com/Alexkucepalov/momentum/issues/92) / [#93](https://github.com/Alexkucepalov/momentum/issues/93) | Device gates — `needs-human` |
 | — | ~~[#116](https://github.com/Alexkucepalov/momentum/issues/116)~~ / ~~[#114](https://github.com/Alexkucepalov/momentum/issues/114)~~ | Done (#117 / #115) |
 | — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
