@@ -134,6 +134,8 @@ export type WeightEntry = {
   weighedAt: string;
   kg: number;
   createdAt: string;
+  /** Soft-delete; absent/null = active (legacy snapshots). */
+  deletedAt?: string | null;
 };
 
 export type HabitCheck = {

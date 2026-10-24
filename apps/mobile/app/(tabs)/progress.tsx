@@ -114,6 +114,25 @@ export default function ProgressScreen() {
     }
   };
 
+  const onDeleteWeight = (id: string, kg: number) => {
+    Alert.alert('Удалить запись?', `${kg} кг исчезнет из истории и графика.`, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: () => {
+          try {
+            repo.softDeleteWeight(id);
+            refresh();
+            showFlash('Запись веса удалена');
+          } catch (e) {
+            Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалено');
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={styles.root}>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -165,7 +184,10 @@ export default function ProgressScreen() {
                   : 'добавь первое значение — это наблюдение, не цель'}
               </Text>
 
-              <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
+              <WeightSparkline
+                weightsNewestFirst={weights.map((w) => w.kg)}
+                entriesNewestFirst={weights.map((w) => ({ kg: w.kg, weighedAt: w.weighedAt }))}
+              />
 
               <TextInput
                 value={kgRaw}
@@ -215,10 +237,25 @@ export default function ProgressScreen() {
                 <SectionHeader title="История веса" />
                 {weights.map((w) => (
                   <View key={w.id} style={styles.weightRow}>
-                    <Text style={styles.weightKg}>{w.kg} кг</Text>
-                    <Text style={styles.weightDate}>
-                      {new Date(w.weighedAt).toLocaleDateString('ru-RU')}
-                    </Text>
+                    <View style={styles.weightMeta}>
+                      <Text style={styles.weightKg}>{w.kg} кг</Text>
+                      <Text style={styles.weightDate}>
+                        {new Date(w.weighedAt).toLocaleString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => onDeleteWeight(w.id, w.kg)}
+                      style={({ pressed }) => [styles.deleteBtn, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Удалить запись ${w.kg} килограмм`}
+                    >
+                      <Text style={styles.deleteText}>Удалить</Text>
+                    </Pressable>
                   </View>
                 ))}
               </View>
@@ -395,6 +432,8 @@ const styles = StyleSheet.create({
   weightRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: space.md,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -402,8 +441,15 @@ const styles = StyleSheet.create({
     padding: space.md,
     marginBottom: space.sm,
   },
+  weightMeta: { flex: 1, minWidth: 0, gap: 2 },
   weightKg: { fontWeight: '700', color: colors.text },
-  weightDate: { color: colors.textSecondary },
+  weightDate: { color: colors.textSecondary, fontSize: type.caption },
+  deleteBtn: {
+    minHeight: touchMin,
+    justifyContent: 'center',
+    paddingHorizontal: space.sm,
+  },
+  deleteText: { fontWeight: '700', color: colors.danger, fontSize: type.caption },
   foodRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
