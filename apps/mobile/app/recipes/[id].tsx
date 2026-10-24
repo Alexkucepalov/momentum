@@ -90,11 +90,7 @@ export default function RecipeDetailScreen() {
             style={styles.hero}
             accessibilityLabel={`Фото ${recipe.name}`}
           />
-        ) : (
-          <View style={[styles.hero, styles.heroEmpty]}>
-            <Ionicons name="restaurant-outline" size={40} color={colors.textMuted} />
-          </View>
-        )}
+        ) : null}
 
         <Text style={styles.title} accessibilityRole="header">
           {recipe.name}
@@ -253,10 +249,9 @@ const styles = StyleSheet.create({
   missingTitle: { fontSize: type.title, fontWeight: '700', color: colors.text },
   hero: {
     width: '100%',
-    height: 220,
+    height: 180,
     backgroundColor: colors.accentSoft,
   },
-  heroEmpty: { alignItems: 'center', justifyContent: 'center' },
   title: {
     fontSize: type.hero - 4,
     fontWeight: '800',

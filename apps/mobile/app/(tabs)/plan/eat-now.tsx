@@ -280,15 +280,38 @@ export default function EatNowScreen() {
         </View>
 
         {candidates.length === 0 && query.trim() ? (
-          <Text style={styles.noMatch}>Ничего не нашлось по «{query.trim()}»</Text>
+          <EmptyState
+            compact
+            icon="search-outline"
+            title={`Ничего по «${query.trim()}»`}
+            body={
+              filter !== 'all'
+                ? 'Сбросьте фильтр или поищите в каталоге дневника — подбор не выдумывает КБЖУ.'
+                : 'Проверьте название, откройте каталог в Питании или добавьте свой продукт.'
+            }
+            actionLabel={filter !== 'all' ? 'Сбросить фильтр' : 'Мои продукты'}
+            onAction={() => {
+              if (filter !== 'all') setFilter('all');
+              else router.push('/plan/my-products' as Href);
+            }}
+            secondaryActionLabel="Каталог в Питании"
+            onSecondaryAction={() => router.push('/(tabs)/food' as Href)}
+          />
         ) : candidates.length === 0 ? (
           <EmptyState
             compact
             icon="nutrition-outline"
             title="Нет подходящих вариантов"
-            body="Добавьте рецепты или свои продукты с известными КБЖУ — тогда лента заполнится."
-            actionLabel="Мои продукты"
-            onAction={() => router.push('/plan/my-products' as Href)}
+            body={
+              filter !== 'all'
+                ? 'Текущий фильтр ничего не оставил. Сбросьте его или добавьте рецепт / свой продукт.'
+                : 'Добавьте рецепты или свои продукты — подбор сравнивает только известные КБЖУ, нули не подставляет.'
+            }
+            actionLabel={filter !== 'all' ? 'Сбросить фильтр' : 'Мои продукты'}
+            onAction={() => {
+              if (filter !== 'all') setFilter('all');
+              else router.push('/plan/my-products' as Href);
+            }}
             secondaryActionLabel="К рецептам"
             onSecondaryAction={() => router.push('/recipes')}
           />
@@ -477,7 +500,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text, paddingVertical: space.sm },
-  noMatch: { fontSize: type.body, color: colors.textSecondary, paddingVertical: space.md },
   sectionLabel: {
     fontSize: type.caption,
     fontWeight: '700',

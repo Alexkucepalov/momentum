@@ -1,8 +1,8 @@
-build_date: 2026-10-24T12:04:13Z
+build_date: 2026-10-24T12:40:35Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 58052938
-sha256: 042eebfe5b11e4624a8a597f329208544d32513f428dbe062604fa9132b6d4ba
-git: 69b6198
-includes: Plan tab + My products v2 + Today Eat Now CTA (#117/#116); pantry/shop/budget repo API removed (#115/#114); OCR removed; Eat Now 2.0; arm64-only
-size_note: ~210 MB → 134 MB (OCR) → 58 MB (arm64-only dogfood)
+bytes: 58053594
+sha256: 06afbc8301937f6b9f0bfa4105ced48d32f036d994052c11e2a08fa04f1ea795
+git: 13822c2
+includes: Friends Beta #121 P0 + #122 recipe densify / Eat Now empty CTAs / tester backup notes; arm64-only
+size_note: ~58 MB arm64-only dogfood
 dogfood_gate: pending
