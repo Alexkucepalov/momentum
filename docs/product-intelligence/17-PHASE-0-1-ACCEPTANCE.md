@@ -172,7 +172,8 @@ Android gate **does not** block wireframes for Phase 1.
 | UX-03 | Cursor spec PR | — |
 | FI-01 | Spec only (Phase 2) | After diary correctness confidence |
 
-**FI-01 preview (spec only now):** portion suggestion respects remaining macros or shows explicit exceed; no invented nutrition; tests for null targets / small remainder. Full AC in later Phase 2 doc.
+**FI-01 preview (spec only now):** portion suggestion respects remaining macros or shows explicit exceed; no invented nutrition; tests for null targets / small remainder.  
+Full spec: [`18-FI-01-EAT-NOW-PORTION-SPEC.md`](./18-FI-01-EAT-NOW-PORTION-SPEC.md).
 
 ---
 
