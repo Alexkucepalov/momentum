@@ -143,6 +143,8 @@ export type FoodRepository = {
   setWaterTargetMl(ml: number | null): Profile;
   setHeightCm(cm: number | null): Profile;
   setDailyNutritionTargets(targets: DailyNutritionTargets): Profile;
+  /** UX-03: skip first-run goals without inventing targets. */
+  dismissTargetsOnboardingPrompt(): Profile;
   startDogfood(dateLocal: string): Profile;
   clearDogfood(): Profile;
   dogfoodStatus(dateLocal: string): DogfoodStatus;
@@ -521,6 +523,7 @@ function normalizeProfile(raw: StoreSnapshotAny['profile']): Profile {
     dailyProteinG: raw.dailyProteinG ?? null,
     dailyFatG: raw.dailyFatG ?? null,
     dailyCarbG: raw.dailyCarbG ?? null,
+    targetsPromptDismissedAt: raw.targetsPromptDismissedAt ?? null,
   };
 }
 
@@ -898,6 +901,7 @@ export function createMemoryFoodRepository(seed?: {
     dailyProteinG: null,
     dailyFatG: null,
     dailyCarbG: null,
+    targetsPromptDismissedAt: null,
   };
   const products = new Map<string, FoodProduct>((snap?.products ?? []).map((p) => [p.id, { ...p }]));
   mergeCommonFoodCatalog(products);
@@ -1116,6 +1120,13 @@ export function createMemoryFoodRepository(seed?: {
       profile.dailyFatG = fields.fatG;
       profile.dailyCarbG = fields.carbG;
       notify();
+      return { ...profile };
+    },
+    dismissTargetsOnboardingPrompt() {
+      if (!profile.targetsPromptDismissedAt) {
+        profile.targetsPromptDismissedAt = nowIso();
+        notify();
+      }
       return { ...profile };
     },
     startDogfood(dateLocal) {
