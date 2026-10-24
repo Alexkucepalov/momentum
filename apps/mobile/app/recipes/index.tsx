@@ -197,18 +197,10 @@ function RecipeCard({
     >
       {recipe.photoUri ? (
         <Image source={{ uri: recipe.photoUri }} style={styles.thumb} />
-      ) : (
-        <View style={[styles.thumb, styles.thumbEmpty, fromArchive && styles.thumbArchive]}>
-          <Ionicons
-            name={fromArchive ? 'library-outline' : 'restaurant-outline'}
-            size={20}
-            color={colors.textMuted}
-          />
-        </View>
-      )}
+      ) : null}
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
-          <Text style={styles.cardTitle} numberOfLines={2}>
+          <Text style={styles.cardTitle} numberOfLines={3}>
             {recipe.name}
           </Text>
           {fromArchive ? (
@@ -219,13 +211,10 @@ function RecipeCard({
           ) : null}
         </View>
         <Text style={styles.cardMeta} numberOfLines={1}>
-          {recipe.cookedYieldG} г готового · {ingredients.length} ингр.
+          {recipe.cookedYieldG} г · {ingredients.length} ингр.
           {hasManual ? ' · КБЖУ вручную' : ''}
         </Text>
         <MacroStrip {...per100} />
-      </View>
-      <View style={styles.chevron}>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </View>
     </Pressable>
   );
@@ -308,22 +297,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.md,
-    marginBottom: space.sm,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    marginBottom: space.xs,
     minHeight: touchMin,
   },
   thumb: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md,
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
     backgroundColor: colors.accentSoft,
   },
-  thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  thumbArchive: { backgroundColor: colors.accentSoft },
-  cardBody: { flex: 1, gap: 2 },
+  cardBody: { flex: 1, gap: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   cardTitle: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text, lineHeight: 20 },
   badge: {
@@ -337,11 +325,5 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
   cardMeta: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 16 },
-  chevron: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   pressed: { opacity: 0.85 },
 });
