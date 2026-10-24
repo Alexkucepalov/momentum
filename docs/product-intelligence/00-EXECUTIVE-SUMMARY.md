@@ -68,9 +68,9 @@ Persistence: in-memory domain repository + **full JSON snapshot** in SQLite (`ap
 
 ## Read next
 
-1. [`14-CHATGPT-HANDOFF.md`](./14-CHATGPT-HANDOFF.md) — self-contained brief for external AI  
-2. [`01-FEATURE-INVENTORY.md`](./01-FEATURE-INVENTORY.md) — capability catalog  
-3. [`11-ISSUE-REGISTER.md`](./11-ISSUE-REGISTER.md) — problem registry  
-4. [`12-FOUNDER-DECISIONS.md`](./12-FOUNDER-DECISIONS.md) — decisions only founder can take  
+1. [`15-MOMENTUM-2.0-VISION-AND-ROADMAP.md`](./15-MOMENTUM-2.0-VISION-AND-ROADMAP.md) — **approved** 12-week Food Intelligence strategy (2026-10-24)  
+2. [`16-TARGET-IA.md`](./16-TARGET-IA.md) · [`17-PHASE-0-1-ACCEPTANCE.md`](./17-PHASE-0-1-ACCEPTANCE.md) — next execution specs  
+3. [`14-CHATGPT-HANDOFF.md`](./14-CHATGPT-HANDOFF.md) — audit brief for external AI  
+4. [`12-FOUNDER-DECISIONS.md`](./12-FOUNDER-DECISIONS.md) — D1–D10 (D2 still needs explicit tab cutover confirm)  
 
-**This pack does not approve a roadmap.** Priorities in `13-RECOMMENDED-PRIORITIES.md` are PROPOSED only.
+Audit `00`–`14` = diagnostic baseline. Strategy `15`+ = forward plan.

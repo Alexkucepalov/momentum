@@ -1,90 +1,40 @@
-# Founder Decisions Required
+# Founder Decisions
 
-**HEAD:** `1da2d0ac`  
-These items **must not** be decided by agents alone (AGENTS.md + product risk).
+**Updated:** 2026-10-24 · Source: [`15-MOMENTUM-2.0-VISION-AND-ROADMAP.md`](./15-MOMENTUM-2.0-VISION-AND-ROADMAP.md)  
+Agents must not override **Approved** rows without a new founder note.
 
----
-
-## D1 — Product focus vs surface area
-
-**Question:** For next 4–8 weeks, is Momentum primarily (A) fastest honest food diary, (B) full FI planner suite, or (C) balanced dogfood of both?  
-**Why founder:** Determines hide/defer of Plan hub depth, Challenges, Stores.  
-**Inputs:** `09-PRODUCT-GAPS.md`, Visual Audit density.
+| Status | Meaning |
+|--------|---------|
+| **Approved** | Strategy locked for 12-week horizon |
+| **Propose approve** | Recommended; confirm before tab cutover PR |
+| **Standing policy** | Default unless founder changes |
 
 ---
 
-## D2 — Information architecture change
+## Decision log
 
-**Question:** Approve unifying Today/Food log paths and/or demoting Plan hub / Stores?  
-**Why:** Navigation rewrite affects all dogfood muscle memory.  
-**Inputs:** `03-INFORMATION-ARCHITECTURE.md`, PI-UX-01/02/08.
-
----
-
-## D3 — Retail catalogs & pricing
-
-**Question:** Pursue business-development for METRO/Samokat/Lavka (or other) official data, keep seed+purchase-only, or drop Stores entirely?  
-**Why:** Legal/ToS, credentials, scrape ban.  
-**Inputs:** FI retailer docs, PI-EXT-01.
-
----
-
-## D4 — OCR positioning
-
-**Question:** Market on-device screenshot OCR as core moat, keep experimental, or invest in accuracy eval budget?  
-**Why:** APK size (~OCR models), first-run download, user trust.  
-**Inputs:** #84/#85, PI-ARCH-05, PI-MISS-04.
+| ID | Topic | Decision | Status | Date |
+|----|-------|----------|--------|------|
+| **D1** | Product focus | **Food Intelligence** — not MFP clone, not recipe encyclopedia, not delivery competitor | **Approved** | 2026-10-24 |
+| **D2** | Navigation | Five tabs: Today · Food · **Plan** · Progress · Profile. Activity leaves tab bar → Progress + quick actions. No 6th tab. | **Propose approve** | 2026-10-24 |
+| **D3** | Store catalogs | Own data from purchases + allowed sources; partner/BD research separate; **no scrape** | **Approved** | 2026-10-24 |
+| **D4** | OCR | Keep **on-device**; Android accuracy before user-facing promises | **Approved** | 2026-10-24 |
+| **D5** | Analytics | **Local diagnostics only**; no off-device telemetry SDK | **Approved** | 2026-10-24 |
+| **D6** | Persistence | **No** snapshot→relational migration without measurements + new decision | **Approved** | 2026-10-24 |
+| **D7** | Production | **No** Play/EAS production until Android quality gate | **Approved** | 2026-10-24 |
+| **D8** | Dispatcher | Quality automation may be considered separately; **no auto-merge** | **Approved** | 2026-10-24 |
+| **D9** | Challenges | Keep data; **lower visual priority** | **Approved** | 2026-10-24 |
+| **D10** | Budget honesty | Show incomplete prices **explicitly**; never treat unknown as zero | **Approved** | 2026-10-24 |
 
 ---
 
-## D5 — Analytics / crash reporting
+## Open for explicit confirm
 
-**Question:** Allow any off-device telemetry? If yes, what red lines?  
-**Default recommendation:** local-only until explicit yes (`10-ANALYTICS-STRATEGY.md`).
-
----
-
-## D6 — Schema / persistence migration
-
-**Question:** Approve research spike or implementation to leave full-snapshot JSON for relational/incremental persist?  
-**Why:** Destructive migration risk; data loss.  
-**Inputs:** PI-ARCH-01, #36 results first.
+1. **D2** — Approve Plan-tab cutover before UX-04 implementation ([`16-TARGET-IA.md`](./16-TARGET-IA.md)).  
+2. Wireframe sign-off for Today fold + Plan landing (Phase 1).
 
 ---
 
-## D7 — Production release
+## Historical context
 
-**Question:** When to Play/EAS production?  
-**Gate:** Android dogfood Pass #36–#38 + Visual Audit A + privacy checklist.  
-**Agents must not** ship production.
-
----
-
-## D8 — Automation / Dispatcher
-
-**Question:** Enable autonomous issue queue / auto-merge?  
-**Current:** `DISPATCH_ENABLED=false`. Keep off until quality gates green.
-
----
-
-## D9 — Challenges & secondary fitness
-
-**Question:** Keep, hide, or remove Challenges / expand activity?  
-**Why:** Tone (no shame) + attention budget.
-
----
-
-## D10 — Budget honesty bar
-
-**Question:** Is “incomplete prices” acceptable with explicit UI, or hide budget until priced coverage threshold?  
-**Inputs:** PI-UX-06, PI-DATA-02.
-
----
-
-## Decision log (fill in workshops)
-
-| ID | Decision | Date | Notes |
-|----|----------|------|-------|
-| D1 | | | |
-| D2 | | | |
-| … | | | |
+Pre-strategy open questions lived in audit-only form; superseded by §10 of vision doc. Audit evidence unchanged in `00`–`14`.

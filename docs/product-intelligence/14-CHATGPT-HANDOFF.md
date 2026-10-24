@@ -263,9 +263,9 @@ Analytics (local-only plan): [`10-ANALYTICS-STRATEGY.md`](./10-ANALYTICS-STRATEG
 ## 17. How to use this pack
 
 1. Read Executive Summary [`00-EXECUTIVE-SUMMARY.md`](./00-EXECUTIVE-SUMMARY.md)  
-2. Use this handoff for strategy chat  
-3. Dive into register `11` + decisions `12`  
-4. **Do not** treat `13` as approved roadmap  
-5. Next human step: founder workshop → then file GitHub issues intentionally  
+2. Use this handoff as **AS-IS audit** context  
+3. Forward plan is now locked in [`15-MOMENTUM-2.0-VISION-AND-ROADMAP.md`](./15-MOMENTUM-2.0-VISION-AND-ROADMAP.md)  
+4. IA target [`16`](./16-TARGET-IA.md) · Phase 0–1 AC [`17`](./17-PHASE-0-1-ACCEPTANCE.md) · decisions [`12`](./12-FOUNDER-DECISIONS.md)  
+5. File GitHub issues from Phase 0–1 batch only; do not auto-implement entire roadmap  
 
-**Intelligence stage ends here.** Implementation waits for joint prioritization.
+**Audit stage complete. Strategy approved. Execution = one issue at a time from first batch.**
