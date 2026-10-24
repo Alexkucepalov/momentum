@@ -15,12 +15,14 @@ export default function PlanLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'План питания' }} />
       <Stack.Screen name="eat-now" options={{ title: 'Что съесть сейчас?' }} />
-      <Stack.Screen name="pantry" options={{ title: 'Запасы дома' }} />
+      <Stack.Screen name="my-products" options={{ title: 'Мои продукты' }} />
       <Stack.Screen name="week" options={{ title: 'Меню на неделю' }} />
-      <Stack.Screen name="shop" options={{ title: 'Мои покупки' }} />
-      <Stack.Screen name="budget" options={{ title: 'Бюджет питания' }} />
-      <Stack.Screen name="stores" options={{ title: 'Магазины' }} />
-      <Stack.Screen name="receipt" options={{ title: 'Импорт покупки' }} />
+      {/* Soft-removed surfaces — deep links redirect to hub (ADR-009). */}
+      <Stack.Screen name="pantry" options={{ title: 'План' }} />
+      <Stack.Screen name="shop" options={{ title: 'План' }} />
+      <Stack.Screen name="budget" options={{ title: 'План' }} />
+      <Stack.Screen name="stores" options={{ title: 'План' }} />
+      <Stack.Screen name="receipt" options={{ title: 'План' }} />
     </Stack>
   );
 }

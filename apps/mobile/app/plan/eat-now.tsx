@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { type Href, useRouter } from 'expo-router';
 
 import {
   eatNowInputsFromCookedBatches,
@@ -9,11 +10,7 @@ import {
 } from '../../../../src/domain/buildEatNowInputs';
 import { recipeAtHome, selectEatNowProducts } from '../../../../src/domain/eatNowPool';
 import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
-import {
-  formatPantryCoverageBadge,
-  recipePantryCoverage,
-} from '../../../../src/domain/recipePantryCoverage';
-import { hasAnyKnownRemaining, remainingMacros } from '../../../../src/domain/remainingMacros';
+import { remainingMacros } from '../../../../src/domain/remainingMacros';
 import {
   scoreEatNow,
   type EatNowCandidate,
@@ -23,6 +20,7 @@ import type { MealSlot } from '../../../../src/storage/types';
 import { portion } from '../../../../src/domain/nutrition';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
+import { MacroStrip } from '@/src/components/MacroStrip';
 import { MealChips } from '@/src/components/MealChips';
 import {
   ConfirmPortionSheet,
@@ -33,9 +31,7 @@ import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const FILTERS: { id: EatNowFilterId; label: string }[] = [
-  { id: 'all', label: 'Подходящие' },
-  { id: 'at_home', label: 'Дома' },
-  { id: 'to_buy', label: 'Купить' },
+  { id: 'all', label: 'Все' },
   { id: 'no_cook', label: 'Без готовки' },
   { id: 'quick_15', label: 'До 15 мин' },
   { id: 'more_protein', label: 'Больше белка' },
@@ -48,51 +44,16 @@ const MEAL_LABELS: Record<MealSlot, string> = {
   snack: 'Перекус',
 };
 
-function fmtMacro(n: number | null, suffix: string): string | null {
-  if (n === null) return null;
-  return `${Math.round(n)}${suffix}`;
+function kindIcon(kind: EatNowCandidate['kind']): keyof typeof Ionicons.glyphMap {
+  if (kind === 'cooked_batch') return 'file-tray-outline';
+  if (kind === 'recipe') return 'restaurant-outline';
+  return 'nutrition-outline';
 }
 
-function RemainingStrip({
-  energyKcal,
-  proteinG,
-  fatG,
-  carbG,
-  incomplete,
-}: {
-  energyKcal: number | null;
-  proteinG: number | null;
-  fatG: number | null;
-  carbG: number | null;
-  incomplete: boolean;
-}) {
-  const macros = [
-    fmtMacro(proteinG, ' г Б'),
-    fmtMacro(fatG, ' г Ж'),
-    fmtMacro(carbG, ' г У'),
-  ].filter(Boolean);
-
-  return (
-    <View
-      style={styles.remaining}
-      accessibilityRole="summary"
-      accessibilityLabel={
-        energyKcal === null
-          ? 'Остаток калорий неизвестен'
-          : `Остаток ${Math.round(energyKcal)} килокалорий${macros.length ? `, ${macros.join(', ')}` : ''}`
-      }
-    >
-      <Text style={styles.remainingLabel}>Условный остаток на сегодня</Text>
-      <Text style={styles.remainingHero}>
-        {energyKcal === null ? 'ккал неизвестны' : `${Math.round(energyKcal)} ккал`}
-      </Text>
-      {macros.length > 0 ? <Text style={styles.remainingMacros}>{macros.join(' · ')}</Text> : null}
-      {incomplete ? (
-        <Text style={styles.hint}>Часть макросов неизвестна — не подставляем нули.</Text>
-      ) : null}
-      <Text style={styles.hint}>Остаток — ориентир, не запрет.</Text>
-    </View>
-  );
+function kindLabel(kind: EatNowCandidate['kind']): string {
+  if (kind === 'cooked_batch') return 'Партия';
+  if (kind === 'recipe') return 'Рецепт';
+  return 'Продукт';
 }
 
 export default function EatNowScreen() {
@@ -137,14 +98,13 @@ export default function EatNowScreen() {
   const candidates = useMemo(() => {
     const recipes = repo.listRecipes();
     const products = repo.listProducts();
-    const pantry = repo.listPantryItems();
     const frequentIds = new Set(repo.listFrequentProducts(24).map((p) => p.id));
     const batches = repo.listCookedBatches({ onlyRemaining: true });
     const batchRecipeIds = new Set(batches.map((b) => b.recipeId));
-    const { atHomeIds, usefulProducts, buyProducts } = selectEatNowProducts({
+    const { usefulProducts } = selectEatNowProducts({
       recipes,
       products,
-      pantry,
+      pantry: [],
       frequentIds,
       batchRecipeIds,
     });
@@ -154,44 +114,27 @@ export default function EatNowScreen() {
       atHome: false,
     }).map((c) => {
       const fromBatch = recipeAtHome(c.id, batchRecipeIds);
-      const ings = repo.getRecipeIngredients(c.id);
-      const coverage = recipePantryCoverage(ings, pantry);
-      const badge = formatPantryCoverageBadge(coverage);
-      const home = fromBatch || coverage.fullyCovered;
       return {
         ...c,
-        atHome: home,
-        toBuy: !home,
-        prepMinutes: fromBatch ? 8 : home ? 15 : 25,
-        pantryRatio: coverage.ratio,
-        coverageHint: badge,
+        atHome: fromBatch,
+        toBuy: false,
+        prepMinutes: fromBatch ? 8 : c.prepMinutes,
+        pantryRatio: null,
+        coverageHint: null,
       };
     });
 
     const usefulInputs = eatNowInputsFromProducts(usefulProducts, {
-      atHome: (id) => atHomeIds.has(id),
-    }).map((c) => ({ ...c, toBuy: !c.atHome }));
-
-    const buyInputs = eatNowInputsFromProducts(buyProducts, { atHome: false }).map((c) => ({
-      ...c,
-      toBuy: true,
-      prepMinutes: 5,
-    }));
+      atHome: () => false,
+    }).map((c) => ({ ...c, toBuy: false, coverageHint: null, pantryRatio: null }));
 
     const batchInputs = eatNowInputsFromCookedBatches(
       batches,
       (id) => repo.getRecipe(id),
       (id) => repo.getRecipeIngredients(id),
-    ).map((c) => ({ ...c, toBuy: false }));
+    ).map((c) => ({ ...c, toBuy: false, coverageHint: null, pantryRatio: null }));
 
-    const pool =
-      filter === 'to_buy'
-        ? [...buyInputs, ...recipeInputs.filter((r) => r.toBuy)]
-        : filter === 'at_home'
-          ? [...batchInputs, ...recipeInputs.filter((r) => r.atHome), ...usefulInputs.filter((p) => p.atHome)]
-          : [...batchInputs, ...recipeInputs, ...usefulInputs];
-
-    // Dedupe by kind+id (buy may overlap useful).
+    const pool = [...batchInputs, ...recipeInputs, ...usefulInputs];
     const seen = new Set<string>();
     const deduped = pool.filter((c) => {
       const k = `${c.kind}:${c.id}`;
@@ -242,16 +185,12 @@ export default function EatNowScreen() {
     }
   };
 
-  const noTargets =
-    profile.dailyEnergyKcal === null &&
-    profile.dailyProteinG === null &&
-    profile.dailyFatG === null &&
-    profile.dailyCarbG === null;
-
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <RemainingStrip {...remaining} />
+        <Text style={styles.lead}>
+          Подбор из рецептов, готовых партий и ваших продуктов — без запасов и «добора» КБЖУ.
+        </Text>
 
         <Text style={styles.sectionLabel}>Приём пищи</Text>
         <MealChips value={meal} onChange={setMeal} />
@@ -275,38 +214,16 @@ export default function EatNowScreen() {
           })}
         </View>
 
-        {noTargets ? (
-          <EmptyState
-            compact
-            icon="flag-outline"
-            title="Нет дневных целей"
-            body="Задайте КБЖУ в профиле — тогда подбор сможет опираться на остаток. Пока можно листать варианты с известными макросами."
-            actionLabel="В профиль"
-            onAction={() => router.push('/(tabs)/profile')}
-          />
-        ) : null}
-
-        {!hasAnyKnownRemaining(remaining) && !noTargets ? (
-          <EmptyState
-            compact
-            icon="calculator-outline"
-            title="Остаток пока не считается"
-            body="Нужны и цели, и записи за день с известными КБЖУ. Варианты ниже всё равно можно открыть."
-          />
-        ) : null}
-
         {candidates.length === 0 ? (
           <EmptyState
             compact
             icon="nutrition-outline"
             title="Нет подходящих вариантов"
-            body={
-              filter === 'at_home'
-                ? 'Заполни запасы или отметь приготовленную партию — тогда «Дома» заработает.'
-                : 'Нужны рецепты / избранное / частые продукты с известными КБЖУ. Справочник целиком не сваливаем в ленту.'
-            }
-            actionLabel={filter === 'at_home' ? 'К запасам' : 'К рецептам'}
-            onAction={() => router.push(filter === 'at_home' ? '/plan/pantry' : '/recipes')}
+            body="Добавьте рецепты или свои продукты с известными КБЖУ — тогда лента заполнится."
+            actionLabel="Мои продукты"
+            onAction={() => router.push('/plan/my-products' as Href)}
+            secondaryActionLabel="К рецептам"
+            onSecondaryAction={() => router.push('/recipes')}
           />
         ) : (
           <View style={styles.cards} accessibilityRole="list">
@@ -401,26 +318,38 @@ function CandidateCard({
   onDiary: () => void;
   onPlan: () => void;
 }) {
-  const macros = [
-    fmtMacro(c.proteinG, ' г Б'),
-    fmtMacro(c.fatG, ' г Ж'),
-    fmtMacro(c.carbG, ' г У'),
-  ].filter(Boolean);
-
   return (
-    <View style={styles.card} accessibilityRole="summary" accessibilityLabel={c.title}>
-      <View style={styles.cardTop}>
-        <Text style={styles.cardTitle}>{c.title}</Text>
-        {c.prepMinutes !== null ? (
-          <Text style={styles.time}>{c.prepMinutes} мин</Text>
-        ) : null}
+    <View
+      style={styles.card}
+      accessibilityRole="summary"
+      accessibilityLabel={`${kindLabel(c.kind)} ${c.title}`}
+    >
+      <View style={styles.cardRow}>
+        <View style={styles.thumb}>
+          <Ionicons name={kindIcon(c.kind)} size={22} color={colors.textMuted} />
+        </View>
+        <View style={styles.cardBody}>
+          <View style={styles.cardTop}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {c.title}
+            </Text>
+            {c.prepMinutes !== null ? (
+              <Text style={styles.time}>{c.prepMinutes} мин</Text>
+            ) : null}
+          </View>
+          <Text style={styles.cardMeta} numberOfLines={1}>
+            {kindLabel(c.kind)}
+            {c.explanation ? ` · ${c.explanation}` : ''}
+          </Text>
+          <MacroStrip
+            energyKcal={c.energyKcal}
+            proteinG={c.proteinG}
+            fatG={c.fatG}
+            carbG={c.carbG}
+            suffix={` · ${c.suggestedGrams} г`}
+          />
+        </View>
       </View>
-      <Text style={styles.cardReason}>{c.explanation}</Text>
-      <Text style={styles.portion}>
-        {c.suggestedGrams} г
-        {c.energyKcal !== null ? ` · ${Math.round(c.energyKcal)} ккал` : ''}
-        {macros.length ? ` · ${macros.join(' · ')}` : ''}
-      </Text>
       <View style={styles.ctaRow}>
         <Pressable
           onPress={onDiary}
@@ -450,18 +379,11 @@ const styles = StyleSheet.create({
     paddingBottom: space.xxl,
     gap: space.md,
   },
-  remaining: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    gap: space.xs,
+  lead: {
+    fontSize: type.body,
+    color: colors.textSecondary,
+    lineHeight: 22,
   },
-  remainingLabel: { fontSize: type.caption, color: colors.textSecondary, fontWeight: '600' },
-  remainingHero: { fontSize: type.hero, fontWeight: '800', color: colors.text },
-  remainingMacros: { fontSize: type.body, color: colors.text, fontWeight: '600' },
-  hint: { fontSize: type.caption, color: colors.textMuted, marginTop: 2 },
   sectionLabel: {
     fontSize: type.caption,
     fontWeight: '700',
@@ -487,17 +409,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.lg,
-    gap: 4,
+    padding: space.md,
+    gap: space.sm,
     minHeight: touchMin,
   },
+  cardRow: { flexDirection: 'row', gap: space.md },
+  thumb: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardBody: { flex: 1, gap: 4 },
   pressed: { opacity: 0.9 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm },
   cardTitle: { flex: 1, fontSize: type.subtitle, fontWeight: '700', color: colors.text },
   time: { fontSize: type.caption, color: colors.textSecondary, fontWeight: '600' },
-  cardReason: { fontSize: type.caption, color: colors.textSecondary },
-  portion: { fontSize: type.body, color: colors.text, fontWeight: '600', marginTop: 4 },
-  ctaRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
+  cardMeta: { fontSize: type.caption, color: colors.textSecondary },
+  ctaRow: { flexDirection: 'row', gap: space.sm },
   ctaPrimary: {
     flex: 1,
     minHeight: 40,
