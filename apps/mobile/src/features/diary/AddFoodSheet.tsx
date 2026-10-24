@@ -579,6 +579,7 @@ export function AddFoodSheet({
                 <RecipesPanel
                   recipes={recipes}
                   getIngredientCount={(id) => repo.getRecipeIngredients(id).length}
+                  getRecipeIngredients={(id) => repo.getRecipeIngredients(id)}
                   onPickRecipe={(r) => openRecipeConfirm(r)}
                   onQuickAddRecipe={quickAddRecipe}
                   onCreateRecipe={(input) => {

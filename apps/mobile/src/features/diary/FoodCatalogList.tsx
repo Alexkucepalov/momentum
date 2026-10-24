@@ -2,7 +2,16 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 
 import { sortProductsByFrequency } from '../../../../../src/domain/productFrequency';
-import type { FoodEntry, FoodProduct, Recipe } from '../../../../../src/storage/types';
+import {
+  macrosForStrip,
+  nutritionPer100gCooked,
+} from '../../../../../src/domain/recipeNutrition';
+import type {
+  FoodEntry,
+  FoodProduct,
+  Recipe,
+  RecipeIngredient,
+} from '../../../../../src/storage/types';
 import { MacroStrip } from '../../components/MacroStrip';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
@@ -25,6 +34,7 @@ export function FoodCatalogList({
   frequent,
   query,
   recipeIngredientCounts,
+  getRecipeIngredients,
   onAddProduct,
   onAddRecipe,
   onOpenRecipe,
@@ -42,6 +52,8 @@ export function FoodCatalogList({
   query: string;
   /** Optional map recipeId → ingredient count for richer cards. */
   recipeIngredientCounts?: Record<string, number>;
+  /** Required for consistent KBJU (Q-05); falls back to stored per-100g only if omitted. */
+  getRecipeIngredients?: (recipeId: string) => RecipeIngredient[];
   onAddProduct: (p: FoodProduct) => void;
   onAddRecipe: (r: Recipe) => void;
   onOpenRecipe?: (r: Recipe) => void;
@@ -271,7 +283,16 @@ export function FoodCatalogList({
         <View style={styles.block}>
           {filter === 'all' ? <Text style={styles.sub}>Рецепты</Text> : null}
           {filteredRecipes.map((r) => {
-            const ingCount = recipeIngredientCounts?.[r.id] ?? 0;
+            const ings = getRecipeIngredients?.(r.id) ?? [];
+            const ingCount = recipeIngredientCounts?.[r.id] ?? ings.length;
+            const per100 = getRecipeIngredients
+              ? macrosForStrip(nutritionPer100gCooked(r, ings))
+              : {
+                  energyKcal: r.energyKcalPer100g,
+                  proteinG: r.proteinGPer100g,
+                  fatG: r.fatGPer100g,
+                  carbG: r.carbGPer100g,
+                };
             return (
               <View key={r.id} style={styles.card}>
                 <Pressable
@@ -299,12 +320,7 @@ export function FoodCatalogList({
                       Выход {r.cookedYieldG} г
                       {ingCount > 0 ? ` · ${ingCount} ингр.` : ''}
                     </Text>
-                    <MacroStrip
-                      energyKcal={r.energyKcalPer100g}
-                      proteinG={r.proteinGPer100g}
-                      fatG={r.fatGPer100g}
-                      carbG={r.carbGPer100g}
-                    />
+                    <MacroStrip {...per100} />
                   </View>
                 </Pressable>
                 <Pressable

@@ -12,7 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { portion } from '../../../../src/domain/nutrition';
-import { nutritionForRecipePortion } from '../../../../src/domain/recipeNutrition';
+import {
+  nutritionForRecipePortion,
+  nutritionPer100gCooked,
+} from '../../../../src/domain/recipeNutrition';
 import { ConfirmPortionSheet } from '@/src/features/diary/ConfirmPortionSheet';
 import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
@@ -47,7 +50,7 @@ export default function RecipeDetailScreen() {
   const preview = useMemo(() => {
     if (!recipe) return null;
     try {
-      return nutritionForRecipePortion(recipe, ingredients, 100);
+      return nutritionPer100gCooked(recipe, ingredients);
     } catch {
       return null;
     }

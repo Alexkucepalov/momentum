@@ -277,6 +277,7 @@ export default function FoodScreen() {
               frequent={frequent}
               query={query}
               recipeIngredientCounts={recipeIngredientCounts}
+              getRecipeIngredients={(id) => repo.getRecipeIngredients(id)}
               onAddProduct={openProductPortion}
               onAddRecipe={openRecipePortion}
               onOpenRecipe={(r) => router.push(`/recipes/${r.id}`)}
