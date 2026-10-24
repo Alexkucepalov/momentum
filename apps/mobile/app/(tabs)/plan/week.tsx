@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { formatDateRu } from '../../../../src/domain/dateFormatRu';
-import type { MealPlanPeriodDays, MealPlanDiversity } from '../../../../src/domain/mealPlanDraft';
-import { shiftDateLocal } from '../../../../src/domain/repeatMeal';
-import { nutritionForRecipePortion } from '../../../../src/domain/recipeNutrition';
-import type { MealSlot, PlannedMeal } from '../../../../src/storage/types';
+import { formatDateRu } from '../../../../../src/domain/dateFormatRu';
+import type { MealPlanPeriodDays, MealPlanDiversity } from '../../../../../src/domain/mealPlanDraft';
+import { shiftDateLocal } from '../../../../../src/domain/repeatMeal';
+import { nutritionForRecipePortion } from '../../../../../src/domain/recipeNutrition';
+import type { MealSlot, PlannedMeal } from '../../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';

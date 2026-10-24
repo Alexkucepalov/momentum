@@ -290,20 +290,20 @@ export default function TodayScreen() {
 
         <View style={styles.secondaryLinks} accessibilityRole="summary">
           <Pressable
-            onPress={() => router.push('/plan/eat-now')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Что съесть сейчас"
-          >
-            <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
-          </Pressable>
-          <Pressable
             onPress={() => router.push('/recipes')}
             style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
             accessibilityRole="link"
             accessibilityLabel="Рецепты"
           >
             <Text style={styles.secondaryLinkText}>Рецепты →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setOpen(true)}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Добавить еду в дневник"
+          >
+            <Text style={styles.secondaryLinkText}>Добавить еду →</Text>
           </Pressable>
         </View>
       </FormScrollView>
@@ -318,7 +318,10 @@ export default function TodayScreen() {
           <Ionicons name="barcode-outline" size={22} color={colors.text} />
         </Pressable>
         <View style={styles.footerBtn}>
-          <PrimaryButton label="Добавить еду" onPress={() => setOpen(true)} />
+          <PrimaryButton
+            label="Что съесть сейчас"
+            onPress={() => router.push('/plan/eat-now')}
+          />
         </View>
       </ScreenFooter>
 

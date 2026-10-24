@@ -68,11 +68,23 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="plan"
+        options={{
+          title: 'План',
+          tabBarLabel: 'План',
+          headerShown: false,
+          tabBarAccessibilityLabel: 'Вкладка План',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'compass' : 'compass-outline'} color={tint(color)} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="activity"
         options={{
           title: 'Активность',
-          tabBarLabel: 'Активность',
-          tabBarAccessibilityLabel: 'Вкладка Активность',
+          href: null,
+          tabBarAccessibilityLabel: 'Активность',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'walk' : 'walk-outline'} color={tint(color)} />
           ),

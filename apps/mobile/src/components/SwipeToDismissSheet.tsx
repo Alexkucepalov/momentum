@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(17,17,17,0.4)',
+    backgroundColor: colors.overlayScrim,
   },
   backdrop: {
     position: 'absolute',

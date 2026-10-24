@@ -42,7 +42,6 @@ export default function RootLayout() {
           <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="recipes" options={{ headerShown: false }} />
-            <Stack.Screen name="plan" options={{ headerShown: false }} />
           </Stack>
         </DataProvider>
       </View>

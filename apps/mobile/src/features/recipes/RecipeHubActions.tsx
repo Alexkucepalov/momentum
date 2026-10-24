@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -36,7 +37,7 @@ const ACTIONS: Action[] = [
   },
 ];
 
-/** Primary entry points for creating / importing recipes. */
+/** One CTA that reveals the three create paths. */
 export function RecipeHubActions({
   compact = false,
   omit = [],
@@ -45,98 +46,103 @@ export function RecipeHubActions({
   omit?: Array<'manual' | 'text' | 'archive'>;
 }) {
   const router = useRouter();
+  const [open, setOpen] = useState(compact);
   const actions = ACTIONS.filter((a) => !omit.includes(a.key as 'manual' | 'text' | 'archive'));
 
   return (
     <View
-      style={[styles.row, compact && styles.rowCompact]}
+      style={[styles.wrap, compact && styles.wrapCompact]}
       accessibilityRole="summary"
       accessibilityLabel="Как добавить рецепт"
     >
-      {actions.map((a) => (
+      {!compact ? (
         <Pressable
-          key={a.key}
-          onPress={() => router.push(a.href)}
-          style={({ pressed }) => [
-            styles.card,
-            compact && styles.cardCompact,
-            pressed && styles.pressed,
-          ]}
+          onPress={() => setOpen((v) => !v)}
+          style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={`${a.title}. ${a.subtitle}`}
+          accessibilityLabel={open ? 'Скрыть способы добавления' : 'Добавить рецепт'}
         >
-          <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
-            <Ionicons name={a.icon} size={compact ? 16 : 22} color={colors.text} />
-          </View>
-          <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
-            {a.title}
-          </Text>
-          {!compact ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {a.subtitle}
-            </Text>
-          ) : null}
+          <Ionicons name="add" size={20} color={colors.primaryButtonText} />
+          <Text style={styles.primaryText}>Добавить рецепт</Text>
         </Pressable>
-      ))}
+      ) : null}
+      {open ? (
+        <View style={[styles.row, compact && styles.rowCompact]}>
+          {actions.map((a) => (
+            <Pressable
+              key={a.key}
+              onPress={() => router.push(a.href)}
+              style={({ pressed }) => [
+                styles.card,
+                compact && styles.cardCompact,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`${a.title}. ${a.subtitle}`}
+            >
+              <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
+                <Ionicons name={a.icon} size={compact ? 16 : 22} color={colors.text} />
+              </View>
+              <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
+                {a.title}
+              </Text>
+              {!compact ? (
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {a.subtitle}
+                </Text>
+              ) : null}
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  wrap: { marginBottom: space.md, gap: space.sm },
+  wrapCompact: { marginBottom: space.sm },
+  primary: {
+    minHeight: touchMin,
     flexDirection: 'row',
-    gap: space.md,
-  },
-  rowCompact: { gap: space.sm },
-  card: {
-    flex: 1,
-    minHeight: touchMin + 24,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: space.lg,
-    paddingHorizontal: space.md,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space.sm,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    gap: 8,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryButton,
+    paddingHorizontal: space.lg,
   },
-  cardCompact: {
+  primaryText: { fontSize: type.body, fontWeight: '800', color: colors.primaryButtonText },
+  row: { flexDirection: 'row', gap: space.sm },
+  rowCompact: { gap: 6 },
+  card: {
+    flex: 1,
     minHeight: touchMin,
+    alignItems: 'center',
     paddingVertical: space.md,
-    gap: 4,
+    paddingHorizontal: space.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
   },
+  cardCompact: { minHeight: 44, paddingVertical: 8 },
+  pressed: { opacity: 0.88 },
   iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  iconWrapCompact: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginBottom: 0,
-  },
-  title: {
-    fontSize: type.body,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  titleCompact: { fontSize: type.micro, fontWeight: '700' },
-  subtitle: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
+  iconWrapCompact: { width: 28, height: 28, marginBottom: 2 },
+  title: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  titleCompact: { fontSize: type.micro },
+  subtitle: { fontSize: type.micro, color: colors.textMuted },
 });

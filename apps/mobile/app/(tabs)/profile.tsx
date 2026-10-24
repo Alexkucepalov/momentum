@@ -292,6 +292,22 @@ export default function ProfileScreen() {
           >
             <Text style={styles.secondaryLinkText}>Прогресс →</Text>
           </Pressable>
+          <Pressable
+            onPress={() => router.push('/plan')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="План"
+          >
+            <Text style={styles.secondaryLinkText}>План →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(tabs)/activity')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Активность"
+          >
+            <Text style={styles.secondaryLinkText}>Активность →</Text>
+          </Pressable>
         </View>
 
         <SettingsCard

@@ -34,7 +34,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'recipes'];
+const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'mine', 'recipes'];
 
 export function AddFoodSheet({
   visible,
@@ -73,6 +73,7 @@ export function AddFoodSheet({
 
   const recent = repo.listRecentEntries(16);
   const favorites = repo.listFavorites();
+  const mineProducts = repo.listProducts().filter((p) => p.source === 'user');
   const recipes = repo.listRecipes();
   const products = repo.listProducts();
   const savedMeals = repo.listSavedMeals();
@@ -473,6 +474,50 @@ export function AddFoodSheet({
                             : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
                         }
                         icon="star-outline"
+                        onPress={() =>
+                          openProductConfirm(p, defaultProductPortionGrams(last))
+                        }
+                        onQuickAdd={() =>
+                          quickAddProduct(p, defaultProductPortionGrams(last))
+                        }
+                        accessibilityLabel={`Выбрать порцию ${p.name}`}
+                      />
+                    );
+                  })}
+                </>
+              )
+            ) : null}
+
+            {!searching && tab === 'mine' ? (
+              mineProducts.length === 0 ? (
+                <EmptyHint
+                  title="Нет своих продуктов"
+                  body="План → Мои продукты: вставь список названий. КБЖУ можно дописать позже — не выдумываем."
+                />
+              ) : (
+                <>
+                  <Text style={styles.tip}>
+                    Свои позиции. Без КБЖУ — порция всё равно спросит граммы, ккал останутся неизвестны.
+                  </Text>
+                  {mineProducts.map((p) => {
+                    const last = repo.lastGramsForProduct(p.id);
+                    const unknown =
+                      p.energyKcal == null &&
+                      p.proteinG == null &&
+                      p.fatG == null &&
+                      p.carbG == null;
+                    return (
+                      <FoodPickRow
+                        key={p.id}
+                        title={p.name}
+                        meta={
+                          unknown
+                            ? 'КБЖУ неизвестны'
+                            : last != null
+                              ? `Последняя порция · ${last} г`
+                              : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
+                        }
+                        icon="basket-outline"
                         onPress={() =>
                           openProductConfirm(p, defaultProductPortionGrams(last))
                         }

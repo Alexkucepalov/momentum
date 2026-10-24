@@ -210,7 +210,7 @@ export function BarcodeCameraPanel({
   );
 }
 
-const MASK = 'rgba(0,0,0,0.55)';
+const MASK = colors.cameraMask;
 const CORNER = colors.textOnInverse;
 const LINE = colors.textOnInverse;
 
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   capturedFlash: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(22, 163, 74, 0.28)',
+    backgroundColor: colors.successOverlay,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -282,12 +282,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(0,0,0,0.72)',
+    backgroundColor: colors.cameraMaskHeavy,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
+    borderColor: colors.inverseHairline,
     maxWidth: '92%',
   },
   statusPillOk: {
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   overlayHint: {
     marginTop: space.sm,
-    color: 'rgba(255,255,255,0.9)',
+    color: colors.textOnInverse,
     fontSize: type.caption,
     fontWeight: '600',
   },
@@ -324,10 +324,10 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   toolBtn: {
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.cameraMaskHeavy,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: colors.inverseHairline,
     minHeight: 40,
     paddingHorizontal: space.md,
     justifyContent: 'center',

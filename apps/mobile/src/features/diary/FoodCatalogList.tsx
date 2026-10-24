@@ -23,7 +23,7 @@ const SOURCE_RU: Record<string, string> = {
   missing: 'нет данных',
 };
 
-export type CatalogFilter = 'all' | 'favorites' | 'frequent' | 'recent' | 'recipes';
+export type CatalogFilter = 'all' | 'favorites' | 'frequent' | 'recent' | 'recipes' | 'mine';
 
 export function FoodCatalogList({
   filter,
@@ -78,9 +78,12 @@ export function FoodCatalogList({
     let list = products.filter((p) => {
       if (!searching) {
         if (filter === 'favorites' && !p.isFavorite) return false;
+        if (filter === 'mine' && p.source !== 'user') return false;
         if (filter === 'frequent') return freqScore.has(p.id);
         if (filter === 'recent' || filter === 'recipes') return false;
       } else if (filter === 'favorites' && !p.isFavorite) {
+        return false;
+      } else if (filter === 'mine' && p.source !== 'user') {
         return false;
       } else if (filter === 'frequent' && !freqScore.has(p.id)) {
         return false;
@@ -117,10 +120,15 @@ export function FoodCatalogList({
   })();
 
   const favoriteCount = products.filter((p) => p.isFavorite).length;
+  const mineCount = products.filter((p) => p.source === 'user').length;
   const showRecent = filter === 'recent' || (filter === 'all' && !searching);
   const showFrequentStrip = filter === 'all' && !searching && frequent.length > 0;
   const showProducts =
-    searching || filter === 'all' || filter === 'favorites' || filter === 'frequent';
+    searching ||
+    filter === 'all' ||
+    filter === 'favorites' ||
+    filter === 'frequent' ||
+    filter === 'mine';
   const showRecipes =
     searching || filter === 'recipes' || (filter === 'all' && recipes.length > 0);
 
@@ -139,6 +147,7 @@ export function FoodCatalogList({
     { id: 'all', label: 'Все', count: products.length + recipes.length, icon: 'grid-outline' },
     { id: 'frequent', label: 'Частые', count: frequent.length, icon: 'flash-outline' },
     { id: 'favorites', label: 'Избр.', count: favoriteCount, icon: 'star-outline' },
+    { id: 'mine', label: 'Мои', count: mineCount, icon: 'basket-outline' },
     { id: 'recent', label: 'Недавн.', count: recentUnique.length, icon: 'time-outline' },
     { id: 'recipes', label: 'Рецепты', count: recipes.length, icon: 'restaurant-outline' },
   ];
@@ -534,7 +543,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  countPillOn: { backgroundColor: 'rgba(255,255,255,0.22)' },
+  countPillOn: { backgroundColor: colors.chipOnInverse },
   countText: { fontSize: type.micro, fontWeight: '800', color: colors.text },
   countTextOn: { color: colors.primaryButtonText },
   hint: {
