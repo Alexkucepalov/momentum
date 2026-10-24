@@ -1,7 +1,8 @@
-build_date: 2026-10-24T10:31:57Z
+build_date: 2026-10-24T11:40:34Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 220094421
-sha256: 1afb089faa63cb1bf4a127bd3edb16a89f2de9b677fc05d293f9477c8e95bd9f
-git: a866033e7eff6624fcc5ec7f47b357210da52240
-includes: UX-01 logging pipeline (#100); UX-03 first-run targets (#101); FI-01 Eat Now portion spec (#102); Q-04/Q-05; product-intelligence; OCR; weight UX
+bytes: 140414470
+sha256: a8451a497de716132adc14da9d82f3a6a84edfd018b2ffa400206c4a0c0dc8fb
+git: 2b773f5 (branch chore/cleanup-ocr-orphans, before merge)
+includes: Plan surface cut + My products (#106); OCR and native executorch removed (#108); UX-01; UX-03; FI-01 spec
+size_note: 220094421 → 140414470 bytes (−36%) after removing react-native-executorch
 dogfood_gate: pending
