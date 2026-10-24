@@ -55,18 +55,15 @@
 
 ### План `/plan` (tab)
 
-**Job:** What to cook and buy.
+**Job:** What to cook (ADR-009: no pantry / shop / budget UI).
 
-| Child | Route (keep stable where possible) |
-|-------|-------------------------------------|
-| Hub or default Eat Now / Week | TBD wireframe — prefer **Week or Eat Now** as landing, not link farm |
+| Child | Route |
+|-------|--------|
+| Hub | `/plan` — Eat Now, Recipes, My products, Week |
 | Eat Now | `/plan/eat-now` |
-| Pantry | `/plan/pantry` |
+| My products | `/plan/my-products` |
 | Week | `/plan/week` |
-| Shop | `/plan/shop` |
-| Budget | `/plan/budget` |
-| Receipt | `/plan/receipt` |
-| Stores | `/plan/stores` — demoted deep link |
+| Removed (redirect) | pantry, shop, budget, stores → hub; receipt → my-products |
 
 **Migration rule (UX-04):** All existing deep links keep working; redirects OK; no data loss.
 

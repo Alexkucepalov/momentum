@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 
 import { bmiBand, computeBmi, formatBmi } from '../../../../src/domain/bmi';
@@ -29,6 +30,7 @@ const TABS: { id: ProgressTab; label: string }[] = [
 ];
 
 export default function ProgressScreen() {
+  const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
   const [tab, setTab] = useState<ProgressTab>('summary');
@@ -302,9 +304,12 @@ export default function ProgressScreen() {
             <Text style={styles.cardValue}>{sportWeekMinutes.count} тренировок</Text>
             <Text style={styles.cardHint}>{sportWeekMinutes.mins} мин суммарно</Text>
             <Text style={styles.healthBody}>
-              Оценка энергии — ориентир по MET, не вычитается из дневника еды. Детали — во вкладке
-              Активность.
+              Оценка энергии — ориентир по MET, не вычитается из дневника еды.
             </Text>
+            <PrimaryButton
+              label="Открыть активность"
+              onPress={() => router.push('/(tabs)/activity')}
+            />
           </View>
         ) : null}
 

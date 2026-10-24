@@ -165,6 +165,18 @@ export type FoodRepository = {
       carbG: number | null;
     },
   ): FoodProduct;
+  updateProduct(
+    productId: string,
+    patch: {
+      name?: string;
+      brand?: string | null;
+      energyKcal?: number | null;
+      proteinG?: number | null;
+      fatG?: number | null;
+      carbG?: number | null;
+    },
+  ): FoodProduct;
+  softDeleteProduct(productId: string): FoodProduct;
   findProductByBarcode(barcode: string): FoodProduct | null;
   /**
    * Attach barcode to an existing local product (offline OFF fallback).
@@ -1215,6 +1227,39 @@ export function createMemoryFoodRepository(seed?: {
         p.source = 'user';
       }
       p.updatedAt = nowIso();
+      notify();
+      return { ...p };
+    },
+    updateProduct(productId, patch) {
+      const p = products.get(productId);
+      if (!p || p.deletedAt) throw new Error('Product not found');
+      if (patch.name !== undefined) {
+        const name = patch.name.trim();
+        if (!name) throw new Error('Product name required');
+        p.name = name;
+      }
+      if (patch.brand !== undefined) p.brand = patch.brand;
+      const fields = {
+        energyKcal: patch.energyKcal !== undefined ? patch.energyKcal : p.energyKcal,
+        proteinG: patch.proteinG !== undefined ? patch.proteinG : p.proteinG,
+        fatG: patch.fatG !== undefined ? patch.fatG : p.fatG,
+        carbG: patch.carbG !== undefined ? patch.carbG : p.carbG,
+      };
+      nutritionFromProductFields(fields);
+      p.energyKcal = fields.energyKcal;
+      p.proteinG = fields.proteinG;
+      p.fatG = fields.fatG;
+      p.carbG = fields.carbG;
+      if (p.source === 'catalog' || p.source === 'label') p.source = 'user';
+      p.updatedAt = nowIso();
+      notify();
+      return { ...p };
+    },
+    softDeleteProduct(productId) {
+      const p = products.get(productId);
+      if (!p || p.deletedAt) throw new Error('Product not found');
+      p.deletedAt = nowIso();
+      p.updatedAt = p.deletedAt;
       notify();
       return { ...p };
     },

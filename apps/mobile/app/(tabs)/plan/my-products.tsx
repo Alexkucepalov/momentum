@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   parseProductListText,
   type ParsedProductListItem,
-} from '../../../../src/domain/parseProductListText';
+} from '../../../../../src/domain/parseProductListText';
+import type { FoodProduct } from '../../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { MacroStrip } from '@/src/components/MacroStrip';
@@ -23,6 +24,51 @@ export default function MyProductsScreen() {
   const [raw, setRaw] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [editing, setEditing] = useState<FoodProduct | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editKcal, setEditKcal] = useState('');
+  const [editP, setEditP] = useState('');
+  const [editF, setEditF] = useState('');
+  const [editC, setEditC] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEdit = (p: FoodProduct) => {
+    setEditing(p);
+    setEditName(p.name);
+    setEditKcal(p.energyKcal == null ? '' : String(p.energyKcal));
+    setEditP(p.proteinG == null ? '' : String(p.proteinG));
+    setEditF(p.fatG == null ? '' : String(p.fatG));
+    setEditC(p.carbG == null ? '' : String(p.carbG));
+    setEditError(null);
+  };
+
+  const parseOptional = (raw: string): number | null => {
+    const t = raw.trim().replace(',', '.');
+    if (t === '') return null;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) throw new Error('КБЖУ: число ≥ 0 или пусто');
+    return n;
+  };
+
+  const saveEdit = () => {
+    if (!editing) return;
+    try {
+      const name = editName.trim();
+      if (!name) throw new Error('Нужно название');
+      repo.updateProduct(editing.id, {
+        name,
+        energyKcal: parseOptional(editKcal),
+        proteinG: parseOptional(editP),
+        fatG: parseOptional(editF),
+        carbG: parseOptional(editC),
+      });
+      setEditing(null);
+      refresh();
+      showFlash('Сохранено');
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Не удалось сохранить');
+    }
+  };
 
   const mine = useMemo(
     () =>
@@ -181,22 +227,129 @@ export default function MyProductsScreen() {
         />
       ) : (
         <View style={styles.list} accessibilityRole="list">
-          {mine.map((p) => (
-            <View
-              key={p.id}
-              style={styles.card}
-              accessibilityRole="summary"
-              accessibilityLabel={p.name}
-            >
-              <Text style={styles.cardTitle}>{p.name}</Text>
-              <MacroStrip
-                energyKcal={p.energyKcal}
-                proteinG={p.proteinG}
-                fatG={p.fatG}
-                carbG={p.carbG}
+          {mine.map((p) => {
+            const unknown =
+              p.energyKcal == null && p.proteinG == null && p.fatG == null && p.carbG == null;
+            return (
+              <View
+                key={p.id}
+                style={styles.card}
+                accessibilityRole="summary"
+                accessibilityLabel={p.name}
+              >
+                <View style={styles.cardHead}>
+                  <Text style={styles.cardTitle}>{p.name}</Text>
+                  <Pressable
+                    onPress={() => {
+                      repo.setFavorite(p.id, !p.isFavorite);
+                      refresh();
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={p.isFavorite ? `Убрать из избранного ${p.name}` : `В избранное ${p.name}`}
+                    style={styles.iconBtn}
+                  >
+                    <Ionicons
+                      name={p.isFavorite ? 'star' : 'star-outline'}
+                      size={20}
+                      color={p.isFavorite ? colors.fat : colors.textMuted}
+                    />
+                  </Pressable>
+                </View>
+                {unknown ? (
+                  <Text style={styles.warn}>КБЖУ неизвестны — Eat Now пропустит, пока не допишете</Text>
+                ) : (
+                  <MacroStrip
+                    energyKcal={p.energyKcal}
+                    proteinG={p.proteinG}
+                    fatG={p.fatG}
+                    carbG={p.carbG}
+                  />
+                )}
+                <View style={styles.cardActions}>
+                  <Pressable
+                    onPress={() => openEdit(p)}
+                    style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Изменить ${p.name}`}
+                  >
+                    <Text style={styles.actionText}>Изменить</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      repo.softDeleteProduct(p.id);
+                      refresh();
+                      showFlash(`Удалено: ${p.name}`);
+                    }}
+                    style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Удалить ${p.name}`}
+                  >
+                    <Text style={[styles.actionText, styles.dangerText]}>Удалить</Text>
+                  </Pressable>
+                </View>
+              </View>
+            );
+          })}
+          {editing ? (
+            <View style={styles.importBox}>
+              <Text style={styles.steps}>Правка · пустые КБЖУ = неизвестно</Text>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Название"
+                placeholderTextColor={colors.textMuted}
+                style={styles.field}
+                accessibilityLabel="Название продукта"
               />
+              <View style={styles.macroRow}>
+                <TextInput
+                  value={editKcal}
+                  onChangeText={setEditKcal}
+                  placeholder="ккал"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.field}
+                  accessibilityLabel="Килокалории на 100 г"
+                />
+                <TextInput
+                  value={editP}
+                  onChangeText={setEditP}
+                  placeholder="Б"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.field}
+                  accessibilityLabel="Белки на 100 г"
+                />
+                <TextInput
+                  value={editF}
+                  onChangeText={setEditF}
+                  placeholder="Ж"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.field}
+                  accessibilityLabel="Жиры на 100 г"
+                />
+                <TextInput
+                  value={editC}
+                  onChangeText={setEditC}
+                  placeholder="У"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.field}
+                  accessibilityLabel="Углеводы на 100 г"
+                />
+              </View>
+              {editError ? <Text style={styles.error}>{editError}</Text> : null}
+              <PrimaryButton label="Сохранить" onPress={saveEdit} />
+              <Pressable
+                onPress={() => setEditing(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Отменить правку"
+              >
+                <Text style={styles.previewMeta}>Отмена</Text>
+              </Pressable>
             </View>
-          ))}
+          ) : null}
         </View>
       )}
     </FormScrollView>
@@ -292,5 +445,21 @@ const styles = StyleSheet.create({
     padding: space.md,
     gap: 6,
   },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  cardTitle: { flex: 1, fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  iconBtn: { minWidth: touchMin, minHeight: touchMin, alignItems: 'center', justifyContent: 'center' },
+  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: 4 },
+  dangerText: { color: colors.danger },
+  field: {
+    flex: 1,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: space.sm,
+    fontSize: type.body,
+    color: colors.text,
+    backgroundColor: colors.background,
+  },
+  macroRow: { flexDirection: 'row', gap: space.sm },
 });

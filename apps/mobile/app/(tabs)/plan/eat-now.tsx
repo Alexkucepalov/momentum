@@ -7,21 +7,21 @@ import {
   eatNowInputsFromCookedBatches,
   eatNowInputsFromProducts,
   eatNowInputsFromRecipes,
-} from '../../../../src/domain/buildEatNowInputs';
+} from '../../../../../src/domain/buildEatNowInputs';
 import {
   matchesEatNowQuery,
   recipeHasBatch,
   selectEatNowProducts,
-} from '../../../../src/domain/eatNowPool';
-import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
-import { remainingMacros } from '../../../../src/domain/remainingMacros';
+} from '../../../../../src/domain/eatNowPool';
+import { mealSlotForNow } from '../../../../../src/domain/mealSlotForNow';
+import { remainingMacros } from '../../../../../src/domain/remainingMacros';
 import {
   scoreEatNow,
   type EatNowCandidate,
   type EatNowFilterId,
-} from '../../../../src/domain/scoreEatNow';
-import type { MealSlot } from '../../../../src/storage/types';
-import { portion } from '../../../../src/domain/nutrition';
+} from '../../../../../src/domain/scoreEatNow';
+import type { MealSlot } from '../../../../../src/storage/types';
+import { portion } from '../../../../../src/domain/nutrition';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { MacroStrip } from '@/src/components/MacroStrip';

@@ -23,6 +23,12 @@ export const colors = {
   textOnInverse: '#FFFFFF',
   shadow: '#000000',
   warning: '#FBBF24',
+  overlayScrim: 'rgba(17, 17, 17, 0.45)',
+  chipOnInverse: 'rgba(255, 255, 255, 0.22)',
+  cameraMask: 'rgba(0, 0, 0, 0.55)',
+  cameraMaskHeavy: 'rgba(0, 0, 0, 0.72)',
+  successOverlay: 'rgba(22, 163, 74, 0.28)',
+  inverseHairline: 'rgba(255, 255, 255, 0.4)',
 } as const;
 
 export const space = {
