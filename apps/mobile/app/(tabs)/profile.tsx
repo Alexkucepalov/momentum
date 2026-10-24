@@ -5,6 +5,10 @@ import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
+import {
+  nutritionConsistencyHint,
+  parseMacroField,
+} from '../../../../src/domain/nutritionConsistency';
 import { localDateKey } from '../../../../src/storage/validation';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
@@ -68,6 +72,18 @@ export default function ProfileScreen() {
     if (profile.waterTargetMl != null) chips.push(`${profile.waterTargetMl} мл воды`);
     return chips;
   }, [profile]);
+
+  /** Soft note only — never auto-rewrite independent daily targets. */
+  const targetsMacroHint = useMemo(() => {
+    const hint = nutritionConsistencyHint({
+      energyKcal: parseMacroField(kcalRaw),
+      proteinG: parseMacroField(proteinRaw),
+      fatG: parseMacroField(fatRaw),
+      carbG: parseMacroField(carbRaw),
+    });
+    if (!hint) return null;
+    return 'ккал и БЖУ заданы независимо — по формуле 4/9/4 они сейчас расходятся. Цели не меняем без тебя.';
+  }, [kcalRaw, proteinRaw, fatRaw, carbRaw]);
 
   const parseOptionalPositive = (raw: string, label: string): number | null => {
     const t = raw.trim();
@@ -267,7 +283,7 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="КБЖУ на день"
-          hint="Твои числа, без автонорм. Сохраняется, когда уходишь с поля. Пусто = без цели."
+          hint="Твои числа, без автонорм. ккал и БЖУ независимы (4×Б+9×Ж+4×У не подставляется). Пусто = без цели."
           icon="flame-outline"
         >
           <LabeledField
@@ -326,6 +342,11 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
+          {targetsMacroHint ? (
+            <Text style={styles.targetsHint} accessibilityLiveRegion="polite">
+              {targetsMacroHint}
+            </Text>
+          ) : null}
         </SettingsCard>
 
         <SettingsCard
@@ -621,6 +642,12 @@ const styles = StyleSheet.create({
     marginTop: space.md,
     fontSize: type.caption,
     color: colors.textMuted,
+  },
+  targetsHint: {
+    marginTop: space.sm,
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   card: {
     backgroundColor: colors.surface,

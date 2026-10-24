@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -10,6 +10,11 @@ import {
 } from '../../../../src/domain/parseRecipeText';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import {
+  clearImportTextDraft,
+  loadImportTextDraft,
+  saveImportTextDraft,
+} from '@/src/features/recipes/importTextDraftStore';
 import { parsedRecipeToFormInitial } from '@/src/features/recipes/parsedRecipeToFormInitial';
 import { setRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
@@ -30,6 +35,32 @@ export default function ImportRecipeTextScreen() {
   const router = useRouter();
   const [raw, setRaw] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const saved = await loadImportTextDraft();
+      if (!cancelled && saved) setRaw(saved);
+      if (!cancelled) setDraftReady(true);
+    })();
+    return () => {
+      cancelled = true;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void saveImportTextDraft(raw);
+    }, 400);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [raw, draftReady]);
 
   const preview = useMemo(() => {
     const t = raw.trim();
@@ -64,6 +95,8 @@ export default function ImportRecipeTextScreen() {
     }
     setError(null);
     setRecipeImportDraft(parsedRecipeToFormInitial(parsed));
+    // Keep file draft until recipe is saved — user may back out of editor.
+    void saveImportTextDraft(t);
     router.replace('/recipes/new');
   };
 
@@ -75,7 +108,7 @@ export default function ImportRecipeTextScreen() {
     <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.steps}>
         <Step n={1} text="Вставь текст из чата или заметки" />
-        <Step n={2} text="Проверь предпросмотр" />
+        <Step n={2} text="Проверь предпросмотр (черновик сохранится, если уйдёшь)" />
         <Step n={3} text="Открой редактор и сохрани" />
       </View>
 
@@ -94,6 +127,7 @@ export default function ImportRecipeTextScreen() {
             onPress={() => {
               setRaw('');
               setError(null);
+              void clearImportTextDraft();
             }}
             style={({ pressed }) => [styles.pasteBtn, pressed && styles.pressed]}
             accessibilityRole="button"

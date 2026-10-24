@@ -1,6 +1,6 @@
 # Known issues — Friends Beta
 
-Last updated: 2026-10-24 · Follow-up [#122](https://github.com/Alexkucepalov/momentum/issues/122) after [#120](https://github.com/Alexkucepalov/momentum/issues/120) / #121
+Last updated: 2026-10-24 · [#124](https://github.com/Alexkucepalov/momentum/issues/124) after #121/#123
 
 ## Fixed in #121 (merged)
 
@@ -20,13 +20,20 @@ Last updated: 2026-10-24 · Follow-up [#122](https://github.com/Alexkucepalov/mo
 | Eat Now empty / search miss | EmptyState with reset filter or next catalog action |
 | Backup path unclear for testers | Tester instructions clarify Profile → export JSON |
 
+## Fixed / improved in #124
+
+| Issue | Fix |
+|-------|-----|
+| Import-text draft lost on leave | Persist to documentDirectory; restore on open; clear on save/clear |
+| Catalog cards oversized | Denser Food catalog rows |
+| Macro targets vs 4/9/4 unexplained | Soft Profile hint; goals stay independent |
+
 ## Open / accepted for beta
 
 | Issue | Severity | Notes |
 |-------|----------|-------|
 | Android device Pass not run | Blocker | #92/#93/#38 needs-human |
 | Add Food multi-path still denser than ideal wireframe | P1 | Unified sheet exists; further simplify post-device feedback |
-| Macro targets vs 4/9/4 mismatch unexplained | P1 | Independent user numbers by design |
 | Week menu generator repeats | P2 | Prefer manual edit for beta |
 | Expo Web screenshots only for visual pack | Info | Not Android evidence |
 

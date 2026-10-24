@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { RecipeEditorForm } from '@/src/features/recipes/RecipeEditorForm';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
+import { clearImportTextDraft } from '@/src/features/recipes/importTextDraftStore';
 import { consumeRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
 import { useData } from '@/src/state/DataContext';
@@ -57,6 +58,7 @@ export default function NewRecipeScreen() {
                 repo.updateRecipe(recipe.id, { photoUri: values.photoUri });
               }
             }
+            if (fromImport) void clearImportTextDraft();
             refresh();
             showFlash(`Рецепт сохранён: ${recipe.name}`);
             router.replace(`/recipes/${recipe.id}`);
