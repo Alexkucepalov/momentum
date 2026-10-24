@@ -37,6 +37,7 @@ export function AddFoodBlock({
   onRepeat,
   onCopyYesterday,
   onOpenDiary,
+  onAddFood,
   showMealChips = false,
 }: {
   meal: MealSlot;
@@ -47,6 +48,8 @@ export function AddFoodBlock({
   onCopyYesterday?: () => void;
   /** Open full Food diary (meals, edit, delete). */
   onOpenDiary?: () => void;
+  /** Open Add Food sheet — primary daily log action on Today. */
+  onAddFood?: () => void;
   /** When true, show meal chips (legacy). Today keeps false. */
   showMealChips?: boolean;
 }) {
@@ -91,6 +94,18 @@ export function AddFoodBlock({
           В {MEAL_TITLE[meal].toLowerCase()} · приём можно сменить при добавлении
         </Text>
       )}
+
+      {onAddFood ? (
+        <Pressable
+          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          onPress={onAddFood}
+          accessibilityRole="button"
+          accessibilityLabel="Добавить еду"
+        >
+          <Ionicons name="add" size={20} color={colors.primaryButtonText} />
+          <Text style={styles.addBtnText}>Добавить еду</Text>
+        </Pressable>
+      ) : null}
 
       {quickRepeats.length > 0 ? (
         <View style={styles.list}>
@@ -139,7 +154,7 @@ export function AddFoodBlock({
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Пока без записей</Text>
           <Text style={styles.emptyBody}>
-            Нажмите «Добавить еду» внизу или отсканируйте штрихкод рядом.
+            Нажмите «Добавить еду» выше или отсканируйте штрихкод внизу.
           </Text>
         </View>
       ) : null}
@@ -239,6 +254,21 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontWeight: '800', color: colors.text, fontSize: type.body, marginBottom: 4 },
   emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    minHeight: touchMin,
+    marginBottom: space.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryButton,
+  },
+  addBtnText: {
+    fontWeight: '800',
+    color: colors.primaryButtonText,
+    fontSize: type.body,
+  },
   copyBtn: {
     flexDirection: 'row',
     alignItems: 'center',

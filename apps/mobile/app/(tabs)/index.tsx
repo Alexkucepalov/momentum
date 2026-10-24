@@ -186,6 +186,7 @@ export default function TodayScreen() {
             const e = recent.find((r) => r.id === id);
             if (e) repeat(e);
           }}
+          onAddFood={() => setOpen(true)}
           onCopyYesterday={
             yesterdayCount > 0
               ? () => {
@@ -288,24 +289,6 @@ export default function TodayScreen() {
           </>
         ) : null}
 
-        <View style={styles.secondaryLinks} accessibilityRole="summary">
-          <Pressable
-            onPress={() => router.push('/recipes')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Рецепты"
-          >
-            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setOpen(true)}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Добавить еду в дневник"
-          >
-            <Text style={styles.secondaryLinkText}>Добавить еду →</Text>
-          </Pressable>
-        </View>
       </FormScrollView>
 
       <ScreenFooter>

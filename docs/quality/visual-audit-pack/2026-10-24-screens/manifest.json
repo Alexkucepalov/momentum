@@ -1,0 +1,206 @@
+[
+  {
+    "file": "01-today-empty.png",
+    "note": "Сегодня · пусто · CTA «Что съесть сейчас»"
+  },
+  {
+    "file": "01b-today-empty-no-onboarding.png",
+    "note": "Сегодня · пусто без онбординга целей"
+  },
+  {
+    "file": "02-food-empty.png",
+    "note": "Питание · пусто"
+  },
+  {
+    "file": "02b-food-search-no-results.png",
+    "note": "Питание · каталог · поиск без результатов"
+  },
+  {
+    "file": "03-plan-hub.png",
+    "note": "План · хаб (вкладка)"
+  },
+  {
+    "file": "04-progress-empty.png",
+    "note": "Прогресс · пусто"
+  },
+  {
+    "file": "05-profile.png",
+    "note": "Профиль · ссылки План/Активность"
+  },
+  {
+    "file": "06-activity-hidden-tab.png",
+    "note": "Активность · экран без вкладки"
+  },
+  {
+    "file": "10-recipes-empty.png",
+    "note": "Рецепты · пусто"
+  },
+  {
+    "file": "11-recipe-form-empty.png",
+    "note": "Новый рецепт · форма"
+  },
+  {
+    "file": "12-recipe-import-text-empty.png",
+    "note": "Импорт из текста · пусто"
+  },
+  {
+    "file": "13-recipe-import-personal.png",
+    "note": "Архив личных рецептов"
+  },
+  {
+    "file": "20-eat-now-empty.png",
+    "note": "Что съесть сейчас · пусто"
+  },
+  {
+    "file": "20b-eat-now-empty-filters.png",
+    "note": "Eat Now · фильтры"
+  },
+  {
+    "file": "21-my-products-empty.png",
+    "note": "Мои продукты · пусто"
+  },
+  {
+    "file": "22-week-empty.png",
+    "note": "Меню на неделю"
+  },
+  {
+    "file": "23-redirect-pantry.png",
+    "note": "Deep link /plan/pantry → хаб"
+  },
+  {
+    "file": "24-redirect-shop.png",
+    "note": "Deep link /plan/shop → хаб"
+  },
+  {
+    "file": "25-redirect-budget.png",
+    "note": "Deep link /plan/budget → хаб"
+  },
+  {
+    "file": "26-redirect-receipt.png",
+    "note": "Deep link /plan/receipt → Мои продукты"
+  },
+  {
+    "file": "27-redirect-stores.png",
+    "note": "Deep link /plan/stores → хаб"
+  },
+  {
+    "file": "30-modal-add-food.png",
+    "note": "Модалка · Добавить еду (Недавние)"
+  },
+  {
+    "file": "30b-modal-add-food-mine.png",
+    "note": "Модалка · таб Мои"
+  },
+  {
+    "file": "30d-modal-add-food-favorites.png",
+    "note": "Модалка · Избранное"
+  },
+  {
+    "file": "30e-modal-add-food-recipes.png",
+    "note": "Модалка · Рецепты"
+  },
+  {
+    "file": "31-today-cta-eat-now.png",
+    "note": "Сегодня · primary CTA → Eat Now"
+  },
+  {
+    "file": "33-progress-sport.png",
+    "note": "Прогресс · Спорт → вход в Активность"
+  },
+  {
+    "file": "34-modal-workout.png",
+    "note": "Модалка · тренировка"
+  },
+  {
+    "file": "35-my-products-import-preview.png",
+    "note": "Мои продукты · предпросмотр импорта"
+  },
+  {
+    "file": "40-recipe-import-personal-ready.png",
+    "note": "Архив · готово к импорту"
+  },
+  {
+    "file": "41-recipes-filled.png",
+    "note": "Рецепты · заполненные"
+  },
+  {
+    "file": "41b-recipes-add-funnel.png",
+    "note": "Рецепты · воронка Добавить"
+  },
+  {
+    "file": "41c-recipes-search.png",
+    "note": "Рецепты · поиск"
+  },
+  {
+    "file": "42-recipe-detail.png",
+    "note": "Рецепт · деталь"
+  },
+  {
+    "file": "42b-recipe-recook-modal.png",
+    "note": "Рецепт · Приготовить снова"
+  },
+  {
+    "file": "42c-recipe-portion-modal.png",
+    "note": "Рецепт · порция в дневник"
+  },
+  {
+    "file": "43-recipe-import-text-filled.png",
+    "note": "Импорт из текста · заполнено"
+  },
+  {
+    "file": "43b-recipe-import-text-editor.png",
+    "note": "Импорт из текста · редактор"
+  },
+  {
+    "file": "50-my-products-filled.png",
+    "note": "Мои продукты · после импорта"
+  },
+  {
+    "file": "51-week-composer.png",
+    "note": "Меню · композер / доска"
+  },
+  {
+    "file": "51b-week-filled.png",
+    "note": "Меню на неделю · после генерации"
+  },
+  {
+    "file": "52-eat-now-filled.png",
+    "note": "Что съесть сейчас · с данными"
+  },
+  {
+    "file": "52b-eat-now-search.png",
+    "note": "Что съесть сейчас · поиск"
+  },
+  {
+    "file": "53-plan-hub-filled.png",
+    "note": "План · хаб после наполнения"
+  },
+  {
+    "file": "60-food-filled.png",
+    "note": "Питание · с демо"
+  },
+  {
+    "file": "60b-food-catalog.png",
+    "note": "Питание · каталог"
+  },
+  {
+    "file": "60c-food-catalog-mine.png",
+    "note": "Каталог · попытка Мои (если чип не виден — all)"
+  },
+  {
+    "file": "60d-food-search-results.png",
+    "note": "Питание · поиск с результатами"
+  },
+  {
+    "file": "61-today-filled.png",
+    "note": "Сегодня · с демо · primary Eat Now"
+  },
+  {
+    "file": "62-progress-filled.png",
+    "note": "Прогресс · с демо"
+  },
+  {
+    "file": "63-profile-filled.png",
+    "note": "Профиль · после демо"
+  }
+]

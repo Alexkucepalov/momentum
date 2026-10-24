@@ -45,11 +45,19 @@ export function selectEatNowProducts(opts: EatNowPoolOptions): FoodProduct[] {
   );
 }
 
-/** Case-insensitive substring match on the visible title; empty query matches all. */
-export function matchesEatNowQuery(title: string, query: string): boolean {
+/**
+ * Case-insensitive substring match on title and optional extra terms
+ * (aliases, ingredient names). Empty query matches all.
+ */
+export function matchesEatNowQuery(
+  title: string,
+  query: string,
+  extraTerms: readonly string[] = [],
+): boolean {
   const q = query.trim().toLocaleLowerCase('ru');
   if (!q) return true;
-  return title.toLocaleLowerCase('ru').includes(q);
+  if (title.toLocaleLowerCase('ru').includes(q)) return true;
+  return extraTerms.some((t) => t.toLocaleLowerCase('ru').includes(q));
 }
 
 /** Recipes with leftovers are reheat-quick. */

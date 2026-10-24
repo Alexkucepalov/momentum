@@ -188,7 +188,7 @@ test('usableLastGrams rejects invalid values (unknown ≠ 0)', () => {
   assert.equal(usableLastGrams(149.6), 150);
 });
 
-test('candidate carries recipe photo; search matches title', () => {
+test('candidate carries recipe photo; search matches title and extras', () => {
   const { matchesEatNowQuery } = mods['domain/eatNowPool'];
   const [c] = scoreEatNow(
     [
@@ -207,4 +207,6 @@ test('candidate carries recipe photo; search matches title', () => {
   assert.equal(matchesEatNowQuery('Курица с рисом', 'КУРИ'), true);
   assert.equal(matchesEatNowQuery('Курица с рисом', '  '), true);
   assert.equal(matchesEatNowQuery('Курица с рисом', 'творог'), false);
+  assert.equal(matchesEatNowQuery('Запеканка', 'творог', ['творог 5%', 'яйцо']), true);
+  assert.equal(matchesEatNowQuery('Творог 5%', 'творог', ['творог']), true);
 });

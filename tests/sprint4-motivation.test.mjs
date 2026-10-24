@@ -90,13 +90,14 @@ test('weekly insight keeps unknown energy as unknown', () => {
     energyHasUnknown: true,
     activityMinutes: 40,
     workoutsCount: 1,
-    habitCompletions: 2,
-    habitTargetsSum: 3,
+    habitsMetGoal: 2,
+    habitCount: 3,
     challengesActive: 1,
     challengesCompleted: 0,
   });
   assert.equal(insight.weekStart, weekStartMonday('2026-10-18'));
   assert.ok(insight.lines.some((l) => /неизвестна/i.test(l)));
+  assert.ok(insight.lines.some((l) => /2 из 3 достигли/i.test(l)));
   assert.ok(!insight.lines.some((l) => /провал|штраф|сорван/i.test(l)));
 
   const collected = collectWeeklyInsightStats({
@@ -108,6 +109,24 @@ test('weekly insight keeps unknown energy as unknown', () => {
     challenges: () => [],
   });
   assert.ok(collected.lines.some((l) => /неизвестна/i.test(l)));
+});
+
+test('weekly insight empty week is not zero kcal; habits count goals not ml', () => {
+  const empty = collectWeeklyInsightStats({
+    endDateLocal: '2026-10-18',
+    dailyTotals: () => ({ energyKcal: 0, entryCount: 0, hasUnknownFields: false }),
+    activityMinutesForDate: () => 0,
+    workoutsForDate: () => 0,
+    habitWeekStats: () => [
+      { completed: 2000, target: 14000 },
+      { completed: 5, target: 5 },
+    ],
+    challenges: () => [],
+  });
+  assert.ok(empty.lines.some((l) => /нет записей питания/i.test(l)));
+  assert.ok(!empty.lines.some((l) => /Ккал за неделю.*:\s*0\b/.test(l)));
+  assert.ok(empty.lines.some((l) => /1 из 2 достигли/i.test(l)));
+  assert.ok(!empty.lines.some((l) => /из 14005|из 157/i.test(l)));
 });
 
 test('import export accepts snapshot v9', () => {

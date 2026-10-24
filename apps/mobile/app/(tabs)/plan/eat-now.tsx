@@ -8,7 +8,9 @@ import {
   eatNowInputsFromProducts,
   eatNowInputsFromRecipes,
 } from '../../../../../src/domain/buildEatNowInputs';
+import { commonFoodAliases } from '../../../../../src/domain/commonFoodCatalog';
 import {
+  isEatNowNoiseProduct,
   matchesEatNowQuery,
   recipeHasBatch,
   selectEatNowProducts,
@@ -107,8 +109,24 @@ export default function EatNowScreen() {
     const batches = repo.listCookedBatches({ onlyRemaining: true });
     const batchRecipeIds = new Set(batches.map((b) => b.recipeId));
     const usefulProducts = selectEatNowProducts({ products, frequentIds });
+    const q = query.trim();
+    // Non-empty search may surface catalog hits outside the default personal pool.
+    const searchHitProducts =
+      q.length === 0
+        ? []
+        : products.filter(
+            (p) =>
+              !p.deletedAt &&
+              !isEatNowNoiseProduct(p) &&
+              matchesEatNowQuery(p.name, q, commonFoodAliases(p.id)),
+          );
+    const productById = new Map(usefulProducts.map((p) => [p.id, p]));
+    for (const p of searchHitProducts) productById.set(p.id, p);
+    const poolProducts = [...productById.values()];
 
     const batchRecipeById = new Map(batches.map((b) => [b.id, b.recipeId]));
+    const ingredientTerms = (recipeId: string): string[] =>
+      repo.getRecipeIngredients(recipeId).map((ing) => ing.displayName);
 
     const recipeInputs = eatNowInputsFromRecipes(recipes, (id) => repo.getRecipeIngredients(id), {
       defaultPrepMinutes: 25,
@@ -118,7 +136,7 @@ export default function EatNowScreen() {
       lastGrams: repo.lastGramsForRecipe(c.id),
     }));
 
-    const usefulInputs = eatNowInputsFromProducts(usefulProducts).map((c) => ({
+    const usefulInputs = eatNowInputsFromProducts(poolProducts).map((c) => ({
       ...c,
       lastGrams: repo.lastGramsForProduct(c.id),
     }));
@@ -142,7 +160,23 @@ export default function EatNowScreen() {
     });
 
     return scoreEatNow(deduped, remaining, [filter])
-      .filter((c) => matchesEatNowQuery(c.title, query))
+      .filter((c) => {
+        if (c.kind === 'product') {
+          return matchesEatNowQuery(c.title, query, commonFoodAliases(c.id));
+        }
+        if (c.kind === 'recipe') {
+          return matchesEatNowQuery(c.title, query, ingredientTerms(c.id));
+        }
+        if (c.kind === 'cooked_batch') {
+          const recipeId = batchRecipeById.get(c.id);
+          return matchesEatNowQuery(
+            c.title,
+            query,
+            recipeId ? ingredientTerms(recipeId) : [],
+          );
+        }
+        return matchesEatNowQuery(c.title, query);
+      })
       .slice(0, 20);
   }, [repo, remaining, filter, query, revision]);
 
