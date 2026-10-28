@@ -46,8 +46,8 @@ export function AddFoodBlock({
   /** When true, show meal chips (legacy). Today keeps false. */
   showMealChips?: boolean;
 }) {
-  const last = todayEntries.slice(0, 3);
   const entryCount = todayEntries.length;
+  void todayEntries;
 
   return (
     <View style={styles.wrap}>
@@ -98,8 +98,7 @@ export function AddFoodBlock({
 
       {quickRepeats.length > 0 ? (
         <View style={styles.list}>
-          <Text style={styles.sectionLabel}>Быстрый повтор</Text>
-          {quickRepeats.slice(0, 4).map((e) => (
+          {quickRepeats.slice(0, 3).map((e) => (
             <Pressable
               key={e.id}
               style={({ pressed }) => [styles.repeatRow, pressed && styles.pressed]}
@@ -119,32 +118,6 @@ export function AddFoodBlock({
               <Text style={styles.plus}>+</Text>
             </Pressable>
           ))}
-        </View>
-      ) : null}
-
-      {last.length > 0 ? (
-        <View style={styles.list}>
-          <Text style={styles.sectionLabel}>Сегодня</Text>
-          {last.map((e) => (
-            <View key={e.id} style={styles.row}>
-              <View style={styles.rowBody}>
-                <Text style={styles.rowTitle} numberOfLines={1}>
-                  {e.displayName}
-                </Text>
-                <Text style={styles.rowMeta}>
-                  {e.grams} г · {MEAL_RU[e.meal]}
-                  {e.energyKcal == null ? '' : ` · ~${Math.round(e.energyKcal)} ккал`}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      ) : quickRepeats.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Пока без записей</Text>
-          <Text style={styles.emptyBody}>
-            Нажмите «Добавить еду» выше или отсканируйте штрихкод внизу.
-          </Text>
         </View>
       ) : null}
 

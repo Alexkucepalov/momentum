@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { SharedValue } from 'react-native-reanimated';
 
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { PlannedMealCard } from './PlannedMealCard';
-import { usePlanDrag } from './planDragContext';
+import { usePlanDrag, type DropTarget } from './planDragContext';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -20,17 +21,22 @@ export function MealSlotSection({
   kcalFor,
   onAdd,
   onOpenMenu,
+  pointerX,
+  pointerY,
+  onDrop,
 }: {
   slot: MealSlot;
   meals: PlannedMeal[];
   kcalFor: (m: PlannedMeal) => string;
   onAdd: () => void;
   onOpenMenu: (m: PlannedMeal) => void;
+  pointerX: SharedValue<number>;
+  pointerY: SharedValue<number>;
+  onDrop: (mealId: string, target: DropTarget | null) => void;
 }) {
-  const { session, setSlotBox, isHoveringSlot } = usePlanDrag();
+  const { dragging, setSlotBox, isHoveringSlot } = usePlanDrag();
   const wrapRef = useRef<View>(null);
   const hot = isHoveringSlot(slot);
-  const dragging = session != null;
 
   const measure = () => {
     wrapRef.current?.measureInWindow((x, y, width, height) => {
@@ -47,17 +53,13 @@ export function MealSlotSection({
     <View
       ref={wrapRef}
       onLayout={measure}
-      style={[styles.section, hot && styles.sectionHot, dragging && !hot && styles.sectionDragMode]}
+      style={[styles.section, hot && styles.sectionHot]}
       accessibilityRole="summary"
     >
-      <Text style={[styles.heading, hot && styles.headingHot]}>{MEAL_LABELS[slot]}</Text>
-
-      {hot ? (
-        <View style={styles.dropZone} accessibilityLiveRegion="polite">
-          <Ionicons name="arrow-down-circle-outline" size={22} color={colors.carbs} />
-          <Text style={styles.dropText}>Отпустите, чтобы переместить</Text>
-        </View>
-      ) : null}
+      <View style={styles.head}>
+        <Text style={[styles.heading, hot && styles.headingHot]}>{MEAL_LABELS[slot]}</Text>
+        {hot ? <Text style={styles.hotHint}>Отпустите сюда</Text> : null}
+      </View>
 
       {meals.map((m) => (
         <PlannedMealCard
@@ -65,66 +67,54 @@ export function MealSlotSection({
           meal={m}
           kcalLabel={kcalFor(m)}
           onOpenMenu={() => onOpenMenu(m)}
+          pointerX={pointerX}
+          pointerY={pointerY}
+          onDrop={onDrop}
         />
       ))}
 
-      {!hot ? (
-        <Pressable
-          onPress={onAdd}
-          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Добавить блюдо в ${MEAL_LABELS[slot]}`}
-        >
-          <Ionicons name="add" size={20} color={colors.text} />
-          <Text style={styles.addText}>Добавить блюдо</Text>
-        </Pressable>
-      ) : null}
+      <Pressable
+        onPress={onAdd}
+        style={({ pressed }) => [styles.add, hot && styles.addHot, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={`Добавить блюдо в ${MEAL_LABELS[slot]}`}
+      >
+        <Ionicons name="add" size={20} color={colors.text} />
+        <Text style={styles.addText}>Добавить</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: space.lg,
+    marginBottom: space.md,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: space.sm,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  sectionDragMode: {
+    borderWidth: 1,
     borderColor: colors.border,
-    borderStyle: 'dashed',
+    padding: space.md,
   },
   sectionHot: {
-    borderColor: colors.carbs,
-    borderStyle: 'dashed',
+    borderColor: colors.text,
     backgroundColor: colors.preview,
+  },
+  head: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: space.sm,
   },
   heading: {
-    fontSize: type.caption,
+    fontSize: type.subtitle,
     fontWeight: '800',
-    color: colors.textSecondary,
-    marginBottom: space.sm,
+    color: colors.text,
   },
-  headingHot: { color: colors.carbs },
-  dropZone: {
-    minHeight: 72,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.carbs,
-    backgroundColor: colors.preview,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: space.sm,
-    paddingHorizontal: space.md,
-  },
-  dropText: {
-    fontSize: type.caption,
+  headingHot: { color: colors.text },
+  hotHint: {
+    fontSize: type.micro,
     fontWeight: '800',
-    color: colors.carbs,
-    textAlign: 'center',
+    color: colors.textMuted,
   },
   add: {
     minHeight: touchMin,
@@ -138,6 +128,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.accentSoft,
     paddingHorizontal: space.md,
+  },
+  addHot: {
+    borderColor: colors.text,
   },
   addText: { fontSize: type.body, fontWeight: '700', color: colors.text },
   pressed: { opacity: 0.88 },

@@ -14,18 +14,14 @@ export type DropTarget =
   | { kind: 'slot'; slot: MealSlot }
   | { kind: 'day'; dateLocal: string };
 
-export type DragSession = {
-  meal: PlannedMeal;
-  pointerX: number;
-  pointerY: number;
-  hover: DropTarget | null;
-};
-
-type ZoneBox = { x: number; y: number; width: number; height: number };
+export type ZoneBox = { x: number; y: number; width: number; height: number };
 
 type PlanDragContextValue = {
-  session: DragSession | null;
+  /** Meal currently lifted; null when idle. */
+  activeMeal: PlannedMeal | null;
+  hover: DropTarget | null;
   beginDrag: (meal: PlannedMeal, x: number, y: number) => void;
+  /** Updates hover only when the resolved target changes (no per-frame React state). */
   updatePointer: (x: number, y: number) => void;
   endDrag: () => DropTarget | null;
   cancelDrag: () => void;
@@ -33,6 +29,8 @@ type PlanDragContextValue = {
   setDayBox: (dateLocal: string, box: ZoneBox | null) => void;
   isHoveringSlot: (slot: MealSlot) => boolean;
   isHoveringDay: (dateLocal: string) => boolean;
+  /** True while any drag is active — use to lock scroll. */
+  dragging: boolean;
 };
 
 const PlanDragContext = createContext<PlanDragContextValue | null>(null);
@@ -41,14 +39,20 @@ function contains(box: ZoneBox, x: number, y: number): boolean {
   return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
 }
 
+function targetKey(t: DropTarget | null): string {
+  if (!t) return '';
+  return t.kind === 'slot' ? `slot:${t.slot}` : `day:${t.dateLocal}`;
+}
+
 export function PlanDragProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<DragSession | null>(null);
-  const sessionRef = useRef<DragSession | null>(null);
+  const [activeMeal, setActiveMeal] = useState<PlannedMeal | null>(null);
+  const [hover, setHover] = useState<DropTarget | null>(null);
+  const activeRef = useRef<PlannedMeal | null>(null);
+  const hoverRef = useRef<DropTarget | null>(null);
   const slotBoxes = useRef<Map<MealSlot, ZoneBox>>(new Map());
   const dayBoxes = useRef<Map<string, ZoneBox>>(new Map());
 
   const resolveHover = useCallback((x: number, y: number): DropTarget | null => {
-    // Days first (smaller targets at top), then slots.
     for (const [dateLocal, box] of dayBoxes.current) {
       if (contains(box, x, y)) return { kind: 'day', dateLocal };
     }
@@ -60,40 +64,40 @@ export function PlanDragProvider({ children }: { children: ReactNode }) {
 
   const beginDrag = useCallback(
     (meal: PlannedMeal, x: number, y: number) => {
-      const s: DragSession = {
-        meal,
-        pointerX: x,
-        pointerY: y,
-        hover: resolveHover(x, y),
-      };
-      sessionRef.current = s;
-      setSession(s);
+      const nextHover = resolveHover(x, y);
+      activeRef.current = meal;
+      hoverRef.current = nextHover;
+      setActiveMeal(meal);
+      setHover(nextHover);
     },
     [resolveHover],
   );
 
   const updatePointer = useCallback(
     (x: number, y: number) => {
-      const prev = sessionRef.current;
-      if (!prev) return;
-      const hover = resolveHover(x, y);
-      const next = { ...prev, pointerX: x, pointerY: y, hover };
-      sessionRef.current = next;
-      setSession(next);
+      if (!activeRef.current) return;
+      const next = resolveHover(x, y);
+      if (targetKey(next) === targetKey(hoverRef.current)) return;
+      hoverRef.current = next;
+      setHover(next);
     },
     [resolveHover],
   );
 
   const endDrag = useCallback(() => {
-    const hover = sessionRef.current?.hover ?? null;
-    sessionRef.current = null;
-    setSession(null);
-    return hover;
+    const result = hoverRef.current;
+    activeRef.current = null;
+    hoverRef.current = null;
+    setActiveMeal(null);
+    setHover(null);
+    return result;
   }, []);
 
   const cancelDrag = useCallback(() => {
-    sessionRef.current = null;
-    setSession(null);
+    activeRef.current = null;
+    hoverRef.current = null;
+    setActiveMeal(null);
+    setHover(null);
   }, []);
 
   const setSlotBox = useCallback((slot: MealSlot, box: ZoneBox | null) => {
@@ -107,19 +111,19 @@ export function PlanDragProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isHoveringSlot = useCallback(
-    (slot: MealSlot) => session?.hover?.kind === 'slot' && session.hover.slot === slot,
-    [session],
+    (slot: MealSlot) => hover?.kind === 'slot' && hover.slot === slot,
+    [hover],
   );
 
   const isHoveringDay = useCallback(
-    (dateLocal: string) =>
-      session?.hover?.kind === 'day' && session.hover.dateLocal === dateLocal,
-    [session],
+    (dateLocal: string) => hover?.kind === 'day' && hover.dateLocal === dateLocal,
+    [hover],
   );
 
   const value = useMemo(
     () => ({
-      session,
+      activeMeal,
+      hover,
       beginDrag,
       updatePointer,
       endDrag,
@@ -128,9 +132,11 @@ export function PlanDragProvider({ children }: { children: ReactNode }) {
       setDayBox,
       isHoveringSlot,
       isHoveringDay,
+      dragging: activeMeal != null,
     }),
     [
-      session,
+      activeMeal,
+      hover,
       beginDrag,
       updatePointer,
       endDrag,

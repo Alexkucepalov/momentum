@@ -39,9 +39,7 @@ export const FormScrollView = forwardRef<ScrollView, Props>(function FormScrollV
       style={style}
       contentContainerStyle={[styles.base, { paddingBottom: bottomPad }, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-      automaticallyAdjustKeyboardInsets={variant === 'screen'}
-      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
       {...rest}
     >
       {children}

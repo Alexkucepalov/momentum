@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
+import { useSharedValue } from 'react-native-reanimated';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../../../src/domain/habitWeek';
 import { formatDateRu } from '../../../../../../src/domain/dateFormatRu';
@@ -13,7 +15,6 @@ import {
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
 import { DayStrip } from '@/src/components/DayStrip';
 import { EmptyState } from '@/src/components/EmptyState';
-import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
@@ -63,7 +64,9 @@ function WeekPlannerBody() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   const allowAdd = useAddGuard();
-  const { session, setDayBox } = usePlanDrag();
+  const { dragging, hover, setDayBox } = usePlanDrag();
+  const pointerX = useSharedValue(0);
+  const pointerY = useSharedValue(0);
   void revision;
 
   const [selectedDate, setSelectedDate] = useState(dateLocal);
@@ -238,9 +241,12 @@ function WeekPlannerBody() {
 
   return (
     <View style={styles.root}>
-      <FormScrollView
+      <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.content}
-        scrollEnabled={session == null}
+        scrollEnabled={!dragging}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <View style={styles.viewToggle} accessibilityRole="tablist">
           {(
@@ -270,8 +276,8 @@ function WeekPlannerBody() {
           today={dateLocal}
           onSelect={selectDate}
           fillByDate={fillByDate}
-          dragActive={session != null}
-          hoverDate={session?.hover?.kind === 'day' ? session.hover.dateLocal : null}
+          dragActive={dragging}
+          hoverDate={hover?.kind === 'day' ? hover.dateLocal : null}
           onDayBox={setDayBox}
         />
 
@@ -328,6 +334,9 @@ function WeekPlannerBody() {
                 kcalFor={kcalFor}
                 onAdd={() => setAddSlot(slot)}
                 onOpenMenu={(m) => setMenuMeal(m)}
+                pointerX={pointerX}
+                pointerY={pointerY}
+                onDrop={applyDrop}
               />
             ))}
           </>
@@ -404,7 +413,7 @@ function WeekPlannerBody() {
             ) : null}
           </View>
         ) : null}
-      </FormScrollView>
+      </ScrollView>
 
       <AddToPlanSheet
         visible={addSlot != null}
@@ -485,7 +494,7 @@ function WeekPlannerBody() {
         }}
       />
 
-      <DragOverlay onDrop={applyDrop} />
+      <DragOverlay pointerX={pointerX} pointerY={pointerY} />
     </View>
   );
 }
@@ -505,6 +514,7 @@ function slotLabel(slot: MealSlot): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  scroll: { flex: 1 },
   content: { padding: space.lg, paddingBottom: space.xxl },
   viewToggle: {
     flexDirection: 'row',

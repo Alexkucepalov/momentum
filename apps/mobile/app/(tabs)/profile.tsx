@@ -283,7 +283,7 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="КБЖУ на день"
-          hint="Твои числа, без автонорм. ккал и БЖУ независимы (4×Б+9×Ж+4×У не подставляется). Пусто = без цели."
+          hint="Свои числа · пусто = без цели · ккал и БЖУ независимы"
           icon="flame-outline"
         >
           <LabeledField
@@ -349,11 +349,7 @@ export default function ProfileScreen() {
           ) : null}
         </SettingsCard>
 
-        <SettingsCard
-          title="Рост"
-          hint="Для ИМТ в Прогрессе. Сохраняется при уходе с поля. Справочно, не диагноз."
-          icon="resize-outline"
-        >
+        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
           <LabeledField
             label="Сантиметры"
             value={heightRaw}
@@ -368,11 +364,7 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
-        <SettingsCard
-          title="Вода"
-          hint="Мягкая подсказка на Сегодня. Пресет или своё число — сохраняется сразу."
-          icon="water-outline"
-        >
+        <SettingsCard title="Вода" hint="Цель на Сегодня · пресет или своё число" icon="water-outline">
           <View style={styles.presets}>
             {WATER_PRESETS.map((ml) => {
               const on = profile.waterTargetMl === ml;
@@ -411,7 +403,7 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
-        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
+        <SettingsCard title="Приватность" hint="Локально на устройстве" icon="shield-outline">
           <PrivacyRow
             icon="phone-portrait-outline"
             text="Дневник, вес и привычки хранятся локально на устройстве."
@@ -432,7 +424,7 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="Данные"
-          hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
+          hint="Экспорт / импорт · импорт заменяет локальные данные"
           icon="folder-outline"
         >
           <PrimaryButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
@@ -610,11 +602,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  hero: { alignItems: 'center', marginBottom: space.xl },
+  hero: { alignItems: 'center', marginBottom: space.md },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -654,8 +646,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.lg,
+    padding: space.md,
+    marginBottom: space.sm,
     gap: space.sm,
   },
   cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },

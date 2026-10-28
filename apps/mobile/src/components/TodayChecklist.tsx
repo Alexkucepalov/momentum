@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { buildHabitWeekMarks } from '../../../../src/domain/habitWeek';
 import { HabitProgressBar } from '../features/habits/HabitProgressBar';
-import { HabitWeekStrip } from '../features/habits/HabitWeekStrip';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 export type FlexibleHabitRow = {
@@ -16,7 +15,7 @@ export type FlexibleHabitRow = {
   marks: ReturnType<typeof buildHabitWeekMarks>;
 };
 
-/** Habits checklist for Today — food/water/activity live in their own blocks. */
+/** Compact habits block — food/water live elsewhere; no nested card-in-card. */
 export function TodayChecklist({
   flexibleHabits,
   onToggleFlexible,
@@ -56,28 +55,29 @@ export function TodayChecklist({
           </Pressable>
         ) : null
       ) : (
-        flexibleHabits.map((h) => (
+        flexibleHabits.map((h, i) => (
           <Pressable
             key={h.id}
-            style={({ pressed }) => [styles.habitCard, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.habitRow,
+              i > 0 && styles.habitRowBorder,
+              pressed && styles.pressed,
+            ]}
             onPress={() => onToggleFlexible(h.id)}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: h.loggedToday }}
             accessibilityLabel={`${h.name}, ${h.weekLabel}`}
           >
-            <View style={styles.habitTop}>
-              <View style={[styles.check, h.loggedToday && styles.checkOn]}>
-                {h.loggedToday ? (
-                  <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
-                ) : null}
-              </View>
-              <View style={styles.flexBody}>
-                <Text style={[styles.label, h.loggedToday && styles.labelDone]}>{h.name}</Text>
-                <Text style={styles.week}>{h.weekLabel}</Text>
-              </View>
+            <View style={[styles.check, h.loggedToday && styles.checkOn]}>
+              {h.loggedToday ? (
+                <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
+              ) : null}
             </View>
-            <HabitProgressBar completed={h.completed} target={h.target} />
-            <HabitWeekStrip marks={h.marks} compact />
+            <View style={styles.flexBody}>
+              <Text style={[styles.label, h.loggedToday && styles.labelDone]}>{h.name}</Text>
+              <Text style={styles.week}>{h.weekLabel}</Text>
+              <HabitProgressBar completed={h.completed} target={h.target} />
+            </View>
           </Pressable>
         ))
       )}
@@ -91,8 +91,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.lg,
+    padding: space.md,
+    marginBottom: space.md,
   },
   habitsHead: {
     flexDirection: 'row',
@@ -107,16 +107,17 @@ const styles = StyleSheet.create({
   },
   manageBtn: { minHeight: touchMin / 2, justifyContent: 'center' },
   manage: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
-  habitCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: space.md,
-    marginBottom: space.sm,
-    backgroundColor: colors.background,
+  habitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: space.sm,
+    minHeight: touchMin,
   },
-  habitTop: { flexDirection: 'row', alignItems: 'center' },
-  pressed: { opacity: 0.92, backgroundColor: colors.accentSoft },
+  habitRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  pressed: { opacity: 0.88 },
   check: {
     width: 22,
     height: 22,
@@ -126,14 +127,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: space.md,
+    marginTop: 2,
   },
   checkOn: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  flexBody: { flex: 1 },
+  flexBody: { flex: 1, gap: 4 },
   label: {
-    flex: 1,
     fontSize: type.body,
     color: colors.text,
     fontWeight: '600',
@@ -146,7 +147,6 @@ const styles = StyleSheet.create({
   week: {
     fontSize: type.micro,
     color: colors.textMuted,
-    marginTop: 2,
   },
   emptyCta: {
     minHeight: 40,

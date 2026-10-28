@@ -1,76 +1,41 @@
-import { useMemo, useRef } from 'react';
-import {
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type GestureResponderEvent,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { colors, radius, space, type } from '@/src/theme/tokens';
 import { usePlanDrag } from './planDragContext';
 
-/** Floating ghost while dragging — reference screen 3. */
+/** Floating ghost — position driven by Reanimated shared values (no per-frame React). */
 export function DragOverlay({
-  onDrop,
+  pointerX,
+  pointerY,
 }: {
-  onDrop: (
-    mealId: string,
-    target: import('./planDragContext').DropTarget | null,
-  ) => void;
+  pointerX: SharedValue<number>;
+  pointerY: SharedValue<number>;
 }) {
-  const { session, updatePointer, endDrag, cancelDrag } = usePlanDrag();
-  const mealIdRef = useRef<string | null>(null);
-  mealIdRef.current = session?.meal.id ?? null;
+  const { activeMeal, cancelDrag } = usePlanDrag();
 
-  const pan = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
-          updatePointer(e.nativeEvent.pageX, e.nativeEvent.pageY);
-        },
-        onPanResponderMove: (e: GestureResponderEvent) => {
-          updatePointer(e.nativeEvent.pageX, e.nativeEvent.pageY);
-        },
-        onPanResponderRelease: () => {
-          const id = mealIdRef.current;
-          const target = endDrag();
-          if (id) onDrop(id, target);
-        },
-        onPanResponderTerminate: () => {
-          cancelDrag();
-        },
-      }),
-    [updatePointer, endDrag, cancelDrag, onDrop],
-  );
+  const ghostStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: Math.max(12, pointerX.value - 110) },
+      { translateY: Math.max(12, pointerY.value - 32) },
+    ],
+  }));
 
-  if (!session) return null;
+  if (!activeMeal) return null;
 
   return (
-    <View style={styles.root} {...pan.panHandlers} pointerEvents="box-only">
-      <View
-        pointerEvents="none"
-        style={[
-          styles.ghost,
-          {
-            left: Math.max(12, session.pointerX - 110),
-            top: Math.max(12, session.pointerY - 32),
-          },
-        ]}
-      >
+    <View style={styles.root} pointerEvents="box-none">
+      <Animated.View style={[styles.ghost, ghostStyle]} pointerEvents="none">
         <View style={styles.thumb}>
           <Text style={styles.thumbIcon}>↕</Text>
         </View>
         <View style={styles.ghostText}>
           <Text style={styles.ghostTitle} numberOfLines={1}>
-            {session.meal.displayName}
+            {activeMeal.displayName}
           </Text>
-          <Text style={styles.ghostMeta}>{Math.round(session.meal.grams)} г</Text>
+          <Text style={styles.ghostMeta}>{Math.round(activeMeal.grams)} г</Text>
         </View>
-      </View>
+      </Animated.View>
       <Pressable
         style={styles.cancel}
         onPress={cancelDrag}
@@ -91,6 +56,8 @@ const styles = StyleSheet.create({
   },
   ghost: {
     position: 'absolute',
+    left: 0,
+    top: 0,
     width: 220,
     flexDirection: 'row',
     alignItems: 'center',
@@ -100,37 +67,35 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
+    borderColor: colors.text,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
   thumb: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.preview,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  thumbIcon: { fontSize: 14, fontWeight: '800', color: colors.carbs },
+  thumbIcon: { fontSize: 16, fontWeight: '800', color: colors.text },
   ghostText: { flex: 1, minWidth: 0 },
-  ghostTitle: { fontWeight: '800', color: colors.text, fontSize: type.caption },
-  ghostMeta: { fontSize: type.micro, color: colors.textSecondary, marginTop: 2 },
+  ghostTitle: { fontSize: type.body, fontWeight: '700', color: colors.text },
+  ghostMeta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 1 },
   cancel: {
     position: 'absolute',
-    bottom: space.xl,
-    alignSelf: 'center',
-    left: '28%',
-    right: '28%',
-    minHeight: 48,
+    top: space.md,
+    right: space.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  cancelText: { fontWeight: '800', color: colors.text },
+  cancelText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
 });
