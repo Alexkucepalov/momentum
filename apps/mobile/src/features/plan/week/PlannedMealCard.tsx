@@ -1,8 +1,10 @@
+import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { PlannedMeal } from '../../../../../../src/storage/types';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { usePlanDrag } from './planDragContext';
 
 export function PlannedMealCard({
   meal,
@@ -24,17 +26,49 @@ export function PlannedMealCard({
   onLog: () => void;
 }) {
   const logged = meal.status === 'logged';
+  const { session, beginDrag } = usePlanDrag();
+  const dragging = session?.meal.id === meal.id;
+  const handleRef = useRef<View>(null);
+
+  const startDrag = () => {
+    if (logged) return;
+    handleRef.current?.measureInWindow((x, y, width, height) => {
+      beginDrag(meal, x + width / 2, y + height / 2);
+    });
+  };
 
   return (
-    <View style={styles.card} accessibilityRole="summary">
-      <Text style={styles.title} numberOfLines={2}>
-        {meal.displayName}
-      </Text>
-      <Text style={styles.meta}>
-        {Math.round(meal.grams)} г · {macrosLine}
-        {logged ? ' · в дневнике' : ''}
-      </Text>
-      {!logged ? (
+    <View
+      style={[styles.card, dragging && styles.cardDragging]}
+      accessibilityRole="summary"
+      accessibilityLabel={`${meal.displayName}. Удерживай ручку, чтобы перенести`}
+    >
+      <View style={styles.head}>
+        {!logged ? (
+          <View ref={handleRef} collapsable={false}>
+            <Pressable
+              onLongPress={startDrag}
+              delayLongPress={220}
+              style={({ pressed }) => [styles.handle, pressed && styles.handlePressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Перетащить ${meal.displayName}`}
+              accessibilityHint="Удерживайте, затем наведите на слот или день"
+            >
+              <Ionicons name="menu" size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+        ) : null}
+        <View style={styles.text}>
+          <Text style={styles.title} numberOfLines={2}>
+            {meal.displayName}
+          </Text>
+          <Text style={styles.meta}>
+            {Math.round(meal.grams)} г · {macrosLine}
+            {logged ? ' · в дневнике' : ''}
+          </Text>
+        </View>
+      </View>
+      {!logged && !dragging ? (
         <View style={styles.actions}>
           <Action icon="resize-outline" label="Порция" onPress={onPortion} />
           <Action icon="arrow-forward-outline" label="Перенести" onPress={onMove} />
@@ -43,6 +77,9 @@ export function PlannedMealCard({
           <Action icon="trash-outline" label="Удалить" onPress={onDelete} danger />
           <Action icon="restaurant-outline" label="В дневник" onPress={onLog} primary />
         </View>
+      ) : null}
+      {!logged && !session ? (
+        <Text style={styles.dragHint}>⋯ удерживай слева, чтобы перенести</Text>
       ) : null}
     </View>
   );
@@ -96,8 +133,30 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: space.sm,
   },
+  cardDragging: {
+    opacity: 0.35,
+    borderStyle: 'dashed',
+  },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  handle: {
+    width: touchMin,
+    height: touchMin,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -4,
+    marginLeft: -4,
+  },
+  handlePressed: { backgroundColor: colors.border },
+  text: { flex: 1 },
   title: { fontSize: type.body, fontWeight: '700', color: colors.text },
   meta: { fontSize: type.caption, color: colors.textSecondary },
+  dragHint: {
+    fontSize: type.micro,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
   action: {
     flexDirection: 'row',

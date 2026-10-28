@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,12 +19,17 @@ function addDays(iso: string, delta: number): string {
  */
 export type DayStripFill = 'empty' | 'partial' | 'filled';
 
+export type DayStripBox = { x: number; y: number; width: number; height: number };
+
 export function DayStrip({
   selected,
   today,
   onSelect,
   onOpenCalendar,
   fillByDate,
+  dragActive,
+  hoverDate,
+  onDayBox,
 }: {
   selected: string;
   today?: string;
@@ -31,18 +37,39 @@ export function DayStrip({
   onOpenCalendar?: () => void;
   /** Optional plan-fill dots under day numbers. */
   fillByDate?: Record<string, DayStripFill>;
+  /** Enlarge hit targets while dragging a planned meal. */
+  dragActive?: boolean;
+  hoverDate?: string | null;
+  onDayBox?: (dateLocal: string, box: DayStripBox | null) => void;
 }) {
   const weekStart = weekStartMonday(selected);
   const days = datesInWeekFromStart(weekStart);
   const weekEnd = days[6] ?? weekStart;
   const todayKey = today ?? selected;
+  const chipRefs = useRef<Map<string, View | null>>(new Map());
 
   const shiftWeek = (deltaWeeks: number) => {
     onSelect(addDays(weekStart, deltaWeeks * 7));
   };
 
+  const measureDay = (iso: string) => {
+    const node = chipRefs.current.get(iso);
+    if (!node || !onDayBox) return;
+    node.measureInWindow((x, y, width, height) => {
+      onDayBox(iso, { x, y, width, height });
+    });
+  };
+
+  useEffect(() => {
+    if (!onDayBox) return;
+    for (const iso of days) measureDay(iso);
+    return () => {
+      for (const iso of days) onDayBox(iso, null);
+    };
+  }, [days.join('|'), dragActive, onDayBox]);
+
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, dragActive && styles.wrapDrag]}>
       <View style={styles.controls}>
         <Pressable
           onPress={() => shiftWeek(-1)}
@@ -58,33 +85,44 @@ export function DayStrip({
             const on = iso === selected;
             const isToday = iso === todayKey;
             const fill = fillByDate?.[iso] ?? 'empty';
+            const hot = dragActive && hoverDate === iso;
             return (
-              <Pressable
+              <View
                 key={iso}
-                onPress={() => onSelect(iso)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  on && styles.chipOn,
-                  isToday && !on && styles.chipToday,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(iso)}${isToday ? ', сегодня' : ''}${fill === 'filled' ? ', план полный' : fill === 'partial' ? ', план частичный' : ''}`}
+                ref={(node) => {
+                  chipRefs.current.set(iso, node);
+                }}
+                onLayout={() => measureDay(iso)}
+                style={styles.chipWrap}
               >
-                <Text style={[styles.wd, on && styles.onText]}>{WEEKDAY_SHORT_RU_CAP[i]}</Text>
-                <Text style={[styles.num, on && styles.onText]}>{dayNumber(iso)}</Text>
-                {fillByDate ? (
-                  <View
-                    style={[
-                      styles.dot,
-                      fill === 'filled' && (on ? styles.dotOnFilled : styles.dotFilled),
-                      fill === 'partial' && (on ? styles.dotOnPartial : styles.dotPartial),
-                      fill === 'empty' && (on ? styles.dotOnEmpty : styles.dotEmpty),
-                    ]}
-                  />
-                ) : null}
-              </Pressable>
+                <Pressable
+                  onPress={() => onSelect(iso)}
+                  style={({ pressed }) => [
+                    styles.chip,
+                    on && styles.chipOn,
+                    isToday && !on && styles.chipToday,
+                    hot && styles.chipHot,
+                    dragActive && styles.chipDrag,
+                    pressed && styles.pressed,
+                  ]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(iso)}${isToday ? ', сегодня' : ''}${fill === 'filled' ? ', план полный' : fill === 'partial' ? ', план частичный' : ''}${hot ? ', цель переноса' : ''}`}
+                >
+                  <Text style={[styles.wd, (on || hot) && styles.onText]}>{WEEKDAY_SHORT_RU_CAP[i]}</Text>
+                  <Text style={[styles.num, (on || hot) && styles.onText]}>{dayNumber(iso)}</Text>
+                  {fillByDate ? (
+                    <View
+                      style={[
+                        styles.dot,
+                        fill === 'filled' && (on || hot ? styles.dotOnFilled : styles.dotFilled),
+                        fill === 'partial' && (on || hot ? styles.dotOnPartial : styles.dotPartial),
+                        fill === 'empty' && (on || hot ? styles.dotOnEmpty : styles.dotEmpty),
+                      ]}
+                    />
+                  ) : null}
+                </Pressable>
+              </View>
             );
           })}
         </View>
@@ -120,6 +158,11 @@ const styles = StyleSheet.create({
   wrap: {
     marginBottom: space.md,
   },
+  wrapDrag: {
+    paddingVertical: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+  },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -143,6 +186,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
   },
+  chipWrap: { flex: 1 },
   chip: {
     flex: 1,
     alignItems: 'center',
@@ -159,6 +203,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+  },
+  chipDrag: {
+    minHeight: 52,
+  },
+  chipHot: {
+    backgroundColor: colors.primaryButton,
+    transform: [{ scale: 1.06 }],
   },
   pressed: { opacity: 0.85 },
   wd: {

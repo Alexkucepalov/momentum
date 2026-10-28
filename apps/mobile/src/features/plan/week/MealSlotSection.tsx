@@ -1,9 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { PlannedMealCard } from './PlannedMealCard';
+import { usePlanDrag } from './planDragContext';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -35,9 +37,33 @@ export function MealSlotSection({
   onDelete: (m: PlannedMeal) => void;
   onLog: (m: PlannedMeal) => void;
 }) {
+  const { session, setSlotBox, isHoveringSlot } = usePlanDrag();
+  const wrapRef = useRef<View>(null);
+  const hot = isHoveringSlot(slot);
+  const dragging = session != null;
+
+  const measure = () => {
+    wrapRef.current?.measureInWindow((x, y, width, height) => {
+      setSlotBox(slot, { x, y, width, height });
+    });
+  };
+
+  useEffect(() => {
+    measure();
+    return () => setSlotBox(slot, null);
+  }, [slot, meals.length, dragging]);
+
   return (
-    <View style={styles.section} accessibilityRole="summary">
-      <Text style={styles.heading}>{MEAL_LABELS[slot]}</Text>
+    <View
+      ref={wrapRef}
+      onLayout={measure}
+      style={[styles.section, hot && styles.sectionHot, dragging && styles.sectionDragMode]}
+      accessibilityRole="summary"
+    >
+      <View style={styles.headingRow}>
+        <Text style={[styles.heading, hot && styles.headingHot]}>{MEAL_LABELS[slot]}</Text>
+        {hot ? <Text style={styles.dropLabel}>отпустить здесь</Text> : null}
+      </View>
       {meals.map((m) => (
         <PlannedMealCard
           key={m.id}
@@ -65,14 +91,39 @@ export function MealSlotSection({
 }
 
 const styles = StyleSheet.create({
-  section: { marginBottom: space.lg },
+  section: {
+    marginBottom: space.lg,
+    borderRadius: radius.lg,
+    padding: space.sm,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  sectionDragMode: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  sectionHot: {
+    borderColor: colors.primaryButton,
+    backgroundColor: colors.preview,
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: space.sm,
+  },
   heading: {
     fontSize: type.caption,
     fontWeight: '800',
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
-    marginBottom: space.sm,
+  },
+  headingHot: { color: colors.text },
+  dropLabel: {
+    fontSize: type.micro,
+    fontWeight: '800',
+    color: colors.primaryButton,
   },
   add: {
     minHeight: touchMin,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -20,8 +20,10 @@ import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
+import { DragOverlay } from './DragOverlay';
 import { MealSlotSection } from './MealSlotSection';
 import { MoveCopySheet, type MoveCopyMode } from './MoveCopySheet';
+import { PlanDragProvider, usePlanDrag, type DropTarget } from './planDragContext';
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const PERIODS: MealPlanPeriodDays[] = [3, 5, 7];
@@ -42,9 +44,18 @@ function fmtMacroLine(n: {
 }
 
 export function WeekPlannerScreen() {
+  return (
+    <PlanDragProvider>
+      <WeekPlannerBody />
+    </PlanDragProvider>
+  );
+}
+
+function WeekPlannerBody() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   const allowAdd = useAddGuard();
+  const { session, setDayBox } = usePlanDrag();
   void revision;
 
   const [selectedDate, setSelectedDate] = useState(dateLocal);
@@ -110,6 +121,47 @@ export function WeekPlannerScreen() {
     setDateLocal(d);
   };
 
+  const applyDrop = useCallback(
+    (mealId: string, target: DropTarget | null) => {
+      if (!target) {
+        showFlash('Перенос отменён');
+        return;
+      }
+      const source = dayMeals.find((m) => m.id === mealId) ??
+        // may be from another day if list is only selected day — look up via plan lists
+        null;
+      let meal = source;
+      if (!meal) {
+        for (const d of weekDays) {
+          const hit = repo.listPlannedMealsForDate(d).find((m) => m.id === mealId);
+          if (hit) {
+            meal = hit;
+            break;
+          }
+        }
+      }
+      if (!meal) return;
+
+      if (target.kind === 'slot') {
+        if (meal.dateLocal === selectedDate && meal.meal === target.slot) return;
+        repo.movePlannedMeal(mealId, { dateLocal: selectedDate, meal: target.slot });
+        refresh();
+        showFlash(`→ ${slotLabel(target.slot)}`);
+        return;
+      }
+      // day drop keeps the same meal slot
+      if (meal.dateLocal === target.dateLocal) {
+        selectDate(target.dateLocal);
+        return;
+      }
+      repo.movePlannedMeal(mealId, { dateLocal: target.dateLocal, meal: meal.meal });
+      refresh();
+      selectDate(target.dateLocal);
+      showFlash(`→ ${formatDateRu(target.dateLocal)}`);
+    },
+    [dayMeals, weekDays, repo, selectedDate, refresh, showFlash],
+  );
+
   const createDraft = () => {
     setError(null);
     try {
@@ -164,12 +216,15 @@ export function WeekPlannerScreen() {
   };
 
   return (
-    <>
-      <FormScrollView contentContainerStyle={styles.content}>
+    <View style={styles.root}>
+      <FormScrollView
+        contentContainerStyle={styles.content}
+        scrollEnabled={session == null}
+      >
         <View style={styles.banner} accessibilityRole="summary">
           <Text style={styles.bannerText}>Запланированное ≠ съеденное</Text>
           <Text style={styles.bannerSub}>
-            Меняй дни и порции свободно. В дневник — только кнопкой «В дневник».
+            Удерживай ☰ на карточке — перетащи на слот или день. Кнопки «Перенести» тоже работают.
           </Text>
         </View>
 
@@ -178,6 +233,9 @@ export function WeekPlannerScreen() {
           today={dateLocal}
           onSelect={selectDate}
           fillByDate={fillByDate}
+          dragActive={session != null}
+          hoverDate={session?.hover?.kind === 'day' ? session.hover.dateLocal : null}
+          onDayBox={setDayBox}
         />
 
         <View style={styles.todayRow}>
@@ -359,11 +417,27 @@ export function WeekPlannerScreen() {
           selectDate(destDate);
         }}
       />
-    </>
+
+      <DragOverlay onDrop={applyDrop} />
+    </View>
   );
 }
 
+function slotLabel(slot: MealSlot): string {
+  switch (slot) {
+    case 'breakfast':
+      return 'Завтрак';
+    case 'lunch':
+      return 'Обед';
+    case 'dinner':
+      return 'Ужин';
+    case 'snack':
+      return 'Перекус';
+  }
+}
+
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   content: { padding: space.lg, paddingBottom: space.xxl },
   banner: {
     backgroundColor: colors.accentSoft,
