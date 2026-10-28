@@ -8,62 +8,69 @@ import {
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
 import { localDateKey } from '../../../../src/storage/validation';
-import {
-  repeatableDayFromEntries,
-  shiftDateLocal,
-} from '../../../../src/domain/repeatMeal';
 import { shouldShowTargetsOnboarding } from '../../../../src/domain/targetsOnboarding';
-import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
-import { KcalRing } from '@/src/components/KcalRing';
-import { ScreenFooter } from '@/src/components/ScreenFooter';
 import { UndoBar } from '@/src/components/UndoBar';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
-import { useAddGuard } from '@/src/hooks/useAddGuard';
+import { HomeActionCards } from '@/src/features/home/HomeActionCards';
+import { HomeNutritionSplit } from '@/src/features/home/HomeNutritionSplit';
+import { HomeWeightCard } from '@/src/features/home/HomeWeightCard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
-function formatDateLine(iso: string, today: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  const weekday = dt.toLocaleDateString('ru-RU', { weekday: 'long', timeZone: 'UTC' });
-  const dayMonth = dt.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'UTC',
-  });
-  const cap = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  if (iso === today) return `${cap} · ${dayMonth}`;
-  if (iso < today) return `${cap} · ${dayMonth} · прошлый день`;
-  return `${cap} · ${dayMonth} · будущий день`;
-}
-
-/** Today = log food fast. Secondary (plan / water / habits) stays quiet below. */
+/** Today = Home ref 01: weight · nutrition split · Start/Log · quiet secondary. */
 export default function TodayScreen() {
   const router = useRouter();
-  const { repo, dateLocal, setDateLocal, meal, setMeal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
-  const allowAdd = useAddGuard();
   const [open, setOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+
   const totals = repo.dailyTotals(dateLocal);
-  const todayEntries = repo.listEntriesForDate(dateLocal);
-  const recent = repo.listRecentEntries(6);
-  const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
   const showTargetsOnboarding = shouldShowTargetsOnboarding(profile);
   const today = localDateKey(new Date(), profile.timezone);
-  const activityMinutes = repo.activityMinutesForDate(dateLocal);
-  const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
-  const dateLine = formatDateLine(dateLocal, today);
-  const yesterdayCount = repo.listEntriesForDate(shiftDateLocal(dateLocal, -1)).length;
+  const waterMl = repo.waterMlForDate(dateLocal);
+  const latest = repo.latestWeight();
+  const weights = repo.listWeights(14);
+
+  const weekWeight = useMemo(() => {
+    if (weights.length === 0) {
+      return { kg: null as number | null, deltaLabel: null as string | null, deltaSigned: 0, bars: [] as number[] };
+    }
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const newestAt = new Date(weights[0].weighedAt).getTime();
+    const inWeek = weights.filter((w) => newestAt - new Date(w.weighedAt).getTime() <= weekMs);
+    const series = [...inWeek].reverse();
+    const kgs = series.map((w) => w.kg);
+    const min = Math.min(...kgs);
+    const max = Math.max(...kgs);
+    const span = max - min;
+    const bars = kgs.map((k) => (span <= 0 ? 0.55 : 0.2 + ((k - min) / span) * 0.8));
+    let deltaLabel: string | null = null;
+    let deltaSigned = 0;
+    if (inWeek.length >= 2) {
+      const oldest = inWeek[inWeek.length - 1];
+      deltaSigned = Math.round((weights[0].kg - oldest.kg) * 10) / 10;
+      if (deltaSigned === 0) deltaLabel = 'За неделю без изменений';
+      else {
+        const sign = deltaSigned > 0 ? '+' : '';
+        deltaLabel = `За неделю ${sign}${deltaSigned} кг`;
+      }
+    }
+    return {
+      kg: latest?.kg ?? null,
+      deltaLabel,
+      deltaSigned,
+      bars: bars.slice(-7),
+    };
+  }, [weights, latest]);
 
   const flexibleRows = useMemo(() => {
     return repo
@@ -81,8 +88,6 @@ export default function TodayScreen() {
             stats.target,
             h.kind === 'quantity' ? h.unit : null,
           ),
-          completed: stats.completed,
-          target: stats.target,
           marks: buildHabitWeekMarks({
             dateLocal,
             isLogged: (day) => repo.isFlexibleHabitLogged(h.id, day),
@@ -101,34 +106,9 @@ export default function TodayScreen() {
         ? `${(waterMl / 1000).toFixed(1)} л`
         : '0 л';
 
-  const repeat = (e: (typeof recent)[number]) => {
-    if (!allowAdd()) return;
-    if (e.productId) {
-      repo.addEntryFromProduct({
-        productId: e.productId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    } else if (e.recipeId) {
-      repo.addEntryFromRecipe({
-        recipeId: e.recipeId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    } else {
-      return;
-    }
-    refresh();
-    showFlash(`Добавлено: ${e.displayName}`);
-  };
-
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.dateLine}>{dateLine}</Text>
-
         <DayStrip
           selected={dateLocal}
           today={today}
@@ -136,73 +116,29 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <View style={styles.ringCard}>
-          <KcalRing
-            variant="compact"
-            totals={totals}
-            targets={{
-              energyKcal: profile.dailyEnergyKcal,
-              proteinG: profile.dailyProteinG,
-              fatG: profile.dailyFatG,
-              carbG: profile.dailyCarbG,
-            }}
-            activityKcal={activityKcal}
-            activityMinutes={activityMinutes}
-            onSetTarget={() => router.push('/profile')}
-          />
-        </View>
-
-        <AddFoodBlock
-          meal={meal}
-          onChangeMeal={setMeal}
-          showMealChips={false}
-          todayEntries={todayEntries}
-          quickRepeats={recent.map((e) => ({
-            id: e.id,
-            displayName: e.displayName,
-            grams: e.grams,
-          }))}
-          onRepeat={(id) => {
-            const e = recent.find((r) => r.id === id);
-            if (e) repeat(e);
-          }}
-          onAddFood={() => setOpen(true)}
-          onCopyYesterday={
-            yesterdayCount > 0
-              ? () => {
-                  if (!allowAdd()) return;
-                  const yesterday = shiftDateLocal(dateLocal, -1);
-                  const items = repeatableDayFromEntries(repo.listEntriesForDate(yesterday));
-                  if (items.length === 0) {
-                    showFlash('Вчерашний рацион пуст или без продукта/рецепта');
-                    return;
-                  }
-                  for (const item of items) {
-                    if (item.kind === 'product') {
-                      repo.addEntryFromProduct({
-                        productId: item.productId,
-                        dateLocal,
-                        meal: item.meal,
-                        grams: item.grams,
-                      });
-                    } else {
-                      repo.addEntryFromRecipe({
-                        recipeId: item.recipeId,
-                        dateLocal,
-                        meal: item.meal,
-                        grams: item.grams,
-                      });
-                    }
-                  }
-                  refresh();
-                  showFlash(`Повторили вчера · ${items.length}`);
-                }
-              : undefined
-          }
-          onOpenDiary={() => router.push('/(tabs)/food')}
+        <HomeWeightCard
+          kg={weekWeight.kg}
+          deltaLabel={weekWeight.deltaLabel}
+          deltaSigned={weekWeight.deltaSigned}
+          weekBars={weekWeight.bars}
+          onPress={() => router.push('/progress')}
         />
 
-        <TodayPlanStrip />
+        <HomeNutritionSplit
+          totals={totals}
+          targets={{
+            energyKcal: profile.dailyEnergyKcal,
+            proteinG: profile.dailyProteinG,
+            fatG: profile.dailyFatG,
+            carbG: profile.dailyCarbG,
+          }}
+          onPress={() => router.push('/(tabs)/food')}
+        />
+
+        <HomeActionCards
+          onStartWorkout={() => router.push('/(tabs)/activity')}
+          onLogMeal={() => setOpen(true)}
+        />
 
         <View style={styles.quietCard}>
           <Pressable
@@ -222,15 +158,13 @@ export default function TodayScreen() {
 
           <Pressable
             onPress={() => router.push('/progress')}
-            style={({ pressed }) => [styles.quietRow, styles.quietRowBorder, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.quietRow, styles.quietBorder, pressed && styles.pressed]}
             accessibilityRole="link"
             accessibilityLabel="Привычки"
           >
             <Ionicons name="checkbox-outline" size={18} color={colors.text} />
             <Text style={styles.quietRowText}>
-              {habitsTotal === 0
-                ? 'Привычки'
-                : `Привычки ${habitsDone}/${habitsTotal}`}
+              {habitsTotal === 0 ? 'Привычки' : `Привычки ${habitsDone}/${habitsTotal}`}
             </Text>
             <Text style={styles.quietRowAction}>→</Text>
           </Pressable>
@@ -268,34 +202,14 @@ export default function TodayScreen() {
         </View>
 
         <Pressable
-          onPress={() => router.push('/plan/eat-now')}
-          style={styles.secondaryLink}
-          accessibilityRole="link"
-          accessibilityLabel="Что съесть сейчас"
-        >
-          <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
-        </Pressable>
-      </FormScrollView>
-
-      <ScreenFooter>
-        <Pressable
-          style={({ pressed }) => [styles.footerIcon, pressed && styles.pressed]}
           onPress={() => setBarcodeOpen(true)}
+          style={styles.secondaryLink}
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
         >
-          <Ionicons name="barcode-outline" size={22} color={colors.text} />
+          <Text style={styles.secondaryLinkText}>Штрихкод →</Text>
         </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.footerAdd, pressed && styles.pressed]}
-          onPress={() => setOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Добавить еду"
-        >
-          <Ionicons name="add" size={20} color={colors.primaryButtonText} />
-          <Text style={styles.footerAddText}>Добавить еду</Text>
-        </Pressable>
-      </ScreenFooter>
+      </FormScrollView>
 
       <TargetsOnboardingSheet
         visible={showTargetsOnboarding}
@@ -321,17 +235,7 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 140 },
-  dateLine: {
-    marginBottom: space.sm,
-    fontSize: type.body,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  /** Outer slot only — KcalRing already paints its own surface (shared with Food). */
-  ringCard: {
-    marginBottom: space.sm,
-  },
+  content: { padding: space.lg, paddingBottom: 120 },
   quietCard: {
     ...surfaceCard,
     paddingHorizontal: space.md,
@@ -345,7 +249,7 @@ const styles = StyleSheet.create({
     minHeight: touchMin,
     paddingVertical: space.sm,
   },
-  quietRowBorder: {
+  quietBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
@@ -376,37 +280,11 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     minHeight: touchMin,
     justifyContent: 'center',
-    marginTop: space.sm,
   },
   secondaryLinkText: {
     fontSize: type.caption,
     fontWeight: '700',
     color: colors.textSecondary,
-  },
-  footerIcon: {
-    width: touchMin,
-    height: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerAdd: {
-    flex: 1,
-    minHeight: touchMin,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryButton,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-  },
-  footerAddText: {
-    fontSize: type.body,
-    fontWeight: '800',
-    color: colors.primaryButtonText,
   },
   pressed: { opacity: 0.88 },
 });

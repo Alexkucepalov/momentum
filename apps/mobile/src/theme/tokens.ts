@@ -1,23 +1,25 @@
 import type { ViewStyle } from 'react-native';
 
-/** Visual tokens aligned with Momentum reference (light, minimal, black CTAs). */
+/**
+ * Visual tokens locked to docs/design/refs:
+ * 01-home-light · 02-weight-log-dark · 03-workouts-bento-dark
+ */
 export const colors = {
-  background: '#F4F5F7',
+  background: '#F2F2F2',
   surface: '#FFFFFF',
   text: '#111111',
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   accent: '#111111',
   accentSoft: '#E8EAED',
-  /** Warm coral — today / trend focus only; CTAs stay black. */
-  focus: '#E8846B',
-  focusSoft: '#FCEDE8',
+  /** Coral — today / trend only (ref 01). CTAs stay black. */
+  focus: '#EF6E58',
+  focusSoft: '#FCE8E4',
   primaryButton: '#111111',
   primaryButtonText: '#FFFFFF',
   border: '#E5E7EB',
   danger: '#B42318',
   preview: '#EEF2FF',
-  // Macro accents (never rely on color alone — always pair with labels)
   protein: '#22C55E',
   fat: '#F59E0B',
   carbs: '#3B82F6',
@@ -34,6 +36,13 @@ export const colors = {
   cameraMaskHeavy: 'rgba(0, 0, 0, 0.72)',
   successOverlay: 'rgba(22, 163, 74, 0.28)',
   inverseHairline: 'rgba(255, 255, 255, 0.4)',
+  /** Ref 02 / 03 dark sheets */
+  darkBg: '#000000',
+  darkSurface: '#1C1C1E',
+  darkSurfaceRaised: '#2C2C2E',
+  darkText: '#FFFFFF',
+  darkTextSecondary: '#A1A1AA',
+  darkTextMuted: '#71717A',
 } as const;
 
 export const space = {
@@ -46,9 +55,9 @@ export const space = {
 } as const;
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
+  sm: 12,
+  md: 16,
+  lg: 20,
   xl: 24,
   pill: 999,
 } as const;
@@ -56,33 +65,31 @@ export const radius = {
 export const touchMin = 48;
 
 export const type = {
-  hero: 34,
-  title: 22,
+  hero: 36,
+  title: 28,
   subtitle: 17,
   body: 15,
   caption: 13,
   micro: 11,
 } as const;
 
-/** Soft card lift — prefer over hard borders for vibe polish. */
 export const elevation = {
   card: {
     shadowColor: colors.shadow,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   } satisfies ViewStyle,
   tabBar: {
     shadowColor: colors.shadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -2 },
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
   } satisfies ViewStyle,
 } as const;
 
-/** Default elevated surface card — use instead of borderWidth:1 panels. */
 export const surfaceCard = {
   backgroundColor: colors.surface,
   borderRadius: radius.xl,

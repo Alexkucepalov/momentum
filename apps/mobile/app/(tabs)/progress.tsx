@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 
@@ -16,6 +16,7 @@ import { ChallengesPanel } from '@/src/features/challenges/ChallengesPanel';
 import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
+import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
@@ -35,7 +36,7 @@ export default function ProgressScreen() {
   void revision;
   const [tab, setTab] = useState<ProgressTab>('summary');
   const [lastExport, setLastExport] = useState<string | null>(null);
-  const [kgRaw, setKgRaw] = useState('');
+  const [weightOpen, setWeightOpen] = useState(false);
   const profile = repo.getProfile();
   const latest = repo.latestWeight();
   const weights = repo.listWeights(30);
@@ -114,17 +115,12 @@ export default function ProgressScreen() {
     }
   };
 
-  const onSaveWeight = () => {
-    const kg = Number(kgRaw.replace(',', '.'));
-    if (!Number.isFinite(kg) || kg <= 0) {
-      Alert.alert('Вес', 'Введи положительное число в кг');
-      return;
-    }
+  const onSaveWeight = (kg: number) => {
     try {
       repo.addWeight(kg);
-      setKgRaw('');
       refresh();
       showFlash(`Вес сохранён: ${kg} кг`);
+      setWeightOpen(false);
     } catch (e) {
       Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не сохранено');
     }
@@ -172,7 +168,40 @@ export default function ProgressScreen() {
           })}
         </View>
 
-        {tab === 'summary' ? <WeeklyInsightCard insight={weekInsight} /> : null}
+        {tab === 'summary' ? (
+          <>
+            <View style={styles.bentoRow}>
+              <Pressable
+                onPress={() => setTab('body')}
+                style={({ pressed }) => [styles.bentoHalf, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Вес"
+              >
+                <Text style={styles.bentoLabel}>Вес</Text>
+                <Text style={styles.bentoHero}>{latest ? `${latest.kg}` : '—'}</Text>
+                <Text style={styles.bentoMeta}>{latest ? 'кг' : 'добавь запись'}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/(tabs)/activity')}
+                style={({ pressed }) => [styles.bentoHalf, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Активность за неделю"
+              >
+                <Text style={styles.bentoLabel}>Активность</Text>
+                <Text style={styles.bentoHero}>{sportWeekMinutes.count}</Text>
+                <Text style={styles.bentoMeta}>{sportWeekMinutes.mins} мин · неделя</Text>
+              </Pressable>
+            </View>
+            <View style={styles.bentoWide}>
+              <Text style={styles.bentoLabel}>Объём недели</Text>
+              <Text style={styles.bentoWideValue}>
+                {sportWeekMinutes.mins}
+                <Text style={styles.bentoMeta}> мин</Text>
+              </Text>
+            </View>
+            <WeeklyInsightCard insight={weekInsight} />
+          </>
+        ) : null}
 
         {tab === 'habits' ? (
           <>
@@ -215,16 +244,7 @@ export default function ProgressScreen() {
                 entriesNewestFirst={weights.map((w) => ({ kg: w.kg, weighedAt: w.weighedAt }))}
               />
 
-              <TextInput
-                value={kgRaw}
-                onChangeText={setKgRaw}
-                keyboardType="decimal-pad"
-                placeholder="кг"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                accessibilityLabel="Вес в килограммах"
-              />
-              <PrimaryButton label="Сохранить вес" onPress={onSaveWeight} />
+              <PrimaryButton label="Записать вес" onPress={() => setWeightOpen(true)} />
             </View>
 
             <View style={styles.card}>
@@ -357,6 +377,12 @@ export default function ProgressScreen() {
           </>
         ) : null}
       </FormScrollView>
+      <WeightLogSheet
+        visible={weightOpen}
+        onClose={() => setWeightOpen(false)}
+        recent={weights}
+        onLog={onSaveWeight}
+      />
       <FlashBar />
     </View>
   );
@@ -396,6 +422,48 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     color: colors.textMuted,
     marginBottom: space.sm,
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    gap: space.sm,
+    marginBottom: space.sm,
+  },
+  bentoHalf: {
+    ...surfaceCard,
+    flex: 1,
+    padding: space.lg,
+    minHeight: 120,
+  },
+  bentoWide: {
+    ...surfaceCard,
+    padding: space.lg,
+    marginBottom: space.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bentoLabel: {
+    fontSize: type.micro,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  bentoHero: {
+    fontSize: type.hero,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -1,
+  },
+  bentoWideValue: {
+    fontSize: type.title,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  bentoMeta: {
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    marginTop: 4,
   },
   card: {
     ...surfaceCard,
