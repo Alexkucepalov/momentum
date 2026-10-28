@@ -314,6 +314,12 @@ function WeekPlannerBody() {
               }}
             />
 
+            {daySummary.empty ? (
+              <Text style={styles.emptyHint} accessibilityRole="text">
+                Добавь первое блюдо
+              </Text>
+            ) : null}
+
             {SLOTS.map((slot) => (
               <MealSlotSection
                 key={slot}
@@ -526,6 +532,11 @@ const styles = StyleSheet.create({
   },
   dayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
   todayLink: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  emptyHint: {
+    fontSize: type.caption,
+    color: colors.textMuted,
+    marginBottom: space.sm,
+  },
   secondaryToggle: {
     minHeight: touchMin,
     alignItems: 'center',

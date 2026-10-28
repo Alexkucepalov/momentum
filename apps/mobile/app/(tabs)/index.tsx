@@ -24,7 +24,6 @@ import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
 import { SectionHeader } from '@/src/components/SectionHeader';
 import { StatCards } from '@/src/components/StatCards';
@@ -299,12 +298,14 @@ export default function TodayScreen() {
         >
           <Ionicons name="barcode-outline" size={22} color={colors.text} />
         </Pressable>
-        <View style={styles.footerBtn}>
-          <PrimaryButton
-            label="Что съесть сейчас"
-            onPress={() => router.push('/plan/eat-now')}
-          />
-        </View>
+        <Pressable
+          style={({ pressed }) => [styles.footerEatNow, pressed && styles.pressed]}
+          onPress={() => router.push('/plan/eat-now')}
+          accessibilityRole="button"
+          accessibilityLabel="Что съесть сейчас"
+        >
+          <Text style={styles.footerEatNowText}>Что съесть сейчас</Text>
+        </Pressable>
       </ScreenFooter>
 
       <TargetsOnboardingSheet
@@ -444,5 +445,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  footerBtn: { flex: 1 },
+  footerEatNow: {
+    flex: 1,
+    minHeight: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+  },
+  footerEatNowText: {
+    fontSize: type.body,
+    fontWeight: '700',
+    color: colors.text,
+  },
 });
