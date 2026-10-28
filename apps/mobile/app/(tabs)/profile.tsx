@@ -16,6 +16,8 @@ import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { SectionTitle } from '@/src/ui/SectionTitle';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -260,12 +262,13 @@ export default function ProfileScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
+        <SectionTitle title="Профиль" />
         <View style={styles.hero}>
           <View style={styles.avatar}>
             <Ionicons name="person" size={28} color={colors.text} />
           </View>
           <Text style={styles.name} accessibilityRole="header">
-            Профиль
+            Цели и данные
           </Text>
           <Text style={styles.meta}>Только на устройстве · {profile.timezone}</Text>
           {summary.length > 0 ? (
@@ -513,7 +516,7 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <View style={styles.card}>
+    <AppCard style={styles.card}>
       <View style={styles.cardHead}>
         <View style={styles.cardIcon}>
           <Ionicons name={icon} size={18} color={colors.text} />
@@ -526,7 +529,7 @@ function SettingsCard({
         </View>
       </View>
       {children}
-    </View>
+    </AppCard>
   );
 }
 
@@ -644,8 +647,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   card: {
-    ...surfaceCard,
-    padding: space.md,
     marginBottom: space.sm,
     gap: space.sm,
   },
