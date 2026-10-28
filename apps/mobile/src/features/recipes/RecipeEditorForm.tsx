@@ -424,10 +424,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
+    borderWidth: 1,
+    borderColor: colors.border,
     minHeight: touchMin,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     paddingHorizontal: space.md,
     fontSize: type.body,
     color: colors.text,
@@ -449,9 +450,6 @@ const styles = StyleSheet.create({
   macroRow: { flexDirection: 'row', gap: space.sm },
   third: { flex: 1 },
   ingCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
     marginBottom: space.sm,
   },

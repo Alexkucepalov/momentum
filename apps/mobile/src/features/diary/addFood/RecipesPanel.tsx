@@ -334,9 +334,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.sm,
     minHeight: touchMin,
   },
@@ -373,9 +370,6 @@ const styles = StyleSheet.create({
   createText: { fontWeight: '700', color: colors.text },
   createCard: {
     marginTop: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
   },
   createHead: {

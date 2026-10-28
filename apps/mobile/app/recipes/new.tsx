@@ -9,7 +9,8 @@ import { clearImportTextDraft } from '@/src/features/recipes/importTextDraftStor
 import { consumeRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, type } from '@/src/theme/tokens';
+import { colors, space, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 export default function NewRecipeScreen() {
   const router = useRouter();
@@ -20,13 +21,13 @@ export default function NewRecipeScreen() {
   return (
     <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
       {fromImport ? (
-        <View style={styles.banner} accessibilityRole="summary">
+        <AppCard padding="md" style={styles.banner} accessibilityRole="summary">
           <Text style={styles.bannerTitle}>Черновик из текста</Text>
           <Text style={styles.bannerBody}>
             Проверь название, выход и граммы. Пустые КБЖУ — это нормально: не подставляем нули.
             Сохрани, когда всё ок.
           </Text>
-        </View>
+        </AppCard>
       ) : (
         <View style={styles.alt}>
           <Text style={styles.altTitle}>Другие способы</Text>
@@ -74,9 +75,6 @@ const styles = StyleSheet.create({
   content: { padding: space.lg },
   banner: {
     backgroundColor: colors.focusSoft,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
     marginBottom: space.md,
   },
   bannerTitle: { fontWeight: '800', fontSize: type.subtitle, color: colors.text },

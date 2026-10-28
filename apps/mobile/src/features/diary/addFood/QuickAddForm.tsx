@@ -220,9 +220,6 @@ const styles = StyleSheet.create({
   modeChip: {
     flex: 1,
     minHeight: 40,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.sm,
@@ -242,10 +239,11 @@ const styles = StyleSheet.create({
   field: { marginBottom: space.sm },
   label: { fontSize: type.caption, color: colors.textSecondary, marginBottom: 4, fontWeight: '600' },
   input: {
+    borderWidth: 1,
+    borderColor: colors.border,
     minHeight: touchMin,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     paddingHorizontal: space.md,
     fontSize: type.body,
     color: colors.text,

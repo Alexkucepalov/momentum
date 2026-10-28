@@ -339,9 +339,6 @@ const styles = StyleSheet.create({
   toolBtnText: { color: colors.textOnInverse, fontWeight: '700', fontSize: type.caption },
   toolBtnTextOn: { color: colors.text },
   fallback: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
     marginBottom: space.lg,
     gap: space.md,

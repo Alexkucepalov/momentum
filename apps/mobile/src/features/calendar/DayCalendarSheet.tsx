@@ -410,9 +410,6 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendLabel: { fontSize: type.micro, color: colors.textSecondary, fontWeight: '600' },
   detail: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.lg,
   },
   detailTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },

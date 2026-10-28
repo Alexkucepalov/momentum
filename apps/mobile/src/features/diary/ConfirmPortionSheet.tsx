@@ -373,10 +373,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fieldInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
     minHeight: 44,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     paddingHorizontal: space.md,
     fontSize: type.body,
     fontWeight: '600',

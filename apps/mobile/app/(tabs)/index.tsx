@@ -30,7 +30,7 @@ import { ListRow } from '@/src/ui/ListRow';
 import { SectionTitle } from '@/src/ui/SectionTitle';
 import { SoftHeader } from '@/src/ui/SoftHeader';
 
-/** Today = soft wellness home (ref 08) + jobs from ref 01. */
+/** Today — Nutrition Soft Light (CONTRACT): one primary log CTA. */
 export default function TodayScreen() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();

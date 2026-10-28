@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Full-screen visual pack after ADR-009 / Plan tab (#116).
+ * Full-screen visual pack (Nutrition Soft Light / Design Reset #148).
  * Expo web · 390×844 @2x. NOT physical Android Pass.
+ * Output: docs/quality/visual-audit-pack/2026-10-29-screens/
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -12,7 +13,7 @@ const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'docs', 'quality', 'visual-audit-pack', '2026-10-24-screens');
+const outDir = join(root, 'docs', 'quality', 'visual-audit-pack', '2026-10-29-screens');
 const base = process.env.BASE_URL ?? 'http://localhost:8081';
 const chromePath =
   process.env.CHROME_PATH ??
@@ -69,7 +70,7 @@ async function clearStore() {
 }
 
 async function goto(path) {
-  await page.goto(`${base}${path}`, { waitUntil: 'networkidle0', timeout: 90000 });
+  await page.goto(`${base}${path}`, { waitUntil: 'networkidle0', timeout: 180000 });
   await sleep(1100);
 }
 

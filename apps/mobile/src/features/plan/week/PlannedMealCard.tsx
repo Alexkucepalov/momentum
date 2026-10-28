@@ -155,17 +155,17 @@ export function PlannedMealCard({
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
     paddingVertical: space.sm,
     paddingLeft: space.sm,
     paddingRight: space.xs,
     marginBottom: space.sm,
     minHeight: touchMin + 8,
     gap: 2,
-    ...elevation.card,
   },
   cardDragging: {
     opacity: 0.35,

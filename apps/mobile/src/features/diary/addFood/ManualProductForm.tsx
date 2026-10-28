@@ -132,9 +132,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,

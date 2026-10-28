@@ -842,6 +842,8 @@ const styles = StyleSheet.create({
   actionLabel: { fontSize: type.micro, fontWeight: '700', color: colors.text },
   actionLabelOn: { color: colors.primaryButtonText },
   searchBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
@@ -850,8 +852,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     minHeight: 44,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   header: {
@@ -928,9 +929,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     marginBottom: space.md,
@@ -942,9 +940,6 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   empty: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.lg,
   },
   emptyTitle: {

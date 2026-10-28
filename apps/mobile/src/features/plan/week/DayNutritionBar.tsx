@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { DayPlanNutritionSummary } from '../../../../../../src/domain/plannedMealNutrition';
-import { colors, elevation, radius, space, type } from '@/src/theme/tokens';
+import { colors, space, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 function fmt(n: number | null): string {
   return n === null ? '—' : String(Math.round(n));
@@ -21,10 +22,15 @@ export function DayNutritionBar({
 }) {
   if (summary.empty) {
     return (
-      <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План дня пуст">
+      <AppCard
+        padding="md"
+        style={styles.wrap}
+        accessibilityRole="summary"
+        accessibilityLabel="План дня пуст"
+      >
         <Text style={styles.emptyTitle}>День без плана</Text>
         <Text style={styles.emptyBody}>Добавьте первое блюдо — это ещё не дневник.</Text>
-      </View>
+      </AppCard>
     );
   }
 
@@ -32,7 +38,8 @@ export function DayNutritionBar({
   const target = targets.energyKcal;
 
   return (
-    <View
+    <AppCard
+      padding="md"
       style={styles.wrap}
       accessibilityRole="summary"
       accessibilityLabel={
@@ -55,7 +62,7 @@ export function DayNutritionBar({
       {summary.incomplete ? (
         <Text style={styles.incomplete}>Есть неизвестные КБЖУ — сумма неполная</Text>
       ) : null}
-    </View>
+    </AppCard>
   );
 }
 
@@ -83,10 +90,6 @@ function MacroDot({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
     marginBottom: space.md,
     gap: space.sm,
   },

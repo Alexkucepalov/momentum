@@ -103,9 +103,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     paddingHorizontal: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
   },
   rowPrimary: {
     backgroundColor: colors.primaryButton,

@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatDateRu } from '../../../../../../src/domain/dateFormatRu';
 import type { DayPlanNutritionSummary } from '../../../../../../src/domain/plannedMealNutrition';
 import { dayNumber, WEEKDAY_SHORT_RU_CAP } from '@/src/components/weekFormat';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
-/** Compact week bars — reference screen 6, without decorative dashboards. */
+/** Compact week bars — Soft Light AppCard shell. */
 export function WeekOverview({
   days,
   summaries,
@@ -26,7 +27,7 @@ export function WeekOverview({
   );
 
   return (
-    <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="Обзор недели">
+    <AppCard style={styles.wrap} accessibilityRole="summary" accessibilityLabel="Обзор недели">
       <Text style={styles.title}>Неделя</Text>
       <View style={styles.bars}>
         {days.map((iso, i) => {
@@ -67,16 +68,12 @@ export function WeekOverview({
         })}
       </View>
       <Text style={styles.hint}>«?» / «частично» — неизвестные КБЖУ, не ноль</Text>
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
     marginBottom: space.md,
     gap: space.sm,
   },
@@ -92,22 +89,21 @@ const styles = StyleSheet.create({
   },
   colOn: { backgroundColor: colors.accentSoft },
   barTrack: {
-    height: 100,
+    height: 96,
     width: '70%',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   barFill: {
     width: '100%',
-    borderRadius: radius.sm,
-    backgroundColor: colors.primaryButton,
-    minHeight: 8,
+    borderRadius: 4,
+    backgroundColor: colors.text,
   },
-  barPartial: { backgroundColor: colors.warning },
-  barEmpty: { backgroundColor: colors.border, opacity: 0.7 },
+  barPartial: { backgroundColor: colors.textMuted },
+  barEmpty: { backgroundColor: colors.accentSoft },
   wd: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
-  num: { fontSize: type.caption, fontWeight: '800', color: colors.text },
   wdOn: { color: colors.text },
-  kcal: { fontSize: 10, fontWeight: '700', color: colors.textMuted },
+  num: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  kcal: { fontSize: 9, color: colors.textMuted },
   hint: { fontSize: type.micro, color: colors.textMuted },
 });

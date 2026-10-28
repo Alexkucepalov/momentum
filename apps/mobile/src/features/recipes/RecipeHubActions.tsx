@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 type Action = {
   key: string;
@@ -69,14 +70,11 @@ export function RecipeHubActions({
       {open ? (
         <View style={[styles.row, compact && styles.rowCompact]}>
           {actions.map((a) => (
-            <Pressable
+            <AppCard
               key={a.key}
+              padding="none"
+              style={[styles.card, compact && styles.cardCompact]}
               onPress={() => router.push(a.href)}
-              style={({ pressed }) => [
-                styles.card,
-                compact && styles.cardCompact,
-                pressed && styles.pressed,
-              ]}
               accessibilityRole="button"
               accessibilityLabel={`${a.title}. ${a.subtitle}`}
             >
@@ -91,7 +89,7 @@ export function RecipeHubActions({
                   {a.subtitle}
                 </Text>
               ) : null}
-            </Pressable>
+            </AppCard>
           ))}
         </View>
       ) : null}
@@ -121,13 +119,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space.md,
     paddingHorizontal: space.xs,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
   },
   cardCompact: { minHeight: 44, paddingVertical: 8 },
   pressed: { opacity: 0.88 },

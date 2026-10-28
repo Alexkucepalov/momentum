@@ -21,7 +21,8 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 type Filter = 'all' | 'mine' | 'archive';
 
@@ -189,8 +190,9 @@ function RecipeCard({
   const fromArchive = isArchiveRecipe(recipe);
   const per100 = macrosForStrip(nutritionPer100gCooked(recipe, ingredients));
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    <AppCard
+      padding="none"
+      style={styles.card}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Рецепт ${recipe.name}`}
@@ -216,7 +218,7 @@ function RecipeCard({
         </Text>
         <MacroStrip {...per100} />
       </View>
-    </Pressable>
+    </AppCard>
   );
 }
 
@@ -233,14 +235,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     marginBottom: space.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
@@ -292,9 +295,6 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,

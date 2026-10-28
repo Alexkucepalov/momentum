@@ -131,9 +131,6 @@ export function AddFoodBlock({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.lg,
     marginBottom: space.lg,
   },

@@ -14,6 +14,7 @@ import { useData } from '../../state/DataContext';
 import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 import { collectFlexibleReportInput } from './collectFlexibleReport';
 import { shareHtmlAsPdf } from './shareReportPdf';
+import { AppCard } from '@/src/ui/AppCard';
 
 const ALL_CATS: ReportCategory[] = ['profile', 'nutrition', 'activity', 'weight', 'habits'];
 
@@ -100,7 +101,7 @@ export function FlexibleReportPanel() {
   };
 
   return (
-    <View style={styles.wrap}>
+    <AppCard padding="lg" style={styles.wrap}>
       <View style={styles.hero}>
         <View style={styles.icon}>
           <Ionicons name="document-text-outline" size={20} color={colors.text} />
@@ -186,15 +187,12 @@ export function FlexibleReportPanel() {
         onPress={() => void generate()}
         disabled={busy || cats.length === 0}
       />
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.lg,
     marginBottom: space.xl,
   },

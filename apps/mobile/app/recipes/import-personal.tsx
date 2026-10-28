@@ -12,7 +12,8 @@ import {
   listPersonalRecipePreviews,
 } from '@/src/features/recipes/personalRecipesPack';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 type Scope = 'suggested' | 'all' | 'prepared';
@@ -117,7 +118,7 @@ export default function ImportPersonalRecipesScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
+        <AppCard padding="lg" style={styles.hero}>
           <View style={styles.heroIcon}>
             <Ionicons name="library-outline" size={28} color={colors.text} />
           </View>
@@ -126,7 +127,7 @@ export default function ImportPersonalRecipesScreen() {
             Рецепты из переписки. Выбери, что перенести в библиотеку. Без точных грамм — в
             описание, КБЖУ не выдумываем. Повторный импорт не создаёт дубликаты.
           </Text>
-        </View>
+        </AppCard>
 
         <View style={styles.scopes} accessibilityRole="tablist">
           {(
@@ -165,7 +166,7 @@ export default function ImportPersonalRecipesScreen() {
           })}
         </View>
 
-        <View style={styles.toolbarCard}>
+        <AppCard padding="lg" style={styles.toolbarCard}>
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text style={styles.statValue}>{visible.length}</Text>
@@ -202,7 +203,7 @@ export default function ImportPersonalRecipesScreen() {
               <Text style={styles.toolText}>Снять</Text>
             </Pressable>
           </View>
-        </View>
+        </AppCard>
 
         {visible.length === 0 ? (
           <EmptyState
@@ -349,17 +350,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, gap: space.sm, paddingBottom: 24 },
   hero: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.xl,
     marginBottom: space.lg,
     alignItems: 'flex-start',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   heroIcon: {
     width: 56,
@@ -401,17 +393,8 @@ const styles = StyleSheet.create({
   scopeText: { fontWeight: '700', fontSize: type.caption, color: colors.text },
   scopeTextOn: { color: colors.primaryButtonText },
   toolbarCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
     marginBottom: space.lg,
     gap: space.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
   },
   statsRow: {
     flexDirection: 'row',
@@ -443,15 +426,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    ...elevation.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
     marginBottom: space.md,
     gap: space.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
   },
   cardOn: { borderColor: colors.accent, borderWidth: 2, backgroundColor: colors.accentSoft },
   cardBlocked: { opacity: 0.62 },

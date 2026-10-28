@@ -18,7 +18,8 @@ import { MacroStrip } from '@/src/components/MacroStrip';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 export default function MyProductsScreen() {
@@ -204,7 +205,7 @@ export default function MyProductsScreen() {
       </View>
 
       {importOpen ? (
-        <View style={styles.importBox}>
+        <AppCard padding="md" style={styles.importBox}>
           <Text style={styles.steps}>1. Вставь · 2. Проверь · 3. В каталог</Text>
           <TextInput
             value={raw}
@@ -241,7 +242,7 @@ export default function MyProductsScreen() {
             onPress={confirmImport}
             disabled={!preview || preview.items.length === 0}
           />
-        </View>
+        </AppCard>
       ) : null}
 
       {lastImportSummary ? (
@@ -294,8 +295,9 @@ export default function MyProductsScreen() {
             const unknown = !productHasAnyKnownMacro(p);
             const frequent = frequentRank.has(p.id);
             return (
-              <View
+              <AppCard
                 key={p.id}
+                padding="none"
                 style={styles.card}
                 accessibilityRole="summary"
                 accessibilityLabel={p.name}
@@ -359,11 +361,11 @@ export default function MyProductsScreen() {
                     <Text style={[styles.actionText, styles.dangerText]}>Удалить</Text>
                   </Pressable>
                 </View>
-              </View>
+              </AppCard>
             );
           })}
           {editing ? (
-            <View style={styles.importBox}>
+            <AppCard padding="md" style={styles.importBox}>
               <Text style={styles.steps}>Правка · пустые КБЖУ = неизвестно</Text>
               <TextInput
                 value={editName}
@@ -420,7 +422,7 @@ export default function MyProductsScreen() {
               >
                 <Text style={styles.previewMeta}>Отмена</Text>
               </Pressable>
-            </View>
+            </AppCard>
           ) : null}
         </View>
       )}
@@ -473,9 +475,6 @@ const styles = StyleSheet.create({
   importBox: {
     gap: space.sm,
     padding: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
   },
   steps: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   input: {
@@ -512,14 +511,15 @@ const styles = StyleSheet.create({
   summaryText: { flex: 1, fontSize: type.caption, fontWeight: '700', color: colors.text, lineHeight: 18 },
   summaryDismiss: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   searchBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   section: {
@@ -532,9 +532,6 @@ const styles = StyleSheet.create({
   },
   list: { gap: space.xs },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     gap: 4,

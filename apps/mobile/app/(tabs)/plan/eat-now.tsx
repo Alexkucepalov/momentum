@@ -28,13 +28,15 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { MealChips } from '@/src/components/MealChips';
+import { PrimaryButton } from '@/src/components/PrimaryButton';
 import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 const FILTERS: { id: EatNowFilterId; label: string }[] = [
   { id: 'all', label: 'Все' },
@@ -415,7 +417,7 @@ function CandidateCard({
   onPlan: () => void;
 }) {
   return (
-    <View style={styles.card}>
+    <AppCard style={styles.card}>
       <Pressable
         onPress={onOpen}
         disabled={!onOpen}
@@ -455,24 +457,14 @@ function CandidateCard({
         {onOpen ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null}
       </Pressable>
       <View style={styles.ctaRow}>
-        <Pressable
-          onPress={onDiary}
-          style={({ pressed }) => [styles.ctaPrimary, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`В дневник ${c.title}`}
-        >
-          <Text style={styles.ctaPrimaryText}>В дневник</Text>
-        </Pressable>
-        <Pressable
-          onPress={onPlan}
-          style={({ pressed }) => [styles.ctaSecondary, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`В план ${c.title}`}
-        >
-          <Text style={styles.ctaSecondaryText}>В план</Text>
-        </Pressable>
+        <View style={styles.ctaFlex}>
+          <PrimaryButton label="В дневник" onPress={onDiary} />
+        </View>
+        <View style={styles.ctaFlex}>
+          <PrimaryButton variant="secondary" label="В план" onPress={onPlan} />
+        </View>
       </View>
-    </View>
+    </AppCard>
   );
 }
 
@@ -496,7 +488,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    ...elevation.card,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text, paddingVertical: space.sm },
   sectionLabel: {
@@ -507,7 +500,7 @@ const styles = StyleSheet.create({
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
-    minHeight: 36,
+    minHeight: 44,
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
@@ -520,10 +513,6 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.primaryButtonText },
   cards: { gap: space.sm },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
     gap: space.sm,
     minHeight: touchMin,
   },
@@ -542,26 +531,6 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1, fontSize: type.subtitle, fontWeight: '700', color: colors.text },
   time: { fontSize: type.caption, color: colors.textSecondary, fontWeight: '600' },
   cardMeta: { fontSize: type.caption, color: colors.textSecondary },
-  ctaRow: { flexDirection: 'row', gap: space.sm },
-  ctaPrimary: {
-    flex: 1,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-    paddingHorizontal: space.md,
-  },
-  ctaPrimaryText: { fontSize: type.caption, fontWeight: '800', color: colors.primaryButtonText },
-  ctaSecondary: {
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: space.lg,
-    backgroundColor: colors.background,
-  },
-  ctaSecondaryText: { fontSize: type.caption, fontWeight: '800', color: colors.text },
+  ctaRow: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
+  ctaFlex: { flex: 1 },
 });

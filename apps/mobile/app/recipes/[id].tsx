@@ -21,7 +21,8 @@ import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 const MEAL_LABELS = {
   breakfast: 'Завтрак',
@@ -97,28 +98,28 @@ export default function RecipeDetailScreen() {
         </Text>
         <Text style={styles.meta}>Выход {recipe.cookedYieldG} г готового</Text>
 
-        <View style={styles.macros}>
+        <AppCard padding="md" style={styles.macros}>
           <Macro label="ккал/100г" value={fmt(preview?.kcal ?? null)} />
           <Macro label="Б" value={fmt(preview?.protein ?? null)} />
           <Macro label="Ж" value={fmt(preview?.fat ?? null)} />
           <Macro label="У" value={fmt(preview?.carbs ?? null)} />
-        </View>
+        </AppCard>
 
         {recipe.description ? (
-          <View style={styles.block}>
+          <AppCard padding="md" style={styles.block}>
             <Text style={styles.blockTitle}>Описание</Text>
             <Text style={styles.blockBody}>{recipe.description}</Text>
-          </View>
+          </AppCard>
         ) : null}
 
         {recipe.instructions ? (
-          <View style={styles.block}>
+          <AppCard padding="md" style={styles.block}>
             <Text style={styles.blockTitle}>Как готовить</Text>
             <Text style={styles.blockBody}>{recipe.instructions}</Text>
-          </View>
+          </AppCard>
         ) : null}
 
-        <View style={styles.block}>
+        <AppCard padding="md" style={styles.block}>
           <Text style={styles.blockTitle}>
             Ингредиенты · {ingredients.length}
           </Text>
@@ -143,7 +144,7 @@ export default function RecipeDetailScreen() {
               </View>
             ))
           )}
-        </View>
+        </AppCard>
 
         <View style={styles.footer}>
           <Text style={styles.footerHint}>
@@ -151,25 +152,16 @@ export default function RecipeDetailScreen() {
           </Text>
           <PrimaryButton label="Добавить съеденную порцию" onPress={() => setConfirmOpen(true)} />
 
-          <Pressable
-            style={styles.editBtn}
+          <PrimaryButton
+            variant="secondary"
+            label="Приготовить партию"
             onPress={() => setRecookOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Создать приготовленную партию"
-          >
-            <Ionicons name="flame-outline" size={18} color={colors.text} />
-            <Text style={styles.editBtnText}>Приготовить партию</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.editBtn}
+          />
+          <PrimaryButton
+            variant="secondary"
+            label="Редактировать"
             onPress={() => router.push(`/recipes/edit/${recipe.id}`)}
-            accessibilityRole="button"
-            accessibilityLabel="Редактировать рецепт"
-          >
-            <Ionicons name="create-outline" size={18} color={colors.text} />
-            <Text style={styles.editBtnText}>Редактировать</Text>
-          </Pressable>
+          />
 
           <Pressable
             style={styles.deleteBtn}
@@ -271,9 +263,6 @@ const styles = StyleSheet.create({
   macros: {
     flexDirection: 'row',
     marginHorizontal: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     paddingVertical: space.md,
     marginBottom: space.lg,
   },
@@ -283,10 +272,6 @@ const styles = StyleSheet.create({
   block: {
     marginHorizontal: space.lg,
     marginBottom: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
   },
   blockTitle: {
     fontSize: type.caption,
@@ -326,9 +311,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
     minHeight: touchMin,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
   },
   editBtnText: { fontWeight: '700', color: colors.text, fontSize: type.body },
   deleteBtn: {

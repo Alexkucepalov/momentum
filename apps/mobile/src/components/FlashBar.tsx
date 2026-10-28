@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
-import { colors, elevation, radius, space, type } from '../theme/tokens';
+import { colors, space, type } from '../theme/tokens';
 import { useData } from '../state/DataContext';
+import { AppCard } from '@/src/ui/AppCard';
 
 /** Non-destructive toast (copy day, save confirmation). Sits above UndoBar. */
 export function FlashBar() {
@@ -17,9 +18,16 @@ export function FlashBar() {
   if (!flash) return null;
 
   return (
-    <View style={styles.wrap} accessibilityLiveRegion="polite" accessibilityRole="text">
-      <Text style={styles.message}>{flash}</Text>
-    </View>
+    <AppCard
+      padding="md"
+      style={styles.wrap}
+      accessibilityRole="summary"
+      accessibilityLabel={flash}
+    >
+      <Text style={styles.message} accessibilityLiveRegion="polite">
+        {flash}
+      </Text>
+    </AppCard>
   );
 }
 
@@ -29,11 +37,6 @@ const styles = StyleSheet.create({
     left: space.lg,
     right: space.lg,
     bottom: 72,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
     zIndex: 19,
     alignItems: 'center',
   },

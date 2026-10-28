@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: space.lg,
     minHeight: touchMin + 8,
+    paddingHorizontal: space.xs,
   },
   arrow: {
     width: touchMin,
