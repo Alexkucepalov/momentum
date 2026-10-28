@@ -3,10 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { GlyphDots } from '@/src/components/nothing/GlyphDots';
-import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
-import { touchMin } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 type HubItem = {
   key: string;
@@ -29,7 +26,7 @@ const ITEMS: HubItem[] = [
   {
     key: 'week',
     title: 'Меню на неделю',
-    subtitle: 'План порций · DnD',
+    subtitle: 'План порций',
     icon: 'calendar-outline',
     href: '/plan/week',
   },
@@ -62,87 +59,62 @@ function HubRow({ item }: { item: HubItem }) {
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
-      <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
-        <Ionicons
-          name={item.icon}
-          size={20}
-          color={item.primary ? nothing.invertText : nothing.display}
-        />
+      <View style={styles.iconWrap}>
+        <Ionicons name={item.icon} size={22} color={colors.text} />
       </View>
       <View style={styles.cardText}>
-        <Text style={[styles.cardTitle, item.primary && styles.cardTitlePrimary]}>{item.title}</Text>
-        <Text style={[styles.cardSub, item.primary && styles.cardSubPrimary]}>{item.subtitle}</Text>
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardSub}>{item.subtitle}</Text>
       </View>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={item.primary ? nothing.invertText : nothing.muted}
-      />
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
   );
 }
 
+/** One job: pick next action. Food-style rows, one soft accent. */
 export default function PlanHubScreen() {
   return (
-    <NothingScreen>
-      <FormScrollView contentContainerStyle={styles.content}>
-        <NothingKicker label="Plan" dots={5} />
-        <Text style={styles.lead}>Сейчас · неделя · библиотека</Text>
-        <GlyphDots count={8} active={3} />
-        <View style={styles.list} accessibilityRole="list">
-          {ITEMS.map((item) => (
-            <HubRow key={item.key} item={item} />
-          ))}
-        </View>
-      </FormScrollView>
-    </NothingScreen>
+    <FormScrollView contentContainerStyle={styles.content}>
+      <View style={styles.list} accessibilityRole="list">
+        {ITEMS.map((item) => (
+          <HubRow key={item.key} item={item} />
+        ))}
+      </View>
+    </FormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: nothingSpace.lg,
-    paddingBottom: nothingSpace.xxl,
+    padding: space.lg,
+    paddingBottom: space.xxl,
   },
-  lead: {
-    fontSize: nothingType.caption,
-    color: nothing.secondary,
-    letterSpacing: 0.6,
-    marginBottom: nothingSpace.sm,
-    fontWeight: '600',
-  },
-  list: { gap: nothingSpace.sm, marginTop: nothingSpace.lg },
+  list: { gap: space.sm },
   card: {
     minHeight: touchMin,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nothingSpace.md,
-    paddingVertical: nothingSpace.md,
-    paddingHorizontal: nothingSpace.lg,
-    backgroundColor: nothing.surface,
-    borderRadius: nothingRadius.sm,
+    gap: space.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: nothing.lineStrong,
+    borderColor: colors.border,
   },
   cardPrimary: {
-    backgroundColor: nothing.invert,
-    borderColor: nothing.invert,
+    borderColor: colors.text,
   },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.88 },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: nothingRadius.sm,
-    backgroundColor: nothing.raised,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
   cardText: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: nothingType.subtitle, fontWeight: '700', color: nothing.display },
-  cardTitlePrimary: { color: nothing.invertText },
-  cardSub: { fontSize: nothingType.caption, color: nothing.secondary },
-  cardSubPrimary: { color: 'rgba(255,255,255,0.65)' },
+  cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  cardSub: { fontSize: type.caption, color: colors.textSecondary },
 });

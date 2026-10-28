@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry, MealSlot } from '../../../../src/storage/types';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '../theme/nothing';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 import { MealChips } from './MealChips';
 
@@ -19,10 +18,7 @@ export type QuickRepeatItem = {
   grams: number;
 };
 
-/**
- * Recent / quick-repeat on Today.
- * Meal chips optional — default off fold; override lives in AddFoodSheet.
- */
+/** Recent / quick-repeat on Today — Food-density card, one primary Add. */
 export function AddFoodBlock({
   meal,
   onChangeMeal,
@@ -33,7 +29,6 @@ export function AddFoodBlock({
   onOpenDiary,
   onAddFood,
   showMealChips = false,
-  tone = 'default',
 }: {
   meal: MealSlot;
   onChangeMeal: (meal: MealSlot) => void;
@@ -41,23 +36,16 @@ export function AddFoodBlock({
   quickRepeats: QuickRepeatItem[];
   onRepeat: (id: string) => void;
   onCopyYesterday?: () => void;
-  /** Open full Food diary (meals, edit, delete). */
   onOpenDiary?: () => void;
-  /** Open Add Food sheet — primary daily log action on Today. */
   onAddFood?: () => void;
-  /** When true, show meal chips (legacy). Today keeps false. */
   showMealChips?: boolean;
-  /** Nothing chrome on Today — leave default for any Food reuse. */
-  tone?: 'default' | 'nothing';
 }) {
   const entryCount = todayEntries.length;
-  void todayEntries;
-  const n = tone === 'nothing';
 
   return (
-    <View style={[styles.wrap, n && styles.wrapN]}>
+    <View style={styles.wrap}>
       <View style={styles.head}>
-        <Text style={[styles.title, n && styles.titleN]}>{n ? 'LOG' : 'Недавно'}</Text>
+        <Text style={styles.title}>Недавно</Text>
         {onOpenDiary ? (
           <Pressable
             onPress={onOpenDiary}
@@ -91,13 +79,13 @@ export function AddFoodBlock({
 
       {onAddFood ? (
         <Pressable
-          style={({ pressed }) => [styles.addBtn, n && styles.addBtnN, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
           onPress={onAddFood}
           accessibilityRole="button"
           accessibilityLabel="Добавить еду"
         >
           <Ionicons name="add" size={20} color={colors.primaryButtonText} />
-          <Text style={[styles.addBtnText, n && styles.addBtnTextN]}>Добавить еду</Text>
+          <Text style={styles.addBtnText}>Добавить еду</Text>
         </Pressable>
       ) : null}
 
@@ -180,20 +168,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   chipsWrap: { marginBottom: space.md },
-  sectionLabel: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginBottom: space.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
   list: { marginBottom: space.sm },
-  row: {
-    paddingVertical: space.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
   repeatRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -207,14 +182,6 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: type.body, fontWeight: '600', color: colors.text },
   rowMeta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 2 },
   plus: { fontSize: 20, fontWeight: '700', color: colors.text, paddingHorizontal: space.xs },
-  empty: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
-    padding: space.md,
-    marginBottom: space.sm,
-  },
-  emptyTitle: { fontWeight: '800', color: colors.text, fontSize: type.body, marginBottom: 4 },
-  emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -244,23 +211,4 @@ const styles = StyleSheet.create({
   },
   copyText: { fontWeight: '700', color: colors.text, fontSize: type.caption },
   pressed: { opacity: 0.88 },
-  wrapN: {
-    backgroundColor: nothing.surface,
-    borderRadius: nothingRadius.sm,
-    borderColor: nothing.lineStrong,
-    padding: nothingSpace.lg,
-  },
-  titleN: {
-    fontSize: nothingType.micro,
-    letterSpacing: nothingType.letterWide,
-    textTransform: 'uppercase',
-    color: nothing.muted,
-  },
-  addBtnN: {
-    borderRadius: nothingRadius.sm,
-    backgroundColor: nothing.invert,
-  },
-  addBtnTextN: {
-    letterSpacing: 0.6,
-  },
 });

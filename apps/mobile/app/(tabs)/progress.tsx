@@ -17,8 +17,6 @@ import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
-import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
@@ -138,9 +136,8 @@ export default function ProgressScreen() {
   };
 
   return (
-    <NothingScreen>
+    <View style={styles.root}>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <NothingKicker label="Progress" dots={5} />
         <View style={styles.tabs} accessibilityRole="tablist">
           {TABS.map((t) => {
             const on = tab === t.id;
@@ -335,20 +332,21 @@ export default function ProgressScreen() {
         ) : null}
       </FormScrollView>
       <FlashBar />
-    </NothingScreen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: nothingSpace.lg },
+  content: { padding: space.lg },
   tabs: {
     flexDirection: 'row',
-    marginBottom: nothingSpace.md,
-    borderWidth: 1,
-    borderColor: nothing.display,
-    borderRadius: nothingRadius.sm,
-    overflow: 'hidden',
+    gap: 4,
+    marginBottom: space.md,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.lg,
+    padding: 4,
   },
   tab: {
     flex: 1,
@@ -356,31 +354,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: space.sm,
     paddingHorizontal: 2,
-    backgroundColor: nothing.surface,
+    borderRadius: radius.md,
     minHeight: touchMin,
   },
   tabOn: {
-    backgroundColor: nothing.invert,
+    backgroundColor: colors.primaryButton,
   },
   tabText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: nothing.secondary,
-    letterSpacing: 0.3,
+    color: colors.textSecondary,
   },
-  tabTextOn: { color: nothing.invertText },
+  tabTextOn: { color: colors.primaryButtonText },
   habitsLead: {
-    fontSize: nothingType.caption,
-    color: nothing.muted,
-    marginBottom: nothingSpace.sm,
+    fontSize: type.caption,
+    color: colors.textMuted,
+    marginBottom: space.sm,
   },
   card: {
-    backgroundColor: nothing.surface,
-    borderRadius: nothingRadius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: nothing.lineStrong,
-    padding: nothingSpace.lg,
-    marginBottom: nothingSpace.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
+    marginBottom: space.md,
   },
   cardTitle: { fontSize: type.caption, color: colors.textMuted },
   cardValue: { fontSize: type.hero, fontWeight: '800', color: colors.text, marginTop: 4 },
