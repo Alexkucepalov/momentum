@@ -1,8 +1,8 @@
-build_date: 2026-10-28T22:09:49Z
+build_date: 2026-10-28T22:12:01Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 57857806
-sha256: 55a7957dccfa5854f13e62fad1199c26b5b5795c1483c24aba2936ed984136af
-git: c563926
-includes: Design Reset #148 (#149 contract + #150 surface purge); arm64-only
+bytes: 57858398
+sha256: b17bb9b44079371da99a654350be44af018db2bf76d58ef8c98b7bf7daea748b
+git: 71604ec
+includes: Design Reset #148 (#149+#150 Nutrition Soft Light + surface purge); arm64-only
 size_note: ~55 MB arm64-only dogfood
 dogfood_gate: pending
