@@ -20,6 +20,7 @@ import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
+import { BentoRow } from '@/src/ui/BentoRow';
 import { BentoStat } from '@/src/ui/BentoStat';
 import { SectionTitle } from '@/src/ui/SectionTitle';
 
@@ -174,7 +175,7 @@ export default function ProgressScreen() {
         {tab === 'summary' ? (
           <>
             <SectionTitle title="Неделя" />
-            <View style={styles.bentoRow}>
+            <BentoRow>
               <BentoStat
                 label="ВЕС"
                 value={latest ? String(latest.kg) : '—'}
@@ -187,7 +188,7 @@ export default function ProgressScreen() {
                 meta={`${sportWeekMinutes.mins} мин`}
                 onPress={() => router.push('/(tabs)/activity')}
               />
-            </View>
+            </BentoRow>
             <BentoStat
               label="ОБЪЁМ НЕДЕЛИ"
               value={`${sportWeekMinutes.mins}`}
@@ -416,11 +417,6 @@ const styles = StyleSheet.create({
   habitsLead: {
     fontSize: type.caption,
     color: colors.textMuted,
-    marginBottom: space.sm,
-  },
-  bentoRow: {
-    flexDirection: 'row',
-    gap: space.sm,
     marginBottom: space.sm,
   },
   bentoHalf: {

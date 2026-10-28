@@ -1,8 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { BentoRow } from '@/src/ui/BentoRow';
 
-/** Ref 01 — Workouts | Meals with black pill CTAs. */
+/** Soft action bento — Activity / Food with black pills (refs 01 + 08). */
 export function HomeActionCards({
   onStartWorkout,
   onLogMeal,
@@ -11,51 +14,79 @@ export function HomeActionCards({
   onLogMeal: () => void;
 }) {
   return (
-    <View style={styles.row}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Активность</Text>
-        <Text style={styles.sub}>Тренировки и минуты</Text>
-        <Pressable
-          onPress={onStartWorkout}
-          style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Начать активность"
-        >
-          <Text style={styles.ctaText}>Начать</Text>
-        </Pressable>
+    <BentoRow>
+      <ActionCard
+        title="Активность"
+        subtitle="Тренировки и минуты"
+        cta="Начать"
+        onPress={onStartWorkout}
+      />
+      <ActionCard
+        title="Еда"
+        subtitle="Записать питание"
+        cta="Записать"
+        onPress={onLogMeal}
+      />
+    </BentoRow>
+  );
+}
+
+function ActionCard({
+  title,
+  subtitle,
+  cta,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  cta: string;
+  onPress: () => void;
+}) {
+  return (
+    <AppCard style={styles.card} accessibilityRole="none">
+      <View style={styles.head}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.chevron} accessibilityElementsHidden>
+          <Ionicons name="arrow-forward" size={16} color={colors.text} />
+        </View>
       </View>
-      <View style={styles.card}>
-        <Text style={styles.title}>Еда</Text>
-        <Text style={styles.sub}>Записать питание</Text>
-        <Pressable
-          onPress={onLogMeal}
-          style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Записать еду"
-        >
-          <Text style={styles.ctaText}>Записать</Text>
-        </Pressable>
-      </View>
-    </View>
+      <Text style={styles.sub}>{subtitle}</Text>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={cta}
+      >
+        <Text style={styles.ctaText}>{cta}</Text>
+      </Pressable>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: space.sm,
-    marginBottom: space.md,
-  },
   card: {
-    ...surfaceCard,
     flex: 1,
-    padding: space.lg,
+    minHeight: 148,
     gap: space.sm,
+  },
+  head: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: type.subtitle,
     fontWeight: '800',
     color: colors.text,
+    flex: 1,
+  },
+  chevron: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sub: {
     fontSize: type.caption,

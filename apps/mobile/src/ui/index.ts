@@ -1,8 +1,12 @@
 export { AppCard } from './AppCard';
+export { BentoRow } from './BentoRow';
 export { BentoStat } from './BentoStat';
 export { CalorieHero } from './CalorieHero';
+export { CircleIconButton } from './CircleIconButton';
 export { Fab } from './Fab';
+export { InverseStrip } from './InverseStrip';
 export { ListRow } from './ListRow';
 export { MacroGrid } from './MacroGrid';
 export { MetaPill } from './MetaPill';
 export { SectionTitle } from './SectionTitle';
+export { SoftHeader } from './SoftHeader';

@@ -1,12 +1,14 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { energyProgressRatio } from '../../../../../src/domain/energyProgress';
 import type { DailyNutritionTargets, DailyTotals } from '../../../../../src/storage/types';
-import { colors, space, surfaceCard, type } from '@/src/theme/tokens';
+import { colors, space, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { BentoRow } from '@/src/ui/BentoRow';
 
-const RING = 88;
-const STROKE = 10;
+const RING = 72;
+const STROKE = 8;
 const R = (RING - STROKE) / 2;
 const C = 2 * Math.PI * R;
 
@@ -15,7 +17,7 @@ function fmt(n: number | null): string {
   return String(Math.round(n));
 }
 
-/** Ref 01 — calories ring card + macros card. */
+/** Soft wellness bento: calories ring + macros (refs 01 + 08). */
 export function HomeNutritionSplit({
   totals,
   targets,
@@ -31,13 +33,13 @@ export function HomeNutritionSplit({
   const progressOffset = C * (1 - fill);
 
   return (
-    <View style={styles.row}>
-      <Pressable
+    <BentoRow>
+      <AppCard
         onPress={onPress}
-        style={({ pressed }) => [styles.card, styles.kcalCard, pressed && styles.pressed]}
-        accessibilityRole="button"
+        style={styles.kcalCard}
         accessibilityLabel={`Калории ${fmt(totals.energyKcal)}${energyTarget != null ? ` из ${fmt(energyTarget)}` : ''}`}
       >
+        <Text style={styles.label}>Питание</Text>
         <View style={styles.ringWrap}>
           <Svg width={RING} height={RING}>
             <Circle
@@ -65,36 +67,36 @@ export function HomeNutritionSplit({
         </View>
         <Text style={styles.kcalLine}>
           <Text style={styles.kcalNow}>{fmt(totals.energyKcal)}</Text>
-          {energyTarget != null ? ` / ${fmt(energyTarget)} ккал` : ' ккал'}
+          {energyTarget != null ? ` / ${fmt(energyTarget)}` : ' ккал'}
         </Text>
-      </Pressable>
+      </AppCard>
 
-      <Pressable
+      <AppCard
         onPress={onPress}
-        style={({ pressed }) => [styles.card, styles.macroCard, pressed && styles.pressed]}
-        accessibilityRole="button"
+        style={styles.macroCard}
         accessibilityLabel={`Белки ${fmt(totals.proteinG)}, жиры ${fmt(totals.fatG)}, углеводы ${fmt(totals.carbG)}`}
       >
+        <Text style={styles.label}>БЖУ</Text>
         <MacroRow
-          label="БЕЛКИ"
+          label="Белки"
           value={totals.proteinG}
           target={targets?.proteinG ?? null}
           color={colors.protein}
         />
         <MacroRow
-          label="УГЛЕВОДЫ"
+          label="Углеводы"
           value={totals.carbG}
           target={targets?.carbG ?? null}
           color={colors.carbs}
         />
         <MacroRow
-          label="ЖИРЫ"
+          label="Жиры"
           value={totals.fatG}
           target={targets?.fatG ?? null}
           color={colors.fat}
         />
-      </Pressable>
-    </View>
+      </AppCard>
+    </BentoRow>
   );
 }
 
@@ -113,39 +115,41 @@ function MacroRow({
     value != null && target != null && target > 0 ? Math.min(1, value / target) : 0;
   return (
     <View style={styles.macroRow}>
-      <Text style={styles.macroLabel}>{label}</Text>
-      <Text style={styles.macroValue}>
-        {fmt(value)}г{target != null ? ` / ${fmt(target)}г` : ''}
-      </Text>
+      <View style={styles.macroHead}>
+        <Text style={styles.macroLabel}>{label}</Text>
+        <Text style={styles.macroValue}>
+          {fmt(value)}
+          {target != null ? `/${fmt(target)}` : ''}
+        </Text>
+      </View>
       <View style={styles.macroTrack}>
-        <View style={[styles.macroFill, { width: `${Math.round(ratio * 100)}%`, backgroundColor: color }]} />
+        <View
+          style={[styles.macroFill, { width: `${Math.round(ratio * 100)}%`, backgroundColor: color }]}
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: space.sm,
-    marginBottom: space.md,
-  },
-  card: {
-    ...surfaceCard,
-    padding: space.lg,
-  },
   kcalCard: {
     flex: 1,
+    minHeight: 168,
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
   },
   macroCard: {
-    flex: 1.15,
-    justifyContent: 'center',
-    gap: space.md,
+    flex: 1,
+    minHeight: 168,
+    gap: space.sm,
   },
-  pressed: { opacity: 0.92 },
+  label: {
+    alignSelf: 'flex-start',
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
   ringWrap: {
     width: RING,
     height: RING,
@@ -154,7 +158,7 @@ const styles = StyleSheet.create({
   },
   pct: {
     position: 'absolute',
-    fontSize: type.subtitle,
+    fontSize: type.body,
     fontWeight: '800',
     color: colors.text,
   },
@@ -168,14 +172,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   macroRow: { gap: 4 },
+  macroHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   macroLabel: {
     fontSize: type.micro,
     fontWeight: '700',
     color: colors.textMuted,
-    letterSpacing: 0.4,
   },
   macroValue: {
-    fontSize: type.caption,
+    fontSize: type.micro,
     fontWeight: '700',
     color: colors.text,
   },

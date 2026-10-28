@@ -1,10 +1,11 @@
 import type { ViewStyle } from 'react-native';
 
 /**
- * Visual system locked to docs/design/refs (esp. 01 Home + 07 Nutrition + dark log/bento).
+ * Visual system locked to docs/design/refs
+ * (08 soft wellness shell · 07 Nutrition list · dark log/bento).
  */
 export const colors = {
-  background: '#F5F5F5',
+  background: '#F3F3F3',
   surface: '#FFFFFF',
   text: '#111111',
   textSecondary: '#6B7280',
@@ -55,10 +56,12 @@ export const space = {
 } as const;
 
 export const radius = {
-  sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 24,
+  sm: 14,
+  md: 18,
+  lg: 24,
+  /** Soft wellness cards (ref 08). */
+  xl: 28,
+  xxl: 32,
   pill: 999,
 } as const;
 
@@ -76,10 +79,10 @@ export const type = {
 export const elevation = {
   card: {
     shadowColor: colors.shadow,
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   } satisfies ViewStyle,
   tabBar: {
     shadowColor: colors.shadow,
@@ -93,7 +96,7 @@ export const elevation = {
 /** @deprecated Prefer <AppCard /> from src/ui */
 export const surfaceCard = {
   backgroundColor: colors.surface,
-  borderRadius: radius.xl,
+  borderRadius: radius.xxl,
   ...elevation.card,
 } as const satisfies ViewStyle;
 

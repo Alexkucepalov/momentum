@@ -17,7 +17,7 @@ import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
-import { SectionTitle } from '@/src/ui/SectionTitle';
+import { SoftHeader } from '@/src/ui/SoftHeader';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -262,14 +262,11 @@ export default function ProfileScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <SectionTitle title="Профиль" />
+        <SoftHeader eyebrow="Профиль" title="Цели и данные" />
         <View style={styles.hero}>
           <View style={styles.avatar}>
             <Ionicons name="person" size={28} color={colors.text} />
           </View>
-          <Text style={styles.name} accessibilityRole="header">
-            Цели и данные
-          </Text>
           <Text style={styles.meta}>Только на устройстве · {profile.timezone}</Text>
           {summary.length > 0 ? (
             <View style={styles.summaryRow} accessibilityLabel={`Активные цели: ${summary.join(', ')}`}>
@@ -614,11 +611,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.md,
-  },
-  name: {
-    fontSize: type.title,
-    fontWeight: '800',
-    color: colors.text,
   },
   meta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 4 },
   summaryRow: {
