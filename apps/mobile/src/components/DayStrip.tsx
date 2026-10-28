@@ -16,16 +16,21 @@ function addDays(iso: string, delta: number): string {
  * Calendar week Mon→Sun for the week that contains `selected`.
  * Compact horizontal strip — no bulky card header / «Календарь» label.
  */
+export type DayStripFill = 'empty' | 'partial' | 'filled';
+
 export function DayStrip({
   selected,
   today,
   onSelect,
   onOpenCalendar,
+  fillByDate,
 }: {
   selected: string;
   today?: string;
   onSelect: (dateLocal: string) => void;
   onOpenCalendar?: () => void;
+  /** Optional plan-fill dots under day numbers. */
+  fillByDate?: Record<string, DayStripFill>;
 }) {
   const weekStart = weekStartMonday(selected);
   const days = datesInWeekFromStart(weekStart);
@@ -52,6 +57,7 @@ export function DayStrip({
           {days.map((iso, i) => {
             const on = iso === selected;
             const isToday = iso === todayKey;
+            const fill = fillByDate?.[iso] ?? 'empty';
             return (
               <Pressable
                 key={iso}
@@ -64,10 +70,20 @@ export function DayStrip({
                 ]}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(iso)}${isToday ? ', сегодня' : ''}`}
+                accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(iso)}${isToday ? ', сегодня' : ''}${fill === 'filled' ? ', план полный' : fill === 'partial' ? ', план частичный' : ''}`}
               >
                 <Text style={[styles.wd, on && styles.onText]}>{WEEKDAY_SHORT_RU_CAP[i]}</Text>
                 <Text style={[styles.num, on && styles.onText]}>{dayNumber(iso)}</Text>
+                {fillByDate ? (
+                  <View
+                    style={[
+                      styles.dot,
+                      fill === 'filled' && (on ? styles.dotOnFilled : styles.dotFilled),
+                      fill === 'partial' && (on ? styles.dotOnPartial : styles.dotPartial),
+                      fill === 'empty' && (on ? styles.dotOnEmpty : styles.dotEmpty),
+                    ]}
+                  />
+                ) : null}
               </Pressable>
             );
           })}
@@ -159,6 +175,18 @@ const styles = StyleSheet.create({
   onText: {
     color: colors.primaryButtonText,
   },
+  dot: {
+    marginTop: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  dotEmpty: { backgroundColor: colors.border },
+  dotPartial: { backgroundColor: colors.warning },
+  dotFilled: { backgroundColor: colors.success },
+  dotOnEmpty: { backgroundColor: colors.chipOnInverse },
+  dotOnPartial: { backgroundColor: colors.warning },
+  dotOnFilled: { backgroundColor: colors.successSoft },
   range: {
     marginTop: 4,
     textAlign: 'center',

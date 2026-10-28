@@ -4,6 +4,11 @@ import { loadSrcModules } from './loadTsModules.mjs';
 
 const mods = loadSrcModules();
 const { buildMealPlanDraft, endDateForPeriod } = mods['domain/mealPlanDraft'];
+const {
+  nutritionForPlannedMeal,
+  summarizePlannedDayNutrition,
+  dayFillFromSummary,
+} = mods['domain/plannedMealNutrition'];
 const { createMemoryFoodRepository } = mods['storage/foodRepository'];
 
 test('endDateForPeriod for 7 days', () => {
@@ -131,4 +136,165 @@ test('listPlannedMealsForDate ignores archived plans', () => {
   assert.equal(repo.getMealPlan(b.id)?.status, 'draft');
   const today = repo.listPlannedMealsForDate('2026-10-20');
   assert.ok(today.every((m) => m.planId === b.id));
+});
+
+test('copyPlannedMeal creates independent row; edit does not mutate source', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  repo.createRecipe({
+    name: 'Суп',
+    cookedYieldG: 800,
+    nutritionPer100g: { kcal: 50, protein: 3, fat: 1, carbs: 6 },
+  });
+  const plan = repo.createMealPlanDraft({ startDateLocal: '2026-10-20', days: 3 });
+  const source = repo.listPlannedMeals(plan.id)[0];
+  const copy = repo.copyPlannedMeal(source.id, {
+    dateLocal: '2026-10-22',
+    meal: 'snack',
+  });
+  assert.notEqual(copy.id, source.id);
+  assert.equal(copy.dateLocal, '2026-10-22');
+  assert.equal(copy.meal, 'snack');
+  assert.equal(copy.displayName, source.displayName);
+  assert.equal(copy.status, 'planned');
+  assert.equal(repo.dailyTotals('2026-10-22').entryCount, 0);
+
+  repo.updatePlannedMealGrams(copy.id, 333);
+  const srcAgain = repo.listPlannedMeals(plan.id).find((m) => m.id === source.id);
+  assert.equal(srcAgain.grams, source.grams);
+  assert.equal(repo.listPlannedMeals(plan.id).find((m) => m.id === copy.id).grams, 333);
+});
+
+test('softDeletePlannedMeal does not touch diary', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const product = repo.createProduct({
+    name: 'Йогурт',
+    energyKcal: 60,
+    proteinG: 5,
+    fatG: 2,
+    carbG: 6,
+  });
+  const planned = repo.addPlannedMeal({
+    dateLocal: '2026-10-22',
+    meal: 'breakfast',
+    displayName: 'Йогурт',
+    grams: 125,
+    productId: product.id,
+  });
+  repo.softDeletePlannedMeal(planned.id);
+  assert.equal(repo.dailyTotals('2026-10-22').entryCount, 0);
+  assert.equal(repo.listPlannedMealsForDate('2026-10-22').length, 0);
+});
+
+test('summarizePlannedDayNutrition: empty ≠ 0; unknown stays incomplete', () => {
+  const lookup = {
+    getRecipe: () => null,
+    getRecipeIngredients: () => [],
+    getProduct: (id) =>
+      id === 'p1'
+        ? {
+            id: 'p1',
+            name: 'Творог',
+            brand: null,
+            barcode: null,
+            energyKcal: 90,
+            proteinG: 16,
+            fatG: 2,
+            carbG: 3,
+            source: 'user',
+            isFavorite: false,
+            createdAt: '',
+            updatedAt: '',
+            deletedAt: null,
+          }
+        : id === 'p2'
+          ? {
+              id: 'p2',
+              name: 'Без ккал',
+              brand: null,
+              barcode: null,
+              energyKcal: null,
+              proteinG: null,
+              fatG: null,
+              carbG: null,
+              source: 'user',
+              isFavorite: false,
+              createdAt: '',
+              updatedAt: '',
+              deletedAt: null,
+            }
+          : null,
+  };
+
+  const empty = summarizePlannedDayNutrition([], lookup);
+  assert.equal(empty.empty, true);
+  assert.equal(empty.incomplete, false);
+  assert.equal(empty.totals.kcal, null);
+  assert.equal(dayFillFromSummary(empty), 'empty');
+
+  const known = summarizePlannedDayNutrition(
+    [
+      {
+        id: '1',
+        planId: 'pl',
+        dateLocal: '2026-10-22',
+        meal: 'lunch',
+        recipeId: null,
+        productId: 'p1',
+        displayName: 'Творог',
+        grams: 100,
+        status: 'planned',
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+      },
+    ],
+    lookup,
+  );
+  assert.equal(known.empty, false);
+  assert.equal(known.incomplete, false);
+  assert.equal(known.totals.kcal, 90);
+  assert.equal(dayFillFromSummary(known), 'filled');
+
+  const unknown = summarizePlannedDayNutrition(
+    [
+      {
+        id: '2',
+        planId: 'pl',
+        dateLocal: '2026-10-22',
+        meal: 'dinner',
+        recipeId: null,
+        productId: 'p2',
+        displayName: 'Без ккал',
+        grams: 100,
+        status: 'planned',
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+      },
+    ],
+    lookup,
+  );
+  assert.equal(unknown.incomplete, true);
+  assert.equal(unknown.totals.kcal, null);
+  assert.equal(dayFillFromSummary(unknown), 'partial');
+  assert.equal(
+    nutritionForPlannedMeal(
+      {
+        id: '2',
+        planId: 'pl',
+        dateLocal: '2026-10-22',
+        meal: 'dinner',
+        recipeId: null,
+        productId: 'p2',
+        displayName: 'Без ккал',
+        grams: 100,
+        status: 'planned',
+        createdAt: '',
+        updatedAt: '',
+        deletedAt: null,
+      },
+      lookup,
+    ).kcal,
+    null,
+  );
 });
