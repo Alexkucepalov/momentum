@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { HabitWeekDayMark } from '../../../../../src/domain/habitWeek';
 import { formatHabitWeekLabel } from '../../../../../src/domain/habitWeek';
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
+import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { HabitFormFields } from './HabitFormFields';
@@ -86,22 +87,12 @@ export function HabitCard({
           onChangeAutoSource={onChangeEditAutoSource}
         />
         <View style={styles.editActions}>
-          <Pressable
-            style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
-            onPress={onCancelEdit}
-            accessibilityRole="button"
-            accessibilityLabel="Отмена"
-          >
-            <Text style={styles.secondaryText}>Отмена</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-            onPress={onSaveEdit}
-            accessibilityRole="button"
-            accessibilityLabel="Сохранить привычку"
-          >
-            <Text style={styles.primaryText}>Сохранить</Text>
-          </Pressable>
+          <View style={styles.editFlex}>
+            <PrimaryButton variant="secondary" label="Отмена" onPress={onCancelEdit} />
+          </View>
+          <View style={styles.editFlex}>
+            <PrimaryButton label="Сохранить" onPress={onSaveEdit} />
+          </View>
         </View>
       </AppCard>
     );
@@ -259,24 +250,6 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   editActions: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
-  secondaryBtn: {
-    flex: 1,
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryText: { fontWeight: '700', color: colors.text },
-  primaryBtn: {
-    flex: 1,
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryText: { fontWeight: '700', color: colors.primaryButtonText },
+  editFlex: { flex: 1 },
   pressed: { opacity: 0.88 },
 });

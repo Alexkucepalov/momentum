@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { localDateKey } from '../../../../src/storage/validation';
-import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, space, touchMin, type } from '../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 function addDays(iso: string, delta: number): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -42,7 +43,12 @@ export function DateSwitcher({
   const title = formatTitle(selected, today);
 
   return (
-    <View style={styles.wrap} accessibilityRole="adjustable" accessibilityLabel={title}>
+    <AppCard
+      padding="none"
+      style={styles.wrap}
+      accessibilityRole="summary"
+      accessibilityLabel={title}
+    >
       <Pressable
         onPress={() => onSelect(addDays(selected, -1))}
         style={({ pressed }) => [styles.arrow, pressed && styles.pressed]}
@@ -87,15 +93,12 @@ export function DateSwitcher({
           <Ionicons name="calendar-outline" size={20} color={colors.text} />
         </Pressable>
       ) : null}
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: space.lg,
@@ -132,5 +135,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: space.xs,
   },
-  pressed: { opacity: 0.75 },
+  pressed: { opacity: 0.88 },
 });

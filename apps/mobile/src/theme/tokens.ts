@@ -9,7 +9,8 @@ import type { ViewStyle } from 'react-native';
  * Coral = today marker / week trend only.
  */
 export const colors = {
-  background: '#F5F5F5',
+  /** Soft Light canvas — slightly softer than pure #F5 to match user soft-white refs. */
+  background: '#F2F2F2',
   surface: '#FFFFFF',
   text: '#111111',
   textSecondary: '#6B7280',
@@ -21,7 +22,7 @@ export const colors = {
   focusSoft: '#FCE8E4',
   primaryButton: '#111111',
   primaryButtonText: '#FFFFFF',
-  border: '#E8E8E8',
+  border: '#E5E5E5',
   danger: '#B42318',
   preview: '#EEF2FF',
   protein: '#E5484D',

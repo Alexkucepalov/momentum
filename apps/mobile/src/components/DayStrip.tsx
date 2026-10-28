@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
     backgroundColor: 'transparent',
-    minHeight: 44,
+    minHeight: 48,
   },
   chipPast: {
     backgroundColor: colors.primaryButton,

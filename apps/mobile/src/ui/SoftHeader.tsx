@@ -31,10 +31,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.lg,
+    marginBottom: space.md,
     gap: space.md,
   },
-  textCol: { flex: 1, gap: 2 },
+  textCol: { flex: 1, gap: 4 },
   eyebrow: {
     fontSize: type.caption,
     fontWeight: '600',

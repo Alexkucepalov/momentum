@@ -264,9 +264,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   activityLabel: {
-    fontSize: type.caption,
+    fontSize: type.micro,
     fontWeight: '700',
     color: colors.textMuted,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
     marginBottom: 4,
   },
   activityValue: {

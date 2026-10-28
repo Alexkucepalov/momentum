@@ -10,7 +10,7 @@ This is the **only** shell language for Momentum. Moodboard PNGs in `refs/` are 
 
 | Token | Value | Use |
 |-------|-------|-----|
-| `colors.background` | `#F5F5F5` | Screen canvas |
+| `colors.background` | `#F2F2F2` | Screen canvas |
 | `colors.surface` | `#FFFFFF` | Raised cards, light sheets |
 | `colors.text` | `#111111` | Primary copy |
 | `colors.textSecondary` | `#6B7280` | Supporting copy |

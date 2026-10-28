@@ -68,3 +68,9 @@ Sheets S1–S11 / modals M1–M4 — IM; WeightLog dark intentional.
 ## 10. Friends Beta
 
 **BLOCKED** — нет device Pass; product gate не подтверждён. Код Soft Light готов к dogfood среди друзей **после** установки APK и ручного Android checklist.
+
+---
+
+## 11. Follow-up: visual redesign from user photos (2026-10-29)
+
+Branch work after #153: canvas `#F2F2F2`, DateSwitcher→AppCard, Plan hub vertical rows (no dual black pills), ListRow/Bento/DayStrip/segment density, HabitCard PrimaryButton, REFS + UI Kit recipes for user moodboard. Domain unchanged. Android Pass still Pending.

@@ -90,8 +90,12 @@ const styles = StyleSheet.create({
   body: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: type.body, fontWeight: '700', color: colors.text },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  meta: { fontSize: type.micro, color: colors.textMuted },
-  trailing: { fontSize: type.body, fontWeight: '800', color: colors.text },
+  meta: { fontSize: type.caption, color: colors.textMuted },
+  trailing: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
   delete: {
     minWidth: 36,
     minHeight: touchMin,

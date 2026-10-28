@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   wrap: {
     marginBottom: space.md,
     backgroundColor: colors.accentSoft,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     padding: 4,
     flexDirection: 'row',
     gap: 4,
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: space.sm,
     paddingHorizontal: space.sm,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     minHeight: touchMin,
   },
   tabOn: {

@@ -35,7 +35,7 @@ export function BentoStat({
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, minHeight: 112, marginBottom: space.sm },
+  card: { flex: 1, minHeight: 104, marginBottom: space.sm },
   wide: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.4,
+    textTransform: 'uppercase',
     marginBottom: 4,
   },
   valueRow: { gap: 2 },
