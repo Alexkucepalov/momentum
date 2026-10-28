@@ -2,24 +2,20 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { nothing, nothingRadius, nothingSpace, nothingType } from '../theme/nothing';
-import { colors, radius, space, type } from '../theme/tokens';
+import { colors, radius, space, surfaceCard, type } from '../theme/tokens';
 
-/** Compact water + activity — food logging lives in AddFoodBlock / KcalRing. */
+/** Compact water + activity rows (optional; Today prefers quiet single water row). */
 export function StatCards({
   waterMl,
   waterTargetMl,
   activityMinutes,
   onAddWater,
-  tone = 'default',
 }: {
   waterMl: number;
   waterTargetMl: number | null;
   activityMinutes: number;
   onAddWater: (ml: number) => void;
-  tone?: 'default' | 'nothing';
 }) {
-  const n = tone === 'nothing';
   const router = useRouter();
   const waterLabel =
     waterTargetMl && waterTargetMl > 0
@@ -31,34 +27,30 @@ export function StatCards({
   return (
     <View style={styles.row}>
       <Pressable
-        style={({ pressed }) => [styles.card, n && styles.cardN, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
         onPress={() => onAddWater(250)}
         accessibilityRole="button"
         accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
       >
         <View style={styles.cardTop}>
-          <Ionicons name="water-outline" size={18} color={n ? nothing.display : colors.text} />
-          <Text style={[styles.title, n && styles.titleN]}>Вода</Text>
+          <Ionicons name="water-outline" size={18} color={colors.text} />
+          <Text style={styles.title}>Вода</Text>
         </View>
-        <Text style={[styles.value, n && styles.valueN]}>{waterLabel}</Text>
-        <Text style={[styles.hintAction, n && styles.hintN]}>+250 мл</Text>
+        <Text style={styles.value}>{waterLabel}</Text>
+        <Text style={styles.hintAction}>+250 мл</Text>
       </Pressable>
       <Pressable
-        style={({ pressed }) => [styles.card, n && styles.cardN, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
         onPress={() => router.push('/activity')}
         accessibilityRole="button"
         accessibilityLabel={`Активность ${activityMinutes} минут. Открыть вкладку`}
       >
         <View style={styles.cardTop}>
-          <Ionicons name="walk-outline" size={18} color={n ? nothing.display : colors.text} />
-          <Text style={[styles.title, n && styles.titleN]}>Активность</Text>
+          <Ionicons name="walk-outline" size={18} color={colors.text} />
+          <Text style={styles.title}>Активность</Text>
         </View>
-        <Text style={[styles.value, n && styles.valueN]}>
-          {activityMinutes > 0 ? `${activityMinutes} мин` : '—'}
-        </Text>
-        <Text style={[styles.hintAction, n && styles.hintN]}>
-          {activityMinutes > 0 ? 'открыть' : 'добавить'}
-        </Text>
+        <Text style={styles.value}>{activityMinutes > 0 ? `${activityMinutes} мин` : '—'}</Text>
+        <Text style={styles.hintAction}>{activityMinutes > 0 ? 'открыть' : 'добавить'}</Text>
       </Pressable>
     </View>
   );
@@ -71,11 +63,8 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   card: {
+    ...surfaceCard,
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     minHeight: 72,
@@ -105,17 +94,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: '700',
   },
-  cardN: {
-    borderRadius: nothingRadius.sm,
-    borderColor: nothing.lineStrong,
-    backgroundColor: nothing.surface,
-    paddingVertical: nothingSpace.sm,
-    paddingHorizontal: nothingSpace.md,
-  },
-  titleN: {
-    color: nothing.muted,
-    letterSpacing: nothingType.letterWide,
-  },
-  valueN: { color: nothing.display },
-  hintN: { color: nothing.secondary },
 });

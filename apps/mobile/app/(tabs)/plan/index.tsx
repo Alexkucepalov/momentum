@@ -3,25 +3,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { GlyphDots } from '@/src/components/nothing/GlyphDots';
-import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
-import { touchMin } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, type } from '@/src/theme/tokens';
 
 type HubItem = {
   key: string;
   title: string;
   subtitle: string;
+  cta: string;
   icon: keyof typeof Ionicons.glyphMap;
   href: '/plan/eat-now' | '/plan/week' | '/plan/my-products' | '/recipes';
   primary?: boolean;
 };
 
-const ITEMS: HubItem[] = [
+const PRIMARY: HubItem[] = [
   {
     key: 'eat-now',
-    title: 'Что съесть сейчас?',
+    title: 'Что съесть сейчас',
     subtitle: 'Из рецептов и продуктов',
+    cta: 'Открыть',
     icon: 'flash-outline',
     href: '/plan/eat-now',
     primary: true,
@@ -29,14 +28,20 @@ const ITEMS: HubItem[] = [
   {
     key: 'week',
     title: 'Меню на неделю',
-    subtitle: 'План порций · DnD',
+    subtitle: 'План порций',
+    cta: 'Собрать',
     icon: 'calendar-outline',
     href: '/plan/week',
+    primary: true,
   },
+];
+
+const SECONDARY: HubItem[] = [
   {
     key: 'recipes',
     title: 'Рецепты',
     subtitle: 'Библиотека и импорт',
+    cta: 'Открыть',
     icon: 'book-outline',
     href: '/recipes',
   },
@@ -44,105 +49,126 @@ const ITEMS: HubItem[] = [
     key: 'my-products',
     title: 'Мои продукты',
     subtitle: 'Обычные покупки',
+    cta: 'Открыть',
     icon: 'basket-outline',
     href: '/plan/my-products',
   },
 ];
 
-function HubRow({ item }: { item: HubItem }) {
+function BentoCard({ item }: { item: HubItem }) {
   const router = useRouter();
   return (
     <Pressable
       onPress={() => router.push(item.href as Href)}
       style={({ pressed }) => [
         styles.card,
-        item.primary && styles.cardPrimary,
+        item.primary ? styles.cardPrimary : styles.cardQuiet,
         pressed && styles.pressed,
       ]}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
-      <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
-        <Ionicons
-          name={item.icon}
-          size={20}
-          color={item.primary ? nothing.invertText : nothing.display}
-        />
+      <View style={styles.cardTop}>
+        <View style={styles.iconWrap}>
+          <Ionicons name={item.icon} size={20} color={colors.text} />
+        </View>
       </View>
-      <View style={styles.cardText}>
-        <Text style={[styles.cardTitle, item.primary && styles.cardTitlePrimary]}>{item.title}</Text>
-        <Text style={[styles.cardSub, item.primary && styles.cardSubPrimary]}>{item.subtitle}</Text>
-      </View>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={item.primary ? nothing.invertText : nothing.muted}
-      />
+      <Text style={styles.cardTitle}>{item.title}</Text>
+      <Text style={styles.cardSub}>{item.subtitle}</Text>
+      {item.primary ? (
+        <View style={styles.cta}>
+          <Text style={styles.ctaText}>{item.cta}</Text>
+        </View>
+      ) : (
+        <Text style={styles.quietCta}>{item.cta} →</Text>
+      )}
     </Pressable>
   );
 }
 
+/** One job: pick next action. 2×2 bento like Home Workouts/Meals. */
 export default function PlanHubScreen() {
   return (
-    <NothingScreen>
-      <FormScrollView contentContainerStyle={styles.content}>
-        <NothingKicker label="Plan" dots={5} />
-        <Text style={styles.lead}>Сейчас · неделя · библиотека</Text>
-        <GlyphDots count={8} active={3} />
-        <View style={styles.list} accessibilityRole="list">
-          {ITEMS.map((item) => (
-            <HubRow key={item.key} item={item} />
-          ))}
-        </View>
-      </FormScrollView>
-    </NothingScreen>
+    <FormScrollView contentContainerStyle={styles.content}>
+      <View style={styles.grid} accessibilityRole="list">
+        {PRIMARY.map((item) => (
+          <View key={item.key} style={styles.cell}>
+            <BentoCard item={item} />
+          </View>
+        ))}
+        {SECONDARY.map((item) => (
+          <View key={item.key} style={styles.cell}>
+            <BentoCard item={item} />
+          </View>
+        ))}
+      </View>
+    </FormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: nothingSpace.lg,
-    paddingBottom: nothingSpace.xxl,
+    padding: space.lg,
+    paddingBottom: space.xxl,
   },
-  lead: {
-    fontSize: nothingType.caption,
-    color: nothing.secondary,
-    letterSpacing: 0.6,
-    marginBottom: nothingSpace.sm,
-    fontWeight: '600',
-  },
-  list: { gap: nothingSpace.sm, marginTop: nothingSpace.lg },
-  card: {
-    minHeight: touchMin,
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: nothingSpace.md,
-    paddingVertical: nothingSpace.md,
-    paddingHorizontal: nothingSpace.lg,
-    backgroundColor: nothing.surface,
-    borderRadius: nothingRadius.sm,
-    borderWidth: 1,
-    borderColor: nothing.lineStrong,
+    flexWrap: 'wrap',
+    gap: space.sm,
   },
-  cardPrimary: {
-    backgroundColor: nothing.invert,
-    borderColor: nothing.invert,
+  cell: {
+    width: '47.5%',
+    flexGrow: 1,
   },
-  pressed: { opacity: 0.8 },
+  card: {
+    ...surfaceCard,
+    minHeight: 148,
+    padding: space.lg,
+  },
+  cardPrimary: {},
+  cardQuiet: {},
+  pressed: { opacity: 0.88 },
+  cardTop: {
+    marginBottom: space.md,
+  },
   iconWrap: {
     width: 36,
     height: 36,
-    borderRadius: nothingRadius.sm,
-    backgroundColor: nothing.raised,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  cardTitle: {
+    fontSize: type.subtitle,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 4,
   },
-  cardText: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: nothingType.subtitle, fontWeight: '700', color: nothing.display },
-  cardTitlePrimary: { color: nothing.invertText },
-  cardSub: { fontSize: nothingType.caption, color: nothing.secondary },
-  cardSubPrimary: { color: 'rgba(255,255,255,0.65)' },
+  cardSub: {
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    marginBottom: space.md,
+    flex: 1,
+  },
+  cta: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: {
+    fontSize: type.caption,
+    fontWeight: '800',
+    color: colors.primaryButtonText,
+  },
+  quietCta: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginTop: 'auto',
+  },
 });

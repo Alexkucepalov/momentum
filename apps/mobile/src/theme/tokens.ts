@@ -1,3 +1,5 @@
+import type { ViewStyle } from 'react-native';
+
 /** Visual tokens aligned with Momentum reference (light, minimal, black CTAs). */
 export const colors = {
   background: '#F4F5F7',
@@ -7,6 +9,9 @@ export const colors = {
   textMuted: '#9CA3AF',
   accent: '#111111',
   accentSoft: '#E8EAED',
+  /** Warm coral — today / trend focus only; CTAs stay black. */
+  focus: '#E8846B',
+  focusSoft: '#FCEDE8',
   primaryButton: '#111111',
   primaryButtonText: '#FFFFFF',
   border: '#E5E7EB',
@@ -58,3 +63,28 @@ export const type = {
   caption: 13,
   micro: 11,
 } as const;
+
+/** Soft card lift — prefer over hard borders for vibe polish. */
+export const elevation = {
+  card: {
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  } satisfies ViewStyle,
+  tabBar: {
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -2 },
+    elevation: 8,
+  } satisfies ViewStyle,
+} as const;
+
+/** Default elevated surface card — use instead of borderWidth:1 panels. */
+export const surfaceCard = {
+  backgroundColor: colors.surface,
+  borderRadius: radius.xl,
+  ...elevation.card,
+} as const satisfies ViewStyle;

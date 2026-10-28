@@ -17,9 +17,7 @@ import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
-import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
 
@@ -91,6 +89,20 @@ export default function ProgressScreen() {
     }
   }, [latest, profile.heightCm]);
 
+  /** Newest vs oldest weigh-in in the last 7 days — observation only, not a goal. */
+  const weekWeightDelta = useMemo(() => {
+    if (weights.length < 2) return null;
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const newestAt = new Date(weights[0].weighedAt).getTime();
+    const inWeek = weights.filter((w) => newestAt - new Date(w.weighedAt).getTime() <= weekMs);
+    if (inWeek.length < 2) return null;
+    const oldest = inWeek[inWeek.length - 1];
+    const delta = Math.round((weights[0].kg - oldest.kg) * 10) / 10;
+    if (delta === 0) return { text: 'За неделю без изменений', signed: 0 };
+    const sign = delta > 0 ? '+' : '';
+    return { text: `За неделю ${sign}${delta} кг`, signed: delta };
+  }, [weights]);
+
   const onExport = async () => {
     const json = repo.exportAll();
     setLastExport(json);
@@ -138,9 +150,8 @@ export default function ProgressScreen() {
   };
 
   return (
-    <NothingScreen>
+    <View style={styles.root}>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <NothingKicker label="Progress" dots={5} />
         <View style={styles.tabs} accessibilityRole="tablist">
           {TABS.map((t) => {
             const on = tab === t.id;
@@ -176,6 +187,18 @@ export default function ProgressScreen() {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Вес</Text>
               <Text style={styles.cardValue}>{latest ? `${latest.kg} кг` : '—'}</Text>
+              {weekWeightDelta ? (
+                <Text
+                  style={[
+                    styles.weightDelta,
+                    weekWeightDelta.signed !== 0 && styles.weightDeltaFocus,
+                  ]}
+                  accessibilityLabel={weekWeightDelta.text}
+                >
+                  {weekWeightDelta.text}
+                  {weekWeightDelta.signed > 0 ? ' ↑' : weekWeightDelta.signed < 0 ? ' ↓' : ''}
+                </Text>
+              ) : null}
               <Text style={styles.cardHint}>
                 {latest
                   ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
@@ -335,20 +358,21 @@ export default function ProgressScreen() {
         ) : null}
       </FormScrollView>
       <FlashBar />
-    </NothingScreen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: nothingSpace.lg },
+  content: { padding: space.lg },
   tabs: {
     flexDirection: 'row',
-    marginBottom: nothingSpace.md,
-    borderWidth: 1,
-    borderColor: nothing.display,
-    borderRadius: nothingRadius.sm,
-    overflow: 'hidden',
+    gap: 4,
+    marginBottom: space.md,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.lg,
+    padding: 4,
   },
   tab: {
     flex: 1,
@@ -356,34 +380,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: space.sm,
     paddingHorizontal: 2,
-    backgroundColor: nothing.surface,
+    borderRadius: radius.md,
     minHeight: touchMin,
   },
   tabOn: {
-    backgroundColor: nothing.invert,
+    backgroundColor: colors.primaryButton,
   },
   tabText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: nothing.secondary,
-    letterSpacing: 0.3,
+    color: colors.textSecondary,
   },
-  tabTextOn: { color: nothing.invertText },
+  tabTextOn: { color: colors.primaryButtonText },
   habitsLead: {
-    fontSize: nothingType.caption,
-    color: nothing.muted,
-    marginBottom: nothingSpace.sm,
+    fontSize: type.caption,
+    color: colors.textMuted,
+    marginBottom: space.sm,
   },
   card: {
-    backgroundColor: nothing.surface,
-    borderRadius: nothingRadius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: nothing.lineStrong,
-    padding: nothingSpace.lg,
-    marginBottom: nothingSpace.md,
+    ...surfaceCard,
+    padding: space.lg,
+    marginBottom: space.md,
   },
-  cardTitle: { fontSize: type.caption, color: colors.textMuted },
+  cardTitle: { fontSize: type.caption, color: colors.textMuted, fontWeight: '700' },
   cardValue: { fontSize: type.hero, fontWeight: '800', color: colors.text, marginTop: 4 },
+  weightDelta: {
+    marginTop: space.xs,
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  weightDeltaFocus: { color: colors.focus },
   cardHint: {
     fontSize: type.caption,
     color: colors.textSecondary,

@@ -15,9 +15,7 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -260,17 +258,16 @@ export default function ProfileScreen() {
   };
 
   return (
-    <NothingScreen>
+    <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <NothingKicker label="Profile" dots={4} />
         <View style={styles.hero}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={24} color={nothing.display} />
+            <Ionicons name="person" size={28} color={colors.text} />
           </View>
           <Text style={styles.name} accessibilityRole="header">
             Профиль
           </Text>
-          <Text style={styles.meta}>LOCAL · {profile.timezone}</Text>
+          <Text style={styles.meta}>Только на устройстве · {profile.timezone}</Text>
           {summary.length > 0 ? (
             <View style={styles.summaryRow} accessibilityLabel={`Активные цели: ${summary.join(', ')}`}>
               {summary.map((chip) => (
@@ -352,21 +349,6 @@ export default function ProfileScreen() {
           ) : null}
         </SettingsCard>
 
-        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
-          <LabeledField
-            label="Сантиметры"
-            value={heightRaw}
-            onChangeText={setHeightRaw}
-            onCommit={(t) => {
-              setHeightRaw(t);
-              commitHeight(t);
-            }}
-            keyboardType="decimal-pad"
-            placeholder="например 175"
-            accessibilityLabel="Рост в сантиметрах"
-          />
-        </SettingsCard>
-
         <SettingsCard title="Вода" hint="Цель на Сегодня · пресет или своё число" icon="water-outline">
           <View style={styles.presets}>
             {WATER_PRESETS.map((ml) => {
@@ -403,6 +385,21 @@ export default function ProfileScreen() {
             keyboardType="number-pad"
             placeholder="или своё число / пусто"
             accessibilityLabel="Цель воды в миллилитрах"
+          />
+        </SettingsCard>
+
+        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
+          <LabeledField
+            label="Сантиметры"
+            value={heightRaw}
+            onChangeText={setHeightRaw}
+            onCommit={(t) => {
+              setHeightRaw(t);
+              commitHeight(t);
+            }}
+            keyboardType="decimal-pad"
+            placeholder="например 175"
+            accessibilityLabel="Рост в сантиметрах"
           />
         </SettingsCard>
 
@@ -500,7 +497,7 @@ export default function ProfileScreen() {
       </Modal>
 
       <FlashBar />
-    </NothingScreen>
+    </View>
   );
 }
 
@@ -589,7 +586,8 @@ function PrivacyRow({
 }
 
 const styles = StyleSheet.create({
-  content: { padding: nothingSpace.lg },
+  root: { flex: 1, backgroundColor: colors.background },
+  content: { padding: space.lg },
   secondaryLinks: {
     marginBottom: space.lg,
     gap: space.xs,
@@ -604,23 +602,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  hero: { alignItems: 'center', marginBottom: nothingSpace.md },
+  hero: { alignItems: 'center', marginBottom: space.md },
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: nothingRadius.sm,
-    backgroundColor: nothing.raised,
+    borderRadius: 28,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: nothingSpace.md,
-    borderWidth: 1,
-    borderColor: nothing.display,
+    marginBottom: space.md,
   },
   name: {
-    fontSize: nothingType.title,
+    fontSize: type.title,
     fontWeight: '800',
-    color: nothing.display,
-    letterSpacing: 0.4,
+    color: colors.text,
   },
   meta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 4 },
   summaryRow: {
@@ -651,33 +646,29 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   card: {
-    backgroundColor: nothing.surface,
-    borderRadius: nothingRadius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: nothing.lineStrong,
-    padding: nothingSpace.md,
-    marginBottom: nothingSpace.sm,
-    gap: nothingSpace.sm,
+    ...surfaceCard,
+    padding: space.md,
+    marginBottom: space.sm,
+    gap: space.sm,
   },
-  cardHead: { flexDirection: 'row', gap: nothingSpace.md, marginBottom: nothingSpace.sm },
+  cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },
   cardIcon: {
     width: 36,
     height: 36,
-    borderRadius: nothingRadius.sm,
-    backgroundColor: nothing.raised,
+    borderRadius: 18,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardHeadText: { flex: 1 },
   cardTitle: {
-    fontSize: nothingType.subtitle,
+    fontSize: type.subtitle,
     fontWeight: '800',
-    color: nothing.display,
-    letterSpacing: 0.3,
+    color: colors.text,
   },
   cardHint: {
-    fontSize: nothingType.caption,
-    color: nothing.secondary,
+    fontSize: type.caption,
+    color: colors.textSecondary,
     lineHeight: 18,
     marginTop: 2,
   },

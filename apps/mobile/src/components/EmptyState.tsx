@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { PrimaryButton } from './PrimaryButton';
-import { colors, radius, space, type } from '../theme/tokens';
+import { colors, radius, space, surfaceCard, type } from '../theme/tokens';
 
 export function EmptyState({
   title,
@@ -43,10 +43,7 @@ export function EmptyState({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.xl,
     marginBottom: space.lg,
     alignItems: 'center',

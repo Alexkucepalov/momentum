@@ -17,15 +17,9 @@ import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import {
-  NothingKicker,
-  NothingScreen,
-} from '@/src/components/nothing/NothingChrome';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
-import { StatCards } from '@/src/components/StatCards';
-import { TodayChecklist } from '@/src/components/TodayChecklist';
 import { UndoBar } from '@/src/components/UndoBar';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
@@ -33,8 +27,7 @@ import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
-import { touchMin } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
 function formatDateLine(iso: string, today: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -51,6 +44,7 @@ function formatDateLine(iso: string, today: string): string {
   return `${cap} · ${dayMonth} · будущий день`;
 }
 
+/** Today = log food fast. Secondary (plan / water / habits) stays quiet below. */
 export default function TodayScreen() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, meal, setMeal, refresh, revision, showFlash } = useData();
@@ -75,6 +69,7 @@ export default function TodayScreen() {
     return repo
       .listFlexibleHabits()
       .filter((h) => h.pausedAt == null)
+      .slice(0, 3)
       .map((h) => {
         const stats = repo.flexibleHabitWeekStats(h.id, dateLocal);
         return {
@@ -95,6 +90,16 @@ export default function TodayScreen() {
         };
       });
   }, [repo, dateLocal, revision]);
+
+  const habitsDone = flexibleRows.filter((h) => h.loggedToday).length;
+  const habitsTotal = flexibleRows.length;
+
+  const waterLabel =
+    profile.waterTargetMl && profile.waterTargetMl > 0
+      ? `${(waterMl / 1000).toFixed(1)} / ${(profile.waterTargetMl / 1000).toFixed(1)} л`
+      : waterMl > 0
+        ? `${(waterMl / 1000).toFixed(1)} л`
+        : '0 л';
 
   const repeat = (e: (typeof recent)[number]) => {
     if (!allowAdd()) return;
@@ -120,9 +125,8 @@ export default function TodayScreen() {
   };
 
   return (
-    <NothingScreen>
+    <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <NothingKicker label="Today" dots={6} />
         <Text style={styles.dateLine}>{dateLine}</Text>
 
         <DayStrip
@@ -132,7 +136,7 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <View style={styles.panel}>
+        <View style={styles.ringCard}>
           <KcalRing
             variant="compact"
             totals={totals}
@@ -149,7 +153,6 @@ export default function TodayScreen() {
         </View>
 
         <AddFoodBlock
-          tone="nothing"
           meal={meal}
           onChangeMeal={setMeal}
           showMealChips={false}
@@ -199,55 +202,98 @@ export default function TodayScreen() {
           onOpenDiary={() => router.push('/(tabs)/food')}
         />
 
-        <TodayPlanStrip tone="nothing" />
+        <TodayPlanStrip />
 
-        <TodayChecklist
-          tone="nothing"
-          flexibleHabits={flexibleRows}
-          onManageHabits={() => router.push('/progress')}
-          onToggleFlexible={(habitId) => {
-            const habit = repo.listFlexibleHabits().find((h) => h.id === habitId);
-            if (repo.isFlexibleHabitLogged(habitId, dateLocal)) {
-              repo.unlogFlexibleHabit(habitId, dateLocal);
+        <View style={styles.quietCard}>
+          <Pressable
+            onPress={() => {
+              repo.addWater(dateLocal, 250);
               refresh();
-              showFlash(habit ? `Снято: ${habit.name}` : 'Отметка снята');
-            } else {
-              repo.logFlexibleHabit(habitId, dateLocal);
-              refresh();
-              showFlash(habit ? `Отмечено: ${habit.name}` : 'Отмечено');
-            }
-          }}
-        />
+              showFlash('+250 мл воды');
+            }}
+            style={({ pressed }) => [styles.quietRow, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
+          >
+            <Ionicons name="water-outline" size={18} color={colors.text} />
+            <Text style={styles.quietRowText}>Вода {waterLabel}</Text>
+            <Text style={styles.quietRowAction}>+250 мл</Text>
+          </Pressable>
 
-        <StatCards
-          tone="nothing"
-          waterMl={waterMl}
-          waterTargetMl={profile.waterTargetMl}
-          activityMinutes={activityMinutes}
-          onAddWater={(ml) => {
-            repo.addWater(dateLocal, ml);
-            refresh();
-            showFlash(`+${ml} мл воды`);
-          }}
-        />
+          <Pressable
+            onPress={() => router.push('/progress')}
+            style={({ pressed }) => [styles.quietRow, styles.quietRowBorder, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Привычки"
+          >
+            <Ionicons name="checkbox-outline" size={18} color={colors.text} />
+            <Text style={styles.quietRowText}>
+              {habitsTotal === 0
+                ? 'Привычки'
+                : `Привычки ${habitsDone}/${habitsTotal}`}
+            </Text>
+            <Text style={styles.quietRowAction}>→</Text>
+          </Pressable>
+
+          {flexibleRows.map((h) => (
+            <Pressable
+              key={h.id}
+              onPress={() => {
+                if (repo.isFlexibleHabitLogged(h.id, dateLocal)) {
+                  repo.unlogFlexibleHabit(h.id, dateLocal);
+                  refresh();
+                  showFlash(`Снято: ${h.name}`);
+                } else {
+                  repo.logFlexibleHabit(h.id, dateLocal);
+                  refresh();
+                  showFlash(`Отмечено: ${h.name}`);
+                }
+              }}
+              style={({ pressed }) => [styles.habitRow, pressed && styles.pressed]}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: h.loggedToday }}
+              accessibilityLabel={`${h.name}, ${h.weekLabel}`}
+            >
+              <View style={[styles.check, h.loggedToday && styles.checkOn]}>
+                {h.loggedToday ? (
+                  <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
+                ) : null}
+              </View>
+              <Text style={[styles.habitName, h.loggedToday && styles.habitDone]} numberOfLines={1}>
+                {h.name}
+              </Text>
+              <Text style={styles.habitMeta}>{h.weekLabel}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable
+          onPress={() => router.push('/plan/eat-now')}
+          style={styles.secondaryLink}
+          accessibilityRole="link"
+          accessibilityLabel="Что съесть сейчас"
+        >
+          <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
+        </Pressable>
       </FormScrollView>
 
       <ScreenFooter>
         <Pressable
-          style={({ pressed }) => [styles.footerScan, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.footerIcon, pressed && styles.pressed]}
           onPress={() => setBarcodeOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
         >
-          <Ionicons name="barcode-outline" size={22} color={nothing.display} />
+          <Ionicons name="barcode-outline" size={22} color={colors.text} />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.footerEatNow, pressed && styles.pressed]}
-          onPress={() => router.push('/plan/eat-now')}
+          style={({ pressed }) => [styles.footerAdd, pressed && styles.pressed]}
+          onPress={() => setOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel="Что съесть сейчас"
+          accessibilityLabel="Добавить еду"
         >
-          <Text style={styles.footerEatNowText}>Что съесть сейчас</Text>
+          <Ionicons name="add" size={20} color={colors.primaryButtonText} />
+          <Text style={styles.footerAddText}>Добавить еду</Text>
         </Pressable>
       </ScreenFooter>
 
@@ -269,53 +315,98 @@ export default function TodayScreen() {
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <FlashBar />
       <UndoBar />
-    </NothingScreen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: nothingSpace.lg, paddingBottom: 140 },
+  root: { flex: 1, backgroundColor: colors.background },
+  content: { padding: space.lg, paddingBottom: 140 },
   dateLine: {
-    marginBottom: nothingSpace.md,
-    fontSize: nothingType.caption,
-    color: nothing.secondary,
+    marginBottom: space.sm,
+    fontSize: type.body,
+    color: colors.textSecondary,
     fontWeight: '600',
-    letterSpacing: 0.4,
   },
-  panel: {
-    backgroundColor: nothing.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: nothing.lineStrong,
-    borderRadius: nothingRadius.md,
-    padding: nothingSpace.md,
-    marginBottom: nothingSpace.md,
+  /** Outer slot only — KcalRing already paints its own surface (shared with Food). */
+  ringCard: {
+    marginBottom: space.sm,
   },
-  pressed: { opacity: 0.8 },
-  footerScan: {
+  quietCard: {
+    ...surfaceCard,
+    paddingHorizontal: space.md,
+    marginBottom: space.md,
+    overflow: 'hidden',
+  },
+  quietRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: touchMin,
+    paddingVertical: space.sm,
+  },
+  quietRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  quietRowText: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
+  quietRowAction: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  habitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: touchMin,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  habitName: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
+  habitDone: { color: colors.textSecondary, textDecorationLine: 'line-through' },
+  habitMeta: { fontSize: type.micro, color: colors.textMuted },
+  secondaryLink: {
+    paddingVertical: space.sm,
+    minHeight: touchMin,
+    justifyContent: 'center',
+    marginTop: space.sm,
+  },
+  secondaryLinkText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  footerIcon: {
     width: touchMin,
     height: touchMin,
-    borderRadius: nothingRadius.sm,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: nothing.display,
-    backgroundColor: nothing.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  footerEatNow: {
+  footerAdd: {
     flex: 1,
     minHeight: touchMin,
-    borderRadius: nothingRadius.sm,
-    borderWidth: 1,
-    borderColor: nothing.display,
-    backgroundColor: nothing.surface,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryButton,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: nothingSpace.md,
+    gap: space.sm,
   },
-  footerEatNowText: {
-    fontSize: nothingType.body,
-    fontWeight: '700',
-    color: nothing.display,
-    letterSpacing: 0.4,
+  footerAddText: {
+    fontSize: type.body,
+    fontWeight: '800',
+    color: colors.primaryButtonText,
   },
+  pressed: { opacity: 0.88 },
 });

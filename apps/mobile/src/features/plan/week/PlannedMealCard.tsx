@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, type SharedValue } from 'react-native-reanimated';
 
 import type { PlannedMeal } from '../../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { usePlanDrag, type DropTarget } from './planDragContext';
 
 const LONG_PRESS_MS = 300;
@@ -159,18 +159,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     paddingVertical: space.sm,
     paddingLeft: space.sm,
     paddingRight: space.xs,
     marginBottom: space.sm,
     minHeight: touchMin + 8,
     gap: 2,
+    ...elevation.card,
   },
   cardDragging: {
     opacity: 0.35,
-    borderStyle: 'dashed',
   },
   main: {
     flex: 1,

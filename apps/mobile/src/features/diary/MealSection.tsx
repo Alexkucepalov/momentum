@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { nutritionConsistencyHint } from '../../../../../src/domain/nutritionConsistency';
 import type { FoodEntry, MealSlot } from '../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -246,10 +246,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.md,
     overflow: 'hidden',

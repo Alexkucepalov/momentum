@@ -109,8 +109,24 @@ export function DayStrip({
                   accessibilityState={{ selected: on }}
                   accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(iso)}${isToday ? ', сегодня' : ''}${fill === 'filled' ? ', план полный' : fill === 'partial' ? ', план частичный' : ''}${hot ? ', цель переноса' : ''}`}
                 >
-                  <Text style={[styles.wd, (on || hot) && styles.onText]}>{WEEKDAY_SHORT_RU_CAP[i]}</Text>
-                  <Text style={[styles.num, (on || hot) && styles.onText]}>{dayNumber(iso)}</Text>
+                  <Text
+                    style={[
+                      styles.wd,
+                      (on || hot) && styles.onText,
+                      isToday && !on && !hot && styles.todayText,
+                    ]}
+                  >
+                    {WEEKDAY_SHORT_RU_CAP[i]}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.num,
+                      (on || hot) && styles.onText,
+                      isToday && !on && !hot && styles.todayText,
+                    ]}
+                  >
+                    {dayNumber(iso)}
+                  </Text>
                   {fillByDate ? (
                     <View
                       style={[
@@ -192,17 +208,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: space.xs,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: 'transparent',
-    minHeight: 44,
+    minHeight: 48,
   },
   chipOn: {
     backgroundColor: colors.primaryButton,
   },
   chipToday: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.focus,
   },
   chipDrag: {
     minHeight: 52,
@@ -224,6 +238,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   onText: {
+    color: colors.primaryButtonText,
+  },
+  todayText: {
     color: colors.primaryButtonText,
   },
   dot: {

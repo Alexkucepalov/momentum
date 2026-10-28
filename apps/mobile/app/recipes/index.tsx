@@ -21,7 +21,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
 type Filter = 'all' | 'mine' | 'archive';
 
@@ -293,13 +293,10 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   card: {
+    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     marginBottom: space.xs,

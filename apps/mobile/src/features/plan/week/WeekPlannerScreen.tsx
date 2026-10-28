@@ -513,27 +513,27 @@ function slotLabel(slot: MealSlot): string {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F2F2F2' },
+  root: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
   content: { padding: space.lg, paddingBottom: space.xxl },
   viewToggle: {
     flexDirection: 'row',
+    gap: 4,
     marginBottom: space.md,
-    borderWidth: 1,
-    borderColor: '#000000',
-    borderRadius: 4,
-    overflow: 'hidden',
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.lg,
+    padding: 4,
   },
   viewChip: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.md,
   },
-  viewChipOn: { backgroundColor: '#000000' },
-  viewChipText: { fontSize: type.caption, fontWeight: '800', color: '#585A5A', letterSpacing: 0.4 },
-  viewChipTextOn: { color: '#FFFFFF' },
+  viewChipOn: { backgroundColor: colors.primaryButton },
+  viewChipText: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  viewChipTextOn: { color: colors.primaryButtonText },
   todayRow: {
     flexDirection: 'row',
     alignItems: 'center',
