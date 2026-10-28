@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, space, type } from '../theme/tokens';
+import { colors, radius, space, type, surfaceCard } from '../theme/tokens';
 import { useData } from '../state/DataContext';
 
 /** Non-destructive toast (copy day, save confirmation). Sits above UndoBar. */
@@ -29,10 +29,7 @@ const styles = StyleSheet.create({
     left: space.lg,
     right: space.lg,
     bottom: 72,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     paddingHorizontal: space.lg,
     paddingVertical: space.md,
     zIndex: 19,

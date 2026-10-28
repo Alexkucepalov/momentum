@@ -357,10 +357,7 @@ const styles = StyleSheet.create({
   barFill: { height: 8, backgroundColor: colors.accent },
   period: { marginTop: space.sm, fontSize: type.micro, color: colors.textMuted },
   composer: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.lg,
   },
   composerTitle: {

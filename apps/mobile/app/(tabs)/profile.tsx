@@ -626,9 +626,7 @@ const styles = StyleSheet.create({
     marginTop: space.md,
   },
   summaryChip: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
     paddingHorizontal: space.md,
     paddingVertical: 6,
@@ -766,10 +764,7 @@ const styles = StyleSheet.create({
   },
   pasteInput: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     padding: space.md,
     fontSize: 12,
     fontFamily: 'monospace',

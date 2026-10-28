@@ -13,7 +13,7 @@ import type {
   RecipeIngredient,
 } from '../../../../../src/storage/types';
 import { MacroStrip } from '../../components/MacroStrip';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
 
 const SOURCE_RU: Record<string, string> = {
   user: 'свой',
@@ -466,10 +466,7 @@ export function FoodCatalogList({
 const styles = StyleSheet.create({
   wrap: { marginTop: space.sm, marginBottom: space.xl },
   panel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.md,
   },
@@ -556,10 +553,7 @@ const styles = StyleSheet.create({
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
     width: 140,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     minHeight: 120,
   },
@@ -591,10 +585,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
@@ -648,10 +639,7 @@ const styles = StyleSheet.create({
   },
   emptyCta: {
     minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.md,

@@ -18,7 +18,7 @@ import { MacroStrip } from '@/src/components/MacroStrip';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 export default function MyProductsScreen() {
@@ -473,10 +473,7 @@ const styles = StyleSheet.create({
   importBox: {
     gap: space.sm,
     padding: space.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
   },
   steps: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   input: {
@@ -518,10 +515,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   section: {
@@ -534,10 +528,7 @@ const styles = StyleSheet.create({
   },
   list: { gap: space.xs },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     gap: 4,

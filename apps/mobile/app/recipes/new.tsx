@@ -9,7 +9,7 @@ import { clearImportTextDraft } from '@/src/features/recipes/importTextDraftStor
 import { consumeRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, type } from '@/src/theme/tokens';
 
 export default function NewRecipeScreen() {
   const router = useRouter();
@@ -73,12 +73,10 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg },
   banner: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
+    ...surfaceCard,
+    backgroundColor: colors.focusSoft,
     padding: space.md,
     marginBottom: space.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   bannerTitle: { fontWeight: '800', fontSize: type.subtitle, color: colors.text },
   bannerBody: {

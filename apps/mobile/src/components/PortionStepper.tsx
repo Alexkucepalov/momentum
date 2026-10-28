@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../theme/tokens';
 
 const PRESETS = [50, 100, 150, 200, 250] as const;
 
@@ -162,10 +162,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     textAlign: 'center',
     fontSize: type.title,
     fontWeight: '700',

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatDateRu } from '../../../../../../src/domain/dateFormatRu';
 import type { DayPlanNutritionSummary } from '../../../../../../src/domain/plannedMealNutrition';
 import { dayNumber, WEEKDAY_SHORT_RU_CAP } from '@/src/components/weekFormat';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
 
 /** Compact week bars — reference screen 6, without decorative dashboards. */
 export function WeekOverview({
@@ -73,10 +73,7 @@ export function WeekOverview({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.md,
     gap: space.sm,

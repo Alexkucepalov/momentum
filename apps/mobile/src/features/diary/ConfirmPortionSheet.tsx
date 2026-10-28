@@ -10,7 +10,7 @@ import { PortionStepper } from '../../components/PortionStepper';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAutoKcalFromMacros } from '../../hooks/useAutoKcalFromMacros';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
 
 export type PortionTarget =
   | { kind: 'product'; product: FoodProduct }
@@ -374,10 +374,7 @@ const styles = StyleSheet.create({
   },
   fieldInput: {
     minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     paddingHorizontal: space.md,
     fontSize: type.body,
     fontWeight: '600',

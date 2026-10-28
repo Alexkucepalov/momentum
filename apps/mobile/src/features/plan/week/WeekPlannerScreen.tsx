@@ -18,7 +18,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
 import { DragOverlay } from './DragOverlay';
@@ -568,20 +568,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
+    ...elevation.card,
   },
-  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipOn: { backgroundColor: colors.primaryButton },
   chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   chipTextOn: { color: colors.primaryButtonText },
   input: {
+    ...surfaceCard,
     minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
     paddingHorizontal: space.md,
-    backgroundColor: colors.surface,
     fontSize: type.body,
     color: colors.text,
   },

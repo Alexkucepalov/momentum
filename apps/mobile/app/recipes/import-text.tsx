@@ -17,7 +17,7 @@ import {
 } from '@/src/features/recipes/importTextDraftStore';
 import { parsedRecipeToFormInitial } from '@/src/features/recipes/parsedRecipeToFormInitial';
 import { setRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 /** Per-100g macros from parser only — never invent. */
@@ -225,10 +225,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, gap: space.lg, paddingBottom: 40 },
   steps: { 
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.lg,
     gap: space.md,
   },
@@ -263,10 +260,7 @@ const styles = StyleSheet.create({
   pasteBtnText: { fontWeight: '700', fontSize: type.body, color: colors.text },
   input: {
     minHeight: 240,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     padding: space.lg,
     fontSize: type.body,
     color: colors.text,
@@ -278,10 +272,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   preview: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     padding: space.lg,
     gap: 6,
     shadowColor: colors.shadow,

@@ -95,3 +95,21 @@ export const surfaceCard = {
   borderRadius: radius.xl,
   ...elevation.card,
 } as const satisfies ViewStyle;
+
+/** Light modal / sheet chrome. */
+export const sheetSurface = {
+  backgroundColor: colors.surface,
+  borderTopLeftRadius: radius.xl,
+  borderTopRightRadius: radius.xl,
+  ...elevation.tabBar,
+} as const satisfies ViewStyle;
+
+/** Ref 02 dark focused log. */
+export const darkSheet = {
+  backgroundColor: colors.darkBg,
+} as const satisfies ViewStyle;
+
+export const darkCard = {
+  backgroundColor: colors.darkSurface,
+  borderRadius: radius.xl,
+} as const satisfies ViewStyle;

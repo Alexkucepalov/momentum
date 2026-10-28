@@ -16,7 +16,7 @@ import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
 import { BarcodeCameraPanel, type ScanStatus } from './BarcodeCameraPanel';
 import { ConfirmPortionSheet } from './ConfirmPortionSheet';
 import { LabelCaptureSheet, type LabelDraft } from './LabelCaptureSheet';
@@ -568,10 +568,7 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
+    ...surfaceCard,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,
@@ -594,10 +591,7 @@ const styles = StyleSheet.create({
   },
   fallback: { gap: space.sm, paddingBottom: 48 },
   localBlock: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.sm,
     gap: space.sm,
@@ -637,10 +631,7 @@ const styles = StyleSheet.create({
   },
   secondary: {
     minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.md,

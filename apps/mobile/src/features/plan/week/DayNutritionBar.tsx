@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { DayPlanNutritionSummary } from '../../../../../../src/domain/plannedMealNutrition';
-import { colors, radius, space, type } from '@/src/theme/tokens';
+import { colors, radius, space, type, surfaceCard } from '@/src/theme/tokens';
 
 function fmt(n: number | null): string {
   return n === null ? '—' : String(Math.round(n));
@@ -83,10 +83,7 @@ function MacroDot({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.md,
     gap: space.sm,

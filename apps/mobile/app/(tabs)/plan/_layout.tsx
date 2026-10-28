@@ -7,7 +7,7 @@ export default function PlanLayout() {
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },
+        headerTitleStyle: { color: colors.text, fontWeight: '800', fontSize: type.title },
         headerTintColor: colors.text,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.background },

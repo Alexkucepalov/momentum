@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { PlannedMeal } from '../../../../../../src/storage/types';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
 
 type ActionId = 'portion' | 'replace' | 'move' | 'copy' | 'delete' | 'log';
 
@@ -103,10 +103,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
   },
   rowPrimary: {
     backgroundColor: colors.primaryButton,
