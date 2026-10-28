@@ -9,7 +9,7 @@ import { FormScrollView } from '../../components/FormScrollView';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeLookupSheet } from './BarcodeLookupSheet';
 import {
   defaultProductPortionGrams,

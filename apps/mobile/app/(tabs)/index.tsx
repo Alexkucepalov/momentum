@@ -24,7 +24,6 @@ import { useData } from '@/src/state/DataContext';
 import { colors, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { BentoRow } from '@/src/ui/BentoRow';
-import { CircleIconButton } from '@/src/ui/CircleIconButton';
 import { InverseStrip } from '@/src/ui/InverseStrip';
 import { ListRow } from '@/src/ui/ListRow';
 import { SectionTitle } from '@/src/ui/SectionTitle';
@@ -118,17 +117,7 @@ export default function TodayScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <SoftHeader
-          eyebrow={greeting}
-          title="Сегодня"
-          action={
-            <CircleIconButton
-              icon="calendar-outline"
-              onPress={() => setCalendarOpen(true)}
-              accessibilityLabel="Открыть календарь"
-            />
-          }
-        />
+        <SoftHeader eyebrow={greeting} title="Сегодня" />
 
         <DayStrip
           selected={dateLocal}

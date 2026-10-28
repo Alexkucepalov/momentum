@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import type { PlannedMeal } from '../../../../../src/storage/types';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL: Record<string, string> = {
   breakfast: 'Завтрак',

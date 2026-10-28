@@ -10,7 +10,7 @@ import { PortionStepper } from '../../components/PortionStepper';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAutoKcalFromMacros } from '../../hooks/useAutoKcalFromMacros';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
 export type PortionTarget =
   | { kind: 'product'; product: FoodProduct }

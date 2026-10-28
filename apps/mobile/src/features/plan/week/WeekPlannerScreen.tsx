@@ -18,7 +18,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
 import { DragOverlay } from './DragOverlay';

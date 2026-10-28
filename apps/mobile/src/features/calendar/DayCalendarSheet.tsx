@@ -21,7 +21,7 @@ import { localDateKey } from '../../../../../src/storage/validation';
 import type { FoodEntry, MealSlot, Workout, WorkoutType } from '../../../../../src/storage/types';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'] as const;
 

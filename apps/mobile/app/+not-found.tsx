@@ -1,19 +1,23 @@
-import { Link, Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, space } from '@/src/theme/tokens';
+import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { colors, space, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 export default function NotFoundScreen() {
+  const router = useRouter();
   return (
     <>
-      <Stack.Screen options={{ title: 'Not found' }} />
+      <Stack.Screen options={{ title: 'Не найдено' }} />
       <View style={styles.container}>
-        <Text style={styles.title} accessibilityRole="header">
-          Screen not found
-        </Text>
-        <Link href="/" style={styles.link} accessibilityRole="link">
-          <Text style={styles.linkText}>Go to Today</Text>
-        </Link>
+        <AppCard padding="lg" style={styles.card}>
+          <Text style={styles.title} accessibilityRole="header">
+            Экран не найден
+          </Text>
+          <Text style={styles.body}>Вернитесь на Сегодня — данные на устройстве на месте.</Text>
+          <PrimaryButton label="На Сегодня" onPress={() => router.replace('/')} />
+        </AppCard>
       </View>
     </>
   );
@@ -27,7 +31,7 @@ const styles = StyleSheet.create({
     padding: space.lg,
     backgroundColor: colors.background,
   },
-  title: { fontSize: 18, fontWeight: '600', color: colors.text },
-  link: { marginTop: space.lg, minHeight: 48, justifyContent: 'center' },
-  linkText: { color: colors.accent, fontWeight: '600' },
+  card: { width: '100%', maxWidth: 400, gap: space.md },
+  title: { fontSize: type.title, fontWeight: '800', color: colors.text },
+  body: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
 });

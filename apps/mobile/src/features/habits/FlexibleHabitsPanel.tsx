@@ -7,7 +7,7 @@ import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/type
 import { EmptyState } from '../../components/EmptyState';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { HabitCard } from './HabitCard';
 import { HabitFormFields } from './HabitFormFields';
 import { AppCard } from '@/src/ui/AppCard';
