@@ -6,7 +6,7 @@ import type { ChallengeMetric } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 
 const METRICS: { value: ChallengeMetric; label: string }[] = [
   { value: 'workouts_count', label: 'Тренировки' },
@@ -339,7 +339,9 @@ const styles = StyleSheet.create({
   heading: { fontSize: type.subtitle, fontWeight: '800', color: colors.text, marginBottom: 4 },
   sub: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.md,
   },
@@ -357,7 +359,9 @@ const styles = StyleSheet.create({
   barFill: { height: 8, backgroundColor: colors.accent },
   period: { marginTop: space.sm, fontSize: type.micro, color: colors.textMuted },
   composer: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
   },
   composerTitle: {

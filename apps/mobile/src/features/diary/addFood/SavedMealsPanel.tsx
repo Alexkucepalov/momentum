@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { SavedMeal } from '../../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
 
 export function SavedMealsPanel({
   meals,
@@ -69,7 +69,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   empty: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.xl,
   },
   emptyTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
@@ -88,7 +90,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     minHeight: touchMin,

@@ -16,7 +16,7 @@ import { parseNutritionLabelText } from '../../../../../src/domain/parseNutritio
 import type { NutritionSource } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 
 export type LabelDraft = {
   name: string;
@@ -273,7 +273,9 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
   input: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,
@@ -281,7 +283,9 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   textArea: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     minHeight: 100,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,

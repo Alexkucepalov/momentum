@@ -6,7 +6,7 @@ import type { WorkoutType } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 
 const TYPES: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -351,7 +351,9 @@ const styles = StyleSheet.create({
   preset: {
     flex: 1,
     minHeight: 44,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -364,7 +366,9 @@ const styles = StyleSheet.create({
   field: { marginBottom: space.md },
   fieldLabel: { fontSize: type.caption, color: colors.textSecondary, marginBottom: space.xs },
   input: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,

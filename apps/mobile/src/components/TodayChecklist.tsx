@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { buildHabitWeekMarks } from '../../../../src/domain/habitWeek';
 import { HabitProgressBar } from '../features/habits/HabitProgressBar';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
 
 export type FlexibleHabitRow = {
   id: string;
@@ -87,7 +87,9 @@ export function TodayChecklist({
 
 const styles = StyleSheet.create({
   wrap: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginBottom: space.md,
   },

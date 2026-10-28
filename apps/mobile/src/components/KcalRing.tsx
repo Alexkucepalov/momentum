@@ -3,7 +3,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { energyProgressRatio } from '../../../../src/domain/energyProgress';
 import type { DailyNutritionTargets, DailyTotals } from '../../../../src/storage/types';
-import { colors, radius, space, surfaceCard, touchMin, type } from '../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
 
 function fmt(n: number | null): string {
   if (n === null) return '—';
@@ -381,7 +381,9 @@ function Macro({
 
 const styles = StyleSheet.create({
   compactWrap: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginBottom: space.md,
   },
@@ -488,7 +490,9 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.88 },
   wrap: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.lg,
   },

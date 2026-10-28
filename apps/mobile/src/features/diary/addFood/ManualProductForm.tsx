@@ -3,7 +3,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { autoKcalStringFromMacroStrings } from '../../../../../../src/domain/nutritionConsistency';
 import { PrimaryButton } from '../../../components/PrimaryButton';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
 
 export function ManualProductForm({
   name,
@@ -132,7 +132,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,

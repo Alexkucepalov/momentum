@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { kcalFromCompleteMacros } from '../../../../../../src/domain/nutritionConsistency';
 import { PrimaryButton } from '../../../components/PrimaryButton';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
 
 type Mode = 'kcal' | 'macros';
 
@@ -220,7 +220,9 @@ const styles = StyleSheet.create({
   modeChip: {
     flex: 1,
     minHeight: 40,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.sm,
@@ -241,7 +243,9 @@ const styles = StyleSheet.create({
   label: { fontSize: type.caption, color: colors.textSecondary, marginBottom: 4, fontWeight: '600' },
   input: {
     minHeight: touchMin,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingHorizontal: space.md,
     fontSize: type.body,
     color: colors.text,
