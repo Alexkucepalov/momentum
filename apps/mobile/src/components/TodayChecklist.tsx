@@ -29,10 +29,7 @@ export function TodayChecklist({
   return (
     <View style={styles.wrap}>
       <View style={styles.habitsHead}>
-        <View>
-          <Text style={styles.subheading}>Мои привычки</Text>
-          <Text style={styles.habitsLead}>Гибкая неделя · без штрафов</Text>
-        </View>
+        <Text style={styles.subheading}>Привычки</Text>
         {onManageHabits ? (
           <Pressable
             onPress={onManageHabits}
@@ -47,22 +44,17 @@ export function TodayChecklist({
       </View>
 
       {flexibleHabits.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyBody}>
-            Задай свои цели на неделю — например растяжка 3×. Пропуск дня ничего не ломает.
-          </Text>
-          {onManageHabits ? (
-            <Pressable
-              style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}
-              onPress={onManageHabits}
-              accessibilityRole="button"
-              accessibilityLabel="Добавить привычку"
-            >
-              <Ionicons name="add" size={16} color={colors.primaryButtonText} />
-              <Text style={styles.emptyCtaText}>Добавить привычку</Text>
-            </Pressable>
-          ) : null}
-        </View>
+        onManageHabits ? (
+          <Pressable
+            style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}
+            onPress={onManageHabits}
+            accessibilityRole="button"
+            accessibilityLabel="Добавить привычку"
+          >
+            <Ionicons name="add" size={16} color={colors.primaryButtonText} />
+            <Text style={styles.emptyCtaText}>Добавить</Text>
+          </Pressable>
+        ) : null
       ) : (
         flexibleHabits.map((h) => (
           <Pressable
@@ -104,22 +96,17 @@ const styles = StyleSheet.create({
   },
   habitsHead: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   subheading: {
-    fontSize: type.body,
+    fontSize: type.caption,
     fontWeight: '800',
-    color: colors.text,
-  },
-  habitsLead: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    marginTop: 2,
+    color: colors.textSecondary,
   },
   manageBtn: { minHeight: touchMin / 2, justifyContent: 'center' },
-  manage: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  manage: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
   habitCard: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -161,13 +148,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
   },
-  empty: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space.sm,
-  },
-  emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   emptyCta: {
     minHeight: 40,
     borderRadius: radius.md,

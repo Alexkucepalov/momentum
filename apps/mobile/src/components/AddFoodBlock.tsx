@@ -12,13 +12,6 @@ const MEAL_RU: Record<MealSlot, string> = {
   snack: 'перекус',
 };
 
-const MEAL_TITLE: Record<MealSlot, string> = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
-};
-
 export type QuickRepeatItem = {
   id: string;
   displayName: string;
@@ -89,11 +82,7 @@ export function AddFoodBlock({
             <MealChips value={meal} onChange={onChangeMeal} compact />
           </View>
         </>
-      ) : (
-        <Text style={styles.mealHint} accessibilityLiveRegion="polite">
-          В {MEAL_TITLE[meal].toLowerCase()} · приём можно сменить при добавлении
-        </Text>
-      )}
+      ) : null}
 
       {onAddFood ? (
         <Pressable
@@ -211,12 +200,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.3,
     marginBottom: space.sm,
-  },
-  mealHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginBottom: space.md,
-    lineHeight: 18,
   },
   chipsWrap: { marginBottom: space.md },
   sectionLabel: {

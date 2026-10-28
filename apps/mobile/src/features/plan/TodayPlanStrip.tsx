@@ -13,7 +13,7 @@ const MEAL: Record<string, string> = {
   snack: 'Перекус',
 };
 
-/** Compact «план на сегодня» on Today/Food — log without opening week board. */
+/** Compact plan strip on Today — no hero card when empty. */
 export function TodayPlanStrip() {
   const router = useRouter();
   const { repo, dateLocal, refresh, revision, showFlash } = useData();
@@ -23,7 +23,7 @@ export function TodayPlanStrip() {
   const planned = repo
     .listPlannedMealsForDate(dateLocal)
     .filter((m) => m.status === 'planned')
-    .slice(0, 6);
+    .slice(0, 4);
 
   if (planned.length === 0) {
     return (
@@ -31,10 +31,10 @@ export function TodayPlanStrip() {
         onPress={() => router.push('/plan/week')}
         style={({ pressed }) => [styles.emptyLink, pressed && styles.pressed]}
         accessibilityRole="link"
-        accessibilityLabel="Составить план на сегодня"
+        accessibilityLabel="Открыть меню на неделю"
         hitSlop={8}
       >
-        <Text style={styles.emptyLinkText}>Составить план на сегодня →</Text>
+        <Text style={styles.emptyLinkText}>План на сегодня →</Text>
       </Pressable>
     );
   }
@@ -49,7 +49,7 @@ export function TodayPlanStrip() {
   return (
     <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План на сегодня">
       <View style={styles.head}>
-        <Text style={styles.title}>План на сегодня</Text>
+        <Text style={styles.title}>План</Text>
         <Pressable
           onPress={() => router.push('/plan/week')}
           accessibilityRole="button"
@@ -57,15 +57,15 @@ export function TodayPlanStrip() {
           hitSlop={8}
           style={styles.menuHit}
         >
-          <Text style={styles.link}>Меню</Text>
+          <Text style={styles.link}>Неделя</Text>
         </Pressable>
       </View>
       {planned.map((m) => (
         <View key={m.id} style={styles.row}>
           <View style={styles.main}>
-            <Text style={styles.slot}>{MEAL[m.meal] ?? m.meal}</Text>
-            <Text style={styles.name}>
-              {m.displayName} · {Math.round(m.grams)} г
+            <Text style={styles.name} numberOfLines={1}>
+              <Text style={styles.slot}>{MEAL[m.meal] ?? m.meal} · </Text>
+              {m.displayName}
             </Text>
           </View>
           <Pressable
@@ -84,20 +84,25 @@ export function TodayPlanStrip() {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    gap: space.sm,
     marginBottom: space.md,
+    gap: space.sm,
   },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  link: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  main: { flex: 1, gap: 2 },
-  slot: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
+  title: { fontSize: type.caption, fontWeight: '800', color: colors.textSecondary },
+  link: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    minHeight: touchMin,
+  },
+  main: { flex: 1 },
+  slot: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
   name: { fontSize: type.body, fontWeight: '600', color: colors.text },
   cta: {
     paddingHorizontal: space.md,
@@ -109,17 +114,16 @@ const styles = StyleSheet.create({
   emptyLink: {
     alignSelf: 'flex-start',
     justifyContent: 'center',
-    minHeight: touchMin,
-    paddingVertical: space.sm,
+    minHeight: 36,
     marginBottom: space.md,
   },
   emptyLinkText: {
     fontSize: type.caption,
     fontWeight: '700',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   menuHit: {
-    minHeight: touchMin,
+    minHeight: 36,
     justifyContent: 'center',
     paddingHorizontal: space.xs,
   },

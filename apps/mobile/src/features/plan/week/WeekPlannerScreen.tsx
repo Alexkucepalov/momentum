@@ -304,8 +304,6 @@ function WeekPlannerBody() {
               ) : null}
             </View>
 
-            <Text style={styles.planNote}>План ≠ дневник · удерживай карточку, чтобы перенести</Text>
-
             <DayNutritionBar
               summary={daySummary}
               targets={{
@@ -315,17 +313,6 @@ function WeekPlannerBody() {
                 carbG: profile.dailyCarbG,
               }}
             />
-
-            {daySummary.empty ? (
-              <EmptyState
-                compact
-                icon="restaurant-outline"
-                title="Спланируйте первый приём"
-                body="Добавьте блюдо в завтрак, обед, ужин или перекус."
-                actionLabel="Добавить в завтрак"
-                onAction={() => setAddSlot('breakfast')}
-              />
-            ) : null}
 
             {SLOTS.map((slot) => (
               <MealSlotSection
@@ -347,15 +334,13 @@ function WeekPlannerBody() {
           accessibilityLabel={composerOpen ? 'Скрыть автосборку' : 'Автосборка из рецептов'}
         >
           <Text style={styles.secondaryToggleText}>
-            {composerOpen ? 'Скрыть автосборку' : 'Автосборка меню из рецептов'}
+            {composerOpen ? 'Скрыть' : 'Автосборка из рецептов'}
           </Text>
         </Pressable>
 
         {composerOpen ? (
           <View style={styles.composer}>
-            <Text style={styles.composerLead}>
-              Заполнит 3–7 дней завтрак/обед/ужин из твоих рецептов. Можно править слоты вручную.
-            </Text>
+            <Text style={styles.composerLead}>3–7 дней · завтрак / обед / ужин</Text>
             <Text style={styles.label}>Период</Text>
             <View style={styles.row}>
               {PERIODS.map((p) => (
@@ -541,11 +526,6 @@ const styles = StyleSheet.create({
   },
   dayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
   todayLink: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  planNote: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    marginBottom: space.md,
-  },
   secondaryToggle: {
     minHeight: touchMin,
     alignItems: 'center',

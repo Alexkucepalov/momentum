@@ -14,40 +14,36 @@ type HubItem = {
   primary?: boolean;
 };
 
-const PRIMARY: HubItem[] = [
+/** Action now → week → library. One accent only. */
+const ITEMS: HubItem[] = [
   {
     key: 'eat-now',
     title: 'Что съесть сейчас?',
-    subtitle: 'Рецепты, партии и ваши продукты',
+    subtitle: 'Из рецептов и продуктов',
     icon: 'flash-outline',
     href: '/plan/eat-now',
     primary: true,
   },
   {
+    key: 'week',
+    title: 'Меню на неделю',
+    subtitle: 'План порций',
+    icon: 'calendar-outline',
+    href: '/plan/week',
+  },
+  {
     key: 'recipes',
     title: 'Рецепты',
-    subtitle: 'Библиотека, импорт, повтор готовки',
+    subtitle: 'Библиотека и импорт',
     icon: 'book-outline',
     href: '/recipes',
-    primary: true,
   },
   {
     key: 'my-products',
     title: 'Мои продукты',
-    subtitle: 'Список обычных покупок → в каталог',
+    subtitle: 'Обычные покупки',
     icon: 'basket-outline',
     href: '/plan/my-products',
-    primary: true,
-  },
-];
-
-const SECONDARY: HubItem[] = [
-  {
-    key: 'week',
-    title: 'Меню на неделю',
-    subtitle: 'План порций · не дневник',
-    icon: 'calendar-outline',
-    href: '/plan/week',
   },
 ];
 
@@ -61,13 +57,21 @@ function HubRow({ item }: { item: HubItem }) {
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
       <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
-        <Ionicons name={item.icon} size={22} color={colors.text} />
+        <Ionicons
+          name={item.icon}
+          size={22}
+          color={item.primary ? colors.primaryButtonText : colors.text}
+        />
       </View>
       <View style={styles.cardText}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardSub}>{item.subtitle}</Text>
+        <Text style={[styles.cardTitle, item.primary && styles.cardTitlePrimary]}>{item.title}</Text>
+        <Text style={[styles.cardSub, item.primary && styles.cardSubPrimary]}>{item.subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={item.primary ? colors.primaryButtonText : colors.textMuted}
+      />
     </Pressable>
   );
 }
@@ -75,23 +79,8 @@ function HubRow({ item }: { item: HubItem }) {
 export default function PlanHubScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.kicker} accessibilityRole="header">
-        План питания
-      </Text>
-      <Text style={styles.lead}>
-        Сейчас — что съесть из рецептов и своих продуктов. Меню на неделю — когда планируешь заранее.
-      </Text>
-
-      <Text style={styles.section}>Сейчас</Text>
       <View style={styles.list} accessibilityRole="list">
-        {PRIMARY.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
-      </View>
-
-      <Text style={styles.section}>На неделю</Text>
-      <View style={styles.list} accessibilityRole="list">
-        {SECONDARY.map((item) => (
+        {ITEMS.map((item) => (
           <HubRow key={item.key} item={item} />
         ))}
       </View>
@@ -103,27 +92,6 @@ const styles = StyleSheet.create({
   content: {
     padding: space.lg,
     paddingBottom: space.xxl,
-    gap: space.md,
-  },
-  kicker: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    letterSpacing: 0.2,
-  },
-  lead: {
-    fontSize: type.body,
-    color: colors.textSecondary,
-    marginBottom: space.xs,
-    lineHeight: 22,
-  },
-  section: {
-    marginTop: space.sm,
-    fontSize: type.micro,
-    fontWeight: '800',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   list: { gap: space.sm },
   card: {
@@ -139,7 +107,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   cardPrimary: {
-    borderColor: colors.text,
+    backgroundColor: colors.primaryButton,
+    borderColor: colors.primaryButton,
   },
   pressed: { opacity: 0.88 },
   iconWrap: {
@@ -151,9 +120,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapPrimary: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.chipOnInverse,
   },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  cardTitlePrimary: { color: colors.primaryButtonText },
   cardSub: { fontSize: type.caption, color: colors.textSecondary },
+  cardSubPrimary: { color: colors.chipOnInverse },
 });

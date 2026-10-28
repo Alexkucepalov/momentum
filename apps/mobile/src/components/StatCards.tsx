@@ -65,18 +65,19 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.md,
-    minHeight: 96,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    minHeight: 72,
   },
   pressed: { opacity: 0.88 },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: space.sm,
+    marginBottom: 4,
   },
   title: {
     fontSize: type.micro,
@@ -86,14 +87,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   value: {
-    fontSize: type.subtitle,
+    fontSize: type.body,
     fontWeight: '800',
     color: colors.text,
   },
   hintAction: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: type.micro,
-    color: colors.text,
+    color: colors.textMuted,
     fontWeight: '700',
   },
 });

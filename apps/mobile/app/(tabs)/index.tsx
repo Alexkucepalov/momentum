@@ -256,7 +256,6 @@ export default function TodayScreen() {
         {favorites.length > 0 ? (
           <>
             <SectionHeader title="Избранное" />
-            <Text style={styles.favHint}>Сначала порция — в дневник только после подтверждения</Text>
             {favorites.map((p) => {
               const lastG = defaultProductPortionGrams(repo.lastGramsForProduct(p.id));
               return (
@@ -419,12 +418,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     paddingHorizontal: space.sm,
-  },
-  favHint: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    marginBottom: space.sm,
-    marginTop: -4,
   },
   secondaryLinks: {
     marginTop: space.md,
