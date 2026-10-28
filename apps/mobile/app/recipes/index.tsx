@@ -21,7 +21,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 type Filter = 'all' | 'mine' | 'archive';
 
@@ -238,7 +238,9 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     marginBottom: space.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 36,
+    minHeight: 44,
   },
   chipOn: {
     backgroundColor: colors.primaryButton,
@@ -290,7 +292,9 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,

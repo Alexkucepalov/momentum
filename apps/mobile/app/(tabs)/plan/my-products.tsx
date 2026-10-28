@@ -18,7 +18,7 @@ import { MacroStrip } from '@/src/components/MacroStrip';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 export default function MyProductsScreen() {
@@ -473,7 +473,9 @@ const styles = StyleSheet.create({
   importBox: {
     gap: space.sm,
     padding: space.md,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
   },
   steps: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   input: {
@@ -515,7 +517,9 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   section: {
@@ -528,7 +532,9 @@ const styles = StyleSheet.create({
   },
   list: { gap: space.xs },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     gap: 4,

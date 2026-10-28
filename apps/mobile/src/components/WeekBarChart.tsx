@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, space, type, surfaceCard } from '../theme/tokens';
+import { colors, elevation, radius, space, type } from '../theme/tokens';
 import { dayNumber, WEEKDAY_SHORT_RU_CAP } from './weekFormat';
 
 export type WeekBarDay = {
@@ -98,7 +98,9 @@ export function WeekBarChart({
 
 const styles = StyleSheet.create({
   wrap: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.lg,
   },

@@ -18,7 +18,7 @@ import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { BentoRow } from '@/src/ui/BentoRow';
 import { BentoStat } from '@/src/ui/BentoStat';
@@ -420,13 +420,17 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   bentoHalf: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     flex: 1,
     padding: space.lg,
     minHeight: 120,
   },
   bentoWide: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.md,
     flexDirection: 'row',
@@ -457,7 +461,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.md,
   },
@@ -528,7 +534,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: space.md,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginBottom: space.sm,
   },
@@ -551,7 +559,9 @@ const styles = StyleSheet.create({
   foodDay: { fontWeight: '700', color: colors.text },
   foodMeta: { color: colors.textSecondary, fontSize: type.caption },
   preview: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginTop: space.lg,
   },

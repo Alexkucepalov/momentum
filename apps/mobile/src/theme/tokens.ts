@@ -1,31 +1,34 @@
 import type { ViewStyle } from 'react-native';
 
 /**
- * Visual system locked to docs/design/refs
- * (09–10 soft mono / Activity masonry · 08 wellness · 07 Nutrition · dark logs).
+ * Design contract: Nutrition Soft Light
+ * @see docs/quality/DESIGN-RESET-AUDIT.md §5
+ * @see docs/design/refs/07-nutrition-light.png (shell etalon)
+ *
+ * Dark surfaces = focused log sheets only (weight).
+ * Coral = today marker / week trend only.
  */
 export const colors = {
-  background: '#EEEEEE',
+  background: '#F5F5F5',
   surface: '#FFFFFF',
   text: '#111111',
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   accent: '#111111',
-  accentSoft: '#E6E6E6',
-  /** Coral — today / trend only (not Activity mono). */
+  accentSoft: '#EBEBEB',
+  /** Coral — today / trend only. */
   focus: '#EF6E58',
   focusSoft: '#FCE8E4',
   primaryButton: '#111111',
   primaryButtonText: '#FFFFFF',
-  border: '#E4E4E4',
+  border: '#E8E8E8',
   danger: '#B42318',
   preview: '#EEF2FF',
-  /** Macro accents from Nutrition ref 07 */
   protein: '#E5484D',
   fat: '#8B5CF6',
   carbs: '#F5A524',
   calorieRing: '#F5A524',
-  ringTrack: '#E0E0E0',
+  ringTrack: '#EBEBEB',
   ringFill: '#111111',
   success: '#16A34A',
   successSoft: '#D4EDDA',
@@ -56,20 +59,21 @@ export const space = {
 } as const;
 
 export const radius = {
-  sm: 14,
-  md: 18,
-  lg: 24,
-  /** Soft wellness cards (ref 08). */
-  xl: 28,
-  xxl: 32,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  /** Default card / sheet (Nutrition Soft Light). */
+  xl: 24,
+  /** Rare oversized hero only — prefer xl. */
+  xxl: 28,
   pill: 999,
 } as const;
 
 export const touchMin = 48;
 
 export const type = {
-  hero: 40,
-  title: 28,
+  hero: 34,
+  title: 24,
   subtitle: 17,
   body: 15,
   caption: 13,
@@ -77,13 +81,12 @@ export const type = {
 } as const;
 
 export const elevation = {
-  /** Soft / neumorph-lite float (refs 09–10). */
   card: {
     shadowColor: colors.shadow,
-    shadowOpacity: 0.07,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   } satisfies ViewStyle,
   tabBar: {
     shadowColor: colors.shadow,
@@ -94,10 +97,13 @@ export const elevation = {
   } satisfies ViewStyle,
 } as const;
 
-/** @deprecated Prefer <AppCard /> from src/ui */
+/**
+ * @deprecated Prefer `<AppCard />`. Kept as style alias for migration.
+ * New code must not spread this into ad-hoc Views.
+ */
 export const surfaceCard = {
   backgroundColor: colors.surface,
-  borderRadius: radius.xxl,
+  borderRadius: radius.xl,
   ...elevation.card,
 } as const satisfies ViewStyle;
 
