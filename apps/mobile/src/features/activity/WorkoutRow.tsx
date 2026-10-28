@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { Workout, WorkoutType } from '../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
 
 const TYPE_META: Record<
   WorkoutType,
@@ -74,12 +74,9 @@ export function WorkoutRow({
 
 const styles = StyleSheet.create({
   row: {
+    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: space.md,
     marginBottom: space.sm,
     minHeight: touchMin,

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { localDateKey } from '../../../../src/storage/validation';
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '../theme/tokens';
 
 function addDays(iso: string, delta: number): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -93,12 +93,9 @@ export function DateSwitcher({
 
 const styles = StyleSheet.create({
   wrap: {
+    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: space.lg,
     minHeight: touchMin + 8,
   },

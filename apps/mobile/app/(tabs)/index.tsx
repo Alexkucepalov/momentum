@@ -27,7 +27,7 @@ import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
 function formatDateLine(iso: string, today: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -333,12 +333,10 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   quietCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    ...surfaceCard,
     paddingHorizontal: space.md,
     marginBottom: space.md,
     overflow: 'hidden',
-    ...elevation.card,
   },
   quietRow: {
     flexDirection: 'row',

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { HabitWeekDayMark } from '../../../../../src/domain/habitWeek';
 import { formatHabitWeekLabel } from '../../../../../src/domain/habitWeek';
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
 import { HabitFormFields } from './HabitFormFields';
 import { HabitProgressBar } from './HabitProgressBar';
 import { HabitWeekStrip } from './HabitWeekStrip';
@@ -201,10 +201,7 @@ export function HabitCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.lg,
     marginBottom: space.md,
   },

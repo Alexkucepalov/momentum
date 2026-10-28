@@ -81,3 +81,10 @@ export const elevation = {
     elevation: 8,
   } satisfies ViewStyle,
 } as const;
+
+/** Default elevated surface card — use instead of borderWidth:1 panels. */
+export const surfaceCard = {
+  backgroundColor: colors.surface,
+  borderRadius: radius.xl,
+  ...elevation.card,
+} as const satisfies ViewStyle;

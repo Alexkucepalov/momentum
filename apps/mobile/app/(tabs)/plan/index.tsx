@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { colors, elevation, radius, space, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, type } from '@/src/theme/tokens';
 
 type HubItem = {
   key: string;
@@ -121,19 +121,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   card: {
+    ...surfaceCard,
     minHeight: 148,
     padding: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
   },
-  cardPrimary: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardQuiet: {
-    backgroundColor: colors.surface,
-  },
+  cardPrimary: {},
+  cardQuiet: {},
   pressed: { opacity: 0.88 },
   cardTop: {
     marginBottom: space.md,

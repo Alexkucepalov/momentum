@@ -15,7 +15,7 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -646,12 +646,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.sm,
     gap: space.sm,
-    ...elevation.card,
   },
   cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },
   cardIcon: {

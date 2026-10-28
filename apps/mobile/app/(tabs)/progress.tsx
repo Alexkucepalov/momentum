@@ -17,7 +17,7 @@ import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
 
@@ -398,11 +398,9 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    ...surfaceCard,
     padding: space.lg,
     marginBottom: space.md,
-    ...elevation.card,
   },
   cardTitle: { fontSize: type.caption, color: colors.textMuted, fontWeight: '700' },
   cardValue: { fontSize: type.hero, fontWeight: '800', color: colors.text, marginTop: 4 },
