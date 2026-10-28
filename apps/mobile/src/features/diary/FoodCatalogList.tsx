@@ -13,7 +13,7 @@ import type {
   RecipeIngredient,
 } from '../../../../../src/storage/types';
 import { MacroStrip } from '../../components/MacroStrip';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 
 const SOURCE_RU: Record<string, string> = {
   user: 'свой',
@@ -466,7 +466,9 @@ export function FoodCatalogList({
 const styles = StyleSheet.create({
   wrap: { marginTop: space.sm, marginBottom: space.xl },
   panel: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginBottom: space.md,
   },
@@ -553,7 +555,9 @@ const styles = StyleSheet.create({
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
     width: 140,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     minHeight: 120,
   },
@@ -585,7 +589,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
@@ -639,7 +645,9 @@ const styles = StyleSheet.create({
   },
   emptyCta: {
     minHeight: touchMin,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.md,

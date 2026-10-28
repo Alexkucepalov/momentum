@@ -21,7 +21,7 @@ import { localDateKey } from '../../../../../src/storage/validation';
 import type { FoodEntry, MealSlot, Workout, WorkoutType } from '../../../../../src/storage/types';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'] as const;
 
@@ -410,7 +410,9 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendLabel: { fontSize: type.micro, color: colors.textSecondary, fontWeight: '600' },
   detail: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
   },
   detailTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },

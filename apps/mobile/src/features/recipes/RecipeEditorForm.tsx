@@ -18,7 +18,7 @@ import {
   pickRecipePhotoFromLibrary,
   takeRecipePhoto,
 } from '../../media/recipePhoto';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 import { emptyIngredient, type DraftIngredient } from '../diary/addFood/types';
 
 export type RecipeFormValues = {
@@ -425,7 +425,9 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: touchMin,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingHorizontal: space.md,
     fontSize: type.body,
     color: colors.text,
@@ -447,7 +449,9 @@ const styles = StyleSheet.create({
   macroRow: { flexDirection: 'row', gap: space.sm },
   third: { flex: 1 },
   ingCard: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginBottom: space.sm,
   },

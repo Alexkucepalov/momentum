@@ -21,7 +21,7 @@ import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL_LABELS = {
   breakfast: 'Завтрак',
@@ -271,7 +271,9 @@ const styles = StyleSheet.create({
   macros: {
     flexDirection: 'row',
     marginHorizontal: space.lg,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingVertical: space.md,
     marginBottom: space.lg,
   },
@@ -281,7 +283,9 @@ const styles = StyleSheet.create({
   block: {
     marginHorizontal: space.lg,
     marginBottom: space.lg,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
   },
   blockTitle: {
@@ -322,7 +326,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
     minHeight: touchMin,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
   },
   editBtnText: { fontWeight: '700', color: colors.text, fontSize: type.body },
   deleteBtn: {

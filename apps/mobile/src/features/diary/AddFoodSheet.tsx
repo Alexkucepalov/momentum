@@ -9,7 +9,7 @@ import { FormScrollView } from '../../components/FormScrollView';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeLookupSheet } from './BarcodeLookupSheet';
 import {
   defaultProductPortionGrams,
@@ -849,7 +849,9 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
     paddingHorizontal: space.md,
     minHeight: 44,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   header: {
@@ -926,7 +928,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     marginBottom: space.md,
@@ -938,7 +942,9 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   empty: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
   },
   emptyTitle: {

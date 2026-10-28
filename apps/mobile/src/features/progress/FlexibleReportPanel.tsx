@@ -11,7 +11,7 @@ import {
 } from '../../../../../src/domain/flexibleReport';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 import { collectFlexibleReportInput } from './collectFlexibleReport';
 import { shareHtmlAsPdf } from './shareReportPdf';
 
@@ -192,7 +192,9 @@ export function FlexibleReportPanel() {
 
 const styles = StyleSheet.create({
   wrap: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.xl,
   },

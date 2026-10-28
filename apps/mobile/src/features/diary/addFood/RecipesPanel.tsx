@@ -10,7 +10,7 @@ import {
 import type { Recipe, RecipeIngredient } from '../../../../../../src/storage/types';
 import { MacroStrip } from '../../../components/MacroStrip';
 import { PrimaryButton } from '../../../components/PrimaryButton';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
 import { emptyIngredient, type DraftIngredient } from './types';
 
 export function RecipesPanel({
@@ -334,7 +334,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.sm,
     minHeight: touchMin,
   },
@@ -371,7 +373,9 @@ const styles = StyleSheet.create({
   createText: { fontWeight: '700', color: colors.text },
   createCard: {
     marginTop: space.md,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
   },
   createHead: {

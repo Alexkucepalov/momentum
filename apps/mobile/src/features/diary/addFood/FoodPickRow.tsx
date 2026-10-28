@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
 
 export function FoodPickRow({
   title,
@@ -65,7 +65,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     paddingVertical: space.md,
     paddingHorizontal: space.md,
     minHeight: touchMin + 8,

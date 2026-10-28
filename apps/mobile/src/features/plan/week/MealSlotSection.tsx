@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
-import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { PlannedMealCard } from './PlannedMealCard';
 import { usePlanDrag, type DropTarget } from './planDragContext';
 
@@ -88,7 +88,9 @@ export function MealSlotSection({
 
 const styles = StyleSheet.create({
   section: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     marginBottom: space.md,
     padding: space.md,
   },

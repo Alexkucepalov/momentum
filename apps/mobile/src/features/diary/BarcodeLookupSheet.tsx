@@ -16,7 +16,7 @@ import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeCameraPanel, type ScanStatus } from './BarcodeCameraPanel';
 import { ConfirmPortionSheet } from './ConfirmPortionSheet';
 import { LabelCaptureSheet, type LabelDraft } from './LabelCaptureSheet';
@@ -568,7 +568,9 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   input: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,
@@ -591,7 +593,9 @@ const styles = StyleSheet.create({
   },
   fallback: { gap: space.sm, paddingBottom: 48 },
   localBlock: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     marginBottom: space.sm,
     gap: space.sm,
@@ -631,7 +635,9 @@ const styles = StyleSheet.create({
   },
   secondary: {
     minHeight: touchMin,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.md,

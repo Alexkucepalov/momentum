@@ -12,7 +12,7 @@ import {
   listPersonalRecipePreviews,
 } from '@/src/features/recipes/personalRecipesPack';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 type Scope = 'suggested' | 'all' | 'prepared';
@@ -349,7 +349,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, gap: space.sm, paddingBottom: 24 },
   hero: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.xl,
     marginBottom: space.lg,
     alignItems: 'flex-start',
@@ -399,7 +401,9 @@ const styles = StyleSheet.create({
   scopeText: { fontWeight: '700', fontSize: type.caption, color: colors.text },
   scopeTextOn: { color: colors.primaryButtonText },
   toolbarCard: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.lg,
     gap: space.lg,
@@ -437,7 +441,9 @@ const styles = StyleSheet.create({
   },
   toolText: { fontWeight: '700', fontSize: type.caption, color: colors.text },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.lg,
     marginBottom: space.md,
     gap: space.md,

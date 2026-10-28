@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, radius, space, surfaceCard, type } from '../theme/tokens';
+import { colors, elevation, radius, space, type } from '../theme/tokens';
 
 /** Compact water + activity rows (optional; Today prefers quiet single water row). */
 export function StatCards({
@@ -63,7 +63,9 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     flex: 1,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,

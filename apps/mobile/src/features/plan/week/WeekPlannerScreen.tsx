@@ -18,7 +18,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
 import { DragOverlay } from './DragOverlay';
@@ -575,7 +575,9 @@ const styles = StyleSheet.create({
   chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   chipTextOn: { color: colors.primaryButtonText },
   input: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,
