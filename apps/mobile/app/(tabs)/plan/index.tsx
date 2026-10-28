@@ -1,9 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { colors, radius, space, surfaceCard, type } from '@/src/theme/tokens';
+import { colors, radius, space, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { SectionTitle } from '@/src/ui/SectionTitle';
 
 type HubItem = {
   key: string;
@@ -55,23 +57,16 @@ const SECONDARY: HubItem[] = [
   },
 ];
 
-function BentoCard({ item }: { item: HubItem }) {
+function HubCard({ item }: { item: HubItem }) {
   const router = useRouter();
   return (
-    <Pressable
+    <AppCard
       onPress={() => router.push(item.href as Href)}
-      style={({ pressed }) => [
-        styles.card,
-        item.primary ? styles.cardPrimary : styles.cardQuiet,
-        pressed && styles.pressed,
-      ]}
-      accessibilityRole="button"
+      style={styles.card}
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
-      <View style={styles.cardTop}>
-        <View style={styles.iconWrap}>
-          <Ionicons name={item.icon} size={20} color={colors.text} />
-        </View>
+      <View style={styles.iconWrap}>
+        <Ionicons name={item.icon} size={20} color={colors.text} />
       </View>
       <Text style={styles.cardTitle}>{item.title}</Text>
       <Text style={styles.cardSub}>{item.subtitle}</Text>
@@ -82,23 +77,24 @@ function BentoCard({ item }: { item: HubItem }) {
       ) : (
         <Text style={styles.quietCta}>{item.cta} →</Text>
       )}
-    </Pressable>
+    </AppCard>
   );
 }
 
-/** One job: pick next action. 2×2 bento like Home Workouts/Meals. */
+/** Plan hub — Home action-card pattern via AppCard. */
 export default function PlanHubScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
-      <View style={styles.grid} accessibilityRole="list">
+      <SectionTitle title="Дальше" />
+      <View style={styles.grid}>
         {PRIMARY.map((item) => (
           <View key={item.key} style={styles.cell}>
-            <BentoCard item={item} />
+            <HubCard item={item} />
           </View>
         ))}
         {SECONDARY.map((item) => (
           <View key={item.key} style={styles.cell}>
-            <BentoCard item={item} />
+            <HubCard item={item} />
           </View>
         ))}
       </View>
@@ -107,30 +103,10 @@ export default function PlanHubScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: space.lg,
-    paddingBottom: space.xxl,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-  },
-  cell: {
-    width: '47.5%',
-    flexGrow: 1,
-  },
-  card: {
-    ...surfaceCard,
-    minHeight: 148,
-    padding: space.lg,
-  },
-  cardPrimary: {},
-  cardQuiet: {},
-  pressed: { opacity: 0.88 },
-  cardTop: {
-    marginBottom: space.md,
-  },
+  content: { padding: space.lg, paddingBottom: space.xxl },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  cell: { width: '47.5%', flexGrow: 1 },
+  card: { minHeight: 156 },
   iconWrap: {
     width: 36,
     height: 36,
@@ -138,6 +114,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: space.md,
   },
   cardTitle: {
     fontSize: type.subtitle,

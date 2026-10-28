@@ -3,18 +3,19 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { formatDateRu } from '../../../../../src/domain/dateFormatRu';
 import type { WeeklyInsight } from '../../../../../src/domain/weeklyInsight';
-import { colors, radius, space, surfaceCard, type } from '../../theme/tokens';
+import { colors, radius, space, type } from '../../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
   return (
-    <View style={styles.card}>
+    <AppCard style={styles.card}>
       <View style={styles.head}>
         <View style={styles.icon}>
           <Ionicons name="calendar-outline" size={18} color={colors.text} />
         </View>
         <View style={styles.flex}>
           <Text style={styles.title} accessibilityRole="header">
-            Неделя
+            Итоги
           </Text>
           <Text style={styles.range}>
             {formatDateRu(insight.weekStart)} → {formatDateRu(insight.weekEnd)}
@@ -26,16 +27,12 @@ export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
           {line}
         </Text>
       ))}
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...surfaceCard,
-    padding: space.lg,
-    marginBottom: space.xl,
-  },
+  card: { marginBottom: space.xl },
   head: { flexDirection: 'row', gap: space.md, marginBottom: space.md, alignItems: 'center' },
   icon: {
     width: 36,

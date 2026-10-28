@@ -19,6 +19,9 @@ import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { BentoStat } from '@/src/ui/BentoStat';
+import { SectionTitle } from '@/src/ui/SectionTitle';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
 
@@ -170,35 +173,27 @@ export default function ProgressScreen() {
 
         {tab === 'summary' ? (
           <>
+            <SectionTitle title="Неделя" />
             <View style={styles.bentoRow}>
-              <Pressable
+              <BentoStat
+                label="ВЕС"
+                value={latest ? String(latest.kg) : '—'}
+                meta={latest ? 'кг' : 'добавь запись'}
                 onPress={() => setTab('body')}
-                style={({ pressed }) => [styles.bentoHalf, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Вес"
-              >
-                <Text style={styles.bentoLabel}>Вес</Text>
-                <Text style={styles.bentoHero}>{latest ? `${latest.kg}` : '—'}</Text>
-                <Text style={styles.bentoMeta}>{latest ? 'кг' : 'добавь запись'}</Text>
-              </Pressable>
-              <Pressable
+              />
+              <BentoStat
+                label="ТРЕНИРОВКИ"
+                value={String(sportWeekMinutes.count)}
+                meta={`${sportWeekMinutes.mins} мин`}
                 onPress={() => router.push('/(tabs)/activity')}
-                style={({ pressed }) => [styles.bentoHalf, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Активность за неделю"
-              >
-                <Text style={styles.bentoLabel}>Активность</Text>
-                <Text style={styles.bentoHero}>{sportWeekMinutes.count}</Text>
-                <Text style={styles.bentoMeta}>{sportWeekMinutes.mins} мин · неделя</Text>
-              </Pressable>
+              />
             </View>
-            <View style={styles.bentoWide}>
-              <Text style={styles.bentoLabel}>Объём недели</Text>
-              <Text style={styles.bentoWideValue}>
-                {sportWeekMinutes.mins}
-                <Text style={styles.bentoMeta}> мин</Text>
-              </Text>
-            </View>
+            <BentoStat
+              label="ОБЪЁМ НЕДЕЛИ"
+              value={`${sportWeekMinutes.mins}`}
+              meta="мин"
+              wide
+            />
             <WeeklyInsightCard insight={weekInsight} />
           </>
         ) : null}
@@ -213,8 +208,8 @@ export default function ProgressScreen() {
 
         {tab === 'body' ? (
           <>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Вес</Text>
+            <AppCard style={styles.card}>
+              <Text style={styles.cardTitle}>ВЕС</Text>
               <Text style={styles.cardValue}>{latest ? `${latest.kg} кг` : '—'}</Text>
               {weekWeightDelta ? (
                 <Text
@@ -245,7 +240,7 @@ export default function ProgressScreen() {
               />
 
               <PrimaryButton label="Записать вес" onPress={() => setWeightOpen(true)} />
-            </View>
+            </AppCard>
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>ИМТ и здоровье</Text>

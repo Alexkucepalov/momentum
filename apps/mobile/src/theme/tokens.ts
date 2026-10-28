@@ -1,29 +1,30 @@
 import type { ViewStyle } from 'react-native';
 
 /**
- * Visual tokens locked to docs/design/refs:
- * 01-home-light · 02-weight-log-dark · 03-workouts-bento-dark
+ * Visual system locked to docs/design/refs (esp. 01 Home + 07 Nutrition + dark log/bento).
  */
 export const colors = {
-  background: '#F2F2F2',
+  background: '#F5F5F5',
   surface: '#FFFFFF',
   text: '#111111',
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   accent: '#111111',
-  accentSoft: '#E8EAED',
-  /** Coral — today / trend only (ref 01). CTAs stay black. */
+  accentSoft: '#EBEBEB',
+  /** Coral — today / trend only. */
   focus: '#EF6E58',
   focusSoft: '#FCE8E4',
   primaryButton: '#111111',
   primaryButtonText: '#FFFFFF',
-  border: '#E5E7EB',
+  border: '#E8E8E8',
   danger: '#B42318',
   preview: '#EEF2FF',
-  protein: '#22C55E',
-  fat: '#F59E0B',
-  carbs: '#3B82F6',
-  ringTrack: '#E8EAED',
+  /** Macro accents from Nutrition ref 07 */
+  protein: '#E5484D',
+  fat: '#8B5CF6',
+  carbs: '#F5A524',
+  calorieRing: '#F5A524',
+  ringTrack: '#EBEBEB',
   ringFill: '#111111',
   success: '#16A34A',
   successSoft: '#D4EDDA',
@@ -36,7 +37,6 @@ export const colors = {
   cameraMaskHeavy: 'rgba(0, 0, 0, 0.72)',
   successOverlay: 'rgba(22, 163, 74, 0.28)',
   inverseHairline: 'rgba(255, 255, 255, 0.4)',
-  /** Ref 02 / 03 dark sheets */
   darkBg: '#000000',
   darkSurface: '#1C1C1E',
   darkSurfaceRaised: '#2C2C2E',
@@ -65,7 +65,7 @@ export const radius = {
 export const touchMin = 48;
 
 export const type = {
-  hero: 36,
+  hero: 40,
   title: 28,
   subtitle: 17,
   body: 15,
@@ -76,8 +76,8 @@ export const type = {
 export const elevation = {
   card: {
     shadowColor: colors.shadow,
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   } satisfies ViewStyle,
@@ -90,13 +90,13 @@ export const elevation = {
   } satisfies ViewStyle,
 } as const;
 
+/** @deprecated Prefer <AppCard /> from src/ui */
 export const surfaceCard = {
   backgroundColor: colors.surface,
   borderRadius: radius.xl,
   ...elevation.card,
 } as const satisfies ViewStyle;
 
-/** Light modal / sheet chrome. */
 export const sheetSurface = {
   backgroundColor: colors.surface,
   borderTopLeftRadius: radius.xl,
@@ -104,7 +104,6 @@ export const sheetSurface = {
   ...elevation.tabBar,
 } as const satisfies ViewStyle;
 
-/** Ref 02 dark focused log. */
 export const darkSheet = {
   backgroundColor: colors.darkBg,
 } as const satisfies ViewStyle;

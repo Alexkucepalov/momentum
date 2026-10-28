@@ -17,6 +17,8 @@ import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
 import { colors, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { BentoStat } from '@/src/ui/BentoStat';
+import { SectionTitle } from '@/src/ui/SectionTitle';
 
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -111,15 +113,18 @@ export default function ActivityScreen() {
           </>
         ) : (
           <>
-            <View style={styles.summary} accessibilityRole="summary">
-              <Text style={styles.summaryValue}>{totalMin}</Text>
-              <Text style={styles.summaryLabel}>мин за выбранный день</Text>
-              <Text style={styles.summaryHint}>
-                {activityKcal != null
-                  ? `Оценка ~${activityKcal} ккал (MET) · не вычитается из еды`
-                  : 'Ккал тренировок не вычитаются из еды — только факт движения'}
-              </Text>
+            <SectionTitle title="Сегодня" />
+            <View style={styles.bentoRow}>
+              <BentoStat label="МИНУТЫ" value={String(totalMin)} meta="за день" />
+              <BentoStat
+                label="ОЦЕНКА"
+                value={activityKcal != null ? String(activityKcal) : '—'}
+                meta="ккал MET"
+              />
             </View>
+            <Text style={styles.summaryHint}>
+              Ккал тренировок не вычитаются из еды — только факт движения
+            </Text>
 
             <WeekBarChart
               title="Неделя активности"
@@ -196,19 +201,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: space.sm,
   },
-  summary: {
-    ...surfaceCard,
-    padding: space.xl,
-    alignItems: 'center',
-    marginBottom: space.md,
-  },
-  summaryValue: { fontSize: type.hero, fontWeight: '800', color: colors.text },
-  summaryLabel: { fontSize: type.body, color: colors.textSecondary, marginTop: 4 },
+  bentoRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.sm },
   summaryHint: {
-    marginTop: space.sm,
+    marginBottom: space.md,
     fontSize: type.caption,
     color: colors.textMuted,
-    textAlign: 'center',
   },
   pressed: { opacity: 0.88 },
   quickLabel: {
