@@ -46,6 +46,7 @@ Sheets S1–S11 / modals M1–M4 — IM; WeightLog dark intentional.
 
 - Baseline (user + browser): `docs/quality/visual-audit-pack/2026-10-29-baseline-live/`
 - After Soft Light (#152): `docs/quality/visual-audit-pack/2026-10-29-screens/` (39 shots)
+- Plan finish: `docs/quality/visual-audit-pack/2026-10-29b-screens/` (39 shots)
 - Expo dogfood: `http://localhost:8002` during session
 
 ## 7. Известные дефекты

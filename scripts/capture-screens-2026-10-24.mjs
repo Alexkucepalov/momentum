@@ -2,7 +2,7 @@
 /**
  * Full-screen visual pack (Nutrition Soft Light / Design Reset #148).
  * Expo web · 390×844 @2x. NOT physical Android Pass.
- * Output: docs/quality/visual-audit-pack/2026-10-29-screens/
+ * Output: docs/quality/visual-audit-pack/2026-10-29b-screens/
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'docs', 'quality', 'visual-audit-pack', '2026-10-29-screens');
+const outDir = join(root, 'docs', 'quality', 'visual-audit-pack', '2026-10-29b-screens');
 const base = process.env.BASE_URL ?? 'http://localhost:8081';
 const chromePath =
   process.env.CHROME_PATH ??
