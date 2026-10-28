@@ -16,7 +16,7 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
 
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -197,10 +197,7 @@ const styles = StyleSheet.create({
     marginRight: space.sm,
   },
   summary: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.xl,
     alignItems: 'center',
     marginBottom: space.md,
@@ -228,15 +225,12 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   quickChip: {
+    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
   },
   quickChipText: {
     fontSize: type.caption,

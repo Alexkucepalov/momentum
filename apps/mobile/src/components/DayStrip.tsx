@@ -84,8 +84,17 @@ export function DayStrip({
           {days.map((iso, i) => {
             const on = iso === selected;
             const isToday = iso === todayKey;
+            const isPast = iso < todayKey;
             const fill = fillByDate?.[iso] ?? 'empty';
             const hot = dragActive && hoverDate === iso;
+            /** Ref 01: past=black, today=coral, future=gray; selected future → black. */
+            const tone = hot
+              ? 'selected'
+              : isToday
+                ? 'today'
+                : isPast || on
+                  ? 'past'
+                  : 'future';
             return (
               <View
                 key={iso}
@@ -99,9 +108,10 @@ export function DayStrip({
                   onPress={() => onSelect(iso)}
                   style={({ pressed }) => [
                     styles.chip,
-                    on && styles.chipOn,
-                    isToday && !on && styles.chipToday,
-                    hot && styles.chipHot,
+                    tone === 'past' && styles.chipPast,
+                    tone === 'today' && styles.chipToday,
+                    tone === 'future' && styles.chipFuture,
+                    tone === 'selected' && styles.chipOn,
                     dragActive && styles.chipDrag,
                     pressed && styles.pressed,
                   ]}
@@ -112,8 +122,8 @@ export function DayStrip({
                   <Text
                     style={[
                       styles.wd,
-                      (on || hot) && styles.onText,
-                      isToday && !on && !hot && styles.todayText,
+                      (tone === 'past' || tone === 'today' || tone === 'selected') && styles.onText,
+                      tone === 'future' && styles.futureText,
                     ]}
                   >
                     {WEEKDAY_SHORT_RU_CAP[i]}
@@ -121,8 +131,8 @@ export function DayStrip({
                   <Text
                     style={[
                       styles.num,
-                      (on || hot) && styles.onText,
-                      isToday && !on && !hot && styles.todayText,
+                      (tone === 'past' || tone === 'today' || tone === 'selected') && styles.onText,
+                      tone === 'future' && styles.futureText,
                     ]}
                   >
                     {dayNumber(iso)}
@@ -205,25 +215,29 @@ const styles = StyleSheet.create({
   chipWrap: { flex: 1 },
   chip: {
     flex: 1,
+    aspectRatio: 1,
+    maxHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: space.xs,
     borderRadius: radius.pill,
     backgroundColor: 'transparent',
-    minHeight: 48,
+    minHeight: 44,
+  },
+  chipPast: {
+    backgroundColor: colors.primaryButton,
   },
   chipOn: {
     backgroundColor: colors.primaryButton,
+    transform: [{ scale: 1.04 }],
   },
   chipToday: {
     backgroundColor: colors.focus,
   },
+  chipFuture: {
+    backgroundColor: colors.accentSoft,
+  },
   chipDrag: {
     minHeight: 52,
-  },
-  chipHot: {
-    backgroundColor: colors.primaryButton,
-    transform: [{ scale: 1.06 }],
   },
   pressed: { opacity: 0.85 },
   wd: {
@@ -240,8 +254,8 @@ const styles = StyleSheet.create({
   onText: {
     color: colors.primaryButtonText,
   },
-  todayText: {
-    color: colors.primaryButtonText,
+  futureText: {
+    color: colors.textMuted,
   },
   dot: {
     marginTop: 3,
