@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   card: { flex: 1, minHeight: 108 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
   label: {
-    fontSize: 9,
+    fontSize: type.micro,
     fontWeight: '800',
     color: colors.textMuted,
     letterSpacing: 0.3,
@@ -110,12 +110,12 @@ const styles = StyleSheet.create({
   value: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
   target: { fontSize: type.caption, fontWeight: '600', color: colors.textMuted },
   track: {
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 3,
     backgroundColor: colors.accentSoft,
     overflow: 'hidden',
     marginTop: space.sm,
   },
-  fill: { height: 4, borderRadius: 2 },
+  fill: { height: 5, borderRadius: 3 },
   left: { marginTop: 6, fontSize: type.micro, color: colors.textMuted, fontWeight: '600' },
 });

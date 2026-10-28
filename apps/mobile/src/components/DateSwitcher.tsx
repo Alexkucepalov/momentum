@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { localDateKey } from '../../../../src/storage/validation';
 import { colors, space, touchMin, type } from '../theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
+import { dateChrome } from '@/src/ui/dateChrome';
 
 function addDays(iso: string, delta: number): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: space.lg,
-    minHeight: touchMin + 8,
+    minHeight: dateChrome.controlMin + 8,
     paddingHorizontal: space.xs,
   },
   arrow: {

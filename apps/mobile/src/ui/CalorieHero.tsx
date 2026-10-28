@@ -125,5 +125,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringTop: { fontSize: type.caption, fontWeight: '800', color: colors.text },
-  ringBottom: { fontSize: 9, fontWeight: '700', color: colors.textMuted, marginTop: 1 },
+  ringBottom: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted, marginTop: 1 },
 });

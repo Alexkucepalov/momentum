@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 44,
+    minHeight: 48,
   },
   chipOn: {
     backgroundColor: colors.primaryButton,

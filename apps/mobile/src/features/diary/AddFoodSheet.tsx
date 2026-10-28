@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
     marginHorizontal: space.lg,
     marginBottom: space.sm,
     paddingHorizontal: space.md,
-    minHeight: 44,
+    minHeight: touchMin,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
   },
