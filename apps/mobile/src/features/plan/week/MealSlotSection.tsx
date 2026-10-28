@@ -17,25 +17,15 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 export function MealSlotSection({
   slot,
   meals,
-  macrosFor,
+  kcalFor,
   onAdd,
-  onPortion,
-  onMove,
-  onCopy,
-  onReplace,
-  onDelete,
-  onLog,
+  onOpenMenu,
 }: {
   slot: MealSlot;
   meals: PlannedMeal[];
-  macrosFor: (m: PlannedMeal) => string;
+  kcalFor: (m: PlannedMeal) => string;
   onAdd: () => void;
-  onPortion: (m: PlannedMeal) => void;
-  onMove: (m: PlannedMeal) => void;
-  onCopy: (m: PlannedMeal) => void;
-  onReplace: (m: PlannedMeal) => void;
-  onDelete: (m: PlannedMeal) => void;
-  onLog: (m: PlannedMeal) => void;
+  onOpenMenu: (m: PlannedMeal) => void;
 }) {
   const { session, setSlotBox, isHoveringSlot } = usePlanDrag();
   const wrapRef = useRef<View>(null);
@@ -57,35 +47,38 @@ export function MealSlotSection({
     <View
       ref={wrapRef}
       onLayout={measure}
-      style={[styles.section, hot && styles.sectionHot, dragging && styles.sectionDragMode]}
+      style={[styles.section, hot && styles.sectionHot, dragging && !hot && styles.sectionDragMode]}
       accessibilityRole="summary"
     >
-      <View style={styles.headingRow}>
-        <Text style={[styles.heading, hot && styles.headingHot]}>{MEAL_LABELS[slot]}</Text>
-        {hot ? <Text style={styles.dropLabel}>отпустить здесь</Text> : null}
-      </View>
+      <Text style={[styles.heading, hot && styles.headingHot]}>{MEAL_LABELS[slot]}</Text>
+
+      {hot ? (
+        <View style={styles.dropZone} accessibilityLiveRegion="polite">
+          <Ionicons name="arrow-down-circle-outline" size={22} color={colors.carbs} />
+          <Text style={styles.dropText}>Отпустите, чтобы переместить</Text>
+        </View>
+      ) : null}
+
       {meals.map((m) => (
         <PlannedMealCard
           key={m.id}
           meal={m}
-          macrosLine={macrosFor(m)}
-          onPortion={() => onPortion(m)}
-          onMove={() => onMove(m)}
-          onCopy={() => onCopy(m)}
-          onReplace={() => onReplace(m)}
-          onDelete={() => onDelete(m)}
-          onLog={() => onLog(m)}
+          kcalLabel={kcalFor(m)}
+          onOpenMenu={() => onOpenMenu(m)}
         />
       ))}
-      <Pressable
-        onPress={onAdd}
-        style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={`Добавить блюдо в ${MEAL_LABELS[slot]}`}
-      >
-        <Ionicons name="add" size={20} color={colors.text} />
-        <Text style={styles.addText}>Добавить блюдо</Text>
-      </Pressable>
+
+      {!hot ? (
+        <Pressable
+          onPress={onAdd}
+          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`Добавить блюдо в ${MEAL_LABELS[slot]}`}
+        >
+          <Ionicons name="add" size={20} color={colors.text} />
+          <Text style={styles.addText}>Добавить блюдо</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -100,30 +93,38 @@ const styles = StyleSheet.create({
   },
   sectionDragMode: {
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderStyle: 'dashed',
   },
   sectionHot: {
-    borderColor: colors.primaryButton,
+    borderColor: colors.carbs,
+    borderStyle: 'dashed',
     backgroundColor: colors.preview,
-  },
-  headingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: space.sm,
   },
   heading: {
     fontSize: type.caption,
     fontWeight: '800',
     color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    marginBottom: space.sm,
   },
-  headingHot: { color: colors.text },
-  dropLabel: {
-    fontSize: type.micro,
+  headingHot: { color: colors.carbs },
+  dropZone: {
+    minHeight: 72,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.carbs,
+    backgroundColor: colors.preview,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: space.sm,
+    paddingHorizontal: space.md,
+  },
+  dropText: {
+    fontSize: type.caption,
     fontWeight: '800',
-    color: colors.primaryButton,
+    color: colors.carbs,
+    textAlign: 'center',
   },
   add: {
     minHeight: touchMin,

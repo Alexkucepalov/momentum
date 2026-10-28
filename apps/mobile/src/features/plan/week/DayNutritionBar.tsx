@@ -23,15 +23,13 @@ export function DayNutritionBar({
     return (
       <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План дня пуст">
         <Text style={styles.emptyTitle}>День без плана</Text>
-        <Text style={styles.emptyBody}>Добавь блюдо в слот ниже — это ещё не дневник.</Text>
+        <Text style={styles.emptyBody}>Добавьте первое блюдо — это ещё не дневник.</Text>
       </View>
     );
   }
 
   const kcal = summary.totals.kcal;
   const target = targets.energyKcal;
-  const remaining =
-    kcal !== null && target !== null && Number.isFinite(target) ? target - kcal : null;
 
   return (
     <View
@@ -43,27 +41,42 @@ export function DayNutritionBar({
           : `План дня ${fmt(kcal)} килокалорий`
       }
     >
-      <View style={styles.row}>
+      <View style={styles.kcalRow}>
         <Text style={styles.kcal}>{fmt(kcal)}</Text>
-        <Text style={styles.kcalUnit}>ккал план</Text>
-        {target != null ? (
-          <Text style={styles.target}>
-            / {Math.round(target)}
-            {remaining !== null ? ` · ост. ${Math.round(remaining)}` : ''}
-          </Text>
-        ) : null}
+        <Text style={styles.kcalUnit}>
+          ккал{target != null ? ` / ${Math.round(target)}` : ''}
+        </Text>
       </View>
-      <Text style={styles.macros}>
-        Б {fmt(summary.totals.protein)}
-        {targets.proteinG != null ? `/${Math.round(targets.proteinG)}` : ''}
-        {' · '}Ж {fmt(summary.totals.fat)}
-        {targets.fatG != null ? `/${Math.round(targets.fatG)}` : ''}
-        {' · '}У {fmt(summary.totals.carbs)}
-        {targets.carbG != null ? `/${Math.round(targets.carbG)}` : ''}
-      </Text>
+      <View style={styles.macros}>
+        <MacroDot color={colors.protein} label="Б" value={summary.totals.protein} target={targets.proteinG} />
+        <MacroDot color={colors.fat} label="Ж" value={summary.totals.fat} target={targets.fatG} />
+        <MacroDot color={colors.carbs} label="У" value={summary.totals.carbs} target={targets.carbG} />
+      </View>
       {summary.incomplete ? (
-        <Text style={styles.incomplete}>Есть позиции с неизвестными КБЖУ — сумма неполная</Text>
+        <Text style={styles.incomplete}>Есть неизвестные КБЖУ — сумма неполная</Text>
       ) : null}
+    </View>
+  );
+}
+
+function MacroDot({
+  color,
+  label,
+  value,
+  target,
+}: {
+  color: string;
+  label: string;
+  value: number | null;
+  target: number | null;
+}) {
+  return (
+    <View style={styles.macroItem}>
+      <View style={[styles.dot, { backgroundColor: color }]} />
+      <Text style={styles.macroText}>
+        {label} {fmt(value)}
+        {target != null ? `/${Math.round(target)}` : ''}
+      </Text>
     </View>
   );
 }
@@ -76,14 +89,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: space.md,
     marginBottom: space.md,
-    gap: 4,
+    gap: space.sm,
   },
-  row: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 },
-  kcal: { fontSize: type.title, fontWeight: '800', color: colors.text },
+  kcalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  kcal: { fontSize: type.hero, fontWeight: '800', color: colors.text, lineHeight: 40 },
   kcalUnit: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
-  target: { fontSize: type.caption, color: colors.textMuted, fontWeight: '600' },
-  macros: { fontSize: type.caption, color: colors.textSecondary, fontWeight: '600' },
-  incomplete: { fontSize: type.micro, color: colors.textMuted, marginTop: 2 },
+  macros: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
+  macroItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  macroText: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  incomplete: { fontSize: type.micro, color: colors.textMuted },
   emptyTitle: { fontSize: type.body, fontWeight: '800', color: colors.text },
   emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
 });

@@ -21,13 +21,17 @@ import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
 import { DragOverlay } from './DragOverlay';
+import { MealActionSheet } from './MealActionSheet';
 import { MealSlotSection } from './MealSlotSection';
 import { MoveCopySheet, type MoveCopyMode } from './MoveCopySheet';
 import { PlanDragProvider, usePlanDrag, type DropTarget } from './planDragContext';
+import { WeekOverview } from './WeekOverview';
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const PERIODS: MealPlanPeriodDays[] = [3, 5, 7];
 const PORTION_STEPS = [100, 150, 200, 250, 300];
+
+type PlannerView = 'day' | 'week';
 
 function fmtMacroLine(n: {
   kcal: number | null;
@@ -41,6 +45,10 @@ function fmtMacroLine(n: {
   if (n.fat !== null) parts.push(`Ж ${Math.round(n.fat)}`);
   if (n.carbs !== null) parts.push(`У ${Math.round(n.carbs)}`);
   return parts.length ? parts.join(' · ') : 'КБЖУ неизвестны';
+}
+
+function kcalLabel(n: { kcal: number | null }): string {
+  return n.kcal === null ? '— ккал' : `${Math.round(n.kcal)} ккал`;
 }
 
 export function WeekPlannerScreen() {
@@ -59,6 +67,7 @@ function WeekPlannerBody() {
   void revision;
 
   const [selectedDate, setSelectedDate] = useState(dateLocal);
+  const [view, setView] = useState<PlannerView>('day');
   const [composerOpen, setComposerOpen] = useState(false);
   const [days, setDays] = useState<MealPlanPeriodDays>(7);
   const [cookSessions, setCookSessions] = useState('2');
@@ -66,6 +75,7 @@ function WeekPlannerBody() {
   const [error, setError] = useState<string | null>(null);
 
   const [addSlot, setAddSlot] = useState<MealSlot | null>(null);
+  const [menuMeal, setMenuMeal] = useState<PlannedMeal | null>(null);
   const [transfer, setTransfer] = useState<{
     mode: MoveCopyMode;
     meal: PlannedMeal;
@@ -114,11 +124,22 @@ function WeekPlannerBody() {
     return map;
   }, [dayMeals]);
 
-  const macrosFor = (m: PlannedMeal) => fmtMacroLine(nutritionForPlannedMeal(m, lookup));
+  const nutritionOf = (m: PlannedMeal) => nutritionForPlannedMeal(m, lookup);
+  const macrosFor = (m: PlannedMeal) => fmtMacroLine(nutritionOf(m));
+  const kcalFor = (m: PlannedMeal) => kcalLabel(nutritionOf(m));
+
+  const weekSummaries = useMemo(() => {
+    const map: Record<string, ReturnType<typeof summarizePlannedDayNutrition>> = {};
+    for (const d of weekDays) {
+      map[d] = summarizePlannedDayNutrition(repo.listPlannedMealsForDate(d), lookup);
+    }
+    return map;
+  }, [weekDays, repo, lookup, revision]);
 
   const selectDate = (d: string) => {
     setSelectedDate(d);
     setDateLocal(d);
+    setView('day');
   };
 
   const applyDrop = useCallback(
@@ -221,11 +242,27 @@ function WeekPlannerBody() {
         contentContainerStyle={styles.content}
         scrollEnabled={session == null}
       >
-        <View style={styles.banner} accessibilityRole="summary">
-          <Text style={styles.bannerText}>Запланированное ≠ съеденное</Text>
-          <Text style={styles.bannerSub}>
-            Удерживай ☰ на карточке — перетащи на слот или день. Кнопки «Перенести» тоже работают.
-          </Text>
+        <View style={styles.viewToggle} accessibilityRole="tablist">
+          {(
+            [
+              ['day', 'День'],
+              ['week', 'Неделя'],
+            ] as const
+          ).map(([id, label]) => {
+            const on = view === id;
+            return (
+              <Pressable
+                key={id}
+                onPress={() => setView(id)}
+                style={[styles.viewChip, on && styles.viewChipOn]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={label}
+              >
+                <Text style={[styles.viewChipText, on && styles.viewChipTextOn]}>{label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <DayStrip
@@ -238,57 +275,70 @@ function WeekPlannerBody() {
           onDayBox={setDayBox}
         />
 
-        <View style={styles.todayRow}>
-          <Text style={styles.dayTitle}>
-            {formatDateRu(selectedDate)}
-            {selectedDate === dateLocal ? ' · сегодня' : ''}
-          </Text>
-          {selectedDate !== dateLocal ? (
-            <Pressable
-              onPress={() => selectDate(dateLocal)}
-              accessibilityRole="button"
-              accessibilityLabel="К сегодня"
-              hitSlop={8}
-            >
-              <Text style={styles.todayLink}>Сегодня</Text>
-            </Pressable>
-          ) : null}
-        </View>
-
-        <DayNutritionBar
-          summary={daySummary}
-          targets={{
-            energyKcal: profile.dailyEnergyKcal,
-            proteinG: profile.dailyProteinG,
-            fatG: profile.dailyFatG,
-            carbG: profile.dailyCarbG,
-          }}
-        />
-
-        {SLOTS.map((slot) => (
-          <MealSlotSection
-            key={slot}
-            slot={slot}
-            meals={bySlot[slot]}
-            macrosFor={macrosFor}
-            onAdd={() => setAddSlot(slot)}
-            onPortion={cyclePortion}
-            onMove={(m) => setTransfer({ mode: 'move', meal: m })}
-            onCopy={(m) => setTransfer({ mode: 'copy', meal: m })}
-            onReplace={replaceMeal}
-            onDelete={(m) => {
-              repo.softDeletePlannedMeal(m.id);
-              refresh();
-              showFlash(`Удалено из плана: ${m.displayName}`);
-            }}
-            onLog={(m) => {
-              if (!allowAdd()) return;
-              repo.logPlannedMealToDiary(m.id);
-              refresh();
-              showFlash(`В дневник: ${m.displayName}`);
-            }}
+        {view === 'week' ? (
+          <WeekOverview
+            days={weekDays}
+            summaries={weekSummaries}
+            targetKcal={profile.dailyEnergyKcal}
+            selected={selectedDate}
+            onSelect={selectDate}
           />
-        ))}
+        ) : null}
+
+        {view === 'day' ? (
+          <>
+            <View style={styles.todayRow}>
+              <Text style={styles.dayTitle}>
+                {formatDateRu(selectedDate)}
+                {selectedDate === dateLocal ? ' · сегодня' : ''}
+              </Text>
+              {selectedDate !== dateLocal ? (
+                <Pressable
+                  onPress={() => selectDate(dateLocal)}
+                  accessibilityRole="button"
+                  accessibilityLabel="К сегодня"
+                  hitSlop={8}
+                >
+                  <Text style={styles.todayLink}>Сегодня</Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            <Text style={styles.planNote}>План ≠ дневник · удерживай карточку, чтобы перенести</Text>
+
+            <DayNutritionBar
+              summary={daySummary}
+              targets={{
+                energyKcal: profile.dailyEnergyKcal,
+                proteinG: profile.dailyProteinG,
+                fatG: profile.dailyFatG,
+                carbG: profile.dailyCarbG,
+              }}
+            />
+
+            {daySummary.empty ? (
+              <EmptyState
+                compact
+                icon="restaurant-outline"
+                title="Спланируйте первый приём"
+                body="Добавьте блюдо в завтрак, обед, ужин или перекус."
+                actionLabel="Добавить в завтрак"
+                onAction={() => setAddSlot('breakfast')}
+              />
+            ) : null}
+
+            {SLOTS.map((slot) => (
+              <MealSlotSection
+                key={slot}
+                slot={slot}
+                meals={bySlot[slot]}
+                kcalFor={kcalFor}
+                onAdd={() => setAddSlot(slot)}
+                onOpenMenu={(m) => setMenuMeal(m)}
+              />
+            ))}
+          </>
+        ) : null}
 
         <Pressable
           onPress={() => setComposerOpen((v) => !v)}
@@ -391,6 +441,32 @@ function WeekPlannerBody() {
         }}
       />
 
+      <MealActionSheet
+        visible={menuMeal != null}
+        meal={menuMeal}
+        macrosLine={menuMeal ? macrosFor(menuMeal) : ''}
+        onClose={() => setMenuMeal(null)}
+        onAction={(id) => {
+          const m = menuMeal;
+          if (!m) return;
+          setMenuMeal(null);
+          if (id === 'portion') cyclePortion(m);
+          else if (id === 'replace') replaceMeal(m);
+          else if (id === 'move') setTransfer({ mode: 'move', meal: m });
+          else if (id === 'copy') setTransfer({ mode: 'copy', meal: m });
+          else if (id === 'delete') {
+            repo.softDeletePlannedMeal(m.id);
+            refresh();
+            showFlash(`Удалено из плана: ${m.displayName}`);
+          } else if (id === 'log') {
+            if (!allowAdd()) return;
+            repo.logPlannedMealToDiary(m.id);
+            refresh();
+            showFlash(`В дневник: ${m.displayName}`);
+          }
+        }}
+      />
+
       <MoveCopySheet
         visible={transfer != null}
         mode={transfer?.mode ?? 'move'}
@@ -439,23 +515,37 @@ function slotLabel(slot: MealSlot): string {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { padding: space.lg, paddingBottom: space.xxl },
-  banner: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: 4,
+  viewToggle: {
+    flexDirection: 'row',
+    gap: space.sm,
     marginBottom: space.md,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.lg,
+    padding: 4,
   },
-  bannerText: { fontSize: type.caption, fontWeight: '800', color: colors.text },
-  bannerSub: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
+  viewChip: {
+    flex: 1,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+  },
+  viewChipOn: { backgroundColor: colors.primaryButton },
+  viewChipText: { fontSize: type.caption, fontWeight: '800', color: colors.textSecondary },
+  viewChipTextOn: { color: colors.primaryButtonText },
   todayRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.sm,
+    marginBottom: space.xs,
   },
   dayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
   todayLink: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  planNote: {
+    fontSize: type.micro,
+    color: colors.textMuted,
+    marginBottom: space.md,
+  },
   secondaryToggle: {
     minHeight: touchMin,
     alignItems: 'center',
