@@ -2,7 +2,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { Workout, WorkoutType } from '../../../../../src/storage/types';
-import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
+import { colors, space, touchMin, type } from '../../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { SoftGlyph } from '@/src/ui/IconTile';
 
 const TYPE_META: Record<
   WorkoutType,
@@ -30,7 +32,6 @@ function metaFor(w: Workout): string {
     parts.push(`${(w.distanceM / 1000).toFixed(2)} км`);
   }
   if (w.notes) {
-    // For "other", title already took first segment — show rest if any.
     if (w.type === 'other') {
       const rest = w.notes.split(' · ').slice(1).join(' · ');
       if (rest) parts.push(rest);
@@ -41,6 +42,7 @@ function metaFor(w: Workout): string {
   return parts.join(' · ');
 }
 
+/** Soft list row — circular glyph + title + meta (ref 09). */
 export function WorkoutRow({
   workout,
   onDelete,
@@ -50,51 +52,40 @@ export function WorkoutRow({
 }) {
   const meta = TYPE_META[workout.type];
   return (
-    <View style={styles.row}>
-      <View style={styles.icon}>
-        <Ionicons name={meta.icon} size={18} color={colors.text} />
+    <AppCard padding="md" style={styles.card}>
+      <View style={styles.row}>
+        <SoftGlyph icon={meta.icon} />
+        <View style={styles.body}>
+          <Text style={styles.title}>{titleFor(workout)}</Text>
+          <Text style={styles.meta} numberOfLines={2}>
+            {metaFor(workout)}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel={`Удалить ${titleFor(workout)}`}
+          style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
+        >
+          <Ionicons name="close" size={20} color={colors.textMuted} />
+        </Pressable>
       </View>
-      <View style={styles.body}>
-        <Text style={styles.title}>{titleFor(workout)}</Text>
-        <Text style={styles.meta} numberOfLines={2}>
-          {metaFor(workout)}
-        </Text>
-      </View>
-      <Pressable
-        onPress={onDelete}
-        accessibilityRole="button"
-        accessibilityLabel={`Удалить ${titleFor(workout)}`}
-        style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
-      >
-        <Ionicons name="close" size={20} color={colors.textMuted} />
-      </Pressable>
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
+  card: { marginBottom: space.sm },
   row: {
-    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: space.md,
-    marginBottom: space.sm,
-    minHeight: touchMin,
-    gap: space.sm,
+    gap: space.md,
   },
-  icon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: { flex: 1 },
-  title: { fontWeight: '700', color: colors.text, fontSize: type.body },
-  meta: { color: colors.textSecondary, fontSize: type.caption, marginTop: 2 },
+  body: { flex: 1, minWidth: 0, gap: 2 },
+  title: { fontSize: type.body, fontWeight: '700', color: colors.text },
+  meta: { fontSize: type.caption, color: colors.textSecondary },
   delete: {
-    minWidth: 40,
+    minWidth: touchMin,
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
