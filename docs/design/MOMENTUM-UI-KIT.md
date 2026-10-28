@@ -10,7 +10,7 @@ Moodboard PNGs in `refs/` are cues, not alternate systems. Weight log sheet may 
 
 | Category | Values / rules |
 |----------|----------------|
-| Canvas | `colors.background` `#F5F5F5` |
+| Canvas | `colors.background` `#F2F2F2` |
 | Surface | `colors.surface` `#FFFFFF` |
 | Text | `text` / `textSecondary` / `textMuted` |
 | Primary CTA fill | `primaryButton` `#111` + `primaryButtonText` |
@@ -77,11 +77,38 @@ Deprecated: spreading `surfaceCard` into Views; importing `SoftMetricCard` in ne
 
 ---
 
+## Visual recipes
+
+### Screen header
+- Today / Plan hub / Profile: `SoftHeader` (eyebrow + title). No second calendar in header if `DayStrip` is present.
+- Food / Activity / Progress: native stack title or `DateSwitcher` as first content block.
+
+### Hero metric
+- One hero number per screen (`type.hero`). Food: `CalorieHero` ring + remaining. Progress body: weight. Activity: minutes.
+
+### List density
+- `ListRow`: circular glyph well (`accentSoft`), title `body`/700, meta `caption`, trailing quiet, hairline between rows inside one `AppCard`.
+- Catalog / recipes search: border field (`border` + `radius.md` + `touchMin`), not elevated card.
+
+### Date family
+- `DayStrip` and `DateSwitcher` share chip height ≥44, selected = black fill, today marker = coral when unselected today.
+
+### Sheet chrome
+- Light: `SwipeToDismissSheet` + white `sheetSurface`, handle, `space.lg` padding, border inputs, one `PrimaryButton`.
+- Dark: WeightLog only — `darkBg` / `darkSurface`.
+
+### Empty
+- `EmptyState` in AppCard: icon well, title, body, optional primary + secondary text CTA.
+
+---
+
 ## Anti-patterns (ban)
 
 - Neumorphism / dual-shadow masonry on light tabs  
 - Purple brand wash / glow  
+- Cream / taupe shell (user ref `03-warm-taupe`)  
 - Emoji as primary iconography  
 - Competing SoftMetric vs Bento  
 - Second black pill for same job  
-- Restoring pantry/shop/budget screens without ADR
+- Restoring pantry/shop/budget screens without ADR  
+- Dark tab shells

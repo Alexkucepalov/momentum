@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryButton,
   },
   tabText: {
-    fontSize: 11,
+    fontSize: type.micro,
     fontWeight: '700',
     color: colors.textSecondary,
   },
@@ -421,7 +421,13 @@ const styles = StyleSheet.create({
   listCard: {
     marginBottom: space.md,
   },
-  cardTitle: { fontSize: type.caption, color: colors.textMuted, fontWeight: '700' },
+  cardTitle: {
+    fontSize: type.micro,
+    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   cardValue: { fontSize: type.hero, fontWeight: '800', color: colors.text, marginTop: 4 },
   weightDelta: {
     marginTop: space.xs,

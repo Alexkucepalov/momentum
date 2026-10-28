@@ -156,7 +156,7 @@
 
 | Token | Value | Роль |
 |-------|-------|------|
-| `background` | `#F5F5F5` | canvas |
+| `background` | `#F2F2F2` | canvas |
 | `surface` | `#FFFFFF` | cards / sheets light |
 | `text` / `textSecondary` / `textMuted` | `#111` / `#6B7280` / `#9CA3AF` | иерархия |
 | `primaryButton` | `#111111` | единственный primary |

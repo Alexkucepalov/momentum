@@ -20,7 +20,7 @@ describe('Nutrition Soft Light design contract (PR-A)', () => {
   });
 
   it('locks canvas, surface, text, and primary CTA colors', () => {
-    assert.match(tokens, /background:\s*'#F5F5F5'/);
+    assert.match(tokens, /background:\s*'#F2F2F2'/);
     assert.match(tokens, /surface:\s*'#FFFFFF'/);
     assert.match(tokens, /text:\s*'#111111'/);
     assert.match(tokens, /textSecondary:\s*'#6B7280'/);
