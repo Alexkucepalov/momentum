@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { shell } from '@/src/theme/shell';
 import { colors, elevation, touchMin } from '@/src/theme/tokens';
 
 /** Black circular FAB — Nutrition ref «+». */
@@ -27,7 +28,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 24,
+    bottom: shell.fabBottom,
     width: touchMin + 8,
     height: touchMin + 8,
     borderRadius: (touchMin + 8) / 2,

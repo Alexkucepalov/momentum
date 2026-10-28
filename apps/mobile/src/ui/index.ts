@@ -14,6 +14,7 @@ export { MacroGrid } from './MacroGrid';
 export { MetaPill } from './MetaPill';
 export { ProgressRing } from './ProgressRing';
 export { SectionTitle } from './SectionTitle';
+export { SegmentedControl } from './SegmentedControl';
 export { SoftHeader } from './SoftHeader';
 /** @deprecated Use BentoStat */
 export { SoftMetricCard } from './SoftMetricCard';

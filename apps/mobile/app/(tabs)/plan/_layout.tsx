@@ -13,7 +13,7 @@ export default function PlanLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'План питания' }} />
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'План питания' }} />
       <Stack.Screen name="eat-now" options={{ title: 'Что съесть сейчас?' }} />
       <Stack.Screen name="my-products" options={{ title: 'Мои продукты' }} />
       <Stack.Screen name="week" options={{ title: 'Меню на неделю' }} />

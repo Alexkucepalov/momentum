@@ -59,7 +59,7 @@ export function MealSection({
             <Text style={styles.hint}>нажми, чтобы добавить</Text>
           </View>
           <View style={styles.plus}>
-            <Ionicons name="add" size={22} color={colors.primaryButtonText} />
+            <Ionicons name="add" size={22} color={colors.text} />
           </View>
         </View>
       </AppCard>
@@ -91,13 +91,8 @@ export function MealSection({
         <ListRow
           key={entry.id}
           title={entry.displayName}
-          pills={[
-            `Б ${fmtMacro(entry.proteinG)}г`,
-            `У ${fmtMacro(entry.carbG)}г`,
-            `Ж ${fmtMacro(entry.fatG)}г`,
-          ]}
-          meta={`${entry.grams} г`}
-          trailing={`${fmtKcal(entry.energyKcal)} ккал`}
+          meta={`${entry.grams} г · Б ${fmtMacro(entry.proteinG)} · У ${fmtMacro(entry.carbG)} · Ж ${fmtMacro(entry.fatG)}`}
+          trailing={fmtKcal(entry.energyKcal)}
           onPress={() => onEditGrams(entry)}
           onDelete={() => onDelete(entry)}
           accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм`}
@@ -140,7 +135,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.primaryButton,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },

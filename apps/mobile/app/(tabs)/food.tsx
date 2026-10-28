@@ -1,7 +1,7 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   defaultProductPortionGrams,
@@ -10,8 +10,9 @@ import {
 import { portion } from '../../../../src/domain/nutrition';
 import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
+import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
-import { DateSwitcher } from '@/src/components/DateSwitcher';
+import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PortionEditModal } from '@/src/components/PortionEditModal';
@@ -33,12 +34,15 @@ import { MealSection } from '@/src/features/diary/MealSection';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
+import { shell } from '@/src/theme/shell';
 import { colors, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { CalorieHero } from '@/src/ui/CalorieHero';
+import { CircleIconButton } from '@/src/ui/CircleIconButton';
 import { Fab } from '@/src/ui/Fab';
 import { MacroGrid } from '@/src/ui/MacroGrid';
 import { SectionTitle } from '@/src/ui/SectionTitle';
+import { SoftHeader } from '@/src/ui/SoftHeader';
 
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealSlot, string> = {
@@ -49,7 +53,6 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 };
 
 export default function FoodScreen() {
-  const navigation = useNavigation();
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, meal, setMeal, refresh, revision, setUndo, showFlash } =
     useData();
@@ -99,33 +102,6 @@ export default function FoodScreen() {
     for (const e of entries) map[e.meal].push(e);
     return map;
   }, [entries]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => router.push('/plan')}
-            accessibilityRole="button"
-            accessibilityLabel="План питания"
-            style={styles.headerBtn}
-            hitSlop={8}
-          >
-            <Ionicons name="compass-outline" size={22} color={colors.text} />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/recipes')}
-            accessibilityRole="button"
-            accessibilityLabel="Рецепты"
-            style={styles.headerBtn}
-            hitSlop={8}
-          >
-            <Ionicons name="book-outline" size={22} color={colors.text} />
-          </Pressable>
-        </View>
-      ),
-    });
-  }, [navigation, router]);
 
   const selectSegment = (next: FoodSegment) => {
     setSegment(next);
@@ -207,9 +183,29 @@ export default function FoodScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <DateSwitcher
+        <SoftHeader
+          eyebrow="Дневник"
+          title="Питание"
+          action={
+            <View style={styles.headerActions}>
+              <CircleIconButton
+                size="sm"
+                icon="compass-outline"
+                onPress={() => router.push('/plan')}
+                accessibilityLabel="План питания"
+              />
+              <CircleIconButton
+                size="sm"
+                icon="book-outline"
+                onPress={() => router.push('/recipes')}
+                accessibilityLabel="Рецепты"
+              />
+            </View>
+          }
+        />
+        <DayStrip
           selected={dateLocal}
-          timeZone={profile.timezone}
+          today={localDateKey(new Date(), profile.timezone)}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
         />
@@ -235,7 +231,7 @@ export default function FoodScreen() {
             <TodayPlanStrip />
             <CopyYesterdayButton />
 
-            <SectionTitle title="Еда сегодня" />
+            <SectionTitle title="Еда за день" />
             {MEALS.map((slot) => (
               <MealSection
                 key={slot}
@@ -402,14 +398,8 @@ export default function FoodScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 120 },
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  headerBtn: {
-    minWidth: touchMin,
-    minHeight: touchMin,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   secondaryLink: {
     paddingVertical: space.sm,
     minHeight: touchMin,
@@ -438,8 +428,8 @@ const styles = StyleSheet.create({
   },
   barcodeFab: {
     position: 'absolute',
-    right: 84,
-    bottom: 28,
+    right: 88,
+    bottom: shell.fabBottom + 4,
     width: touchMin,
     height: touchMin,
     borderRadius: touchMin / 2,

@@ -4,8 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
-import { dateChrome } from '@/src/ui/dateChrome';
 import { dayNumber, formatWeekRangeRu, WEEKDAY_SHORT_RU_CAP } from './weekFormat';
 
 function addDays(iso: string, delta: number): string {
@@ -16,8 +14,9 @@ function addDays(iso: string, delta: number): string {
 }
 
 /**
- * Calendar week Mon→Sun for the week that contains `selected`.
- * Compact horizontal strip — no bulky card header / «Календарь» label.
+ * Nutrition etalon week row (ref 07): weekday above a gray circle.
+ * Selected day is the only black circle, with a short tick under it.
+ * Today, when it is not the selected day, is a coral ring — not a filled past-day.
  */
 export type DayStripFill = 'empty' | 'partial' | 'filled';
 
@@ -71,8 +70,7 @@ export function DayStrip({
   }, [days.join('|'), dragActive, onDayBox]);
 
   return (
-    <AppCard
-      padding="md"
+    <View
       style={[styles.wrap, dragActive && styles.wrapDrag]}
       accessibilityRole="summary"
     >
@@ -90,17 +88,9 @@ export function DayStrip({
           {days.map((iso, i) => {
             const on = iso === selected;
             const isToday = iso === todayKey;
-            const isPast = iso < todayKey;
             const fill = fillByDate?.[iso] ?? 'empty';
             const hot = dragActive && hoverDate === iso;
-            /** Ref 01: past=black, today=coral, future=gray; selected future → black. */
-            const tone = hot
-              ? 'selected'
-              : isToday
-                ? 'today'
-                : isPast || on
-                  ? 'past'
-                  : 'future';
+            const selectedTone = on || hot;
             return (
               <View
                 key={iso}
@@ -110,50 +100,33 @@ export function DayStrip({
                 onLayout={() => measureDay(iso)}
                 style={styles.chipWrap}
               >
+                <Text style={styles.wd}>{WEEKDAY_SHORT_RU_CAP[i]}</Text>
                 <Pressable
                   onPress={() => onSelect(iso)}
                   style={({ pressed }) => [
-                    styles.chip,
-                    tone === 'past' && styles.chipPast,
-                    tone === 'today' && styles.chipToday,
-                    tone === 'future' && styles.chipFuture,
-                    tone === 'selected' && styles.chipOn,
-                    dragActive && styles.chipDrag,
+                    styles.circle,
+                    selectedTone && styles.circleOn,
+                    !selectedTone && isToday && styles.circleToday,
+                    dragActive && styles.circleDrag,
                     pressed && styles.pressed,
                   ]}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: on }}
                   accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(iso)}${isToday ? ', сегодня' : ''}${fill === 'filled' ? ', план полный' : fill === 'partial' ? ', план частичный' : ''}${hot ? ', цель переноса' : ''}`}
                 >
-                  <Text
-                    style={[
-                      styles.wd,
-                      (tone === 'past' || tone === 'today' || tone === 'selected') && styles.onText,
-                      tone === 'future' && styles.futureText,
-                    ]}
-                  >
-                    {WEEKDAY_SHORT_RU_CAP[i]}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.num,
-                      (tone === 'past' || tone === 'today' || tone === 'selected') && styles.onText,
-                      tone === 'future' && styles.futureText,
-                    ]}
-                  >
-                    {dayNumber(iso)}
-                  </Text>
-                  {fillByDate ? (
-                    <View
-                      style={[
-                        styles.dot,
-                        fill === 'filled' && (on || hot ? styles.dotOnFilled : styles.dotFilled),
-                        fill === 'partial' && (on || hot ? styles.dotOnPartial : styles.dotPartial),
-                        fill === 'empty' && (on || hot ? styles.dotOnEmpty : styles.dotEmpty),
-                      ]}
-                    />
-                  ) : null}
+                  <Text style={[styles.num, selectedTone && styles.numOn]}>{dayNumber(iso)}</Text>
                 </Pressable>
+                <View style={[styles.tick, selectedTone && styles.tickOn]} />
+                {fillByDate ? (
+                  <View
+                    style={[
+                      styles.dot,
+                      fill === 'filled' && (selectedTone ? styles.dotOnFilled : styles.dotFilled),
+                      fill === 'partial' && (selectedTone ? styles.dotOnPartial : styles.dotPartial),
+                      fill === 'empty' && (selectedTone ? styles.dotOnEmpty : styles.dotEmpty),
+                    ]}
+                  />
+                ) : null}
               </View>
             );
           })}
@@ -182,87 +155,91 @@ export function DayStrip({
       <Text style={styles.range} accessibilityLabel={`Неделя ${formatWeekRangeRu(weekStart, weekEnd)}`}>
         {formatWeekRangeRu(weekStart, weekEnd)}
       </Text>
-    </AppCard>
+    </View>
   );
 }
 
+const CIRCLE = 34;
+
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: space.md,
+    marginBottom: space.lg,
   },
   wrapDrag: {
     backgroundColor: colors.focusSoft,
+    borderRadius: radius.lg,
   },
   controls: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 2,
   },
   navBtn: {
     width: 28,
     height: touchMin,
+    marginTop: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   calBtn: {
-    width: touchMin,
+    width: 36,
     height: touchMin,
+    marginTop: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 2,
   },
   row: {
     flex: 1,
     flexDirection: 'row',
-    gap: 2,
   },
-  chipWrap: { flex: 1 },
-  chip: {
-    flex: 1,
-    aspectRatio: 1,
-    maxHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-    backgroundColor: 'transparent',
-    minHeight: dateChrome.chipMin,
-  },
-  chipPast: {
-    backgroundColor: colors.primaryButton,
-  },
-  chipOn: {
-    backgroundColor: colors.primaryButton,
-    transform: [{ scale: 1.04 }],
-  },
-  chipToday: {
-    backgroundColor: colors.focus,
-  },
-  chipFuture: {
-    backgroundColor: colors.accentSoft,
-  },
-  chipDrag: {
-    minHeight: 52,
-  },
-  pressed: { opacity: 0.85 },
+  chipWrap: { flex: 1, alignItems: 'center' },
   wd: {
     fontSize: type.micro,
     color: colors.textMuted,
     fontWeight: '700',
+    marginBottom: 4,
   },
+  circle: {
+    width: CIRCLE,
+    height: CIRCLE,
+    borderRadius: CIRCLE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
+  },
+  circleOn: {
+    backgroundColor: colors.primaryButton,
+  },
+  circleToday: {
+    backgroundColor: colors.focusSoft,
+    borderWidth: 1.5,
+    borderColor: colors.focus,
+  },
+  circleDrag: {
+    minWidth: 40,
+    minHeight: 40,
+  },
+  pressed: { opacity: 0.85 },
   num: {
-    marginTop: 1,
-    fontSize: type.body,
+    fontSize: type.caption,
     fontWeight: '800',
     color: colors.text,
   },
-  onText: {
+  numOn: {
     color: colors.primaryButtonText,
   },
-  futureText: {
-    color: colors.textMuted,
+  tick: {
+    marginTop: 4,
+    width: 14,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'transparent',
+  },
+  tickOn: {
+    backgroundColor: colors.primaryButton,
   },
   dot: {
-    marginTop: 3,
+    marginTop: 2,
     width: 5,
     height: 5,
     borderRadius: 3,
@@ -274,7 +251,7 @@ const styles = StyleSheet.create({
   dotOnPartial: { backgroundColor: colors.warning },
   dotOnFilled: { backgroundColor: colors.successSoft },
   range: {
-    marginTop: 4,
+    marginTop: 2,
     textAlign: 'center',
     fontSize: type.micro,
     color: colors.textMuted,

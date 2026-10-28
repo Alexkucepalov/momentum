@@ -18,6 +18,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
+import { shell } from '@/src/theme/shell';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
@@ -515,7 +516,7 @@ function slotLabel(slot: MealSlot): string {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: space.lg, paddingBottom: space.xxl },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
   viewToggle: {
     flexDirection: 'row',
     gap: 4,

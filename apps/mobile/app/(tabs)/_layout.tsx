@@ -4,7 +4,8 @@ import type { ComponentProps } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, elevation, radius, type } from '@/src/theme/tokens';
+import { shell } from '@/src/theme/shell';
+import { colors, elevation, radius, space, type } from '@/src/theme/tokens';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -31,8 +32,7 @@ function tint(color: unknown): string {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 12 : 0);
-  const tabBarHeight = 64 + bottomInset;
+  const bottomInset = Math.max(insets.bottom, shell.tabBarInset);
 
   return (
     <Tabs
@@ -50,11 +50,16 @@ export default function TabLayout() {
           paddingTop: 8,
         },
         tabBarStyle: {
+          position: 'absolute',
+          left: space.lg,
+          right: space.lg,
+          bottom: bottomInset,
           backgroundColor: colors.surface,
           borderTopColor: 'transparent',
           borderTopWidth: 0,
-          height: tabBarHeight,
-          paddingBottom: bottomInset,
+          height: shell.tabBarHeight,
+          borderRadius: radius.xl,
+          paddingBottom: 0,
           ...elevation.tabBar,
         },
         headerStyle: { backgroundColor: colors.background },
@@ -70,6 +75,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Сегодня',
+          headerShown: false,
           tabBarLabel: 'Сегодня',
           tabBarAccessibilityLabel: 'Вкладка Сегодня',
           tabBarIcon: ({ color, focused }) => (
@@ -85,6 +91,7 @@ export default function TabLayout() {
         name="food"
         options={{
           title: 'Питание',
+          headerShown: false,
           tabBarLabel: 'Питание',
           tabBarAccessibilityLabel: 'Вкладка Питание',
           tabBarIcon: ({ color, focused }) => (
@@ -116,6 +123,7 @@ export default function TabLayout() {
         name="activity"
         options={{
           title: 'Активность',
+          headerShown: false,
           href: null,
           tabBarAccessibilityLabel: 'Активность',
           tabBarIcon: ({ color, focused }) => (
@@ -131,6 +139,7 @@ export default function TabLayout() {
         name="progress"
         options={{
           title: 'Прогресс',
+          headerShown: false,
           tabBarLabel: 'Прогресс',
           tabBarAccessibilityLabel: 'Вкладка Прогресс',
           tabBarIcon: ({ color, focused }) => (
@@ -146,6 +155,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Профиль',
+          headerShown: false,
           tabBarLabel: 'Профиль',
           tabBarAccessibilityLabel: 'Вкладка Профиль',
           tabBarIcon: ({ color, focused }) => (
@@ -170,7 +180,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapOn: {
-    borderWidth: 1.5,
-    borderColor: colors.text,
+    backgroundColor: colors.accentSoft,
   },
 });

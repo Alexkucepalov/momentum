@@ -35,6 +35,7 @@ import {
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
+import { shell } from '@/src/theme/shell';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: {
     padding: space.lg,
-    paddingBottom: space.xxl,
+    paddingBottom: shell.screenBottom,
     gap: space.md,
   },
   lead: {

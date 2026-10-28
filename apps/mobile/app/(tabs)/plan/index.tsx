@@ -1,10 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { colors, radius, space, type } from '@/src/theme/tokens';
+import { shell } from '@/src/theme/shell';
+import { space } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
+import { ListRow } from '@/src/ui/ListRow';
 import { SoftHeader } from '@/src/ui/SoftHeader';
 
 type HubItem = {
@@ -46,67 +48,35 @@ const ITEMS: HubItem[] = [
   },
 ];
 
-function HubRow({ item }: { item: HubItem }) {
+function HubRow({ item, divided }: { item: HubItem; divided: boolean }) {
   const router = useRouter();
   return (
-    <AppCard
-      padding="md"
+    <ListRow
+      title={item.title}
+      meta={item.subtitle}
+      iconName={item.icon}
+      chevron
+      divided={divided}
       onPress={() => router.push(item.href as Href)}
-      style={styles.row}
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
-    >
-      <View style={styles.iconWrap}>
-        <Ionicons name={item.icon} size={20} color={colors.text} />
-      </View>
-      <View style={styles.copy}>
-        <Text style={styles.rowTitle}>{item.title}</Text>
-        <Text style={styles.rowSub}>{item.subtitle}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </AppCard>
+    />
   );
 }
 
-/** Plan hub — Soft Light vertical rows (one list, no dual black CTAs). */
+/** Plan hub — one grouped list, circular glyphs, single chevron language. */
 export default function PlanHubScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <SoftHeader eyebrow="План" title="Дальше" />
-      <View style={styles.list}>
-        {ITEMS.map((item) => (
-          <HubRow key={item.key} item={item} />
+      <AppCard padding="none">
+        {ITEMS.map((item, index) => (
+          <HubRow key={item.key} item={item} divided={index > 0} />
         ))}
-      </View>
+      </AppCard>
     </FormScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: space.lg, paddingBottom: space.xxl },
-  list: { gap: space.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: 72,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  copy: { flex: 1, gap: 2 },
-  rowTitle: {
-    fontSize: type.subtitle,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  rowSub: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
 });
