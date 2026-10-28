@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { dateChrome } from '@/src/ui/dateChrome';
 import { dayNumber, formatWeekRangeRu, WEEKDAY_SHORT_RU_CAP } from './weekFormat';
 
 function addDays(iso: string, delta: number): string {
@@ -69,7 +71,11 @@ export function DayStrip({
   }, [days.join('|'), dragActive, onDayBox]);
 
   return (
-    <View style={[styles.wrap, dragActive && styles.wrapDrag]}>
+    <AppCard
+      padding="md"
+      style={[styles.wrap, dragActive && styles.wrapDrag]}
+      accessibilityRole="summary"
+    >
       <View style={styles.controls}>
         <Pressable
           onPress={() => shiftWeek(-1)}
@@ -176,7 +182,7 @@ export function DayStrip({
       <Text style={styles.range} accessibilityLabel={`Неделя ${formatWeekRangeRu(weekStart, weekEnd)}`}>
         {formatWeekRangeRu(weekStart, weekEnd)}
       </Text>
-    </View>
+    </AppCard>
   );
 }
 
@@ -185,9 +191,7 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   wrapDrag: {
-    paddingVertical: space.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.focusSoft,
   },
   controls: {
     flexDirection: 'row',
@@ -221,7 +225,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
     backgroundColor: 'transparent',
-    minHeight: 48,
+    minHeight: dateChrome.chipMin,
   },
   chipPast: {
     backgroundColor: colors.primaryButton,

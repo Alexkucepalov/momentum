@@ -25,7 +25,7 @@ Sheets S1–S11 / modals M1–M4 — IM; WeightLog dark intentional.
 |-----|--------|
 | ADR-009 pantry/shop/budget/stores/receipt UI | Redirect only — не восстанавливать без продукта |
 | Domain / SQLite / nutrition math | вне scope редизайна |
-| DayStrip vs DateSwitcher unify | задокументировано; не блокер Soft Light |
+| DayStrip vs DateSwitcher unify | done — both AppCard + `dateChrome` |
 | Friends Beta → READY | нет Android Pass |
 | Auto-invent food intelligence surfaces | no new features |
 
@@ -50,7 +50,6 @@ Sheets S1–S11 / modals M1–M4 — IM; WeightLog dark intentional.
 
 ## 7. Известные дефекты
 
-- Dual date chrome (DayStrip vs DateSwitcher) — cosmetic inconsistency.
 - Некоторые click-miss в capture script (sheet labels) — не продуктовые баги.
 - Week DnD: feedback/flash + MealAction alternative есть; **Android gesture Pass не прогнан**.
 
@@ -61,9 +60,8 @@ Sheets S1–S11 / modals M1–M4 — IM; WeightLog dark intentional.
 ## 9. Остаток (приоритет)
 
 1. **P0** Android Pass по `ANDROID-TEST-PLAN.md` на dogfood APK.  
-2. **P1** Unify date header (DayStrip ↔ DateSwitcher).  
-3. **P2** Rebase/coordinate open #135 Add Food.  
-4. **P3** Friends Beta gate только после P0.
+2. **P1** Rebase/coordinate open #135 Add Food.  
+3. **P2** Friends Beta gate только после P0.
 
 ## 10. Friends Beta
 

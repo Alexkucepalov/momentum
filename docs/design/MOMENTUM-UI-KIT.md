@@ -91,7 +91,9 @@ Deprecated: spreading `surfaceCard` into Views; importing `SoftMetricCard` in ne
 - Catalog / recipes search: border field (`border` + `radius.md` + `touchMin`), not elevated card.
 
 ### Date family
-- `DayStrip` and `DateSwitcher` share chip height ≥44, selected = black fill, today marker = coral when unselected today.
+- Both `DayStrip` and `DateSwitcher` sit on **AppCard** (raised white).
+- Chips ≥48 touch; selected = black fill; today = coral when that day is “today”.
+- Calendar affordance: one control (DayStrip cal button / DateSwitcher cal) — never SoftHeader + strip.
 
 ### Sheet chrome
 - Light: `SwipeToDismissSheet` + white `sheetSurface`, handle, `space.lg` padding, border inputs, one `PrimaryButton`.

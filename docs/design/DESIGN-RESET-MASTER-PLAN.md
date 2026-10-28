@@ -14,7 +14,7 @@
 | PR #152 merged | ✅ Soft Light B–E на `main` |
 | `surfaceCard` на экранах | ✅ только deprecated alias в `tokens.ts` |
 | `SoftMetricCard` | ✅ alias → `BentoStat` |
-| Единый CTA Today | ⚠️ InverseStrip primary OK; **двойной календарь** SoftHeader + DayStrip |
+| Единый CTA Today | ✅ InverseStrip primary; один calendar на DayStrip |
 | Food / Activity язык | ✅ близко к Soft Light |
 | ADR-009 redirects (pantry/shop/budget/stores/receipt) | **I** — не восстанавливать UI |
 | Android Pass | ❌ Pending |
@@ -82,7 +82,7 @@
 | Primary CTA | `PrimaryButton` / `Fab` / one `InverseStrip` | ad-hoc black pills |
 | List row | `ListRow` | local Pressable rows (migrate opportunistically) |
 | Header | `SoftHeader` (home) / stack title | — |
-| Date | `DayStrip` (Today) · `DateSwitcher` (Food/Activity) | unify in follow-up, not blocker |
+| Date | `DayStrip` + `DateSwitcher` | ✅ same AppCard + `dateChrome` family |
 | Empty | `EmptyState` | — |
 | Sheet chrome | `SwipeToDismissSheet` + `sheetSurface` | — |
 
