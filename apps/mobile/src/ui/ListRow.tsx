@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, touchMin, type } from '@/src/theme/tokens';
 import { MetaPill } from './MetaPill';
 
 /** Nutrition-ref food/plan row: square icon · title · pills · trailing. */
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   icon: {
     width: 40,
     height: 40,
-    borderRadius: radius.sm,
+    borderRadius: 20,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',

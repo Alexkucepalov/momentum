@@ -2,22 +2,22 @@ import type { ViewStyle } from 'react-native';
 
 /**
  * Visual system locked to docs/design/refs
- * (08 soft wellness shell · 07 Nutrition list · dark log/bento).
+ * (09–10 soft mono / Activity masonry · 08 wellness · 07 Nutrition · dark logs).
  */
 export const colors = {
-  background: '#F3F3F3',
+  background: '#EEEEEE',
   surface: '#FFFFFF',
   text: '#111111',
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   accent: '#111111',
-  accentSoft: '#EBEBEB',
-  /** Coral — today / trend only. */
+  accentSoft: '#E6E6E6',
+  /** Coral — today / trend only (not Activity mono). */
   focus: '#EF6E58',
   focusSoft: '#FCE8E4',
   primaryButton: '#111111',
   primaryButtonText: '#FFFFFF',
-  border: '#E8E8E8',
+  border: '#E4E4E4',
   danger: '#B42318',
   preview: '#EEF2FF',
   /** Macro accents from Nutrition ref 07 */
@@ -25,7 +25,7 @@ export const colors = {
   fat: '#8B5CF6',
   carbs: '#F5A524',
   calorieRing: '#F5A524',
-  ringTrack: '#EBEBEB',
+  ringTrack: '#E0E0E0',
   ringFill: '#111111',
   success: '#16A34A',
   successSoft: '#D4EDDA',
@@ -77,12 +77,13 @@ export const type = {
 } as const;
 
 export const elevation = {
+  /** Soft / neumorph-lite float (refs 09–10). */
   card: {
     shadowColor: colors.shadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    shadowOpacity: 0.07,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 5,
   } satisfies ViewStyle,
   tabBar: {
     shadowColor: colors.shadow,
