@@ -5,7 +5,7 @@ import { type Href, useRouter } from 'expo-router';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { colors, radius, space, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
-import { SectionTitle } from '@/src/ui/SectionTitle';
+import { SoftHeader } from '@/src/ui/SoftHeader';
 
 type HubItem = {
   key: string;
@@ -85,7 +85,7 @@ function HubCard({ item }: { item: HubItem }) {
 export default function PlanHubScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content}>
-      <SectionTitle title="Дальше" />
+      <SoftHeader eyebrow="План" title="Дальше" />
       <View style={styles.grid}>
         {PRIMARY.map((item) => (
           <View key={item.key} style={styles.cell}>

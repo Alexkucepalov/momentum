@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { dayGreeting } from '../../../../src/domain/greeting';
 import {
   buildHabitWeekMarks,
   formatHabitWeekLabel,
@@ -21,9 +22,16 @@ import { HomeActionCards } from '@/src/features/home/HomeActionCards';
 import { HomeNutritionSplit } from '@/src/features/home/HomeNutritionSplit';
 import { HomeWeightCard } from '@/src/features/home/HomeWeightCard';
 import { useData } from '@/src/state/DataContext';
-import { colors, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { BentoRow } from '@/src/ui/BentoRow';
+import { CircleIconButton } from '@/src/ui/CircleIconButton';
+import { InverseStrip } from '@/src/ui/InverseStrip';
+import { ListRow } from '@/src/ui/ListRow';
+import { SectionTitle } from '@/src/ui/SectionTitle';
+import { SoftHeader } from '@/src/ui/SoftHeader';
 
-/** Today = Home ref 01: weight · nutrition split · Start/Log · quiet secondary. */
+/** Today = soft wellness home (ref 08) + jobs from ref 01. */
 export default function TodayScreen() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
@@ -39,6 +47,8 @@ export default function TodayScreen() {
   const waterMl = repo.waterMlForDate(dateLocal);
   const latest = repo.latestWeight();
   const weights = repo.listWeights(14);
+  const activityMins = repo.activityMinutesForDate(dateLocal);
+  const greeting = useMemo(() => dayGreeting(), [dateLocal]);
 
   const weekWeight = useMemo(() => {
     if (weights.length === 0) {
@@ -109,6 +119,18 @@ export default function TodayScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
+        <SoftHeader
+          eyebrow={greeting}
+          title="Сегодня"
+          action={
+            <CircleIconButton
+              icon="calendar-outline"
+              onPress={() => setCalendarOpen(true)}
+              accessibilityLabel="Открыть календарь"
+            />
+          }
+        />
+
         <DayStrip
           selected={dateLocal}
           today={today}
@@ -116,13 +138,38 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <HomeWeightCard
-          kg={weekWeight.kg}
-          deltaLabel={weekWeight.deltaLabel}
-          deltaSigned={weekWeight.deltaSigned}
-          weekBars={weekWeight.bars}
-          onPress={() => router.push('/progress')}
+        <InverseStrip
+          title="Записать еду"
+          subtitle="Быстрый лог приёма"
+          onPress={() => setOpen(true)}
+          accessibilityLabel="Записать еду"
         />
+
+        <SectionTitle title="Самочувствие" />
+        <BentoRow>
+          <View style={styles.bentoFlex}>
+            <HomeWeightCard
+              kg={weekWeight.kg}
+              deltaLabel={weekWeight.deltaLabel}
+              deltaSigned={weekWeight.deltaSigned}
+              weekBars={weekWeight.bars}
+              onPress={() => router.push('/progress')}
+            />
+          </View>
+          <AppCard
+            onPress={() => router.push('/(tabs)/activity')}
+            style={styles.activityCard}
+            accessibilityLabel={`Активность ${activityMins} минут`}
+          >
+            <Text style={styles.activityLabel}>Активность</Text>
+            <Text style={styles.activityValue}>{activityMins}</Text>
+            <Text style={styles.activityUnit}>мин сегодня</Text>
+            <View style={styles.activityHint}>
+              <Ionicons name="fitness-outline" size={18} color={colors.textMuted} />
+              <Text style={styles.activityMeta}>Открыть</Text>
+            </View>
+          </AppCard>
+        </BentoRow>
 
         <HomeNutritionSplit
           totals={totals}
@@ -140,35 +187,26 @@ export default function TodayScreen() {
           onLogMeal={() => setOpen(true)}
         />
 
-        <View style={styles.quietCard}>
-          <Pressable
+        <SectionTitle title="Прогресс дня" />
+        <AppCard padding="none" style={styles.progressCard}>
+          <ListRow
+            title={`Вода ${waterLabel}`}
+            trailing="+250 мл"
+            iconName="water-outline"
             onPress={() => {
               repo.addWater(dateLocal, 250);
               refresh();
               showFlash('+250 мл воды');
             }}
-            style={({ pressed }) => [styles.quietRow, pressed && styles.pressed]}
-            accessibilityRole="button"
             accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
-          >
-            <Ionicons name="water-outline" size={18} color={colors.text} />
-            <Text style={styles.quietRowText}>Вода {waterLabel}</Text>
-            <Text style={styles.quietRowAction}>+250 мл</Text>
-          </Pressable>
-
-          <Pressable
+          />
+          <ListRow
+            title={habitsTotal === 0 ? 'Привычки' : `Привычки ${habitsDone}/${habitsTotal}`}
+            trailing="→"
+            iconName="checkbox-outline"
             onPress={() => router.push('/progress')}
-            style={({ pressed }) => [styles.quietRow, styles.quietBorder, pressed && styles.pressed]}
-            accessibilityRole="link"
             accessibilityLabel="Привычки"
-          >
-            <Ionicons name="checkbox-outline" size={18} color={colors.text} />
-            <Text style={styles.quietRowText}>
-              {habitsTotal === 0 ? 'Привычки' : `Привычки ${habitsDone}/${habitsTotal}`}
-            </Text>
-            <Text style={styles.quietRowAction}>→</Text>
-          </Pressable>
-
+          />
           {flexibleRows.map((h) => (
             <Pressable
               key={h.id}
@@ -199,7 +237,7 @@ export default function TodayScreen() {
               <Text style={styles.habitMeta}>{h.weekLabel}</Text>
             </Pressable>
           ))}
-        </View>
+        </AppCard>
 
         <Pressable
           onPress={() => setBarcodeOpen(true)}
@@ -236,30 +274,50 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, paddingBottom: 120 },
-  quietCard: {
-    ...surfaceCard,
-    paddingHorizontal: space.md,
-    marginBottom: space.md,
-    overflow: 'hidden',
+  bentoFlex: { flex: 1 },
+  activityCard: {
+    flex: 1,
+    minHeight: 168,
+    gap: 2,
   },
-  quietRow: {
+  activityLabel: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: 4,
+  },
+  activityValue: {
+    fontSize: type.hero,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -1.2,
+  },
+  activityUnit: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginBottom: space.sm,
+  },
+  activityHint: {
+    marginTop: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    minHeight: touchMin,
-    paddingVertical: space.sm,
   },
-  quietBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+  activityMeta: {
+    fontSize: type.micro,
+    fontWeight: '700',
+    color: colors.textMuted,
   },
-  quietRowText: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
-  quietRowAction: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  progressCard: {
+    marginBottom: space.md,
+  },
   habitRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     minHeight: touchMin,
+    paddingHorizontal: space.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },

@@ -16,10 +16,11 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
+import { BentoRow } from '@/src/ui/BentoRow';
 import { BentoStat } from '@/src/ui/BentoStat';
 import { SectionTitle } from '@/src/ui/SectionTitle';
-
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
   { type: 'cycling', label: 'Вело', icon: 'bicycle-outline' },
@@ -95,33 +96,33 @@ export default function ActivityScreen() {
               actionLabel="+ Тренировка"
               onAction={() => openForm('walking')}
             />
-            <Text style={styles.quickLabel}>Быстрый старт</Text>
+            <SectionTitle title="Быстрый старт" />
             <View style={styles.quickRow}>
               {TYPE_META.map((t) => (
-                <Pressable
+                <AppCard
                   key={t.type}
-                  style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                  padding="md"
                   onPress={() => openForm(t.type)}
-                  accessibilityRole="button"
                   accessibilityLabel={`Добавить ${t.label}`}
+                  style={styles.quickChip}
                 >
                   <Ionicons name={t.icon} size={18} color={colors.text} />
                   <Text style={styles.quickChipText}>{t.label}</Text>
-                </Pressable>
+                </AppCard>
               ))}
             </View>
           </>
         ) : (
           <>
             <SectionTitle title="Сегодня" />
-            <View style={styles.bentoRow}>
+            <BentoRow>
               <BentoStat label="МИНУТЫ" value={String(totalMin)} meta="за день" />
               <BentoStat
                 label="ОЦЕНКА"
                 value={activityKcal != null ? String(activityKcal) : '—'}
                 meta="ккал MET"
               />
-            </View>
+            </BentoRow>
             <Text style={styles.summaryHint}>
               Ккал тренировок не вычитаются из еды — только факт движения
             </Text>
@@ -201,20 +202,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: space.sm,
   },
-  bentoRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.sm },
   summaryHint: {
     marginBottom: space.md,
     fontSize: type.caption,
     color: colors.textMuted,
-  },
-  pressed: { opacity: 0.88 },
-  quickLabel: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    marginBottom: space.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
   },
   quickRow: {
     flexDirection: 'row',
@@ -222,12 +213,10 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   quickChip: {
-    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     minHeight: touchMin,
-    paddingHorizontal: space.md,
   },
   quickChipText: {
     fontSize: type.caption,

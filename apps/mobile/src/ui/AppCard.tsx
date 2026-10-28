@@ -54,7 +54,7 @@ export function AppCard({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
     overflow: 'hidden',
   },
   raised: {
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
   },
   dark: {
-    backgroundColor: colors.darkSurface,
+    backgroundColor: colors.darkBg,
   },
   pressed: { opacity: 0.92 },
 });
