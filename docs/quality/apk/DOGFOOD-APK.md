@@ -1,8 +1,8 @@
-build_date: 2026-10-28T21:51:40Z
+build_date: 2026-10-28T22:09:49Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 57861990
-sha256: 017e09a4e08c259bc6976360fb8e05c86781e887f609e877e6b5d11abd12d2b3
-git: fa61a1f
-includes: Neumorph soft mono + Activity masonry #146/#147 (ProgressRing/IconTile/SoftMetricCard); arm64-only
+bytes: 57857806
+sha256: 55a7957dccfa5854f13e62fad1199c26b5b5795c1483c24aba2936ed984136af
+git: c563926
+includes: Design Reset #148 (#149 contract + #150 surface purge); arm64-only
 size_note: ~55 MB arm64-only dogfood
 dogfood_gate: pending
