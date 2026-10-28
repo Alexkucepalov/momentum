@@ -32,6 +32,15 @@ export const colors = {
   ringFill: '#111111',
   success: '#16A34A',
   successSoft: '#D4EDDA',
+  /**
+   * Soft wells for list-row accents (e.g. Add Food). Always pair with labels/icons.
+   * Reserved for open PR #135 — not brand/shell colors.
+   */
+  toneRecentBg: '#EEF2FF',
+  toneFavoriteBg: '#FEF3C7',
+  toneFavoriteFg: '#B45309',
+  toneProductBg: '#DCFCE7',
+  toneRecipeBg: '#FFEDD5',
   textOnInverse: '#FFFFFF',
   shadow: '#000000',
   warning: '#FBBF24',

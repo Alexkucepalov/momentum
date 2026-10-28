@@ -284,11 +284,14 @@
 
 ---
 
-## 10. Рекомендуемый следующий шаг
+## 10. Статус PR и следующий шаг
 
-1. ✅ Audit зафиксирован (этот файл).  
-2. ✅ **PR-A/B (issue #148):** contract + Today CTA dedupe + Activity→BentoStat + EmptyState/AppCard + Progress/Profile/Recipes index surfaces.  
-3. **Next:** PR-C Week planner + eat-now/my-products rows → `ListRow`/`AppCard` JSX (не только style alias).  
-4. PR-D Recipes detail/editor/import.  
-5. PR-E Sheets (AddFood, Portion, …); WeightLog dark keep.  
-6. Visual pack re-capture + dogfood APK; Android Pass отдельно.
+| PR | Intent | Status |
+|----|--------|--------|
+| **PR-A** | Tokens + canonical primitives + CONTRACT + deprecations (no screen redesign) | Follow-up PR after #149/#150 — see `docs/design/CONTRACT.md` |
+| #149/#150 | Early contract + **screen/surface** changes (overlap with B/C/E) | Merged — treat screen work as provisional; PR-B still owns Today/Activity CTA audit |
+| **PR-B** | Today / Activity / Progress / Profile alignment under CONTRACT | **Next** |
+| PR-C…E | Plan · Recipes · Sheets | After B |
+| Visual / Android | Re-capture pack; device Pass | Not web |
+
+**Open conflict:** PR [#135](https://github.com/Alexkucepalov/momentum/pull/135) (Add Food UX) touches `tokens.ts` + AddFood sheets. PR-A reserves `tone*` wells on Soft Light macros so #135 can rebase without reverting the shell.

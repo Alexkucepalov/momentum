@@ -5,7 +5,7 @@ import { colors, elevation, radius, space } from '@/src/theme/tokens';
 
 type Variant = 'raised' | 'flat' | 'dark';
 
-/** Global card primitive — use instead of ad-hoc bordered Views. */
+/** Canonical raised surface — prefer over `surfaceCard` spreads / ad-hoc Views. */
 export function AppCard({
   children,
   variant = 'raised',

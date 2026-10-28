@@ -39,7 +39,11 @@ export function EmptyState({
       {actionLabel && onAction ? <PrimaryButton label={actionLabel} onPress={onAction} /> : null}
       {secondaryActionLabel && onSecondaryAction ? (
         <View style={styles.secondaryWrap}>
-          <PrimaryButton label={secondaryActionLabel} onPress={onSecondaryAction} />
+          <PrimaryButton
+            variant="secondary"
+            label={secondaryActionLabel}
+            onPress={onSecondaryAction}
+          />
         </View>
       ) : null}
     </AppCard>
