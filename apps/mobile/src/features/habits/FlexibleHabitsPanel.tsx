@@ -7,7 +7,7 @@ import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/type
 import { EmptyState } from '../../components/EmptyState';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
 import { HabitCard } from './HabitCard';
 import { HabitFormFields } from './HabitFormFields';
 
@@ -306,10 +306,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   composer: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.lg,
     marginBottom: space.md,
   },
@@ -331,12 +328,8 @@ const styles = StyleSheet.create({
   },
   secondaryText: { fontWeight: '700', color: colors.text },
   addRow: {
+    ...surfaceCard,
     minHeight: touchMin,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

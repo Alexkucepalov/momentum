@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   btn: {
     backgroundColor: colors.primaryButton,
     minHeight: touchMin,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
   text: {
     color: colors.primaryButtonText,
     fontSize: type.body,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CenteredFormModal } from '../../components/CenteredFormModal';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, surfaceCard, touchMin, type } from '../../theme/tokens';
 
 export type TargetsOnboardingValues = {
   energyKcal: number | null;
@@ -146,12 +146,9 @@ const styles = StyleSheet.create({
   body: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
   label: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   input: {
+    ...surfaceCard,
     minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
     paddingHorizontal: space.md,
-    backgroundColor: colors.surface,
     fontSize: type.body,
     color: colors.text,
   },

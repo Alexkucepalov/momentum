@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
 
 type Action = {
   key: string;
@@ -121,10 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space.md,
     paddingHorizontal: space.xs,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     shadowColor: colors.shadow,
     shadowOpacity: 0.04,
     shadowRadius: 4,

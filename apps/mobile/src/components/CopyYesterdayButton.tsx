@@ -7,7 +7,7 @@ import {
 } from '../../../../src/domain/repeatMeal';
 import { useAddGuard } from '../hooks/useAddGuard';
 import { useData } from '../state/DataContext';
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../theme/tokens';
 
 /** Copies previous calendar day's linked food entries into the selected day (same meal slots). */
 export function CopyYesterdayButton() {
@@ -73,10 +73,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     minHeight: touchMin + 4,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     marginBottom: space.md,

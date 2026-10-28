@@ -5,7 +5,7 @@ import {
   chronologicalKg,
   weightLinePoints,
 } from '../../../../src/domain/weightTrend';
-import { colors, radius, space, type } from '../theme/tokens';
+import { colors, radius, space, type, surfaceCard } from '../theme/tokens';
 
 const VB_W = 280;
 const VB_H = 120;
@@ -160,10 +160,7 @@ const styles = StyleSheet.create({
   },
   chart: {
     height: 148,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     overflow: 'hidden',
     position: 'relative',
   },

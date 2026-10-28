@@ -11,7 +11,7 @@ import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../../..
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -238,10 +238,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     paddingHorizontal: space.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
@@ -252,10 +249,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
   },
   rowText: { flex: 1, fontWeight: '700', color: colors.text, fontSize: type.body },
   empty: { color: colors.textMuted, fontSize: type.body },

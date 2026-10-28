@@ -11,7 +11,7 @@ import {
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
 
 const FOOD_BARCODES = [
   'ean13',
@@ -339,10 +339,7 @@ const styles = StyleSheet.create({
   toolBtnText: { color: colors.textOnInverse, fontWeight: '700', fontSize: type.caption },
   toolBtnTextOn: { color: colors.text },
   fallback: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...surfaceCard,
     padding: space.md,
     marginBottom: space.lg,
     gap: space.md,

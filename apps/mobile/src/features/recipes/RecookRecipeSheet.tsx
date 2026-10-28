@@ -6,7 +6,7 @@ import type { Recipe, RecipeIngredient } from '../../../../../src/storage/types'
 import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type, surfaceCard } from '../../theme/tokens';
 
 function fmt(n: number | null): string {
   if (n === null) return '—';
@@ -219,10 +219,7 @@ const styles = StyleSheet.create({
   ingInput: {
     width: 72,
     minHeight: touchMin - 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     textAlign: 'center',
     fontSize: type.body,
     fontWeight: '700',
@@ -233,10 +230,7 @@ const styles = StyleSheet.create({
   yieldInput: {
     flex: 1,
     minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    ...surfaceCard,
     paddingHorizontal: space.md,
     fontSize: type.title,
     fontWeight: '800',

@@ -425,10 +425,8 @@ const styles = StyleSheet.create({
   footerIcon: {
     width: touchMin,
     height: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -451,7 +449,7 @@ const styles = StyleSheet.create({
   footerScan: {
     flex: 1,
     minHeight: touchMin,
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
     backgroundColor: colors.primaryButton,
     flexDirection: 'row',
     alignItems: 'center',

@@ -213,14 +213,10 @@ function SwipeEntryRow({
 
 const styles = StyleSheet.create({
   compactEmpty: {
+    ...surfaceCard,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
     paddingVertical: space.md,
     paddingHorizontal: space.md,
     marginBottom: space.sm,
