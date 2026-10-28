@@ -261,8 +261,8 @@
 - [x] ≤1 primary black CTA на job/экран.
 - [x] Empty + filled ключевые сценарии (Today, Food, Activity, Plan, Recipes).
 - [x] `npm run verify` green.
-- [ ] Expo web pack переснят скриптом `scripts/capture-screens-2026-10-24.mjs` (или обновлённым) в новый каталог с датой.
-- [ ] **Android:** жесты back/sheet dismiss, IME, safe areas на dogfood APK — отдельно; **не** считать web = Android Pass.
+- [x] Expo web pack переснят → `docs/quality/visual-audit-pack/2026-10-29-screens/` (39 shots; script writes dated folder).
+- [ ] **Android:** жесты back/sheet dismiss, IME, safe areas на dogfood APK — отдельно; **не** считать web = Android Pass. APK built (`docs/quality/apk/DOGFOOD-APK.md`, git `ae2f0a6`).
 - [x] Основные сценарии: лог еды ≤10s path, вес, тренировка, рецепт→дневник (код-пути на Soft Light; device Pass отдельно).
 
 ---
@@ -294,6 +294,6 @@
 | **PR-C** | Plan eat-now / my-products / week | Done on same branch |
 | **PR-D** | Recipes stack | Done on same branch |
 | **PR-E** | Sheets/modals (WeightLog dark kept) | Done on same branch |
-| **PR-F** | Visual pack re-capture + dogfood APK + Android Pass | **Next** — verify green; web pack + device Pass still open |
+| **PR-F** | Visual pack re-capture + dogfood APK + Android Pass | Web pack `2026-10-29-screens` + APK meta done; **Android Pass still open** |
 
 **Open conflict:** PR [#135](https://github.com/Alexkucepalov/momentum/pull/135) (Add Food UX) touches `tokens.ts` + AddFood sheets. Soft Light reserves `tone*` wells so #135 can rebase without reverting the shell.
