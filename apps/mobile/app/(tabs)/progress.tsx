@@ -17,6 +17,8 @@ import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
+import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
@@ -136,8 +138,9 @@ export default function ProgressScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <NothingScreen>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <NothingKicker label="Progress" dots={5} />
         <View style={styles.tabs} accessibilityRole="tablist">
           {TABS.map((t) => {
             const on = tab === t.id;
@@ -162,9 +165,7 @@ export default function ProgressScreen() {
 
         {tab === 'habits' ? (
           <>
-            <Text style={styles.habitsLead}>
-              Отметки за сегодня — на вкладке «Сегодня». Здесь настройка целей и челленджей.
-            </Text>
+            <Text style={styles.habitsLead}>Настройка целей · отметки на «Сегодня»</Text>
             <FlexibleHabitsPanel />
             <ChallengesPanel />
           </>
@@ -316,68 +317,70 @@ export default function ProgressScreen() {
         {tab === 'summary' ? (
           <>
             <FlexibleReportPanel />
-            <SectionHeader title="Бэкап" />
-            <Text style={styles.backupHint}>
-              Полное удаление и настройки приватности — также во вкладке Профиль.
-            </Text>
-            <PrimaryButton label="Экспорт JSON" onPress={() => void onExport()} />
-
-            {lastExport ? (
-              <View style={styles.preview}>
-                <Text style={styles.previewLabel}>Превью экспорта</Text>
-                <Text style={styles.previewBody} selectable>
-                  {lastExport.slice(0, 800)}
-                  {lastExport.length > 800 ? '…' : ''}
-                </Text>
-              </View>
-            ) : null}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Бэкап</Text>
+              <Text style={styles.cardHint}>Экспорт JSON · полное удаление в Профиле</Text>
+              <PrimaryButton label="Экспорт JSON" onPress={() => void onExport()} />
+              {lastExport ? (
+                <View style={styles.preview}>
+                  <Text style={styles.previewLabel}>Превью</Text>
+                  <Text style={styles.previewBody} selectable>
+                    {lastExport.slice(0, 400)}
+                    {lastExport.length > 400 ? '…' : ''}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </>
         ) : null}
       </FormScrollView>
       <FlashBar />
-    </View>
+    </NothingScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: space.lg },
+  content: { padding: nothingSpace.lg },
   tabs: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
-    marginBottom: space.lg,
+    marginBottom: nothingSpace.md,
+    borderWidth: 1,
+    borderColor: nothing.display,
+    borderRadius: nothingRadius.sm,
+    overflow: 'hidden',
   },
   tab: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 36,
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: space.sm,
+    paddingHorizontal: 2,
+    backgroundColor: nothing.surface,
+    minHeight: touchMin,
   },
   tabOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
+    backgroundColor: nothing.invert,
   },
-  tabText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
-  tabTextOn: { color: colors.primaryButtonText },
+  tabText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: nothing.secondary,
+    letterSpacing: 0.3,
+  },
+  tabTextOn: { color: nothing.invertText },
   habitsLead: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: space.md,
+    fontSize: nothingType.caption,
+    color: nothing.muted,
+    marginBottom: nothingSpace.sm,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.xl,
-    marginBottom: space.xl,
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: nothing.lineStrong,
+    padding: nothingSpace.lg,
+    marginBottom: nothingSpace.md,
   },
   cardTitle: { fontSize: type.caption, color: colors.textMuted },
   cardValue: { fontSize: type.hero, fontWeight: '800', color: colors.text, marginTop: 4 },

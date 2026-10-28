@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry, MealSlot } from '../../../../src/storage/types';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '../theme/nothing';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 import { MealChips } from './MealChips';
 
@@ -10,13 +11,6 @@ const MEAL_RU: Record<MealSlot, string> = {
   lunch: 'обед',
   dinner: 'ужин',
   snack: 'перекус',
-};
-
-const MEAL_TITLE: Record<MealSlot, string> = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
 };
 
 export type QuickRepeatItem = {
@@ -39,6 +33,7 @@ export function AddFoodBlock({
   onOpenDiary,
   onAddFood,
   showMealChips = false,
+  tone = 'default',
 }: {
   meal: MealSlot;
   onChangeMeal: (meal: MealSlot) => void;
@@ -52,14 +47,17 @@ export function AddFoodBlock({
   onAddFood?: () => void;
   /** When true, show meal chips (legacy). Today keeps false. */
   showMealChips?: boolean;
+  /** Nothing chrome on Today — leave default for any Food reuse. */
+  tone?: 'default' | 'nothing';
 }) {
-  const last = todayEntries.slice(0, 3);
   const entryCount = todayEntries.length;
+  void todayEntries;
+  const n = tone === 'nothing';
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, n && styles.wrapN]}>
       <View style={styles.head}>
-        <Text style={styles.title}>Недавно</Text>
+        <Text style={[styles.title, n && styles.titleN]}>{n ? 'LOG' : 'Недавно'}</Text>
         {onOpenDiary ? (
           <Pressable
             onPress={onOpenDiary}
@@ -89,28 +87,23 @@ export function AddFoodBlock({
             <MealChips value={meal} onChange={onChangeMeal} compact />
           </View>
         </>
-      ) : (
-        <Text style={styles.mealHint} accessibilityLiveRegion="polite">
-          В {MEAL_TITLE[meal].toLowerCase()} · приём можно сменить при добавлении
-        </Text>
-      )}
+      ) : null}
 
       {onAddFood ? (
         <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.addBtn, n && styles.addBtnN, pressed && styles.pressed]}
           onPress={onAddFood}
           accessibilityRole="button"
           accessibilityLabel="Добавить еду"
         >
           <Ionicons name="add" size={20} color={colors.primaryButtonText} />
-          <Text style={styles.addBtnText}>Добавить еду</Text>
+          <Text style={[styles.addBtnText, n && styles.addBtnTextN]}>Добавить еду</Text>
         </Pressable>
       ) : null}
 
       {quickRepeats.length > 0 ? (
         <View style={styles.list}>
-          <Text style={styles.sectionLabel}>Быстрый повтор</Text>
-          {quickRepeats.slice(0, 4).map((e) => (
+          {quickRepeats.slice(0, 3).map((e) => (
             <Pressable
               key={e.id}
               style={({ pressed }) => [styles.repeatRow, pressed && styles.pressed]}
@@ -130,32 +123,6 @@ export function AddFoodBlock({
               <Text style={styles.plus}>+</Text>
             </Pressable>
           ))}
-        </View>
-      ) : null}
-
-      {last.length > 0 ? (
-        <View style={styles.list}>
-          <Text style={styles.sectionLabel}>Сегодня</Text>
-          {last.map((e) => (
-            <View key={e.id} style={styles.row}>
-              <View style={styles.rowBody}>
-                <Text style={styles.rowTitle} numberOfLines={1}>
-                  {e.displayName}
-                </Text>
-                <Text style={styles.rowMeta}>
-                  {e.grams} г · {MEAL_RU[e.meal]}
-                  {e.energyKcal == null ? '' : ` · ~${Math.round(e.energyKcal)} ккал`}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      ) : quickRepeats.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Пока без записей</Text>
-          <Text style={styles.emptyBody}>
-            Нажмите «Добавить еду» выше или отсканируйте штрихкод внизу.
-          </Text>
         </View>
       ) : null}
 
@@ -211,12 +178,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.3,
     marginBottom: space.sm,
-  },
-  mealHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginBottom: space.md,
-    lineHeight: 18,
   },
   chipsWrap: { marginBottom: space.md },
   sectionLabel: {
@@ -283,4 +244,23 @@ const styles = StyleSheet.create({
   },
   copyText: { fontWeight: '700', color: colors.text, fontSize: type.caption },
   pressed: { opacity: 0.88 },
+  wrapN: {
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
+    borderColor: nothing.lineStrong,
+    padding: nothingSpace.lg,
+  },
+  titleN: {
+    fontSize: nothingType.micro,
+    letterSpacing: nothingType.letterWide,
+    textTransform: 'uppercase',
+    color: nothing.muted,
+  },
+  addBtnN: {
+    borderRadius: nothingRadius.sm,
+    backgroundColor: nothing.invert,
+  },
+  addBtnTextN: {
+    letterSpacing: 0.6,
+  },
 });

@@ -351,6 +351,14 @@ export type FoodRepository = {
   ): PlannedMeal;
   softDeletePlannedMeal(plannedMealId: string): PlannedMeal;
   /**
+   * Copy a planned meal to another day/slot as an independent row (new id).
+   * Never touches diary. Status of the copy is always `planned`.
+   */
+  copyPlannedMeal(
+    plannedMealId: string,
+    args: { dateLocal: string; meal: MealSlot },
+  ): PlannedMeal;
+  /**
    * Add a planned meal for a calendar day (never diary). Uses draft/active plan
    * covering the date, or creates an empty 1-day draft.
    */
@@ -2253,6 +2261,18 @@ export function createMemoryFoodRepository(seed?: {
       m.updatedAt = m.deletedAt;
       notify();
       return { ...m };
+    },
+    copyPlannedMeal(plannedMealId, args) {
+      const source = plannedMeals.get(plannedMealId);
+      if (!source || source.deletedAt) throw new Error('Planned meal not found');
+      return api.addPlannedMeal({
+        dateLocal: args.dateLocal,
+        meal: args.meal,
+        displayName: source.displayName,
+        grams: source.grams,
+        recipeId: source.recipeId,
+        productId: source.productId,
+      });
     },
     addPlannedMeal(input) {
       const name = input.displayName.trim();

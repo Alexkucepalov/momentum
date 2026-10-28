@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { buildHabitWeekMarks } from '../../../../src/domain/habitWeek';
 import { HabitProgressBar } from '../features/habits/HabitProgressBar';
-import { HabitWeekStrip } from '../features/habits/HabitWeekStrip';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '../theme/nothing';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 export type FlexibleHabitRow = {
@@ -16,23 +16,23 @@ export type FlexibleHabitRow = {
   marks: ReturnType<typeof buildHabitWeekMarks>;
 };
 
-/** Habits checklist for Today — food/water/activity live in their own blocks. */
+/** Compact habits block — food/water live elsewhere; no nested card-in-card. */
 export function TodayChecklist({
   flexibleHabits,
   onToggleFlexible,
   onManageHabits,
+  tone = 'default',
 }: {
   flexibleHabits: FlexibleHabitRow[];
   onToggleFlexible: (habitId: string) => void;
   onManageHabits?: () => void;
+  tone?: 'default' | 'nothing';
 }) {
+  const n = tone === 'nothing';
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, n && styles.wrapN]}>
       <View style={styles.habitsHead}>
-        <View>
-          <Text style={styles.subheading}>Мои привычки</Text>
-          <Text style={styles.habitsLead}>Гибкая неделя · без штрафов</Text>
-        </View>
+        <Text style={[styles.subheading, n && styles.subheadingN]}>{n ? 'HABITS' : 'Привычки'}</Text>
         {onManageHabits ? (
           <Pressable
             onPress={onManageHabits}
@@ -47,45 +47,41 @@ export function TodayChecklist({
       </View>
 
       {flexibleHabits.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyBody}>
-            Задай свои цели на неделю — например растяжка 3×. Пропуск дня ничего не ломает.
-          </Text>
-          {onManageHabits ? (
-            <Pressable
-              style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}
-              onPress={onManageHabits}
-              accessibilityRole="button"
-              accessibilityLabel="Добавить привычку"
-            >
-              <Ionicons name="add" size={16} color={colors.primaryButtonText} />
-              <Text style={styles.emptyCtaText}>Добавить привычку</Text>
-            </Pressable>
-          ) : null}
-        </View>
+        onManageHabits ? (
+          <Pressable
+            style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}
+            onPress={onManageHabits}
+            accessibilityRole="button"
+            accessibilityLabel="Добавить привычку"
+          >
+            <Ionicons name="add" size={16} color={colors.primaryButtonText} />
+            <Text style={styles.emptyCtaText}>Добавить</Text>
+          </Pressable>
+        ) : null
       ) : (
-        flexibleHabits.map((h) => (
+        flexibleHabits.map((h, i) => (
           <Pressable
             key={h.id}
-            style={({ pressed }) => [styles.habitCard, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.habitRow,
+              i > 0 && styles.habitRowBorder,
+              pressed && styles.pressed,
+            ]}
             onPress={() => onToggleFlexible(h.id)}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: h.loggedToday }}
             accessibilityLabel={`${h.name}, ${h.weekLabel}`}
           >
-            <View style={styles.habitTop}>
-              <View style={[styles.check, h.loggedToday && styles.checkOn]}>
-                {h.loggedToday ? (
-                  <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
-                ) : null}
-              </View>
-              <View style={styles.flexBody}>
-                <Text style={[styles.label, h.loggedToday && styles.labelDone]}>{h.name}</Text>
-                <Text style={styles.week}>{h.weekLabel}</Text>
-              </View>
+            <View style={[styles.check, h.loggedToday && styles.checkOn]}>
+              {h.loggedToday ? (
+                <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
+              ) : null}
             </View>
-            <HabitProgressBar completed={h.completed} target={h.target} />
-            <HabitWeekStrip marks={h.marks} compact />
+            <View style={styles.flexBody}>
+              <Text style={[styles.label, h.loggedToday && styles.labelDone]}>{h.name}</Text>
+              <Text style={styles.week}>{h.weekLabel}</Text>
+              <HabitProgressBar completed={h.completed} target={h.target} />
+            </View>
           </Pressable>
         ))
       )}
@@ -99,37 +95,33 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.lg,
+    padding: space.md,
+    marginBottom: space.md,
   },
   habitsHead: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   subheading: {
-    fontSize: type.body,
+    fontSize: type.caption,
     fontWeight: '800',
-    color: colors.text,
-  },
-  habitsLead: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    marginTop: 2,
+    color: colors.textSecondary,
   },
   manageBtn: { minHeight: touchMin / 2, justifyContent: 'center' },
-  manage: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  habitCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: space.md,
-    marginBottom: space.sm,
-    backgroundColor: colors.background,
+  manage: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
+  habitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: space.sm,
+    minHeight: touchMin,
   },
-  habitTop: { flexDirection: 'row', alignItems: 'center' },
-  pressed: { opacity: 0.92, backgroundColor: colors.accentSoft },
+  habitRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  pressed: { opacity: 0.88 },
   check: {
     width: 22,
     height: 22,
@@ -139,14 +131,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: space.md,
+    marginTop: 2,
   },
   checkOn: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  flexBody: { flex: 1 },
+  flexBody: { flex: 1, gap: 4 },
   label: {
-    flex: 1,
     fontSize: type.body,
     color: colors.text,
     fontWeight: '600',
@@ -159,15 +151,7 @@ const styles = StyleSheet.create({
   week: {
     fontSize: type.micro,
     color: colors.textMuted,
-    marginTop: 2,
   },
-  empty: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space.sm,
-  },
-  emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   emptyCta: {
     minHeight: 40,
     borderRadius: radius.md,
@@ -178,4 +162,16 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   emptyCtaText: { fontWeight: '700', color: colors.primaryButtonText, fontSize: type.caption },
+  wrapN: {
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
+    borderColor: nothing.lineStrong,
+    padding: nothingSpace.md,
+    marginBottom: nothingSpace.md,
+  },
+  subheadingN: {
+    fontSize: nothingType.micro,
+    letterSpacing: nothingType.letterWide,
+    color: nothing.muted,
+  },
 });

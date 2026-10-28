@@ -3,7 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { GlyphDots } from '@/src/components/nothing/GlyphDots';
+import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
+import { touchMin } from '@/src/theme/tokens';
 
 type HubItem = {
   key: string;
@@ -14,40 +17,35 @@ type HubItem = {
   primary?: boolean;
 };
 
-const PRIMARY: HubItem[] = [
+const ITEMS: HubItem[] = [
   {
     key: 'eat-now',
     title: 'Что съесть сейчас?',
-    subtitle: 'Рецепты, партии и ваши продукты',
+    subtitle: 'Из рецептов и продуктов',
     icon: 'flash-outline',
     href: '/plan/eat-now',
     primary: true,
   },
   {
+    key: 'week',
+    title: 'Меню на неделю',
+    subtitle: 'План порций · DnD',
+    icon: 'calendar-outline',
+    href: '/plan/week',
+  },
+  {
     key: 'recipes',
     title: 'Рецепты',
-    subtitle: 'Библиотека, импорт, повтор готовки',
+    subtitle: 'Библиотека и импорт',
     icon: 'book-outline',
     href: '/recipes',
-    primary: true,
   },
   {
     key: 'my-products',
     title: 'Мои продукты',
-    subtitle: 'Список обычных покупок → в каталог',
+    subtitle: 'Обычные покупки',
     icon: 'basket-outline',
     href: '/plan/my-products',
-    primary: true,
-  },
-];
-
-const SECONDARY: HubItem[] = [
-  {
-    key: 'week',
-    title: 'Меню на неделю',
-    subtitle: 'План порций · не дневник',
-    icon: 'calendar-outline',
-    href: '/plan/week',
   },
 ];
 
@@ -56,104 +54,95 @@ function HubRow({ item }: { item: HubItem }) {
   return (
     <Pressable
       onPress={() => router.push(item.href as Href)}
-      style={({ pressed }) => [styles.card, item.primary && styles.cardPrimary, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        item.primary && styles.cardPrimary,
+        pressed && styles.pressed,
+      ]}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
       <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
-        <Ionicons name={item.icon} size={22} color={colors.text} />
+        <Ionicons
+          name={item.icon}
+          size={20}
+          color={item.primary ? nothing.invertText : nothing.display}
+        />
       </View>
       <View style={styles.cardText}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardSub}>{item.subtitle}</Text>
+        <Text style={[styles.cardTitle, item.primary && styles.cardTitlePrimary]}>{item.title}</Text>
+        <Text style={[styles.cardSub, item.primary && styles.cardSubPrimary]}>{item.subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={item.primary ? nothing.invertText : nothing.muted}
+      />
     </Pressable>
   );
 }
 
 export default function PlanHubScreen() {
   return (
-    <FormScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.kicker} accessibilityRole="header">
-        План питания
-      </Text>
-      <Text style={styles.lead}>
-        Сейчас — что съесть из рецептов и своих продуктов. Меню на неделю — когда планируешь заранее.
-      </Text>
-
-      <Text style={styles.section}>Сейчас</Text>
-      <View style={styles.list} accessibilityRole="list">
-        {PRIMARY.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
-      </View>
-
-      <Text style={styles.section}>На неделю</Text>
-      <View style={styles.list} accessibilityRole="list">
-        {SECONDARY.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
-      </View>
-    </FormScrollView>
+    <NothingScreen>
+      <FormScrollView contentContainerStyle={styles.content}>
+        <NothingKicker label="Plan" dots={5} />
+        <Text style={styles.lead}>Сейчас · неделя · библиотека</Text>
+        <GlyphDots count={8} active={3} />
+        <View style={styles.list} accessibilityRole="list">
+          {ITEMS.map((item) => (
+            <HubRow key={item.key} item={item} />
+          ))}
+        </View>
+      </FormScrollView>
+    </NothingScreen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: space.lg,
-    paddingBottom: space.xxl,
-    gap: space.md,
-  },
-  kicker: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    letterSpacing: 0.2,
+    padding: nothingSpace.lg,
+    paddingBottom: nothingSpace.xxl,
   },
   lead: {
-    fontSize: type.body,
-    color: colors.textSecondary,
-    marginBottom: space.xs,
-    lineHeight: 22,
+    fontSize: nothingType.caption,
+    color: nothing.secondary,
+    letterSpacing: 0.6,
+    marginBottom: nothingSpace.sm,
+    fontWeight: '600',
   },
-  section: {
-    marginTop: space.sm,
-    fontSize: type.micro,
-    fontWeight: '800',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  list: { gap: space.sm },
+  list: { gap: nothingSpace.sm, marginTop: nothingSpace.lg },
   card: {
     minHeight: touchMin,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    gap: nothingSpace.md,
+    paddingVertical: nothingSpace.md,
+    paddingHorizontal: nothingSpace.lg,
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: nothing.lineStrong,
   },
   cardPrimary: {
-    borderColor: colors.text,
+    backgroundColor: nothing.invert,
+    borderColor: nothing.invert,
   },
-  pressed: { opacity: 0.88 },
+  pressed: { opacity: 0.8 },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    width: 36,
+    height: 36,
+    borderRadius: nothingRadius.sm,
+    backgroundColor: nothing.raised,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconWrapPrimary: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   cardText: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  cardSub: { fontSize: type.caption, color: colors.textSecondary },
+  cardTitle: { fontSize: nothingType.subtitle, fontWeight: '700', color: nothing.display },
+  cardTitlePrimary: { color: nothing.invertText },
+  cardSub: { fontSize: nothingType.caption, color: nothing.secondary },
+  cardSubPrimary: { color: 'rgba(255,255,255,0.65)' },
 });

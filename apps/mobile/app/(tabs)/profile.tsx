@@ -15,6 +15,8 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
+import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
@@ -258,16 +260,17 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <NothingScreen>
       <FormScrollView contentContainerStyle={styles.content}>
+        <NothingKicker label="Profile" dots={4} />
         <View style={styles.hero}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={28} color={colors.text} />
+            <Ionicons name="person" size={24} color={nothing.display} />
           </View>
           <Text style={styles.name} accessibilityRole="header">
             Профиль
           </Text>
-          <Text style={styles.meta}>Только на устройстве · {profile.timezone}</Text>
+          <Text style={styles.meta}>LOCAL · {profile.timezone}</Text>
           {summary.length > 0 ? (
             <View style={styles.summaryRow} accessibilityLabel={`Активные цели: ${summary.join(', ')}`}>
               {summary.map((chip) => (
@@ -283,7 +286,7 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="КБЖУ на день"
-          hint="Твои числа, без автонорм. ккал и БЖУ независимы (4×Б+9×Ж+4×У не подставляется). Пусто = без цели."
+          hint="Свои числа · пусто = без цели · ккал и БЖУ независимы"
           icon="flame-outline"
         >
           <LabeledField
@@ -349,11 +352,7 @@ export default function ProfileScreen() {
           ) : null}
         </SettingsCard>
 
-        <SettingsCard
-          title="Рост"
-          hint="Для ИМТ в Прогрессе. Сохраняется при уходе с поля. Справочно, не диагноз."
-          icon="resize-outline"
-        >
+        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
           <LabeledField
             label="Сантиметры"
             value={heightRaw}
@@ -368,11 +367,7 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
-        <SettingsCard
-          title="Вода"
-          hint="Мягкая подсказка на Сегодня. Пресет или своё число — сохраняется сразу."
-          icon="water-outline"
-        >
+        <SettingsCard title="Вода" hint="Цель на Сегодня · пресет или своё число" icon="water-outline">
           <View style={styles.presets}>
             {WATER_PRESETS.map((ml) => {
               const on = profile.waterTargetMl === ml;
@@ -411,7 +406,7 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
-        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
+        <SettingsCard title="Приватность" hint="Локально на устройстве" icon="shield-outline">
           <PrivacyRow
             icon="phone-portrait-outline"
             text="Дневник, вес и привычки хранятся локально на устройстве."
@@ -432,7 +427,7 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="Данные"
-          hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
+          hint="Экспорт / импорт · импорт заменяет локальные данные"
           icon="folder-outline"
         >
           <PrimaryButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
@@ -505,7 +500,7 @@ export default function ProfileScreen() {
       </Modal>
 
       <FlashBar />
-    </View>
+    </NothingScreen>
   );
 }
 
@@ -594,8 +589,7 @@ function PrivacyRow({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg },
+  content: { padding: nothingSpace.lg },
   secondaryLinks: {
     marginBottom: space.lg,
     gap: space.xs,
@@ -610,17 +604,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  hero: { alignItems: 'center', marginBottom: space.xl },
+  hero: { alignItems: 'center', marginBottom: nothingSpace.md },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.accentSoft,
+    width: 56,
+    height: 56,
+    borderRadius: nothingRadius.sm,
+    backgroundColor: nothing.raised,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: space.md,
+    marginBottom: nothingSpace.md,
+    borderWidth: 1,
+    borderColor: nothing.display,
   },
-  name: { fontSize: type.title, fontWeight: '800', color: colors.text },
+  name: {
+    fontSize: nothingType.title,
+    fontWeight: '800',
+    color: nothing.display,
+    letterSpacing: 0.4,
+  },
   meta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 4 },
   summaryRow: {
     flexDirection: 'row',
@@ -650,28 +651,33 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.lg,
-    gap: space.sm,
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: nothing.lineStrong,
+    padding: nothingSpace.md,
+    marginBottom: nothingSpace.sm,
+    gap: nothingSpace.sm,
   },
-  cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },
+  cardHead: { flexDirection: 'row', gap: nothingSpace.md, marginBottom: nothingSpace.sm },
   cardIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accentSoft,
+    borderRadius: nothingRadius.sm,
+    backgroundColor: nothing.raised,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardHeadText: { flex: 1 },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
+  cardTitle: {
+    fontSize: nothingType.subtitle,
+    fontWeight: '800',
+    color: nothing.display,
+    letterSpacing: 0.3,
+  },
   cardHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
+    fontSize: nothingType.caption,
+    color: nothing.secondary,
     lineHeight: 18,
     marginTop: 2,
   },

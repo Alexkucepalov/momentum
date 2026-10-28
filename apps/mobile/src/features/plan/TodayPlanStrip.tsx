@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import type { PlannedMeal } from '../../../../../src/storage/types';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL: Record<string, string> = {
@@ -13,8 +14,9 @@ const MEAL: Record<string, string> = {
   snack: 'Перекус',
 };
 
-/** Compact «план на сегодня» on Today/Food — log without opening week board. */
-export function TodayPlanStrip() {
+/** Compact plan strip — default keeps Food tab look; `nothing` for Today. */
+export function TodayPlanStrip({ tone = 'default' }: { tone?: 'default' | 'nothing' }) {
+  const n = tone === 'nothing';
   const router = useRouter();
   const { repo, dateLocal, refresh, revision, showFlash } = useData();
   const allowAdd = useAddGuard();
@@ -23,7 +25,7 @@ export function TodayPlanStrip() {
   const planned = repo
     .listPlannedMealsForDate(dateLocal)
     .filter((m) => m.status === 'planned')
-    .slice(0, 6);
+    .slice(0, 4);
 
   if (planned.length === 0) {
     return (
@@ -31,10 +33,10 @@ export function TodayPlanStrip() {
         onPress={() => router.push('/plan/week')}
         style={({ pressed }) => [styles.emptyLink, pressed && styles.pressed]}
         accessibilityRole="link"
-        accessibilityLabel="Составить план на сегодня"
+        accessibilityLabel="Открыть меню на неделю"
         hitSlop={8}
       >
-        <Text style={styles.emptyLinkText}>Составить план на сегодня →</Text>
+        <Text style={[styles.emptyLinkText, n && styles.emptyLinkTextN]}>План на сегодня →</Text>
       </Pressable>
     );
   }
@@ -49,7 +51,7 @@ export function TodayPlanStrip() {
   return (
     <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План на сегодня">
       <View style={styles.head}>
-        <Text style={styles.title}>План на сегодня</Text>
+        <Text style={[styles.title, n && styles.titleN]}>{n ? 'PLAN' : 'План'}</Text>
         <Pressable
           onPress={() => router.push('/plan/week')}
           accessibilityRole="button"
@@ -57,20 +59,20 @@ export function TodayPlanStrip() {
           hitSlop={8}
           style={styles.menuHit}
         >
-          <Text style={styles.link}>Меню</Text>
+          <Text style={[styles.link, n && styles.linkN]}>Неделя</Text>
         </Pressable>
       </View>
       {planned.map((m) => (
-        <View key={m.id} style={styles.row}>
+        <View key={m.id} style={[styles.row, n && styles.rowN]}>
           <View style={styles.main}>
-            <Text style={styles.slot}>{MEAL[m.meal] ?? m.meal}</Text>
-            <Text style={styles.name}>
-              {m.displayName} · {Math.round(m.grams)} г
+            <Text style={[styles.name, n && styles.nameN]} numberOfLines={1}>
+              <Text style={[styles.slot, n && styles.slotN]}>{MEAL[m.meal] ?? m.meal} · </Text>
+              {m.displayName}
             </Text>
           </View>
           <Pressable
             onPress={() => log(m)}
-            style={styles.cta}
+            style={[styles.cta, n && styles.ctaN]}
             accessibilityRole="button"
             accessibilityLabel={`Добавить в дневник ${m.displayName}`}
           >
@@ -84,20 +86,25 @@ export function TodayPlanStrip() {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    gap: space.sm,
     marginBottom: space.md,
+    gap: space.sm,
   },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  link: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  main: { flex: 1, gap: 2 },
-  slot: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
+  title: { fontSize: type.caption, fontWeight: '800', color: colors.textSecondary },
+  link: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: space.md,
+    minHeight: touchMin,
+  },
+  main: { flex: 1 },
+  slot: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
   name: { fontSize: type.body, fontWeight: '600', color: colors.text },
   cta: {
     paddingHorizontal: space.md,
@@ -109,19 +116,37 @@ const styles = StyleSheet.create({
   emptyLink: {
     alignSelf: 'flex-start',
     justifyContent: 'center',
-    minHeight: touchMin,
-    paddingVertical: space.sm,
+    minHeight: 36,
     marginBottom: space.md,
   },
   emptyLinkText: {
     fontSize: type.caption,
     fontWeight: '700',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   menuHit: {
-    minHeight: touchMin,
+    minHeight: 36,
     justifyContent: 'center',
     paddingHorizontal: space.xs,
   },
   pressed: { opacity: 0.9 },
+  titleN: {
+    fontSize: nothingType.micro,
+    letterSpacing: nothingType.letterWide,
+    color: nothing.muted,
+  },
+  linkN: { color: nothing.secondary, letterSpacing: 0.4 },
+  rowN: {
+    borderRadius: nothingRadius.sm,
+    borderColor: nothing.lineStrong,
+    backgroundColor: nothing.surface,
+  },
+  nameN: { color: nothing.display, fontWeight: '600' },
+  slotN: { color: nothing.muted },
+  ctaN: { borderRadius: nothingRadius.sm, backgroundColor: nothing.invert },
+  emptyLinkTextN: {
+    color: nothing.secondary,
+    letterSpacing: 0.4,
+    marginBottom: nothingSpace.md,
+  },
 });

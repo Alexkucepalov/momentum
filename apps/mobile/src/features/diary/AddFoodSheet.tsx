@@ -371,7 +371,6 @@ export function AddFoodSheet({
                 />
               ) : (
                 <>
-                  <Text style={styles.tip}>Справочник, свои продукты, рецепты и недавние</Text>
                   {searchHits.map((hit) => {
                     if (hit.kind === 'recent') {
                       const e = hit.entry;

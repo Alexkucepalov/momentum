@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { nothing, nothingType } from '@/src/theme/nothing';
 import { colors, type } from '@/src/theme/tokens';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -13,7 +14,7 @@ function TabBarIcon({ name, color }: { name: IconName; color: string }) {
 }
 
 function tint(color: unknown): string {
-  return typeof color === 'string' ? color : colors.textSecondary;
+  return typeof color === 'string' ? color : nothing.muted;
 }
 
 export default function TabLayout() {
@@ -24,24 +25,32 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: nothing.display,
+        tabBarInactiveTintColor: nothing.muted,
         tabBarLabelStyle: {
-          fontSize: type.micro,
-          fontWeight: '600',
+          fontSize: nothingType.micro,
+          fontWeight: '700',
+          letterSpacing: 0.6,
           marginBottom: Platform.OS === 'web' ? 4 : 0,
+          textTransform: 'uppercase',
         },
         tabBarItemStyle: {
           paddingTop: 6,
         },
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: nothing.surface,
+          borderTopColor: nothing.lineStrong,
+          borderTopWidth: StyleSheet.hairlineWidth,
           height: tabBarHeight,
           paddingBottom: bottomInset,
         },
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },
+        headerStyle: { backgroundColor: nothing.bg },
+        headerTitleStyle: {
+          color: nothing.display,
+          fontWeight: '700',
+          fontSize: type.title,
+          letterSpacing: 0.4,
+        },
         headerShadowVisible: false,
       }}
     >
@@ -62,6 +71,9 @@ export default function TabLayout() {
           title: 'Питание',
           tabBarLabel: 'Питание',
           tabBarAccessibilityLabel: 'Вкладка Питание',
+          // Food content keeps Momentum tokens; chrome matches app shell.
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'restaurant' : 'restaurant-outline'} color={tint(color)} />
           ),

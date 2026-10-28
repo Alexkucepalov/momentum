@@ -4,59 +4,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import {
-  defaultProductPortionGrams,
-} from '../../../../src/domain/defaultPortionGrams';
-import {
   buildHabitWeekMarks,
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
-import { portion } from '../../../../src/domain/nutrition';
 import { localDateKey } from '../../../../src/storage/validation';
 import {
   repeatableDayFromEntries,
   shiftDateLocal,
 } from '../../../../src/domain/repeatMeal';
 import { shouldShowTargetsOnboarding } from '../../../../src/domain/targetsOnboarding';
-import type { FoodProduct, Recipe } from '../../../../src/storage/types';
 import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
+import {
+  NothingKicker,
+  NothingScreen,
+} from '@/src/components/nothing/NothingChrome';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
-import { SectionHeader } from '@/src/components/SectionHeader';
 import { StatCards } from '@/src/components/StatCards';
 import { TodayChecklist } from '@/src/components/TodayChecklist';
 import { UndoBar } from '@/src/components/UndoBar';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
-import {
-  ConfirmPortionSheet,
-  type PortionTarget,
-} from '@/src/features/diary/ConfirmPortionSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
+import { touchMin } from '@/src/theme/tokens';
 
-const MEAL_LABELS = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
-} as const;
-
-const MEAL_RU = {
-  breakfast: 'завтрак',
-  lunch: 'обед',
-  dinner: 'ужин',
-  snack: 'перекус',
-} as const;
-
-/** Compact date line under tab title «Сегодня» — no second hero headline. */
 function formatDateLine(iso: string, today: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
@@ -80,14 +59,9 @@ export default function TodayScreen() {
   const [open, setOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [portionTarget, setPortionTarget] = useState<{
-    target: PortionTarget;
-    initialGrams: number;
-  } | null>(null);
   const totals = repo.dailyTotals(dateLocal);
   const todayEntries = repo.listEntriesForDate(dateLocal);
   const recent = repo.listRecentEntries(6);
-  const favorites = repo.listFavorites().slice(0, 4);
   const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
   const showTargetsOnboarding = shouldShowTargetsOnboarding(profile);
@@ -146,9 +120,9 @@ export default function TodayScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <NothingScreen>
       <FormScrollView contentContainerStyle={styles.content}>
-        {/* Fold: date → KBJU → primary Add (footer sticky) → recent */}
+        <NothingKicker label="Today" dots={6} />
         <Text style={styles.dateLine}>{dateLine}</Text>
 
         <DayStrip
@@ -158,21 +132,24 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <KcalRing
-          variant="compact"
-          totals={totals}
-          targets={{
-            energyKcal: profile.dailyEnergyKcal,
-            proteinG: profile.dailyProteinG,
-            fatG: profile.dailyFatG,
-            carbG: profile.dailyCarbG,
-          }}
-          activityKcal={activityKcal}
-          activityMinutes={activityMinutes}
-          onSetTarget={() => router.push('/profile')}
-        />
+        <View style={styles.panel}>
+          <KcalRing
+            variant="compact"
+            totals={totals}
+            targets={{
+              energyKcal: profile.dailyEnergyKcal,
+              proteinG: profile.dailyProteinG,
+              fatG: profile.dailyFatG,
+              carbG: profile.dailyCarbG,
+            }}
+            activityKcal={activityKcal}
+            activityMinutes={activityMinutes}
+            onSetTarget={() => router.push('/profile')}
+          />
+        </View>
 
         <AddFoodBlock
+          tone="nothing"
           meal={meal}
           onChangeMeal={setMeal}
           showMealChips={false}
@@ -222,10 +199,10 @@ export default function TodayScreen() {
           onOpenDiary={() => router.push('/(tabs)/food')}
         />
 
-        {/* Below fold: plan, habits, water, favorites, secondary links */}
-        <TodayPlanStrip />
+        <TodayPlanStrip tone="nothing" />
 
         <TodayChecklist
+          tone="nothing"
           flexibleHabits={flexibleRows}
           onManageHabits={() => router.push('/progress')}
           onToggleFlexible={(habitId) => {
@@ -243,6 +220,7 @@ export default function TodayScreen() {
         />
 
         <StatCards
+          tone="nothing"
           waterMl={waterMl}
           waterTargetMl={profile.waterTargetMl}
           activityMinutes={activityMinutes}
@@ -252,43 +230,6 @@ export default function TodayScreen() {
             showFlash(`+${ml} мл воды`);
           }}
         />
-
-        {favorites.length > 0 ? (
-          <>
-            <SectionHeader title="Избранное" />
-            <Text style={styles.favHint}>Сначала порция — в дневник только после подтверждения</Text>
-            {favorites.map((p) => {
-              const lastG = defaultProductPortionGrams(repo.lastGramsForProduct(p.id));
-              return (
-                <Pressable
-                  key={p.id}
-                  style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
-                  onPress={() => {
-                    setPortionTarget({
-                      target: { kind: 'product', product: p },
-                      initialGrams: lastG,
-                    });
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить ${p.name}, выбрать порцию`}
-                >
-                  <View style={styles.iconBubble}>
-                    <Ionicons name="star" size={16} color={colors.fat} />
-                  </View>
-                  <View style={styles.quickBody}>
-                    <Text style={styles.quickTitle}>{p.name}</Text>
-                    <Text style={styles.quickMeta}>
-                      обычно {lastG} г → {MEAL_RU[meal]}
-                      {p.energyKcal === null ? '' : ` · ~${Math.round((p.energyKcal * lastG) / 100)} ккал`}
-                    </Text>
-                  </View>
-                  <Text style={styles.quickAction}>+</Text>
-                </Pressable>
-              );
-            })}
-          </>
-        ) : null}
-
       </FormScrollView>
 
       <ScreenFooter>
@@ -298,14 +239,16 @@ export default function TodayScreen() {
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
         >
-          <Ionicons name="barcode-outline" size={22} color={colors.text} />
+          <Ionicons name="barcode-outline" size={22} color={nothing.display} />
         </Pressable>
-        <View style={styles.footerBtn}>
-          <PrimaryButton
-            label="Что съесть сейчас"
-            onPress={() => router.push('/plan/eat-now')}
-          />
-        </View>
+        <Pressable
+          style={({ pressed }) => [styles.footerEatNow, pressed && styles.pressed]}
+          onPress={() => router.push('/plan/eat-now')}
+          accessibilityRole="button"
+          accessibilityLabel="Что съесть сейчас"
+        >
+          <Text style={styles.footerEatNowText}>Что съесть сейчас</Text>
+        </Pressable>
       </ScreenFooter>
 
       <TargetsOnboardingSheet
@@ -324,132 +267,55 @@ export default function TodayScreen() {
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
       <BarcodeLookupSheet visible={barcodeOpen} onClose={() => setBarcodeOpen(false)} />
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
-      <ConfirmPortionSheet
-        visible={portionTarget != null}
-        target={portionTarget?.target ?? null}
-        meal={meal}
-        mealLabel={MEAL_LABELS[meal]}
-        initialGrams={portionTarget?.initialGrams}
-        onClose={() => setPortionTarget(null)}
-        onConfirm={(result) => {
-          if (!portionTarget) return;
-          if (!allowAdd()) return;
-          if (portionTarget.target.kind === 'product') {
-            const product = portionTarget.target.product as FoodProduct;
-            repo.updateProductNutrition(product.id, result.per100g);
-            repo.addEntryFromProduct({
-              productId: product.id,
-              dateLocal,
-              meal,
-              grams: result.grams,
-            });
-            refresh();
-            setPortionTarget(null);
-            showFlash(`Добавлено: ${product.name}`);
-            return;
-          }
-          const recipe = portionTarget.target.recipe as Recipe;
-          const snap = portion(
-            {
-              kcal: result.per100g.energyKcal,
-              protein: result.per100g.proteinG,
-              fat: result.per100g.fatG,
-              carbs: result.per100g.carbG,
-            },
-            result.grams,
-          );
-          repo.addEntryFromRecipe({
-            recipeId: recipe.id,
-            dateLocal,
-            meal,
-            grams: result.grams,
-            nutritionSnapshot: {
-              energyKcal: snap.kcal,
-              proteinG: snap.protein,
-              fatG: snap.fat,
-              carbG: snap.carbs,
-            },
-          });
-          refresh();
-          setPortionTarget(null);
-          showFlash(`Добавлено: ${recipe.name}`);
-        }}
-      />
       <FlashBar />
       <UndoBar />
-    </View>
+    </NothingScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 140 },
+  content: { padding: nothingSpace.lg, paddingBottom: 140 },
   dateLine: {
-    marginBottom: space.sm,
-    fontSize: type.body,
-    color: colors.textSecondary,
+    marginBottom: nothingSpace.md,
+    fontSize: nothingType.caption,
+    color: nothing.secondary,
     fontWeight: '600',
+    letterSpacing: 0.4,
   },
-  quick: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
-    marginBottom: space.sm,
-    minHeight: touchMin,
-    gap: space.sm,
+  panel: {
+    backgroundColor: nothing.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: nothing.lineStrong,
+    borderRadius: nothingRadius.md,
+    padding: nothingSpace.md,
+    marginBottom: nothingSpace.md,
   },
-  pressed: { opacity: 0.88 },
-  iconBubble: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickBody: { flex: 1 },
-  quickTitle: { fontSize: type.body, fontWeight: '600', color: colors.text },
-  quickMeta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 2 },
-  quickAction: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.text,
-    paddingHorizontal: space.sm,
-  },
-  favHint: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    marginBottom: space.sm,
-    marginTop: -4,
-  },
-  secondaryLinks: {
-    marginTop: space.md,
-    marginBottom: space.sm,
-    gap: space.xs,
-  },
-  secondaryLink: {
-    paddingVertical: space.sm,
-    minHeight: touchMin,
-    justifyContent: 'center',
-  },
-  secondaryLinkText: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
+  pressed: { opacity: 0.8 },
   footerScan: {
     width: touchMin,
     height: touchMin,
-    borderRadius: radius.md,
+    borderRadius: nothingRadius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: nothing.display,
+    backgroundColor: nothing.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  footerBtn: { flex: 1 },
+  footerEatNow: {
+    flex: 1,
+    minHeight: touchMin,
+    borderRadius: nothingRadius.sm,
+    borderWidth: 1,
+    borderColor: nothing.display,
+    backgroundColor: nothing.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: nothingSpace.md,
+  },
+  footerEatNowText: {
+    fontSize: nothingType.body,
+    fontWeight: '700',
+    color: nothing.display,
+    letterSpacing: 0.4,
+  },
 });
