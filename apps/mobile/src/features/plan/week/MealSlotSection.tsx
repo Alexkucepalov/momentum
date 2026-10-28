@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { PlannedMealCard } from './PlannedMealCard';
 import { usePlanDrag, type DropTarget } from './planDragContext';
 
@@ -90,14 +90,12 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: space.md,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.xl,
     padding: space.md,
+    ...elevation.card,
   },
   sectionHot: {
-    borderColor: colors.text,
-    backgroundColor: colors.preview,
+    backgroundColor: colors.focusSoft,
   },
   head: {
     flexDirection: 'row',

@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, type } from '@/src/theme/tokens';
+import { colors, elevation, type } from '@/src/theme/tokens';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -37,8 +37,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
+          borderTopWidth: StyleSheet.hairlineWidth,
           height: tabBarHeight,
           paddingBottom: bottomInset,
+          ...elevation.tabBar,
         },
         headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },

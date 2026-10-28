@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry, MealSlot } from '../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
 import { MealChips } from './MealChips';
 
 const MEAL_RU: Record<MealSlot, string> = {
@@ -133,10 +133,9 @@ const styles = StyleSheet.create({
   wrap: {
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: space.lg,
     marginBottom: space.lg,
+    ...elevation.card,
   },
   head: {
     flexDirection: 'row',

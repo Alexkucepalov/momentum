@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { formatDateRu } from '../../../../../src/domain/dateFormatRu';
 import type { WeeklyInsight } from '../../../../../src/domain/weeklyInsight';
-import { colors, radius, space, type } from '../../theme/tokens';
+import { colors, elevation, radius, space, type } from '../../theme/tokens';
 
 export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
   return (
@@ -33,11 +33,10 @@ export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.xl,
     padding: space.lg,
     marginBottom: space.xl,
+    ...elevation.card,
   },
   head: { flexDirection: 'row', gap: space.md, marginBottom: space.md, alignItems: 'center' },
   icon: {

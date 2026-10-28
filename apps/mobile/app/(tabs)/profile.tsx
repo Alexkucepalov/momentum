@@ -15,7 +15,7 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -349,21 +349,6 @@ export default function ProfileScreen() {
           ) : null}
         </SettingsCard>
 
-        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
-          <LabeledField
-            label="Сантиметры"
-            value={heightRaw}
-            onChangeText={setHeightRaw}
-            onCommit={(t) => {
-              setHeightRaw(t);
-              commitHeight(t);
-            }}
-            keyboardType="decimal-pad"
-            placeholder="например 175"
-            accessibilityLabel="Рост в сантиметрах"
-          />
-        </SettingsCard>
-
         <SettingsCard title="Вода" hint="Цель на Сегодня · пресет или своё число" icon="water-outline">
           <View style={styles.presets}>
             {WATER_PRESETS.map((ml) => {
@@ -400,6 +385,21 @@ export default function ProfileScreen() {
             keyboardType="number-pad"
             placeholder="или своё число / пусто"
             accessibilityLabel="Цель воды в миллилитрах"
+          />
+        </SettingsCard>
+
+        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
+          <LabeledField
+            label="Сантиметры"
+            value={heightRaw}
+            onChangeText={setHeightRaw}
+            onCommit={(t) => {
+              setHeightRaw(t);
+              commitHeight(t);
+            }}
+            keyboardType="decimal-pad"
+            placeholder="например 175"
+            accessibilityLabel="Рост в сантиметрах"
           />
         </SettingsCard>
 
@@ -647,12 +647,11 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.xl,
     padding: space.md,
     marginBottom: space.sm,
     gap: space.sm,
+    ...elevation.card,
   },
   cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },
   cardIcon: {

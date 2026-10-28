@@ -27,7 +27,7 @@ import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 function formatDateLine(iso: string, today: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -136,19 +136,21 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <KcalRing
-          variant="compact"
-          totals={totals}
-          targets={{
-            energyKcal: profile.dailyEnergyKcal,
-            proteinG: profile.dailyProteinG,
-            fatG: profile.dailyFatG,
-            carbG: profile.dailyCarbG,
-          }}
-          activityKcal={activityKcal}
-          activityMinutes={activityMinutes}
-          onSetTarget={() => router.push('/profile')}
-        />
+        <View style={styles.ringCard}>
+          <KcalRing
+            variant="compact"
+            totals={totals}
+            targets={{
+              energyKcal: profile.dailyEnergyKcal,
+              proteinG: profile.dailyProteinG,
+              fatG: profile.dailyFatG,
+              carbG: profile.dailyCarbG,
+            }}
+            activityKcal={activityKcal}
+            activityMinutes={activityMinutes}
+            onSetTarget={() => router.push('/profile')}
+          />
+        </View>
 
         <AddFoodBlock
           meal={meal}
@@ -202,70 +204,68 @@ export default function TodayScreen() {
 
         <TodayPlanStrip />
 
-        <Pressable
-          onPress={() => {
-            repo.addWater(dateLocal, 250);
-            refresh();
-            showFlash('+250 мл воды');
-          }}
-          style={({ pressed }) => [styles.quietRow, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
-        >
-          <Ionicons name="water-outline" size={18} color={colors.text} />
-          <Text style={styles.quietRowText}>Вода {waterLabel}</Text>
-          <Text style={styles.quietRowAction}>+250 мл</Text>
-        </Pressable>
+        <View style={styles.quietCard}>
+          <Pressable
+            onPress={() => {
+              repo.addWater(dateLocal, 250);
+              refresh();
+              showFlash('+250 мл воды');
+            }}
+            style={({ pressed }) => [styles.quietRow, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
+          >
+            <Ionicons name="water-outline" size={18} color={colors.text} />
+            <Text style={styles.quietRowText}>Вода {waterLabel}</Text>
+            <Text style={styles.quietRowAction}>+250 мл</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={() => router.push('/progress')}
-          style={({ pressed }) => [styles.quietRow, pressed && styles.pressed]}
-          accessibilityRole="link"
-          accessibilityLabel="Привычки"
-        >
-          <Ionicons name="checkbox-outline" size={18} color={colors.text} />
-          <Text style={styles.quietRowText}>
-            {habitsTotal === 0
-              ? 'Привычки'
-              : `Привычки ${habitsDone}/${habitsTotal}`}
-          </Text>
-          <Text style={styles.quietRowAction}>→</Text>
-        </Pressable>
+          <Pressable
+            onPress={() => router.push('/progress')}
+            style={({ pressed }) => [styles.quietRow, styles.quietRowBorder, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Привычки"
+          >
+            <Ionicons name="checkbox-outline" size={18} color={colors.text} />
+            <Text style={styles.quietRowText}>
+              {habitsTotal === 0
+                ? 'Привычки'
+                : `Привычки ${habitsDone}/${habitsTotal}`}
+            </Text>
+            <Text style={styles.quietRowAction}>→</Text>
+          </Pressable>
 
-        {flexibleRows.length > 0 ? (
-          <View style={styles.habitList}>
-            {flexibleRows.map((h) => (
-              <Pressable
-                key={h.id}
-                onPress={() => {
-                  if (repo.isFlexibleHabitLogged(h.id, dateLocal)) {
-                    repo.unlogFlexibleHabit(h.id, dateLocal);
-                    refresh();
-                    showFlash(`Снято: ${h.name}`);
-                  } else {
-                    repo.logFlexibleHabit(h.id, dateLocal);
-                    refresh();
-                    showFlash(`Отмечено: ${h.name}`);
-                  }
-                }}
-                style={({ pressed }) => [styles.habitRow, pressed && styles.pressed]}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: h.loggedToday }}
-                accessibilityLabel={`${h.name}, ${h.weekLabel}`}
-              >
-                <View style={[styles.check, h.loggedToday && styles.checkOn]}>
-                  {h.loggedToday ? (
-                    <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
-                  ) : null}
-                </View>
-                <Text style={[styles.habitName, h.loggedToday && styles.habitDone]} numberOfLines={1}>
-                  {h.name}
-                </Text>
-                <Text style={styles.habitMeta}>{h.weekLabel}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+          {flexibleRows.map((h) => (
+            <Pressable
+              key={h.id}
+              onPress={() => {
+                if (repo.isFlexibleHabitLogged(h.id, dateLocal)) {
+                  repo.unlogFlexibleHabit(h.id, dateLocal);
+                  refresh();
+                  showFlash(`Снято: ${h.name}`);
+                } else {
+                  repo.logFlexibleHabit(h.id, dateLocal);
+                  refresh();
+                  showFlash(`Отмечено: ${h.name}`);
+                }
+              }}
+              style={({ pressed }) => [styles.habitRow, pressed && styles.pressed]}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: h.loggedToday }}
+              accessibilityLabel={`${h.name}, ${h.weekLabel}`}
+            >
+              <View style={[styles.check, h.loggedToday && styles.checkOn]}>
+                {h.loggedToday ? (
+                  <Ionicons name="checkmark" size={14} color={colors.primaryButtonText} />
+                ) : null}
+              </View>
+              <Text style={[styles.habitName, h.loggedToday && styles.habitDone]} numberOfLines={1}>
+                {h.name}
+              </Text>
+              <Text style={styles.habitMeta}>{h.weekLabel}</Text>
+            </Pressable>
+          ))}
+        </View>
 
         <Pressable
           onPress={() => router.push('/plan/eat-now')}
@@ -328,30 +328,36 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '600',
   },
+  /** Outer slot only — KcalRing already paints its own surface (shared with Food). */
+  ringCard: {
+    marginBottom: space.sm,
+  },
+  quietCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    paddingHorizontal: space.md,
+    marginBottom: space.md,
+    overflow: 'hidden',
+    ...elevation.card,
+  },
   quietRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     minHeight: touchMin,
     paddingVertical: space.sm,
-    marginBottom: space.xs,
+  },
+  quietRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   quietRowText: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
   quietRowAction: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
-  habitList: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: space.md,
-    overflow: 'hidden',
-  },
   habitRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     minHeight: touchMin,
-    paddingHorizontal: space.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
