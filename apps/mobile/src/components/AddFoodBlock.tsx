@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry, MealSlot } from '../../../../src/storage/types';
-import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../theme/tokens';
 import { MealChips } from './MealChips';
 
 const MEAL_RU: Record<MealSlot, string> = {

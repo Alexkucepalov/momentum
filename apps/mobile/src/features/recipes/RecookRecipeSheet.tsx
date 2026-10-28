@@ -6,7 +6,7 @@ import type { Recipe, RecipeIngredient } from '../../../../../src/storage/types'
 import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
 function fmt(n: number | null): string {
   if (n === null) return '—';

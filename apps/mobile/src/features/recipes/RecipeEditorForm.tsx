@@ -18,7 +18,7 @@ import {
   pickRecipePhotoFromLibrary,
   takeRecipePhoto,
 } from '../../media/recipePhoto';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { emptyIngredient, type DraftIngredient } from '../diary/addFood/types';
 
 export type RecipeFormValues = {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 const PRESETS = [50, 100, 150, 200, 250] as const;
 

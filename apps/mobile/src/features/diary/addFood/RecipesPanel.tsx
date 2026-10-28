@@ -10,7 +10,7 @@ import {
 import type { Recipe, RecipeIngredient } from '../../../../../../src/storage/types';
 import { MacroStrip } from '../../../components/MacroStrip';
 import { PrimaryButton } from '../../../components/PrimaryButton';
-import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
 import { emptyIngredient, type DraftIngredient } from './types';
 
 export function RecipesPanel({

@@ -16,7 +16,7 @@ import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeCameraPanel, type ScanStatus } from './BarcodeCameraPanel';
 import { ConfirmPortionSheet } from './ConfirmPortionSheet';
 import { LabelCaptureSheet, type LabelDraft } from './LabelCaptureSheet';

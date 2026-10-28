@@ -3,7 +3,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { energyProgressRatio } from '../../../../src/domain/energyProgress';
 import type { DailyNutritionTargets, DailyTotals } from '../../../../src/storage/types';
-import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 function fmt(n: number | null): string {
   if (n === null) return '—';

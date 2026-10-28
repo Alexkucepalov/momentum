@@ -16,7 +16,7 @@ import { parseNutritionLabelText } from '../../../../../src/domain/parseNutritio
 import type { NutritionSource } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
 export type LabelDraft = {
   name: string;

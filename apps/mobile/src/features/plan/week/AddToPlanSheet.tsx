@@ -11,7 +11,7 @@ import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../../..
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',

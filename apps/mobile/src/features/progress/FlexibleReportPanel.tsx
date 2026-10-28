@@ -11,7 +11,7 @@ import {
 } from '../../../../../src/domain/flexibleReport';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { collectFlexibleReportInput } from './collectFlexibleReport';
 import { shareHtmlAsPdf } from './shareReportPdf';
 import { AppCard } from '@/src/ui/AppCard';

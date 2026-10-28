@@ -11,7 +11,7 @@ import {
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
 const FOOD_BARCODES = [
   'ean13',

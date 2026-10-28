@@ -6,7 +6,7 @@ import type { ChallengeMetric } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 
 const METRICS: { value: ChallengeMetric; label: string }[] = [

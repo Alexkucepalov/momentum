@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { kcalFromCompleteMacros } from '../../../../../../src/domain/nutritionConsistency';
 import { PrimaryButton } from '../../../components/PrimaryButton';
-import { colors, elevation, radius, space, touchMin, type } from '../../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
 
 type Mode = 'kcal' | 'macros';
 

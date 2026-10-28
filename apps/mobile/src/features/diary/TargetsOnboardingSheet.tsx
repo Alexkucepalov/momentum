@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CenteredFormModal } from '../../components/CenteredFormModal';
 import { PrimaryButton } from '../../components/PrimaryButton';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 
 export type TargetsOnboardingValues = {
   energyKcal: number | null;

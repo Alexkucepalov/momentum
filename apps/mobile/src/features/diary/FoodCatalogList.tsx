@@ -13,7 +13,7 @@ import type {
   RecipeIngredient,
 } from '../../../../../src/storage/types';
 import { MacroStrip } from '../../components/MacroStrip';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 
 const SOURCE_RU: Record<string, string> = {
