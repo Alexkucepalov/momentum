@@ -15,6 +15,7 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
+import { shell } from '@/src/theme/shell';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { SoftHeader } from '@/src/ui/SoftHeader';
@@ -596,7 +597,7 @@ function PrivacyRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
   secondaryLinks: {
     marginBottom: space.lg,
     gap: space.xs,

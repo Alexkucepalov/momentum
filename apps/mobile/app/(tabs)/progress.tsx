@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 
@@ -17,12 +17,15 @@ import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { shell } from '@/src/theme/shell';
+import { colors, radius, space, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { BentoRow } from '@/src/ui/BentoRow';
 import { BentoStat } from '@/src/ui/BentoStat';
 import { ListRow } from '@/src/ui/ListRow';
 import { SectionTitle } from '@/src/ui/SectionTitle';
+import { SegmentedControl } from '@/src/ui/SegmentedControl';
+import { SoftHeader } from '@/src/ui/SoftHeader';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
 
@@ -152,25 +155,8 @@ export default function ProgressScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <View style={styles.tabs} accessibilityRole="tablist">
-          {TABS.map((t) => {
-            const on = tab === t.id;
-            return (
-              <Pressable
-                key={t.id}
-                style={({ pressed }) => [styles.tab, on && styles.tabOn, pressed && styles.pressed]}
-                onPress={() => setTab(t.id)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={t.label}
-              >
-                <Text style={[styles.tabText, on && styles.tabTextOn]} numberOfLines={1}>
-                  {t.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <SoftHeader eyebrow="Наблюдения" title="Прогресс" />
+        <SegmentedControl dense value={tab} options={TABS} onChange={setTab} />
 
         {tab === 'summary' ? (
           <>
@@ -383,33 +369,7 @@ export default function ProgressScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: space.lg },
-  tabs: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: space.md,
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.lg,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: space.sm,
-    paddingHorizontal: 2,
-    borderRadius: radius.md,
-    minHeight: touchMin,
-  },
-  tabOn: {
-    backgroundColor: colors.primaryButton,
-  },
-  tabText: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  tabTextOn: { color: colors.primaryButtonText },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
   habitsLead: {
     fontSize: type.caption,
     color: colors.textMuted,
@@ -491,5 +451,4 @@ const styles = StyleSheet.create({
   },
   previewLabel: { fontSize: type.caption, color: colors.textSecondary, marginBottom: space.sm },
   previewBody: { fontSize: 12, color: colors.text, fontFamily: 'monospace' },
-  pressed: { opacity: 0.88 },
 });

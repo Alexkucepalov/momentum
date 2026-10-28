@@ -123,7 +123,7 @@ export default function RecipesIndexScreen() {
                 <Ionicons
                   name={f.icon}
                   size={14}
-                  color={on ? colors.primaryButtonText : colors.textSecondary}
+                  color={on ? colors.text : colors.textSecondary}
                 />
                 <Text style={[styles.chipText, on && styles.chipTextOn]}>
                   {f.label} · {f.count}
@@ -235,37 +235,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchBox: {
-    borderWidth: 1,
-    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     marginBottom: space.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.sm },
+  filters: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: space.sm,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.lg,
+    padding: 4,
+  },
   chip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: space.md,
+    paddingHorizontal: space.sm,
     paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    backgroundColor: 'transparent',
     minHeight: 48,
   },
   chipOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
+    backgroundColor: colors.surface,
   },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  chipTextOn: { color: colors.primaryButtonText },
+  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
+  chipTextOn: { color: colors.text, fontWeight: '800' },
   list: { paddingHorizontal: space.lg, paddingBottom: 48, paddingTop: space.xs },
   emptyFilter: {
     padding: space.xxl,

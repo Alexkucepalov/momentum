@@ -21,6 +21,7 @@ import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSh
 import { HomeNutritionSplit } from '@/src/features/home/HomeNutritionSplit';
 import { HomeWeightCard } from '@/src/features/home/HomeWeightCard';
 import { useData } from '@/src/state/DataContext';
+import { shell } from '@/src/theme/shell';
 import { colors, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { BentoRow } from '@/src/ui/BentoRow';
@@ -256,7 +257,7 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 120 },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
   bentoFlex: { flex: 1 },
   activityCard: {
     flex: 1,

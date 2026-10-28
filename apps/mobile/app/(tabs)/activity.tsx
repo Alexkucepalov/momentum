@@ -1,12 +1,11 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
 import type { WorkoutType } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
-import { DateSwitcher } from '@/src/components/DateSwitcher';
+import { DayStrip } from '@/src/components/DayStrip';
 import { EmptyState } from '@/src/components/EmptyState';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
@@ -14,6 +13,7 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
+import { shell } from '@/src/theme/shell';
 import { colors, space, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { BentoRow } from '@/src/ui/BentoRow';
@@ -21,6 +21,7 @@ import { BentoStat } from '@/src/ui/BentoStat';
 import { Fab } from '@/src/ui/Fab';
 import { IconTile } from '@/src/ui/IconTile';
 import { SectionTitle } from '@/src/ui/SectionTitle';
+import { SoftHeader } from '@/src/ui/SoftHeader';
 
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -32,7 +33,6 @@ const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Io
 
 /** Activity — Nutrition Soft Light (same language as Food/Progress). */
 export default function ActivityScreen() {
-  const navigation = useNavigation();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
   const [formOpen, setFormOpen] = useState(false);
@@ -48,12 +48,6 @@ export default function ActivityScreen() {
   const workouts = repo.listWorkoutsForDate(dateLocal);
   const totalMin = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => null,
-    });
-  }, [navigation]);
 
   const weekMinutes = useMemo(() => {
     const start = weekStartMonday(dateLocal);
@@ -72,9 +66,10 @@ export default function ActivityScreen() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DateSwitcher
+        <SoftHeader eyebrow="Движение" title="Активность" />
+        <DayStrip
           selected={dateLocal}
-          timeZone={profile.timezone}
+          today={todayKey}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
         />
@@ -180,7 +175,7 @@ export default function ActivityScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 120 },
+  content: { padding: space.lg, paddingBottom: shell.screenBottom },
   summaryHint: {
     marginBottom: space.md,
     fontSize: type.caption,
