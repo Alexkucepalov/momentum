@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { buildHabitWeekMarks } from '../../../../src/domain/habitWeek';
 import { HabitProgressBar } from '../features/habits/HabitProgressBar';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '../theme/nothing';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 export type FlexibleHabitRow = {
@@ -20,15 +21,18 @@ export function TodayChecklist({
   flexibleHabits,
   onToggleFlexible,
   onManageHabits,
+  tone = 'default',
 }: {
   flexibleHabits: FlexibleHabitRow[];
   onToggleFlexible: (habitId: string) => void;
   onManageHabits?: () => void;
+  tone?: 'default' | 'nothing';
 }) {
+  const n = tone === 'nothing';
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, n && styles.wrapN]}>
       <View style={styles.habitsHead}>
-        <Text style={styles.subheading}>Привычки</Text>
+        <Text style={[styles.subheading, n && styles.subheadingN]}>{n ? 'HABITS' : 'Привычки'}</Text>
         {onManageHabits ? (
           <Pressable
             onPress={onManageHabits}
@@ -158,4 +162,16 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   emptyCtaText: { fontWeight: '700', color: colors.primaryButtonText, fontSize: type.caption },
+  wrapN: {
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
+    borderColor: nothing.lineStrong,
+    padding: nothingSpace.md,
+    marginBottom: nothingSpace.md,
+  },
+  subheadingN: {
+    fontSize: nothingType.micro,
+    letterSpacing: nothingType.letterWide,
+    color: nothing.muted,
+  },
 });

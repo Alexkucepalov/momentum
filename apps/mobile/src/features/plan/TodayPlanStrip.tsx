@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import type { PlannedMeal } from '../../../../../src/storage/types';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL: Record<string, string> = {
@@ -13,8 +14,9 @@ const MEAL: Record<string, string> = {
   snack: 'Перекус',
 };
 
-/** Compact plan strip on Today — no hero card when empty. */
-export function TodayPlanStrip() {
+/** Compact plan strip — default keeps Food tab look; `nothing` for Today. */
+export function TodayPlanStrip({ tone = 'default' }: { tone?: 'default' | 'nothing' }) {
+  const n = tone === 'nothing';
   const router = useRouter();
   const { repo, dateLocal, refresh, revision, showFlash } = useData();
   const allowAdd = useAddGuard();
@@ -34,7 +36,7 @@ export function TodayPlanStrip() {
         accessibilityLabel="Открыть меню на неделю"
         hitSlop={8}
       >
-        <Text style={styles.emptyLinkText}>План на сегодня →</Text>
+        <Text style={[styles.emptyLinkText, n && styles.emptyLinkTextN]}>План на сегодня →</Text>
       </Pressable>
     );
   }
@@ -49,7 +51,7 @@ export function TodayPlanStrip() {
   return (
     <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План на сегодня">
       <View style={styles.head}>
-        <Text style={styles.title}>План</Text>
+        <Text style={[styles.title, n && styles.titleN]}>{n ? 'PLAN' : 'План'}</Text>
         <Pressable
           onPress={() => router.push('/plan/week')}
           accessibilityRole="button"
@@ -57,20 +59,20 @@ export function TodayPlanStrip() {
           hitSlop={8}
           style={styles.menuHit}
         >
-          <Text style={styles.link}>Неделя</Text>
+          <Text style={[styles.link, n && styles.linkN]}>Неделя</Text>
         </Pressable>
       </View>
       {planned.map((m) => (
-        <View key={m.id} style={styles.row}>
+        <View key={m.id} style={[styles.row, n && styles.rowN]}>
           <View style={styles.main}>
-            <Text style={styles.name} numberOfLines={1}>
-              <Text style={styles.slot}>{MEAL[m.meal] ?? m.meal} · </Text>
+            <Text style={[styles.name, n && styles.nameN]} numberOfLines={1}>
+              <Text style={[styles.slot, n && styles.slotN]}>{MEAL[m.meal] ?? m.meal} · </Text>
               {m.displayName}
             </Text>
           </View>
           <Pressable
             onPress={() => log(m)}
-            style={styles.cta}
+            style={[styles.cta, n && styles.ctaN]}
             accessibilityRole="button"
             accessibilityLabel={`Добавить в дневник ${m.displayName}`}
           >
@@ -128,4 +130,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xs,
   },
   pressed: { opacity: 0.9 },
+  titleN: {
+    fontSize: nothingType.micro,
+    letterSpacing: nothingType.letterWide,
+    color: nothing.muted,
+  },
+  linkN: { color: nothing.secondary, letterSpacing: 0.4 },
+  rowN: {
+    borderRadius: nothingRadius.sm,
+    borderColor: nothing.lineStrong,
+    backgroundColor: nothing.surface,
+  },
+  nameN: { color: nothing.display, fontWeight: '600' },
+  slotN: { color: nothing.muted },
+  ctaN: { borderRadius: nothingRadius.sm, backgroundColor: nothing.invert },
+  emptyLinkTextN: {
+    color: nothing.secondary,
+    letterSpacing: 0.4,
+    marginBottom: nothingSpace.md,
+  },
 });

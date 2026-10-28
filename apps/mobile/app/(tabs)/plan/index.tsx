@@ -3,7 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { GlyphDots } from '@/src/components/nothing/GlyphDots';
+import { NothingKicker, NothingScreen } from '@/src/components/nothing/NothingChrome';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
+import { touchMin } from '@/src/theme/tokens';
 
 type HubItem = {
   key: string;
@@ -14,7 +17,6 @@ type HubItem = {
   primary?: boolean;
 };
 
-/** Action now → week → library. One accent only. */
 const ITEMS: HubItem[] = [
   {
     key: 'eat-now',
@@ -27,7 +29,7 @@ const ITEMS: HubItem[] = [
   {
     key: 'week',
     title: 'Меню на неделю',
-    subtitle: 'План порций',
+    subtitle: 'План порций · DnD',
     icon: 'calendar-outline',
     href: '/plan/week',
   },
@@ -52,15 +54,19 @@ function HubRow({ item }: { item: HubItem }) {
   return (
     <Pressable
       onPress={() => router.push(item.href as Href)}
-      style={({ pressed }) => [styles.card, item.primary && styles.cardPrimary, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        item.primary && styles.cardPrimary,
+        pressed && styles.pressed,
+      ]}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
       <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
         <Ionicons
           name={item.icon}
-          size={22}
-          color={item.primary ? colors.primaryButtonText : colors.text}
+          size={20}
+          color={item.primary ? nothing.invertText : nothing.display}
         />
       </View>
       <View style={styles.cardText}>
@@ -70,7 +76,7 @@ function HubRow({ item }: { item: HubItem }) {
       <Ionicons
         name="chevron-forward"
         size={18}
-        color={item.primary ? colors.primaryButtonText : colors.textMuted}
+        color={item.primary ? nothing.invertText : nothing.muted}
       />
     </Pressable>
   );
@@ -78,53 +84,65 @@ function HubRow({ item }: { item: HubItem }) {
 
 export default function PlanHubScreen() {
   return (
-    <FormScrollView contentContainerStyle={styles.content}>
-      <View style={styles.list} accessibilityRole="list">
-        {ITEMS.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
-      </View>
-    </FormScrollView>
+    <NothingScreen>
+      <FormScrollView contentContainerStyle={styles.content}>
+        <NothingKicker label="Plan" dots={5} />
+        <Text style={styles.lead}>Сейчас · неделя · библиотека</Text>
+        <GlyphDots count={8} active={3} />
+        <View style={styles.list} accessibilityRole="list">
+          {ITEMS.map((item) => (
+            <HubRow key={item.key} item={item} />
+          ))}
+        </View>
+      </FormScrollView>
+    </NothingScreen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: space.lg,
-    paddingBottom: space.xxl,
+    padding: nothingSpace.lg,
+    paddingBottom: nothingSpace.xxl,
   },
-  list: { gap: space.sm },
+  lead: {
+    fontSize: nothingType.caption,
+    color: nothing.secondary,
+    letterSpacing: 0.6,
+    marginBottom: nothingSpace.sm,
+    fontWeight: '600',
+  },
+  list: { gap: nothingSpace.sm, marginTop: nothingSpace.lg },
   card: {
     minHeight: touchMin,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    gap: nothingSpace.md,
+    paddingVertical: nothingSpace.md,
+    paddingHorizontal: nothingSpace.lg,
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: nothing.lineStrong,
   },
   cardPrimary: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
+    backgroundColor: nothing.invert,
+    borderColor: nothing.invert,
   },
-  pressed: { opacity: 0.88 },
+  pressed: { opacity: 0.8 },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    width: 36,
+    height: 36,
+    borderRadius: nothingRadius.sm,
+    backgroundColor: nothing.raised,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconWrapPrimary: {
-    backgroundColor: colors.chipOnInverse,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   cardText: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  cardTitlePrimary: { color: colors.primaryButtonText },
-  cardSub: { fontSize: type.caption, color: colors.textSecondary },
-  cardSubPrimary: { color: colors.chipOnInverse },
+  cardTitle: { fontSize: nothingType.subtitle, fontWeight: '700', color: nothing.display },
+  cardTitlePrimary: { color: nothing.invertText },
+  cardSub: { fontSize: nothingType.caption, color: nothing.secondary },
+  cardSubPrimary: { color: 'rgba(255,255,255,0.65)' },
 });

@@ -17,6 +17,10 @@ import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
+import {
+  NothingKicker,
+  NothingScreen,
+} from '@/src/components/nothing/NothingChrome';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
@@ -29,9 +33,9 @@ import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '@/src/theme/nothing';
+import { touchMin } from '@/src/theme/tokens';
 
-/** Compact date line under tab title «Сегодня» — no second hero headline. */
 function formatDateLine(iso: string, today: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
@@ -116,9 +120,9 @@ export default function TodayScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <NothingScreen>
       <FormScrollView contentContainerStyle={styles.content}>
-        {/* Fold: date → KBJU → primary Add (footer sticky) → recent */}
+        <NothingKicker label="Today" dots={6} />
         <Text style={styles.dateLine}>{dateLine}</Text>
 
         <DayStrip
@@ -128,21 +132,24 @@ export default function TodayScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <KcalRing
-          variant="compact"
-          totals={totals}
-          targets={{
-            energyKcal: profile.dailyEnergyKcal,
-            proteinG: profile.dailyProteinG,
-            fatG: profile.dailyFatG,
-            carbG: profile.dailyCarbG,
-          }}
-          activityKcal={activityKcal}
-          activityMinutes={activityMinutes}
-          onSetTarget={() => router.push('/profile')}
-        />
+        <View style={styles.panel}>
+          <KcalRing
+            variant="compact"
+            totals={totals}
+            targets={{
+              energyKcal: profile.dailyEnergyKcal,
+              proteinG: profile.dailyProteinG,
+              fatG: profile.dailyFatG,
+              carbG: profile.dailyCarbG,
+            }}
+            activityKcal={activityKcal}
+            activityMinutes={activityMinutes}
+            onSetTarget={() => router.push('/profile')}
+          />
+        </View>
 
         <AddFoodBlock
+          tone="nothing"
           meal={meal}
           onChangeMeal={setMeal}
           showMealChips={false}
@@ -192,10 +199,10 @@ export default function TodayScreen() {
           onOpenDiary={() => router.push('/(tabs)/food')}
         />
 
-        {/* Below fold: plan, habits, water */}
-        <TodayPlanStrip />
+        <TodayPlanStrip tone="nothing" />
 
         <TodayChecklist
+          tone="nothing"
           flexibleHabits={flexibleRows}
           onManageHabits={() => router.push('/progress')}
           onToggleFlexible={(habitId) => {
@@ -213,6 +220,7 @@ export default function TodayScreen() {
         />
 
         <StatCards
+          tone="nothing"
           waterMl={waterMl}
           waterTargetMl={profile.waterTargetMl}
           activityMinutes={activityMinutes}
@@ -231,7 +239,7 @@ export default function TodayScreen() {
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
         >
-          <Ionicons name="barcode-outline" size={22} color={colors.text} />
+          <Ionicons name="barcode-outline" size={22} color={nothing.display} />
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.footerEatNow, pressed && styles.pressed]}
@@ -261,44 +269,53 @@ export default function TodayScreen() {
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <FlashBar />
       <UndoBar />
-    </View>
+    </NothingScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 140 },
+  content: { padding: nothingSpace.lg, paddingBottom: 140 },
   dateLine: {
-    marginBottom: space.sm,
-    fontSize: type.body,
-    color: colors.textSecondary,
+    marginBottom: nothingSpace.md,
+    fontSize: nothingType.caption,
+    color: nothing.secondary,
     fontWeight: '600',
+    letterSpacing: 0.4,
   },
-  pressed: { opacity: 0.88 },
+  panel: {
+    backgroundColor: nothing.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: nothing.lineStrong,
+    borderRadius: nothingRadius.md,
+    padding: nothingSpace.md,
+    marginBottom: nothingSpace.md,
+  },
+  pressed: { opacity: 0.8 },
   footerScan: {
     width: touchMin,
     height: touchMin,
-    borderRadius: radius.md,
+    borderRadius: nothingRadius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: nothing.display,
+    backgroundColor: nothing.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerEatNow: {
     flex: 1,
     minHeight: touchMin,
-    borderRadius: radius.md,
+    borderRadius: nothingRadius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: nothing.display,
+    backgroundColor: nothing.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.md,
+    paddingHorizontal: nothingSpace.md,
   },
   footerEatNowText: {
-    fontSize: type.body,
+    fontSize: nothingType.body,
     fontWeight: '700',
-    color: colors.text,
+    color: nothing.display,
+    letterSpacing: 0.4,
   },
 });

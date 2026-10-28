@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry, MealSlot } from '../../../../src/storage/types';
+import { nothing, nothingRadius, nothingSpace, nothingType } from '../theme/nothing';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 import { MealChips } from './MealChips';
 
@@ -32,6 +33,7 @@ export function AddFoodBlock({
   onOpenDiary,
   onAddFood,
   showMealChips = false,
+  tone = 'default',
 }: {
   meal: MealSlot;
   onChangeMeal: (meal: MealSlot) => void;
@@ -45,14 +47,17 @@ export function AddFoodBlock({
   onAddFood?: () => void;
   /** When true, show meal chips (legacy). Today keeps false. */
   showMealChips?: boolean;
+  /** Nothing chrome on Today — leave default for any Food reuse. */
+  tone?: 'default' | 'nothing';
 }) {
   const entryCount = todayEntries.length;
   void todayEntries;
+  const n = tone === 'nothing';
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, n && styles.wrapN]}>
       <View style={styles.head}>
-        <Text style={styles.title}>Недавно</Text>
+        <Text style={[styles.title, n && styles.titleN]}>{n ? 'LOG' : 'Недавно'}</Text>
         {onOpenDiary ? (
           <Pressable
             onPress={onOpenDiary}
@@ -86,13 +91,13 @@ export function AddFoodBlock({
 
       {onAddFood ? (
         <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.addBtn, n && styles.addBtnN, pressed && styles.pressed]}
           onPress={onAddFood}
           accessibilityRole="button"
           accessibilityLabel="Добавить еду"
         >
           <Ionicons name="add" size={20} color={colors.primaryButtonText} />
-          <Text style={styles.addBtnText}>Добавить еду</Text>
+          <Text style={[styles.addBtnText, n && styles.addBtnTextN]}>Добавить еду</Text>
         </Pressable>
       ) : null}
 
@@ -239,4 +244,23 @@ const styles = StyleSheet.create({
   },
   copyText: { fontWeight: '700', color: colors.text, fontSize: type.caption },
   pressed: { opacity: 0.88 },
+  wrapN: {
+    backgroundColor: nothing.surface,
+    borderRadius: nothingRadius.sm,
+    borderColor: nothing.lineStrong,
+    padding: nothingSpace.lg,
+  },
+  titleN: {
+    fontSize: nothingType.micro,
+    letterSpacing: nothingType.letterWide,
+    textTransform: 'uppercase',
+    color: nothing.muted,
+  },
+  addBtnN: {
+    borderRadius: nothingRadius.sm,
+    backgroundColor: nothing.invert,
+  },
+  addBtnTextN: {
+    letterSpacing: 0.6,
+  },
 });

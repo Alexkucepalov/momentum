@@ -1,16 +1,21 @@
 import { Stack } from 'expo-router';
 
-import { colors, type } from '@/src/theme/tokens';
+import { nothing, nothingType } from '@/src/theme/nothing';
 
 export default function PlanLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },
-        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: nothing.bg },
+        headerTitleStyle: {
+          color: nothing.display,
+          fontWeight: '700',
+          fontSize: nothingType.title,
+          letterSpacing: 0.4,
+        },
+        headerTintColor: nothing.display,
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: nothing.bg },
       }}
     >
       <Stack.Screen name="index" options={{ title: 'План питания' }} />
