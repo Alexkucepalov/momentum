@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, elevation, radius, space, type } from '../theme/tokens';
+import { colors, radius, space, type } from '../theme/tokens';
 import { dayNumber, WEEKDAY_SHORT_RU_CAP } from './weekFormat';
+import { AppCard } from '@/src/ui/AppCard';
 
 export type WeekBarDay = {
   dateLocal: string;
@@ -40,7 +41,7 @@ export function WeekBarChart({
   const scale = Math.max(maxValue ?? 0, ...days.map((d) => d.value), 1);
 
   return (
-    <View style={styles.wrap} accessibilityRole="summary">
+    <AppCard padding="lg" style={styles.wrap} accessibilityRole="summary">
       <View style={styles.head}>
         <View style={styles.headText}>
           <Text style={styles.title}>{title}</Text>
@@ -92,16 +93,12 @@ export function WeekBarChart({
       </View>
 
       {footnote ? <Text style={styles.footnote}>{footnote}</Text> : null}
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
     marginBottom: space.lg,
   },
   head: {

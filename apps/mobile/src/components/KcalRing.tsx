@@ -381,9 +381,6 @@ function Macro({
 
 const styles = StyleSheet.create({
   compactWrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
     marginBottom: space.md,
   },
@@ -490,9 +487,6 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.88 },
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.lg,
     marginBottom: space.lg,
   },

@@ -15,7 +15,7 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { SoftHeader } from '@/src/ui/SoftHeader';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
@@ -429,11 +429,20 @@ export default function ProfileScreen() {
         >
           <PrimaryButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
           <View style={{ height: space.sm }} />
-          <PrimaryButton label="Загрузить демо 2 недели" onPress={onImportDemo} />
-          <View style={{ height: space.sm }} />
-          <PrimaryButton label="Импорт из буфера телефона" onPress={() => void onImportClipboard()} />
+          <PrimaryButton
+            variant="secondary"
+            label="Загрузить демо 2 недели"
+            onPress={onImportDemo}
+          />
           <View style={{ height: space.sm }} />
           <PrimaryButton
+            variant="secondary"
+            label="Импорт из буфера телефона"
+            onPress={() => void onImportClipboard()}
+          />
+          <View style={{ height: space.sm }} />
+          <PrimaryButton
+            variant="secondary"
             label="Вставить JSON"
             onPress={() => {
               setPasteRaw('');
@@ -758,8 +767,9 @@ const styles = StyleSheet.create({
   pasteInput: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     padding: space.md,
     fontSize: 12,
     fontFamily: 'monospace',

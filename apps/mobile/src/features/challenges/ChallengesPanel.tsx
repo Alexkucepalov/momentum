@@ -7,6 +7,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
 import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 const METRICS: { value: ChallengeMetric; label: string }[] = [
   { value: 'workouts_count', label: 'Тренировки' },
@@ -130,7 +131,7 @@ export function ChallengesPanel() {
       ) : null}
 
       {rows.map(({ challenge: c, progress }) => (
-        <View key={c.id} style={styles.card}>
+        <AppCard key={c.id} padding="lg" style={styles.card}>
           <View style={styles.cardTop}>
             <View style={styles.flex}>
               <Text style={styles.cardTitle}>{c.name}</Text>
@@ -156,11 +157,11 @@ export function ChallengesPanel() {
           <Text style={styles.period}>
             {c.periodStart} → {c.periodEnd}
           </Text>
-        </View>
+        </AppCard>
       ))}
 
       {open ? (
-        <View style={styles.composer}>
+        <AppCard padding="lg" style={styles.composer}>
           <Text style={styles.composerTitle}>Новый челлендж</Text>
           <Text style={styles.phrase}>
             За выбранный срок я хочу сделать цель ниже — без штрафов, просто наблюдение.
@@ -305,7 +306,7 @@ export function ChallengesPanel() {
               <PrimaryButton label="Создать" onPress={create} />
             </View>
           </View>
-        </View>
+        </AppCard>
       ) : rows.length > 0 ? (
         <Pressable
           style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
@@ -339,10 +340,6 @@ const styles = StyleSheet.create({
   heading: { fontSize: type.subtitle, fontWeight: '800', color: colors.text, marginBottom: 4 },
   sub: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
     marginBottom: space.md,
   },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
@@ -358,12 +355,7 @@ const styles = StyleSheet.create({
   },
   barFill: { height: 8, backgroundColor: colors.accent },
   period: { marginTop: space.sm, fontSize: type.micro, color: colors.textMuted },
-  composer: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
-  },
+  composer: {},
   composerTitle: {
     fontSize: type.subtitle,
     fontWeight: '800',

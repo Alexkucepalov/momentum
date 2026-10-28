@@ -14,6 +14,7 @@ import type {
 } from '../../../../../src/storage/types';
 import { MacroStrip } from '../../components/MacroStrip';
 import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 const SOURCE_RU: Record<string, string> = {
   user: 'свой',
@@ -154,7 +155,7 @@ export function FoodCatalogList({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.panel}>
+      <AppCard padding="md" style={styles.panel}>
         <View style={styles.sectionHead}>
           <View>
             <Text style={styles.section} accessibilityRole="header">
@@ -215,7 +216,7 @@ export function FoodCatalogList({
           })}
         </ScrollView>
       ) : null}
-      </View>
+      </AppCard>
 
       {searching && !anyHits ? (
         <Text style={styles.hint}>
@@ -466,9 +467,6 @@ export function FoodCatalogList({
 const styles = StyleSheet.create({
   wrap: { marginTop: space.sm, marginBottom: space.xl },
   panel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
     marginBottom: space.md,
   },
@@ -555,9 +553,6 @@ const styles = StyleSheet.create({
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
     width: 140,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
     minHeight: 120,
   },
@@ -589,9 +584,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
@@ -645,9 +637,6 @@ const styles = StyleSheet.create({
   },
   emptyCta: {
     minHeight: touchMin,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.md,

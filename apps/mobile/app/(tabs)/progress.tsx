@@ -9,7 +9,6 @@ import { collectWeeklyInsightStats } from '../../../../src/domain/weeklyInsight'
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
-import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
 import { WeightSparkline } from '@/src/components/WeightSparkline';
 import { ChallengesPanel } from '@/src/features/challenges/ChallengesPanel';
@@ -18,10 +17,11 @@ import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { BentoRow } from '@/src/ui/BentoRow';
 import { BentoStat } from '@/src/ui/BentoStat';
+import { ListRow } from '@/src/ui/ListRow';
 import { SectionTitle } from '@/src/ui/SectionTitle';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
@@ -201,6 +201,7 @@ export default function ProgressScreen() {
 
         {tab === 'habits' ? (
           <>
+            <SectionTitle title="Привычки" />
             <Text style={styles.habitsLead}>Настройка целей · отметки на «Сегодня»</Text>
             <FlexibleHabitsPanel />
             <ChallengesPanel />
@@ -243,7 +244,7 @@ export default function ProgressScreen() {
               <PrimaryButton label="Записать вес" onPress={() => setWeightOpen(true)} />
             </AppCard>
 
-            <View style={styles.card}>
+            <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>ИМТ и здоровье</Text>
               {bmiInfo ? (
                 <>
@@ -272,35 +273,29 @@ export default function ProgressScreen() {
                   <Text style={styles.healthMeta}>Рост в профиле: {profile.heightCm} см</Text>
                 ) : null}
               </View>
-            </View>
+            </AppCard>
 
             {weights.length > 0 ? (
-              <View style={styles.list}>
-                <SectionHeader title="История веса" />
-                {weights.map((w) => (
-                  <View key={w.id} style={styles.weightRow}>
-                    <View style={styles.weightMeta}>
-                      <Text style={styles.weightKg}>{w.kg} кг</Text>
-                      <Text style={styles.weightDate}>
-                        {new Date(w.weighedAt).toLocaleString('ru-RU', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Text>
-                    </View>
-                    <Pressable
-                      onPress={() => onDeleteWeight(w.id, w.kg)}
-                      style={({ pressed }) => [styles.deleteBtn, pressed && styles.pressed]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Удалить запись ${w.kg} килограмм`}
-                    >
-                      <Text style={styles.deleteText}>Удалить</Text>
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
+              <>
+                <SectionTitle title="История веса" />
+                <AppCard padding="none" style={styles.listCard}>
+                  {weights.map((w) => (
+                    <ListRow
+                      key={w.id}
+                      title={`${w.kg} кг`}
+                      meta={new Date(w.weighedAt).toLocaleString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      iconName="scale-outline"
+                      onDelete={() => onDeleteWeight(w.id, w.kg)}
+                      accessibilityLabel={`${w.kg} килограмм`}
+                    />
+                  ))}
+                </AppCard>
+              </>
             ) : null}
           </>
         ) : null}
@@ -314,7 +309,7 @@ export default function ProgressScreen() {
               onSelectDate={setDateLocal}
               timeZone={profile.timezone}
             />
-            <View style={styles.card}>
+            <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>Питание за неделю</Text>
               <Text style={styles.cardValue}>
                 {weekDays.filter((d) => d.entryCount > 0).length} / 7 дней
@@ -334,12 +329,12 @@ export default function ProgressScreen() {
                   </Text>
                 </View>
               ))}
-            </View>
+            </AppCard>
           </>
         ) : null}
 
         {tab === 'sport' ? (
-          <View style={styles.card}>
+          <AppCard style={styles.card}>
             <Text style={styles.cardTitle}>Спорт за неделю</Text>
             <Text style={styles.cardValue}>{sportWeekMinutes.count} тренировок</Text>
             <Text style={styles.cardHint}>{sportWeekMinutes.mins} мин суммарно</Text>
@@ -347,16 +342,17 @@ export default function ProgressScreen() {
               Оценка энергии — ориентир по MET, не вычитается из дневника еды.
             </Text>
             <PrimaryButton
-              label="Открыть активность"
+              variant="secondary"
+              label="Открыть активность →"
               onPress={() => router.push('/(tabs)/activity')}
             />
-          </View>
+          </AppCard>
         ) : null}
 
         {tab === 'summary' ? (
           <>
             <FlexibleReportPanel />
-            <View style={styles.card}>
+            <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>Бэкап</Text>
               <Text style={styles.cardHint}>Экспорт JSON · полное удаление в Профиле</Text>
               <PrimaryButton label="Экспорт JSON" onPress={() => void onExport()} />
@@ -369,7 +365,7 @@ export default function ProgressScreen() {
                   </Text>
                 </View>
               ) : null}
-            </View>
+            </AppCard>
           </>
         ) : null}
       </FormScrollView>
@@ -419,52 +415,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: space.sm,
   },
-  bentoHalf: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    flex: 1,
-    padding: space.lg,
-    minHeight: 120,
-  },
-  bentoWide: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
-    marginBottom: space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  bentoLabel: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.textMuted,
-    letterSpacing: 0.4,
-    marginBottom: 4,
-  },
-  bentoHero: {
-    fontSize: type.hero,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -1,
-  },
-  bentoWideValue: {
-    fontSize: type.title,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  bentoMeta: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
+    marginBottom: space.md,
+  },
+  listCard: {
     marginBottom: space.md,
   },
   cardTitle: { fontSize: type.caption, color: colors.textMuted, fontWeight: '700' },
@@ -512,43 +466,6 @@ const styles = StyleSheet.create({
     fontSize: type.micro,
     color: colors.textMuted,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    minHeight: touchMin,
-    paddingHorizontal: space.md,
-    marginBottom: space.md,
-    fontSize: type.body,
-    color: colors.text,
-  },
-  list: { marginBottom: space.xl },
-  backupHint: {
-    fontSize: type.caption,
-    color: colors.textMuted,
-    marginBottom: space.sm,
-    lineHeight: 18,
-  },
-  weightRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
-    marginBottom: space.sm,
-  },
-  weightMeta: { flex: 1, minWidth: 0, gap: 2 },
-  weightKg: { fontWeight: '700', color: colors.text },
-  weightDate: { color: colors.textSecondary, fontSize: type.caption },
-  deleteBtn: {
-    minHeight: touchMin,
-    justifyContent: 'center',
-    paddingHorizontal: space.sm,
-  },
-  deleteText: { fontWeight: '700', color: colors.danger, fontSize: type.caption },
   foodRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -559,11 +476,12 @@ const styles = StyleSheet.create({
   foodDay: { fontWeight: '700', color: colors.text },
   foodMeta: { color: colors.textSecondary, fontSize: type.caption },
   preview: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
     marginTop: space.lg,
+    padding: space.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   previewLabel: { fontSize: type.caption, color: colors.textSecondary, marginBottom: space.sm },
   previewBody: { fontSize: 12, color: colors.text, fontFamily: 'monospace' },

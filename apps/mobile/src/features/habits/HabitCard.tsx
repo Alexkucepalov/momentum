@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import type { HabitWeekDayMark } from '../../../../../src/domain/habitWeek';
 import { formatHabitWeekLabel } from '../../../../../src/domain/habitWeek';
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
-import { colors, elevation, radius, space, touchMin, type } from '../../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 import { HabitFormFields } from './HabitFormFields';
 import { HabitProgressBar } from './HabitProgressBar';
 import { HabitWeekStrip } from './HabitWeekStrip';
@@ -68,7 +69,7 @@ export function HabitCard({
 }) {
   if (editing) {
     return (
-      <View style={styles.card}>
+      <AppCard style={styles.card}>
         <Text style={styles.editTitle}>Изменить привычку</Text>
         <HabitFormFields
           name={editName}
@@ -102,14 +103,14 @@ export function HabitCard({
             <Text style={styles.primaryText}>Сохранить</Text>
           </Pressable>
         </View>
-      </View>
+      </AppCard>
     );
   }
 
   const weekLabel = formatHabitWeekLabel(completed, target, kind === 'quantity' ? unit : null);
 
   return (
-    <View style={styles.card}>
+    <AppCard style={styles.card}>
       <View style={styles.top}>
         <View style={styles.titleBlock}>
           <Text style={styles.name} numberOfLines={2}>
@@ -195,16 +196,12 @@ export function HabitCard({
           </Text>
         </Pressable>
       )}
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
     marginBottom: space.md,
   },
   top: {

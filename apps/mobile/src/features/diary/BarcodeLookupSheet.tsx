@@ -568,9 +568,10 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   input: {
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,
@@ -593,9 +594,6 @@ const styles = StyleSheet.create({
   },
   fallback: { gap: space.sm, paddingBottom: 48 },
   localBlock: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     padding: space.md,
     marginBottom: space.sm,
     gap: space.sm,
@@ -635,9 +633,6 @@ const styles = StyleSheet.create({
   },
   secondary: {
     minHeight: touchMin,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.md,

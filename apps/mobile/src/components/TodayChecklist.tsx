@@ -3,7 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { buildHabitWeekMarks } from '../../../../src/domain/habitWeek';
 import { HabitProgressBar } from '../features/habits/HabitProgressBar';
-import { colors, elevation, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 export type FlexibleHabitRow = {
   id: string;
@@ -26,7 +27,7 @@ export function TodayChecklist({
   onManageHabits?: () => void;
 }) {
   return (
-    <View style={styles.wrap}>
+    <AppCard padding="md" style={styles.wrap}>
       <View style={styles.habitsHead}>
         <Text style={styles.subheading}>Привычки</Text>
         {onManageHabits ? (
@@ -81,16 +82,12 @@ export function TodayChecklist({
           </Pressable>
         ))
       )}
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.md,
     marginBottom: space.md,
   },
   habitsHead: {

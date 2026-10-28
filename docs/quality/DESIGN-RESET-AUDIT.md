@@ -255,15 +255,15 @@
 
 ## 8. Definition of Done — весь редизайн
 
-- [ ] Один визуальный язык на всех **пользовательских** экранах и sheets (кроме dark WeightLog).
-- [ ] Нет необъяснимых `surfaceCard` StyleSheet на экранах (только deprecated alias → AppCard).
-- [ ] Нет параллельных SoftMetric vs Bento / двух date headers без плана слияния.
-- [ ] ≤1 primary black CTA на job/экран.
-- [ ] Empty + filled ключевые сценарии (Today, Food, Activity, Plan, Recipes).
-- [ ] `npm run verify` green.
+- [x] Один визуальный язык на всех **пользовательских** экранах и sheets (кроме dark WeightLog).
+- [x] Нет необъяснимых `surfaceCard` StyleSheet на экранах (только deprecated alias → AppCard).
+- [x] Нет параллельных SoftMetric vs Bento / двух date headers без плана слияния.
+- [x] ≤1 primary black CTA на job/экран.
+- [x] Empty + filled ключевые сценарии (Today, Food, Activity, Plan, Recipes).
+- [x] `npm run verify` green.
 - [ ] Expo web pack переснят скриптом `scripts/capture-screens-2026-10-24.mjs` (или обновлённым) в новый каталог с датой.
 - [ ] **Android:** жесты back/sheet dismiss, IME, safe areas на dogfood APK — отдельно; **не** считать web = Android Pass.
-- [ ] Основные сценарии: лог еды ≤10s path, вес, тренировка, рецепт→дневник.
+- [x] Основные сценарии: лог еды ≤10s path, вес, тренировка, рецепт→дневник (код-пути на Soft Light; device Pass отдельно).
 
 ---
 
@@ -288,10 +288,12 @@
 
 | PR | Intent | Status |
 |----|--------|--------|
-| **PR-A** | Tokens + canonical primitives + CONTRACT + deprecations (no screen redesign) | Follow-up PR after #149/#150 — see `docs/design/CONTRACT.md` |
-| #149/#150 | Early contract + **screen/surface** changes (overlap with B/C/E) | Merged — treat screen work as provisional; PR-B still owns Today/Activity CTA audit |
-| **PR-B** | Today / Activity / Progress / Profile alignment under CONTRACT | **Next** |
-| PR-C…E | Plan · Recipes · Sheets | After B |
-| Visual / Android | Re-capture pack; device Pass | Not web |
+| **PR-A** | Tokens + canonical primitives + CONTRACT + deprecations | Merged (#151) — `docs/design/CONTRACT.md` |
+| #149/#150 | Early contract + surface purge | Merged |
+| **PR-B** | Today / Activity / Progress / Profile under CONTRACT | Done on `feat/148-design-reset-b-e` |
+| **PR-C** | Plan eat-now / my-products / week | Done on same branch |
+| **PR-D** | Recipes stack | Done on same branch |
+| **PR-E** | Sheets/modals (WeightLog dark kept) | Done on same branch |
+| **PR-F** | Visual pack re-capture + dogfood APK + Android Pass | **Next** — verify green; web pack + device Pass still open |
 
-**Open conflict:** PR [#135](https://github.com/Alexkucepalov/momentum/pull/135) (Add Food UX) touches `tokens.ts` + AddFood sheets. PR-A reserves `tone*` wells on Soft Light macros so #135 can rebase without reverting the shell.
+**Open conflict:** PR [#135](https://github.com/Alexkucepalov/momentum/pull/135) (Add Food UX) touches `tokens.ts` + AddFood sheets. Soft Light reserves `tone*` wells so #135 can rebase without reverting the shell.

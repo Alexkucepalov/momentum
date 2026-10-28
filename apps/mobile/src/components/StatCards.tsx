@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, elevation, radius, space, type } from '../theme/tokens';
+import { colors, space, type } from '../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 /** Compact water + activity rows (optional; Today prefers quiet single water row). */
 export function StatCards({
@@ -26,8 +27,9 @@ export function StatCards({
 
   return (
     <View style={styles.row}>
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      <AppCard
+        padding="none"
+        style={styles.card}
         onPress={() => onAddWater(250)}
         accessibilityRole="button"
         accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
@@ -38,9 +40,10 @@ export function StatCards({
         </View>
         <Text style={styles.value}>{waterLabel}</Text>
         <Text style={styles.hintAction}>+250 мл</Text>
-      </Pressable>
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      </AppCard>
+      <AppCard
+        padding="none"
+        style={styles.card}
         onPress={() => router.push('/activity')}
         accessibilityRole="button"
         accessibilityLabel={`Активность ${activityMinutes} минут. Открыть вкладку`}
@@ -51,7 +54,7 @@ export function StatCards({
         </View>
         <Text style={styles.value}>{activityMinutes > 0 ? `${activityMinutes} мин` : '—'}</Text>
         <Text style={styles.hintAction}>{activityMinutes > 0 ? 'открыть' : 'добавить'}</Text>
-      </Pressable>
+      </AppCard>
     </View>
   );
 }
@@ -63,15 +66,11 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     flex: 1,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
     minHeight: 72,
   },
-  pressed: { opacity: 0.88 },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'center',

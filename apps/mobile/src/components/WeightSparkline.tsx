@@ -5,7 +5,8 @@ import {
   chronologicalKg,
   weightLinePoints,
 } from '../../../../src/domain/weightTrend';
-import { colors, elevation, radius, space, type } from '../theme/tokens';
+import { colors, space, type } from '../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 const VB_W = 280;
 const VB_H = 120;
@@ -86,7 +87,8 @@ export function WeightSparkline({
     : null;
 
   return (
-    <View
+    <AppCard
+      padding="md"
       style={styles.wrap}
       accessibilityRole="summary"
       accessibilityLabel={`Тренд веса: ${formatKg(first.kg)} до ${formatKg(last.kg)} килограмм, ${deltaLabel}`}
@@ -149,7 +151,7 @@ export function WeightSparkline({
           {lastDate ? <Text style={styles.legendDate}>{lastDate}</Text> : null}
         </View>
       </View>
-    </View>
+    </AppCard>
   );
 }
 
@@ -160,9 +162,6 @@ const styles = StyleSheet.create({
   },
   chart: {
     height: 148,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     overflow: 'hidden',
     position: 'relative',
   },

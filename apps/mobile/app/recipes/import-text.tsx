@@ -17,7 +17,8 @@ import {
 } from '@/src/features/recipes/importTextDraftStore';
 import { parsedRecipeToFormInitial } from '@/src/features/recipes/parsedRecipeToFormInitial';
 import { setRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 /** Per-100g macros from parser only — never invent. */
@@ -106,11 +107,11 @@ export default function ImportRecipeTextScreen() {
 
   return (
     <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <View style={styles.steps}>
+      <AppCard padding="lg" style={styles.steps}>
         <Step n={1} text="Вставь текст из чата или заметки" />
         <Step n={2} text="Проверь предпросмотр (черновик сохранится, если уйдёшь)" />
         <Step n={3} text="Открой редактор и сохрани" />
-      </View>
+      </AppCard>
 
       <View style={styles.pasteRow}>
         <Pressable
@@ -155,7 +156,7 @@ export default function ImportRecipeTextScreen() {
       />
 
       {preview && raw.trim() ? (
-        <View style={styles.preview} accessibilityLabel="Предпросмотр разбора">
+        <AppCard padding="lg" style={styles.preview} accessibilityLabel="Предпросмотр разбора">
           <Text style={styles.previewTitle}>Что распознали</Text>
           <Text style={styles.previewLine}>Название: {preview.name ?? '—'}</Text>
           <Text style={styles.previewLine}>
@@ -186,7 +187,7 @@ export default function ImportRecipeTextScreen() {
           <Text style={styles.hint}>
             Пустые Б/Ж/У — неизвестны, не ноль. В редакторе поправь только сомнительные поля.
           </Text>
-        </View>
+        </AppCard>
       ) : (
         <Text style={styles.idleHint}>Вставь текст — ниже появится разбор без выдуманных цифр.</Text>
       )}
@@ -224,10 +225,7 @@ function Step({ n, text }: { n: number; text: string }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, gap: space.lg, paddingBottom: 40 },
-  steps: { 
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+  steps: {
     padding: space.lg,
     gap: space.md,
   },
@@ -257,35 +255,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 1,
   },
   pasteBtnText: { fontWeight: '700', fontSize: type.body, color: colors.text },
   input: {
     minHeight: 240,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     padding: space.lg,
     fontSize: type.body,
     color: colors.text,
     lineHeight: 22,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: colors.surface,
   },
   preview: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    padding: space.lg,
     gap: 6,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
   },
   previewTitle: {
     fontSize: type.subtitle,

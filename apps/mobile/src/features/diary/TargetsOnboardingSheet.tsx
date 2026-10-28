@@ -146,9 +146,10 @@ const styles = StyleSheet.create({
   body: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
   label: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   input: {
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
+    borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     fontSize: type.body,
