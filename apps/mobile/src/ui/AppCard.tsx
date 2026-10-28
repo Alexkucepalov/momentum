@@ -35,6 +35,8 @@ export function AppCard({
         { padding: pad },
         style,
       ]}
+      accessibilityRole={!onPress ? accessibilityRole : undefined}
+      accessibilityLabel={!onPress ? accessibilityLabel : undefined}
     >
       {children}
     </View>
@@ -54,7 +56,7 @@ export function AppCard({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.xxl,
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   raised: {

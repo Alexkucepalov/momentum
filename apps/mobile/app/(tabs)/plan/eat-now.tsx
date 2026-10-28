@@ -34,7 +34,7 @@ import {
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type, surfaceCard } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const FILTERS: { id: EatNowFilterId; label: string }[] = [
   { id: 'all', label: 'Все' },
@@ -494,7 +494,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     paddingHorizontal: space.md,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text, paddingVertical: space.sm },
   sectionLabel: {
@@ -518,7 +520,9 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.primaryButtonText },
   cards: { gap: space.sm },
   card: {
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     gap: space.sm,
     minHeight: touchMin,

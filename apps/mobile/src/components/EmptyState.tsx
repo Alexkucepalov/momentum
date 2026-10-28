@@ -2,7 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { PrimaryButton } from './PrimaryButton';
-import { colors, radius, space, surfaceCard, type } from '../theme/tokens';
+import { colors, space, type } from '../theme/tokens';
+import { AppCard } from '@/src/ui/AppCard';
 
 export function EmptyState({
   title,
@@ -25,7 +26,11 @@ export function EmptyState({
   compact?: boolean;
 }) {
   return (
-    <View style={[styles.wrap, compact && styles.wrapCompact]} accessibilityRole="summary">
+    <AppCard
+      style={[styles.wrap, compact && styles.wrapCompact]}
+      accessibilityRole="summary"
+      padding={compact ? 'md' : 'lg'}
+    >
       <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
         <Ionicons name={icon} size={compact ? 22 : 28} color={colors.textMuted} />
       </View>
@@ -37,19 +42,16 @@ export function EmptyState({
           <PrimaryButton label={secondaryActionLabel} onPress={onSecondaryAction} />
         </View>
       ) : null}
-    </View>
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    ...surfaceCard,
-    padding: space.xl,
     marginBottom: space.lg,
     alignItems: 'center',
   },
   wrapCompact: {
-    padding: space.md,
     marginBottom: space.md,
   },
   iconWrap: {

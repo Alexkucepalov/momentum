@@ -18,7 +18,6 @@ import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { TargetsOnboardingSheet } from '@/src/features/diary/TargetsOnboardingSheet';
-import { HomeActionCards } from '@/src/features/home/HomeActionCards';
 import { HomeNutritionSplit } from '@/src/features/home/HomeNutritionSplit';
 import { HomeWeightCard } from '@/src/features/home/HomeWeightCard';
 import { useData } from '@/src/state/DataContext';
@@ -180,11 +179,6 @@ export default function TodayScreen() {
             carbG: profile.dailyCarbG,
           }}
           onPress={() => router.push('/(tabs)/food')}
-        />
-
-        <HomeActionCards
-          onStartWorkout={() => router.push('/(tabs)/activity')}
-          onLogMeal={() => setOpen(true)}
         />
 
         <SectionTitle title="Прогресс дня" />

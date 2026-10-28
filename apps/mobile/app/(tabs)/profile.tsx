@@ -15,7 +15,7 @@ import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, surfaceCard, touchMin, type } from '@/src/theme/tokens';
+import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { SoftHeader } from '@/src/ui/SoftHeader';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
@@ -757,7 +757,9 @@ const styles = StyleSheet.create({
   },
   pasteInput: {
     flex: 1,
-    ...surfaceCard,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: space.md,
     fontSize: 12,
     fontFamily: 'monospace',

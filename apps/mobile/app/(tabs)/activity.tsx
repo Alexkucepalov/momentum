@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 
@@ -14,13 +14,13 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
+import { BentoRow } from '@/src/ui/BentoRow';
+import { BentoStat } from '@/src/ui/BentoStat';
 import { Fab } from '@/src/ui/Fab';
 import { IconTile } from '@/src/ui/IconTile';
-import { ProgressRing } from '@/src/ui/ProgressRing';
 import { SectionTitle } from '@/src/ui/SectionTitle';
-import { SoftMetricCard } from '@/src/ui/SoftMetricCard';
 
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -30,7 +30,7 @@ const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Io
   { type: 'other', label: 'Другое', icon: 'fitness-outline' },
 ];
 
-/** Activity = soft mono masonry (ref 10) + quick tiles (ref 09). */
+/** Activity — Nutrition Soft Light (same language as Food/Progress). */
 export default function ActivityScreen() {
   const navigation = useNavigation();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
@@ -51,17 +51,7 @@ export default function ActivityScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => openForm('walking')}
-          accessibilityRole="button"
-          accessibilityLabel="Добавить тренировку"
-          style={styles.headerBtn}
-          hitSlop={8}
-        >
-          <Ionicons name="add" size={26} color={colors.text} />
-        </Pressable>
-      ),
+      headerRight: () => null,
     });
   }, [navigation]);
 
@@ -77,11 +67,6 @@ export default function ActivityScreen() {
     return { start, end: dates[6] ?? start, sum, days };
   }, [repo, dateLocal, revision]);
   const todayKey = localDateKey(new Date(), profile.timezone);
-
-  /** Observational: today's share of this week's logged minutes — not a goal. */
-  const dayShareOfWeek =
-    weekMinutes.sum > 0 ? Math.min(1, totalMin / weekMinutes.sum) : totalMin > 0 ? 1 : 0;
-
   const emptyWeek = workouts.length === 0 && weekMinutes.sum === 0;
 
   return (
@@ -94,51 +79,21 @@ export default function ActivityScreen() {
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <SectionTitle title="Моя активность" />
-
-        <View style={styles.masonryTop}>
-          <AppCard style={styles.heroCard} accessibilityLabel={`Минуты сегодня: ${totalMin}`}>
-            <Text style={styles.heroLabel}>Минуты</Text>
-            <ProgressRing
-              ratio={dayShareOfWeek}
-              center={String(totalMin)}
-              caption="сегодня"
-              size={120}
-              stroke={14}
-            />
-            <Text style={styles.heroMeta}>
-              {weekMinutes.sum > 0
-                ? `${weekMinutes.sum} мин за неделю · доля дня`
-                : 'пока только этот день'}
-            </Text>
-          </AppCard>
-
-          <View style={styles.sideCol}>
-            <SoftMetricCard
-              label="Тренировки"
-              value={String(workouts.length)}
-              meta="сегодня"
-              tall
-              visual={<Ionicons name="barbell-outline" size={22} color={colors.textMuted} />}
-            />
-            <SoftMetricCard
-              label="Оценка"
-              value={activityKcal != null ? String(activityKcal) : '—'}
-              meta="ккал MET"
-              tall
-              visual={<Ionicons name="flame-outline" size={22} color={colors.textMuted} />}
-            />
-          </View>
-        </View>
-
-        <SoftMetricCard
+        <SectionTitle title="Сегодня" />
+        <BentoRow>
+          <BentoStat label="Минуты" value={String(totalMin)} meta="за день" />
+          <BentoStat
+            label="Оценка"
+            value={activityKcal != null ? String(activityKcal) : '—'}
+            meta="ккал MET"
+          />
+        </BentoRow>
+        <BentoStat
           label="Неделя"
-          value={`${weekMinutes.sum}`}
+          value={String(weekMinutes.sum)}
           meta={`мин · ${formatWeekRangeRu(weekMinutes.start, weekMinutes.end)}`}
           wide
-          accessibilityLabel={`Неделя: ${weekMinutes.sum} минут`}
         />
-
         <Text style={styles.summaryHint}>
           Ккал тренировок не вычитаются из еды — только факт движения
         </Text>
@@ -226,40 +181,8 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, paddingBottom: 120 },
-  headerBtn: {
-    minWidth: touchMin,
-    minHeight: touchMin,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: space.sm,
-  },
-  masonryTop: {
-    flexDirection: 'row',
-    gap: space.sm,
-    marginBottom: space.sm,
-  },
-  heroCard: {
-    flex: 1.35,
-    minHeight: 220,
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  heroLabel: {
-    alignSelf: 'flex-start',
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  heroMeta: {
-    fontSize: type.micro,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  sideCol: { flex: 1, gap: space.sm },
   summaryHint: {
     marginBottom: space.md,
-    marginTop: space.sm,
     fontSize: type.caption,
     color: colors.textMuted,
   },
@@ -270,7 +193,6 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   emptyDay: {
-    padding: space.lg,
     marginBottom: space.md,
   },
   emptyDayText: {
