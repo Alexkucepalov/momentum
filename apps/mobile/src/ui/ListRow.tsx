@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, space, touchMin, type } from '@/src/theme/tokens';
 import { MetaPill } from './MetaPill';
 
-/** Nutrition-ref food/plan row: square icon · title · pills · trailing. */
+/** Canonical list row: circular glyph · title · pills · trailing. */
 export function ListRow({
   title,
   pills,

@@ -3,25 +3,27 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, space, type } from '@/src/theme/tokens';
 import { AppCard } from './AppCard';
 
-/** Progress/Activity bento cell — large number + label (ref 05). */
+/** Canonical metric cell — large number + label (Nutrition Soft Light). */
 export function BentoStat({
   label,
   value,
   meta,
   wide,
   onPress,
+  accessibilityLabel,
 }: {
   label: string;
   value: string;
   meta?: string;
   wide?: boolean;
   onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
   return (
     <AppCard
       onPress={onPress}
       style={[styles.card, wide && styles.wide]}
-      accessibilityLabel={`${label}: ${value}`}
+      accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
     >
       <Text style={styles.label}>{label}</Text>
       <View style={styles.valueRow}>

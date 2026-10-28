@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { BentoStat } from './BentoStat';
 
 /**
- * @deprecated Use `BentoStat`. Kept for temporary call-site compatibility.
- * `visual` / `tall` ignored — Nutrition Soft Light uses one metric cell.
+ * @deprecated Use `BentoStat`. Compat alias for Nutrition Soft Light (PR-A).
+ * `visual` / `tall` are ignored — one metric cell pattern only.
  */
 export function SoftMetricCard({
   label,
@@ -23,6 +23,14 @@ export function SoftMetricCard({
   onPress?: () => void;
   accessibilityLabel?: string;
 }) {
-  void accessibilityLabel;
-  return <BentoStat label={label} value={value} meta={meta} wide={wide} onPress={onPress} />;
+  return (
+    <BentoStat
+      label={label}
+      value={value}
+      meta={meta}
+      wide={wide}
+      onPress={onPress}
+      accessibilityLabel={accessibilityLabel}
+    />
+  );
 }
