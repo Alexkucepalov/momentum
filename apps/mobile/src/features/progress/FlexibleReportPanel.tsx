@@ -183,6 +183,7 @@ export function FlexibleReportPanel() {
       <Text style={styles.hint}>{selectedLabel}</Text>
 
       <PrimaryButton
+        variant="secondary"
         label={busy ? 'Собираю…' : Platform.OS === 'web' ? 'Открыть отчёт' : 'Сформировать PDF'}
         onPress={() => void generate()}
         disabled={busy || cats.length === 0}
@@ -219,13 +220,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 8,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.accentSoft,
   },
-  chipOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+  chipOn: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.text },
   chipText: { fontSize: type.micro, fontWeight: '600', color: colors.textSecondary },
-  chipTextOn: { color: colors.primaryButtonText },
+  chipTextOn: { color: colors.text, fontWeight: '800' },
   dateRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.lg },
   dateCol: { flex: 1 },
   micro: { fontSize: type.micro, color: colors.textMuted, marginBottom: 4, fontWeight: '700' },
