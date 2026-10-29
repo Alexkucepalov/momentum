@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { formatDateRu } from '../../../../../../src/domain/dateFormatRu';
-import { shiftDateLocal } from '../../../../../../src/domain/repeatMeal';
+import { datesInWeekFromStart, weekStartMonday } from '../../../../../../src/domain/habitWeek';
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
@@ -17,6 +15,18 @@ const MEALS: Array<{ id: MealSlot; label: string }> = [
 ];
 
 export type MoveCopyMode = 'move' | 'copy';
+
+function dayTitle(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const label = dt.toLocaleDateString('ru-RU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 export function MoveCopySheet({
   visible,
@@ -33,11 +43,10 @@ export function MoveCopySheet({
   onClose: () => void;
   onConfirm: (args: { dateLocal: string; meal: MealSlot }) => void;
 }) {
-  const dayOptions = useMemo(() => {
-    const out: string[] = [];
-    for (let i = -3; i <= 7; i++) out.push(shiftDateLocal(anchorDate, i));
-    return out;
-  }, [anchorDate]);
+  const dayOptions = useMemo(
+    () => datesInWeekFromStart(weekStartMonday(anchorDate)),
+    [anchorDate],
+  );
 
   const [dateLocal, setDateLocal] = useState(meal?.dateLocal ?? anchorDate);
   const [slot, setSlot] = useState<MealSlot>(meal?.meal ?? 'lunch');
@@ -47,62 +56,58 @@ export function MoveCopySheet({
       setDateLocal(meal.dateLocal);
       setSlot(meal.meal);
     }
-  }, [meal?.id, visible]);
+  }, [meal?.id, visible, meal?.dateLocal, meal?.meal]);
 
   if (!meal) return null;
 
+  const title = mode === 'move' ? 'Переместить блюдо' : 'Копировать блюдо';
+  const action = mode === 'move' ? 'Переместить' : 'Копировать';
+
   return (
-    <SwipeToDismissSheet visible={visible} onClose={onClose} maxHeightRatio={0.72}>
+    <SwipeToDismissSheet visible={visible} onClose={onClose} maxHeightRatio={0.86}>
       <FormScrollView variant="sheet" contentContainerStyle={styles.body}>
         <Text style={styles.title} accessibilityRole="header">
-          {mode === 'move' ? 'Перенести' : 'Копировать'}
+          {title}
         </Text>
         <Text style={styles.sub} numberOfLines={2}>
           {meal.displayName}
         </Text>
+        <Text style={styles.question}>
+          {mode === 'move' ? 'Куда переместить?' : 'Куда скопировать?'}
+        </Text>
+        <Text style={styles.note}>
+          {mode === 'copy'
+            ? 'Оригинал в этот день не меняется.'
+            : 'Блюдо исчезнет с текущего места.'}
+        </Text>
 
-        <Text style={styles.label}>День</Text>
-        <View style={styles.row}>
-          {dayOptions.map((d) => {
-            const on = d === dateLocal;
-            return (
-              <Pressable
-                key={d}
-                onPress={() => setDateLocal(d)}
-                style={[styles.chip, on && styles.chipOn]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={formatDateRu(d)}
-              >
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{formatDateRu(d)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {dayOptions.map((iso) => (
+          <RadioRow
+            key={iso}
+            label={dayTitle(iso)}
+            selected={iso === dateLocal}
+            onPress={() => setDateLocal(iso)}
+          />
+        ))}
 
-        <Text style={styles.label}>Приём</Text>
-        <View style={styles.row}>
-          {MEALS.map((m) => {
-            const on = m.id === slot;
-            return (
-              <Pressable
-                key={m.id}
-                onPress={() => setSlot(m.id)}
-                style={[styles.chip, on && styles.chipOn]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={m.label}
-              >
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{m.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Text style={styles.question}>Приём</Text>
+        {MEALS.map((item) => (
+          <RadioRow
+            key={item.id}
+            label={item.label}
+            selected={item.id === slot}
+            onPress={() => setSlot(item.id)}
+          />
+        ))}
 
-        <PrimaryButton
-          label={mode === 'move' ? 'Перенести' : 'Скопировать'}
+        <Pressable
           onPress={() => onConfirm({ dateLocal, meal: slot })}
-        />
+          style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={action}
+        >
+          <Text style={styles.primaryText}>{action}</Text>
+        </Pressable>
         <Pressable onPress={onClose} style={styles.cancel} accessibilityRole="button">
           <Text style={styles.cancelText}>Отмена</Text>
         </Pressable>
@@ -111,27 +116,91 @@ export function MoveCopySheet({
   );
 }
 
+function RadioRow({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.radioRow, pressed && styles.pressed]}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+    >
+      <View style={[styles.radio, selected && styles.radioOn]}>
+        {selected ? <View style={styles.radioDot} /> : null}
+      </View>
+      <Text style={styles.radioLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.md },
+  body: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: 0 },
   title: { fontSize: type.title, fontWeight: '800', color: colors.text },
-  sub: { fontSize: type.body, color: colors.textSecondary, marginTop: -space.sm },
-  label: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: {
-    minHeight: 40,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
+  sub: {
+    fontSize: type.body,
+    color: colors.textSecondary,
+    marginTop: space.xs,
+    marginBottom: space.md,
+  },
+  question: {
+    fontSize: type.body,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: space.md,
+    marginBottom: space.xs,
+  },
+  note: { fontSize: type.caption, color: colors.textMuted, marginBottom: space.sm },
+  radioRow: {
+    minHeight: touchMin,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  chipOn: { backgroundColor: colors.primaryButton },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  chipTextOn: { color: colors.primaryButtonText },
+  radioOn: { borderColor: colors.text, backgroundColor: colors.text },
+  radioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surface,
+  },
+  radioLabel: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
+  primary: {
+    minHeight: touchMin,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: space.lg,
+  },
+  primaryText: { color: colors.primaryButtonText, fontWeight: '800', fontSize: type.body },
   cancel: {
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: space.sm,
   },
   cancelText: { fontWeight: '700', color: colors.textSecondary },
+  pressed: { opacity: 0.88 },
 });

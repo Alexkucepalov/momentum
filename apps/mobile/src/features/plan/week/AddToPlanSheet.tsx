@@ -6,12 +6,19 @@ import {
   defaultProductPortionGrams,
   defaultRecipePortionGrams,
 } from '../../../../../../src/domain/defaultPortionGrams';
-import { unifiedFoodSearch } from '../../../../../../src/domain/unifiedFoodSearch';
-import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../../../src/storage/types';
+import { portion } from '../../../../../../src/domain/nutrition';
+import { nutritionForRecipePortion } from '../../../../../../src/domain/recipeNutrition';
+import type {
+  FoodEntry,
+  FoodProduct,
+  MealSlot,
+  Recipe,
+  RecipeIngredient,
+} from '../../../../../../src/storage/types';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { SegmentedControl } from '@/src/ui/SegmentedControl';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -20,15 +27,30 @@ const MEAL_LABELS: Record<MealSlot, string> = {
   snack: 'Перекус',
 };
 
+type CatalogTab = 'recent' | 'recipes' | 'products';
+
+type PickRow = {
+  key: string;
+  name: string;
+  grams: number;
+  kcal: number | null;
+  recipeId: string | null;
+  productId: string | null;
+};
+
+function kcalText(kcal: number | null): string {
+  return kcal == null ? '— ккал' : `${Math.round(kcal)} ккал`;
+}
+
 export function AddToPlanSheet({
   visible,
   slot,
-  dateLocal,
   products,
   recipes,
   recent,
   lastGramsForProduct,
   lastGramsForRecipe,
+  getRecipeIngredients,
   onClose,
   onAdd,
 }: {
@@ -40,6 +62,7 @@ export function AddToPlanSheet({
   recent: FoodEntry[];
   lastGramsForProduct: (id: string) => number | null;
   lastGramsForRecipe: (id: string) => number | null;
+  getRecipeIngredients: (id: string) => RecipeIngredient[];
   onClose: () => void;
   onAdd: (input: {
     displayName: string;
@@ -49,25 +72,99 @@ export function AddToPlanSheet({
   }) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [grams, setGrams] = useState('150');
-  const [picked, setPicked] = useState<{
-    displayName: string;
-    recipeId: string | null;
-    productId: string | null;
-  } | null>(null);
+  const [tab, setTab] = useState<CatalogTab>('recipes');
 
-  const hits = useMemo(
-    () =>
-      query.trim()
-        ? unifiedFoodSearch({ query, products, recipes, recent }).slice(0, 24)
-        : [],
-    [query, products, recipes, recent],
-  );
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const match = (name: string) => !q || name.toLowerCase().includes(q);
+
+    if (tab === 'recent') {
+      const seen = new Set<string>();
+      const out: PickRow[] = [];
+      for (const entry of recent) {
+        const key = `${entry.displayName}|${entry.recipeId ?? ''}|${entry.productId ?? ''}`;
+        if (seen.has(key) || !match(entry.displayName)) continue;
+        seen.add(key);
+        out.push({
+          key: `e-${entry.id}`,
+          name: entry.displayName,
+          grams: entry.grams,
+          kcal: entry.energyKcal,
+          recipeId: entry.recipeId,
+          productId: entry.productId,
+        });
+        if (out.length >= 24) break;
+      }
+      return out;
+    }
+
+    if (tab === 'recipes') {
+      return recipes
+        .filter((recipe) => match(recipe.name))
+        .slice(0, 24)
+        .map((recipe) => {
+          const grams = defaultRecipePortionGrams(
+            lastGramsForRecipe(recipe.id),
+            recipe.cookedYieldG,
+          );
+          let kcal: number | null = null;
+          try {
+            kcal = nutritionForRecipePortion(
+              recipe,
+              getRecipeIngredients(recipe.id),
+              grams,
+            ).kcal;
+          } catch {
+            kcal = null;
+          }
+          return {
+            key: `r-${recipe.id}`,
+            name: recipe.name,
+            grams,
+            kcal,
+            recipeId: recipe.id,
+            productId: null,
+          };
+        });
+    }
+
+    return products
+      .filter((product) => match(product.name))
+      .slice(0, 24)
+      .map((product) => {
+        const grams = defaultProductPortionGrams(lastGramsForProduct(product.id));
+        const nutrition = portion(
+          {
+            kcal: product.energyKcal,
+            protein: product.proteinG,
+            fat: product.fatG,
+            carbs: product.carbG,
+          },
+          grams,
+        );
+        return {
+          key: `p-${product.id}`,
+          name: product.name,
+          grams,
+          kcal: nutrition.kcal,
+          recipeId: null,
+          productId: product.id,
+        };
+      });
+  }, [
+    tab,
+    query,
+    recent,
+    recipes,
+    products,
+    lastGramsForProduct,
+    lastGramsForRecipe,
+    getRecipeIngredients,
+  ]);
 
   const reset = () => {
     setQuery('');
-    setGrams('150');
-    setPicked(null);
+    setTab('recipes');
   };
 
   const close = () => {
@@ -75,26 +172,45 @@ export function AddToPlanSheet({
     onClose();
   };
 
+  const add = (row: PickRow) => {
+    if (!Number.isFinite(row.grams) || row.grams <= 0) return;
+    onAdd({
+      displayName: row.name,
+      grams: row.grams,
+      recipeId: row.recipeId,
+      productId: row.productId,
+    });
+    reset();
+  };
+
   if (!slot) return null;
 
   return (
-    <SwipeToDismissSheet
-      visible={visible}
-      onClose={close}
-      maxHeightRatio={0.88}
-    >
+    <SwipeToDismissSheet visible={visible} onClose={close} maxHeightRatio={0.92}>
       <FormScrollView variant="sheet" contentContainerStyle={styles.body}>
-        <Text style={styles.title} accessibilityRole="header">
-          В план · {MEAL_LABELS[slot]}
-        </Text>
-        <Text style={styles.sub}>Не попадёт в дневник, пока не нажмёшь «В дневник».</Text>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.kicker}>{MEAL_LABELS[slot]}</Text>
+            <Text style={styles.title} accessibilityRole="header">
+              Добавить блюдо
+            </Text>
+          </View>
+          <Pressable
+            onPress={close}
+            style={styles.close}
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть"
+          >
+            <Ionicons name="close" size={20} color={colors.text} />
+          </Pressable>
+        </View>
 
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Рецепт или продукт"
+            placeholder="Поиск рецептов и продуктов"
             placeholderTextColor={colors.textMuted}
             style={styles.searchInput}
             accessibilityLabel="Поиск для плана"
@@ -103,172 +219,104 @@ export function AddToPlanSheet({
           />
         </View>
 
-        {picked ? (
-          <View style={styles.picked}>
-            <Text style={styles.pickedName}>{picked.displayName}</Text>
-            <Text style={styles.label}>Порция, г</Text>
-            <TextInput
-              value={grams}
-              onChangeText={setGrams}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              accessibilityLabel="Порция в граммах"
-            />
-            <PrimaryButton
-              label="Добавить в план"
-              onPress={() => {
-                const g = Number(grams.replace(',', '.'));
-                if (!Number.isFinite(g) || g <= 0) return;
-                onAdd({
-                  displayName: picked.displayName,
-                  grams: g,
-                  recipeId: picked.recipeId,
-                  productId: picked.productId,
-                });
-                reset();
-              }}
-            />
-            <Pressable onPress={() => setPicked(null)} style={styles.cancel}>
-              <Text style={styles.cancelText}>Выбрать другое</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {query.trim() && hits.length === 0 ? (
-              <Text style={styles.empty}>Ничего не найдено</Text>
-            ) : null}
-            {hits.map((hit) => {
-              if (hit.kind === 'recipe') {
-                const r = hit.recipe;
-                return (
-                  <Pressable
-                    key={`r-${r.id}`}
-                    style={styles.row}
-                    onPress={() => {
-                      setPicked({
-                        displayName: r.name,
-                        recipeId: r.id,
-                        productId: null,
-                      });
-                      setGrams(
-                        String(
-                          defaultRecipePortionGrams(lastGramsForRecipe(r.id), r.cookedYieldG),
-                        ),
-                      );
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Рецепт ${r.name}`}
-                  >
-                    <Ionicons name="restaurant-outline" size={18} color={colors.fat} />
-                    <Text style={styles.rowText} numberOfLines={2}>
-                      {r.name}
-                    </Text>
-                  </Pressable>
-                );
-              }
-              if (hit.kind === 'product') {
-                const p = hit.product;
-                return (
-                  <Pressable
-                    key={`p-${p.id}`}
-                    style={styles.row}
-                    onPress={() => {
-                      setPicked({
-                        displayName: p.name,
-                        recipeId: null,
-                        productId: p.id,
-                      });
-                      setGrams(
-                        String(defaultProductPortionGrams(lastGramsForProduct(p.id))),
-                      );
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Продукт ${p.name}`}
-                  >
-                    <Ionicons name="nutrition-outline" size={18} color={colors.protein} />
-                    <Text style={styles.rowText} numberOfLines={2}>
-                      {p.name}
-                    </Text>
-                  </Pressable>
-                );
-              }
-              const e = hit.entry;
-              return (
-                <Pressable
-                  key={`e-${e.id}`}
-                  style={styles.row}
-                  onPress={() => {
-                    setPicked({
-                      displayName: e.displayName,
-                      recipeId: e.recipeId,
-                      productId: e.productId,
-                    });
-                    setGrams(String(e.grams));
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Недавнее ${e.displayName}`}
-                >
-                  <Ionicons name="time-outline" size={18} color={colors.carbs} />
-                  <Text style={styles.rowText} numberOfLines={2}>
-                    {e.displayName}
-                  </Text>
-                </Pressable>
-              );
-            })}
-            {!query.trim() ? (
-              <Text style={styles.hint}>Начни ввод — поиск по рецептам и продуктам.</Text>
-            ) : null}
-          </View>
-        )}
+        <SegmentedControl
+          dense
+          value={tab}
+          options={[
+            { id: 'recent', label: 'Недавние' },
+            { id: 'recipes', label: 'Рецепты' },
+            { id: 'products', label: 'Продукты' },
+          ]}
+          onChange={setTab}
+        />
 
-        <Pressable onPress={close} style={styles.cancel} accessibilityRole="button">
-          <Text style={styles.cancelText}>Отмена</Text>
-        </Pressable>
+        {rows.length === 0 ? (
+          <Text style={styles.empty}>
+            {query.trim() ? 'Ничего не найдено' : 'В этом разделе пока пусто'}
+          </Text>
+        ) : (
+          rows.map((row) => (
+            <View key={row.key} style={styles.row}>
+              <View style={styles.mark}>
+                <Text style={styles.markText}>{row.name.slice(0, 1).toUpperCase()}</Text>
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.name} numberOfLines={2}>
+                  {row.name}
+                </Text>
+                <Text style={styles.meta}>
+                  {Math.round(row.grams)} г · {kcalText(row.kcal)}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => add(row)}
+                style={({ pressed }) => [styles.plus, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Добавить ${row.name}`}
+              >
+                <Text style={styles.plusText}>+</Text>
+              </Pressable>
+            </View>
+          ))
+        )}
       </FormScrollView>
     </SwipeToDismissSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.md },
+  body: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.sm },
+  header: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  headerText: { flex: 1, gap: 2 },
+  kicker: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
   title: { fontSize: type.title, fontWeight: '800', color: colors.text },
-  sub: { fontSize: type.caption, color: colors.textSecondary, marginTop: -space.sm },
+  close: {
+    width: touchMin,
+    height: touchMin,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   searchBox: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    minHeight: touchMin,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    minHeight: touchMin,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.pill,
     paddingHorizontal: space.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
-  list: { gap: space.sm },
+  empty: { color: colors.textMuted, fontSize: type.body, paddingVertical: space.md },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
-    minHeight: touchMin,
-    paddingHorizontal: space.md,
+    gap: space.md,
+    minHeight: 64,
+    paddingVertical: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
-  rowText: { flex: 1, fontWeight: '700', color: colors.text, fontSize: type.body },
-  empty: { color: colors.textMuted, fontSize: type.body },
-  hint: { fontSize: type.caption, color: colors.textMuted, lineHeight: 18 },
-  picked: { gap: space.sm },
-  pickedName: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  label: { fontSize: type.caption, fontWeight: '700', color: colors.textMuted },
-  input: {
-    minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
+  mark: {
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    backgroundColor: colors.surface,
-    fontSize: type.body,
-    color: colors.text,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cancel: { minHeight: touchMin, alignItems: 'center', justifyContent: 'center' },
-  cancelText: { fontWeight: '700', color: colors.textSecondary },
+  markText: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
+  rowText: { flex: 1, gap: 2 },
+  name: { fontSize: type.body, fontWeight: '700', color: colors.text },
+  meta: { fontSize: type.caption, color: colors.textSecondary },
+  plus: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusText: { fontSize: 22, fontWeight: '500', color: colors.text, marginTop: -2 },
+  pressed: { opacity: 0.7 },
 });

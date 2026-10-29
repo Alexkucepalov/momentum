@@ -289,6 +289,11 @@ function WeekPlannerBody() {
             days={weekDays}
             summaries={weekSummaries}
             targetKcal={profile.dailyEnergyKcal}
+            targets={{
+              proteinG: profile.dailyProteinG,
+              fatG: profile.dailyFatG,
+              carbG: profile.dailyCarbG,
+            }}
             selected={selectedDate}
             onSelect={selectDate}
           />
@@ -405,6 +410,7 @@ function WeekPlannerBody() {
         recent={recent}
         lastGramsForProduct={(id) => repo.lastGramsForProduct(id)}
         lastGramsForRecipe={(id) => repo.lastGramsForRecipe(id)}
+        getRecipeIngredients={(id) => repo.getRecipeIngredients(id)}
         onClose={() => setAddSlot(null)}
         onAdd={(input) => {
           if (!addSlot) return;

@@ -23,7 +23,7 @@ export function DayNutritionBar({
     return (
       <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План дня пуст">
         <View style={styles.kcalRow}>
-          <Text style={styles.kcal}>—</Text>
+          <Text style={styles.kcalEmpty}>—</Text>
           <Text style={styles.kcalUnit}>ккал</Text>
         </View>
         <Text style={styles.emptyBody}>День без плана. Добавьте первое блюдо — это ещё не дневник.</Text>
@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
   },
   kcalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   kcal: { fontSize: type.hero, fontWeight: '800', color: colors.text, lineHeight: 40 },
+  kcalEmpty: { fontSize: type.title, fontWeight: '600', color: colors.textMuted, lineHeight: 28 },
   kcalUnit: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
   macros: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   macroItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
