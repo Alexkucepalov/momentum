@@ -10,10 +10,11 @@ import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
-import { WeightSparkline } from '@/src/components/WeightSparkline';
+import { WEEKDAY_SHORT_RU_CAP } from '@/src/components/weekFormat';
 import { ChallengesPanel } from '@/src/features/challenges/ChallengesPanel';
 import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
+import { ProgressWeightHero } from '@/src/features/progress/ProgressWeightHero';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { WeightLogSheet } from '@/src/features/progress/WeightLogSheet';
 import { useData } from '@/src/state/DataContext';
@@ -27,21 +28,20 @@ import { SectionTitle } from '@/src/ui/SectionTitle';
 import { SegmentedControl } from '@/src/ui/SegmentedControl';
 import { SoftHeader } from '@/src/ui/SoftHeader';
 
-type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
+type ProgressTab = 'overview' | 'body' | 'food' | 'habits';
 
 const TABS: { id: ProgressTab; label: string }[] = [
+  { id: 'overview', label: 'Обзор' },
   { id: 'body', label: 'Тело' },
-  { id: 'food', label: 'Питание' },
-  { id: 'sport', label: 'Спорт' },
+  { id: 'food', label: 'Еда' },
   { id: 'habits', label: 'Привычки' },
-  { id: 'summary', label: 'Итоги' },
 ];
 
 export default function ProgressScreen() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
-  const [tab, setTab] = useState<ProgressTab>('summary');
+  const [tab, setTab] = useState<ProgressTab>('overview');
   const [lastExport, setLastExport] = useState<string | null>(null);
   const [weightOpen, setWeightOpen] = useState(false);
   const profile = repo.getProfile();
@@ -111,6 +111,25 @@ export default function ProgressScreen() {
     return { text: `За неделю ${sign}${delta} кг`, signed: delta };
   }, [weights]);
 
+  const weightBars = useMemo(() => {
+    const chrono = [...weights].reverse().slice(-7).map((w) => w.kg);
+    if (chrono.length === 0) return [];
+    const min = Math.min(...chrono);
+    const max = Math.max(...chrono);
+    const span = max - min;
+    return chrono.map((k) => (span <= 0 ? 0.55 : 0.2 + ((k - min) / span) * 0.8));
+  }, [weights]);
+
+  const loggedFoodDays = weekDays.filter((d) => d.entryCount > 0).length;
+  const weightHint = latest
+    ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'наблюдение, не цель';
+
   const onExport = async () => {
     const json = repo.exportAll();
     setLastExport(json);
@@ -156,34 +175,32 @@ export default function ProgressScreen() {
     <View style={styles.root}>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <SoftHeader eyebrow="Наблюдения" title="Прогресс" />
+        <ProgressWeightHero
+          kg={latest?.kg ?? null}
+          deltaLabel={weekWeightDelta?.text ?? null}
+          deltaSigned={weekWeightDelta?.signed ?? 0}
+          hint={weightHint}
+          bars={weightBars}
+          onLog={() => setWeightOpen(true)}
+        />
+        <BentoRow>
+          <BentoStat
+            label="ЕДА"
+            value={`${loggedFoodDays}/7`}
+            meta="дней с записями"
+            onPress={() => setTab('food')}
+          />
+          <BentoStat
+            label="ДВИЖЕНИЕ"
+            value={String(sportWeekMinutes.mins)}
+            meta={`${sportWeekMinutes.count} тренировок`}
+            onPress={() => router.push('/(tabs)/activity')}
+          />
+        </BentoRow>
+        <Text style={styles.note}>
+          Минуты — факт. Оценка ккал тренировки не вычитается из еды.
+        </Text>
         <SegmentedControl dense value={tab} options={TABS} onChange={setTab} />
-
-        {tab === 'summary' ? (
-          <>
-            <SectionTitle title="Неделя" />
-            <BentoRow>
-              <BentoStat
-                label="ВЕС"
-                value={latest ? String(latest.kg) : '—'}
-                meta={latest ? 'кг' : 'добавь запись'}
-                onPress={() => setTab('body')}
-              />
-              <BentoStat
-                label="ТРЕНИРОВКИ"
-                value={String(sportWeekMinutes.count)}
-                meta={`${sportWeekMinutes.mins} мин`}
-                onPress={() => router.push('/(tabs)/activity')}
-              />
-            </BentoRow>
-            <BentoStat
-              label="ОБЪЁМ НЕДЕЛИ"
-              value={`${sportWeekMinutes.mins}`}
-              meta="мин"
-              wide
-            />
-            <WeeklyInsightCard insight={weekInsight} />
-          </>
-        ) : null}
 
         {tab === 'habits' ? (
           <>
@@ -197,51 +214,17 @@ export default function ProgressScreen() {
         {tab === 'body' ? (
           <>
             <AppCard style={styles.card}>
-              <Text style={styles.cardTitle}>ВЕС</Text>
-              <Text style={styles.cardValue}>{latest ? `${latest.kg} кг` : '—'}</Text>
-              {weekWeightDelta ? (
-                <Text
-                  style={[
-                    styles.weightDelta,
-                    weekWeightDelta.signed !== 0 && styles.weightDeltaFocus,
-                  ]}
-                  accessibilityLabel={weekWeightDelta.text}
-                >
-                  {weekWeightDelta.text}
-                  {weekWeightDelta.signed > 0 ? ' ↑' : weekWeightDelta.signed < 0 ? ' ↓' : ''}
-                </Text>
-              ) : null}
-              <Text style={styles.cardHint}>
-                {latest
-                  ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'добавь первое значение — это наблюдение, не цель'}
-              </Text>
-
-              <WeightSparkline
-                weightsNewestFirst={weights.map((w) => w.kg)}
-                entriesNewestFirst={weights.map((w) => ({ kg: w.kg, weighedAt: w.weighedAt }))}
-              />
-
-              <PrimaryButton label="Записать вес" onPress={() => setWeightOpen(true)} />
-            </AppCard>
-
-            <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>ИМТ и здоровье</Text>
               {bmiInfo ? (
                 <>
-                  <Text style={styles.cardValue}>{formatBmi(bmiInfo.value)}</Text>
+                  <Text style={styles.bmiValue}>{formatBmi(bmiInfo.value)}</Text>
                   <Text style={styles.bmiLabel}>{bmiInfo.band.labelRu}</Text>
                   <Text style={styles.cardHint}>{bmiInfo.band.rangeRu}</Text>
                   <Text style={styles.healthBody}>{bmiInfo.band.hintRu}</Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.cardValue}>—</Text>
+                  <Text style={styles.bmiValue}>—</Text>
                   <Text style={styles.cardHint}>
                     {profile.heightCm == null
                       ? 'Укажи рост в Профиле и вес выше — появится ИМТ'
@@ -268,6 +251,7 @@ export default function ProgressScreen() {
                   {weights.map((w) => (
                     <ListRow
                       key={w.id}
+                      divided={weights[0]?.id !== w.id}
                       title={`${w.kg} кг`}
                       meta={new Date(w.weighedAt).toLocaleString('ru-RU', {
                         day: 'numeric',
@@ -295,53 +279,51 @@ export default function ProgressScreen() {
               onSelectDate={setDateLocal}
               timeZone={profile.timezone}
             />
-            <AppCard style={styles.card}>
-              <Text style={styles.cardTitle}>Питание за неделю</Text>
-              <Text style={styles.cardValue}>
-                {weekDays.filter((d) => d.entryCount > 0).length} / 7 дней
-              </Text>
-              <Text style={styles.cardHint}>
-                График — только здесь. Неизвестные ккал не считаем нулём.
-              </Text>
-              {weekDays.map((d) => (
-                <View key={d.dateLocal} style={styles.foodRow}>
-                  <Text style={styles.foodDay}>{d.dateLocal.slice(5)}</Text>
-                  <Text style={styles.foodMeta}>
-                    {d.entryCount > 0
-                      ? d.energyKcal != null
-                        ? `${Math.round(d.energyKcal)} ккал · ${d.entryCount}`
-                        : `ккал неизв. · ${d.entryCount}`
-                      : '—'}
-                  </Text>
-                </View>
-              ))}
+            <SectionTitle title="По дням" />
+            <AppCard padding="none" style={styles.listCard}>
+              {weekDays.map((d, index) => {
+                const trailing =
+                  d.entryCount === 0
+                    ? '—'
+                    : d.energyKcal != null
+                      ? String(Math.round(d.energyKcal))
+                      : '—';
+                const meta =
+                  d.entryCount === 0
+                    ? 'нет записей'
+                    : d.energyKcal == null
+                      ? `ккал неизвестны · ${d.entryCount}`
+                      : `${d.entryCount} записей`;
+                return (
+                  <ListRow
+                    key={d.dateLocal}
+                    divided={index > 0}
+                    title={`${WEEKDAY_SHORT_RU_CAP[d.weekdayIndex]} ${d.dateLocal.slice(8)}`}
+                    meta={meta}
+                    trailing={trailing}
+                    iconName="restaurant-outline"
+                    onPress={() => setDateLocal(d.dateLocal)}
+                    accessibilityLabel={`${d.dateLocal}, ${meta}`}
+                  />
+                );
+              })}
             </AppCard>
           </>
         ) : null}
 
-        {tab === 'sport' ? (
-          <AppCard style={styles.card}>
-            <Text style={styles.cardTitle}>Спорт за неделю</Text>
-            <Text style={styles.cardValue}>{sportWeekMinutes.count} тренировок</Text>
-            <Text style={styles.cardHint}>{sportWeekMinutes.mins} мин суммарно</Text>
-            <Text style={styles.healthBody}>
-              Оценка энергии — ориентир по MET, не вычитается из дневника еды.
-            </Text>
-            <PrimaryButton
-              variant="secondary"
-              label="Открыть активность →"
-              onPress={() => router.push('/(tabs)/activity')}
-            />
-          </AppCard>
-        ) : null}
-
-        {tab === 'summary' ? (
+        {tab === 'overview' ? (
           <>
+            <SectionTitle title="Неделя" />
+            <WeeklyInsightCard insight={weekInsight} />
             <FlexibleReportPanel />
             <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>Бэкап</Text>
               <Text style={styles.cardHint}>Экспорт JSON · полное удаление в Профиле</Text>
-              <PrimaryButton label="Экспорт JSON" onPress={() => void onExport()} />
+              <PrimaryButton
+                variant="secondary"
+                label="Экспорт JSON"
+                onPress={() => void onExport()}
+              />
               {lastExport ? (
                 <View style={styles.preview}>
                   <Text style={styles.previewLabel}>Превью</Text>
@@ -374,6 +356,20 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     color: colors.textMuted,
     marginBottom: space.sm,
+  },
+  note: {
+    marginTop: -space.sm,
+    marginBottom: space.md,
+    fontSize: type.caption,
+    color: colors.textMuted,
+    lineHeight: 18,
+  },
+  bmiValue: {
+    fontSize: type.title,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -0.6,
+    marginTop: space.xs,
   },
   card: {
     marginBottom: space.md,
