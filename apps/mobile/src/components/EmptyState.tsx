@@ -2,8 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { PrimaryButton } from './PrimaryButton';
-import { colors, space, type } from '../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
+import { colors, radius, space, type } from '../theme/tokens';
 
 export function EmptyState({
   title,
@@ -26,11 +25,7 @@ export function EmptyState({
   compact?: boolean;
 }) {
   return (
-    <AppCard
-      style={[styles.wrap, compact && styles.wrapCompact]}
-      accessibilityRole="summary"
-      padding={compact ? 'md' : 'lg'}
-    >
+    <View style={[styles.wrap, compact && styles.wrapCompact]} accessibilityRole="summary">
       <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
         <Ionicons name={icon} size={compact ? 22 : 28} color={colors.textMuted} />
       </View>
@@ -39,23 +34,25 @@ export function EmptyState({
       {actionLabel && onAction ? <PrimaryButton label={actionLabel} onPress={onAction} /> : null}
       {secondaryActionLabel && onSecondaryAction ? (
         <View style={styles.secondaryWrap}>
-          <PrimaryButton
-            variant="secondary"
-            label={secondaryActionLabel}
-            onPress={onSecondaryAction}
-          />
+          <PrimaryButton label={secondaryActionLabel} onPress={onSecondaryAction} />
         </View>
       ) : null}
-    </AppCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.xl,
     marginBottom: space.lg,
     alignItems: 'center',
   },
   wrapCompact: {
+    padding: space.md,
     marginBottom: space.md,
   },
   iconWrap: {
@@ -75,7 +72,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: type.subtitle,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.text,
     marginBottom: space.sm,
     textAlign: 'center',

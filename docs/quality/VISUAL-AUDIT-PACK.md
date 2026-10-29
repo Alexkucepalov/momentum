@@ -4,14 +4,13 @@
 
 | Поле | Значение |
 |------|----------|
-| Каталог PNG (актуальный) | [`visual-audit-pack/2026-10-24-screens/`](./visual-audit-pack/2026-10-24-screens/) (**~50** файлов, ADR-009 / Plan tab) |
-| Индекс | [`visual-audit-pack/2026-10-24-screens/README.md`](./visual-audit-pack/2026-10-24-screens/README.md) |
-| Скрипт | `scripts/capture-screens-2026-10-24.mjs` (legacy: `capture-visual-audit-pack.mjs`) |
-| Архив 2026-10-21 | [`visual-audit-pack/`](./visual-audit-pack/) — до среза запасов/покупок |
+| Каталог PNG | [`visual-audit-pack/`](./visual-audit-pack/) (**47** файлов) |
+| Индекс | [`visual-audit-pack/README.md`](./visual-audit-pack/README.md) |
+| Скрипт | `scripts/capture-visual-audit-pack.mjs` |
 | Текущий evidence | **Expo web** 390×844 @2x |
 | Android Pass | **не выставлен** — нет устройства/AVD; для Pass → `visual-audit-pack/android-device/` |
-| Синтетика | демо 2 недели |
-| Дата съёмки | **2026-10-24** |
+| Синтетика | демо 2 недели + `docs/fixtures/synthetic-purchases.json` (Пятёрочка) |
+| Дата съёмки | 2026-10-21 |
 
 ---
 

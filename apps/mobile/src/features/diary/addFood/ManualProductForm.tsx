@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,

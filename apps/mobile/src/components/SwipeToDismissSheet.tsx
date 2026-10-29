@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: colors.overlayScrim,
+    backgroundColor: 'rgba(17,17,17,0.4)',
   },
   backdrop: {
     position: 'absolute',
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: '100%',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     overflow: 'hidden',

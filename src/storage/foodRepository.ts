@@ -5,13 +5,39 @@ import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch'
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
+  aggregateShopping,
+  estimateBasketTotal,
+  scaleIngredientGrams,
+  shoppingKey,
+  type BasketTotal,
+} from '../domain/aggregateShopping';
+import {
+  projectOpenShoppingSpend,
+  type ProjectedShoppingSpend,
+} from '../domain/budgetProjection';
+import {
+  buildMonthBudgetSnapshot,
+  estimateEatenCostRub,
+  sumEatenCost,
+  type MonthBudgetSnapshot,
+} from '../domain/foodBudget';
+import {
   buildMealPlanDraft,
   type MealPlanDiversity,
   type MealPlanPeriodDays,
 } from '../domain/mealPlanDraft';
 import { portion, type Nutrition } from '../domain/nutrition';
 import { rankProductFrequency } from '../domain/productFrequency';
+import { matchPurchaseProduct } from '../domain/matchPurchaseProduct';
+import {
+  isConfirmablePurchaseStatus,
+  linesForPantryApply,
+  purchaseFingerprint,
+  resolveExpenseAmountRub,
+} from '../domain/purchaseConfirm';
 import { nutritionForRecipePortion } from '../domain/recipeNutrition';
+import { suggestPantryLocation } from '../domain/suggestPantryLocation';
+import { reconcileShoppingWithPurchaseLines } from '../domain/shoppingReconcile';
 import { computeDailyTotals } from './dailyTotals';
 import {
   assertNonNegativeFinite,
@@ -117,8 +143,6 @@ export type FoodRepository = {
   setWaterTargetMl(ml: number | null): Profile;
   setHeightCm(cm: number | null): Profile;
   setDailyNutritionTargets(targets: DailyNutritionTargets): Profile;
-  /** UX-03: skip first-run goals without inventing targets. */
-  dismissTargetsOnboardingPrompt(): Profile;
   startDogfood(dateLocal: string): Profile;
   clearDogfood(): Profile;
   dogfoodStatus(dateLocal: string): DogfoodStatus;
@@ -139,18 +163,6 @@ export type FoodRepository = {
       carbG: number | null;
     },
   ): FoodProduct;
-  updateProduct(
-    productId: string,
-    patch: {
-      name?: string;
-      brand?: string | null;
-      energyKcal?: number | null;
-      proteinG?: number | null;
-      fatG?: number | null;
-      carbG?: number | null;
-    },
-  ): FoodProduct;
-  softDeleteProduct(productId: string): FoodProduct;
   findProductByBarcode(barcode: string): FoodProduct | null;
   /**
    * Attach barcode to an existing local product (offline OFF fallback).
@@ -163,8 +175,6 @@ export type FoodRepository = {
   listRecentEntries(limit?: number): FoodEntry[];
   /** Last logged grams for a product (for scan auto-portion), or null. */
   lastGramsForProduct(productId: string): number | null;
-  /** Last logged grams for a recipe serving, or null. */
-  lastGramsForRecipe(recipeId: string): number | null;
   addEntryFromProduct(args: {
     productId: string;
     dateLocal: string;
@@ -236,7 +246,6 @@ export type FoodRepository = {
   addWeight(kg: number, weighedAt?: string): WeightEntry;
   listWeights(limit?: number): WeightEntry[];
   latestWeight(): WeightEntry | null;
-  softDeleteWeight(weightId: string): WeightEntry;
   toggleHabit(dateLocal: string, habitKey: HabitKey): HabitCheck;
   isHabitDone(dateLocal: string, habitKey: HabitKey): boolean;
   addWorkout(input: {
@@ -309,6 +318,54 @@ export type FoodRepository = {
   challengeProgress(
     challengeId: string,
   ): { current: number; target: number; ratio: number; status: Challenge['status'] };
+  listPantryItems(): PantryItem[];
+  upsertPantryItem(input: {
+    id?: string;
+    displayName: string;
+    productId?: string | null;
+    location: PantryLocation;
+    quantityG?: number | null;
+    quantityCount?: number | null;
+    unit: PantryUnit;
+    expiresOn?: string | null;
+    source?: PantrySource;
+  }): PantryItem;
+  softDeletePantryItem(pantryItemId: string): PantryItem;
+  listPurchases(): Purchase[];
+  listPurchaseLines(purchaseId: string): PurchaseLine[];
+  findPurchaseByFingerprint(fingerprint: string): Purchase | null;
+  /**
+   * Persist a confirmed purchase in one step: purchase + lines + pantry + optional expense.
+   * Rejects duplicate fingerprints of already-confirmed purchases.
+   * Status must be delivered | fiscal_receipt. Cart/paid alone never writes pantry.
+   */
+  confirmNewPurchase(input: {
+    status: Extract<PurchaseStatus, 'delivered' | 'fiscal_receipt'>;
+    sourceKind: PurchaseSourceKind;
+    purchasedOn: string;
+    storeLabel?: string | null;
+    storePreferenceId?: string | null;
+    totalRub?: number | null;
+    parseConfidence?: number | null;
+    rawPayloadRef?: string | null;
+    expenseCategory?: FoodExpenseCategory;
+    lines: Array<{
+      rawName: string;
+      displayName: string;
+      quantity?: number | null;
+      unit?: PantryUnit | null;
+      packageSizeText?: string | null;
+      unitPriceRub?: number | null;
+      lineTotalRub?: number | null;
+      discountRub?: number | null;
+      isFood: boolean;
+      excluded: boolean;
+      productId?: string | null;
+      barcode?: string | null;
+      retailerSku?: string | null;
+      matchConfidence?: number | null;
+    }>;
+  }): { purchase: Purchase; lines: PurchaseLine[]; pantryItems: PantryItem[]; expense: FoodExpense | null };
   listCookedBatches(opts?: { recipeId?: string; onlyRemaining?: boolean }): CookedBatch[];
   createCookedBatch(input: {
     recipeId: string;
@@ -351,14 +408,6 @@ export type FoodRepository = {
   ): PlannedMeal;
   softDeletePlannedMeal(plannedMealId: string): PlannedMeal;
   /**
-   * Copy a planned meal to another day/slot as an independent row (new id).
-   * Never touches diary. Status of the copy is always `planned`.
-   */
-  copyPlannedMeal(
-    plannedMealId: string,
-    args: { dateLocal: string; meal: MealSlot },
-  ): PlannedMeal;
-  /**
    * Add a planned meal for a calendar day (never diary). Uses draft/active plan
    * covering the date, or creates an empty 1-day draft.
    */
@@ -375,6 +424,69 @@ export type FoodRepository = {
    * Never auto-called on plan create.
    */
   logPlannedMealToDiary(plannedMealId: string): FoodEntry;
+  listShoppingLists(): ShoppingList[];
+  getShoppingList(listId: string): ShoppingList | null;
+  listShoppingItems(listId: string): ShoppingItem[];
+  /** Empty open list for manual lines. */
+  createEmptyShoppingList(title?: string): ShoppingList;
+  /** Build list from meal plan ingredients; does not invent prices. */
+  createShoppingListFromPlan(planId: string, title?: string): ShoppingList;
+  /** Missing ingredients for one recipe vs pantry (portion = cookedYield). */
+  createShoppingListFromRecipe(recipeId: string, title?: string): ShoppingList;
+  addShoppingItem(input: {
+    listId: string;
+    displayName: string;
+    quantity: number;
+    unit: PantryUnit;
+    productId?: string | null;
+  }): ShoppingItem;
+  /**
+   * After a confirmed purchase: reduce needToBuy / check off matching open-list lines.
+   * Unknown purchase qty does not auto-cover.
+   */
+  reconcileOpenShoppingWithPurchase(purchaseId: string): { patched: number };
+  setShoppingItemChecked(itemId: string, checked: boolean): ShoppingItem;
+  setShoppingItemPrice(
+    itemId: string,
+    args: { priceRub: number | null; priceAsOf?: string | null; priceSource?: ShoppingPriceSource | null },
+  ): ShoppingItem;
+  softDeleteShoppingList(listId: string): ShoppingList;
+  shoppingBasketTotal(listId: string): BasketTotal;
+  /** Projected spend from open shopping lists (user prices only — never live shelf). */
+  openShoppingProjection(): ProjectedShoppingSpend;
+  upsertProductPrice(input: {
+    productKey: string;
+    priceRub: number;
+    unit: PantryUnit;
+    observedOn: string;
+    storeId?: string | null;
+    source?: ShoppingPriceSource;
+  }): ProductPrice;
+  getFoodBudget(month: string): FoodBudget | null;
+  setFoodBudget(month: string, limitRub: number): FoodBudget;
+  listFoodExpenses(month: string): FoodExpense[];
+  addFoodExpense(input: {
+    amountRub: number;
+    category: FoodExpenseCategory;
+    spentOn: string;
+    note?: string | null;
+  }): FoodExpense;
+  softDeleteFoodExpense(expenseId: string): FoodExpense;
+  monthBudgetSnapshot(month: string, asOfDateLocal: string): MonthBudgetSnapshot;
+  /**
+   * Amortized cost of diary entries in month using latest user product prices.
+   * Prices for g/ml are treated as ₽ per 1000 g/ml; pcs as ₽ per 1 piece.
+   * Incomplete when any entry lacks a matching price (unknown ≠ 0).
+   */
+  monthEatenCostEstimate(month: string): {
+    totalRub: number | null;
+    knownSumRub: number | null;
+    knownCount: number;
+    totalCount: number;
+    incomplete: boolean;
+  };
+  listStorePreferences(): StorePreference[];
+  setStorePreferenceSelected(storeId: StorePreferenceId, selected: boolean): StorePreference;
   exportAll(): string;
   /**
    * Replace all local data from export JSON (validated).
@@ -406,7 +518,6 @@ function normalizeProfile(raw: StoreSnapshotAny['profile']): Profile {
     dailyProteinG: raw.dailyProteinG ?? null,
     dailyFatG: raw.dailyFatG ?? null,
     dailyCarbG: raw.dailyCarbG ?? null,
-    targetsPromptDismissedAt: raw.targetsPromptDismissedAt ?? null,
   };
 }
 
@@ -784,7 +895,6 @@ export function createMemoryFoodRepository(seed?: {
     dailyProteinG: null,
     dailyFatG: null,
     dailyCarbG: null,
-    targetsPromptDismissedAt: null,
   };
   const products = new Map<string, FoodProduct>((snap?.products ?? []).map((p) => [p.id, { ...p }]));
   mergeCommonFoodCatalog(products);
@@ -800,10 +910,7 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.waterEntries ?? []).map((w) => [w.id, { ...w }]),
   );
   const weightEntries = new Map<string, WeightEntry>(
-    (snap?.weightEntries ?? []).map((w) => [
-      w.id,
-      { ...w, deletedAt: w.deletedAt ?? null },
-    ]),
+    (snap?.weightEntries ?? []).map((w) => [w.id, { ...w }]),
   );
   const habitChecks = new Map<string, HabitCheck>(
     (snap?.habitChecks ?? []).map((h) => [h.id, { ...h }]),
@@ -1005,13 +1112,6 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...profile };
     },
-    dismissTargetsOnboardingPrompt() {
-      if (!profile.targetsPromptDismissedAt) {
-        profile.targetsPromptDismissedAt = nowIso();
-        notify();
-      }
-      return { ...profile };
-    },
     startDogfood(dateLocal) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateLocal)) {
         throw new Error('dateLocal must be YYYY-MM-DD');
@@ -1098,39 +1198,6 @@ export function createMemoryFoodRepository(seed?: {
         p.source = 'user';
       }
       p.updatedAt = nowIso();
-      notify();
-      return { ...p };
-    },
-    updateProduct(productId, patch) {
-      const p = products.get(productId);
-      if (!p || p.deletedAt) throw new Error('Product not found');
-      if (patch.name !== undefined) {
-        const name = patch.name.trim();
-        if (!name) throw new Error('Product name required');
-        p.name = name;
-      }
-      if (patch.brand !== undefined) p.brand = patch.brand;
-      const fields = {
-        energyKcal: patch.energyKcal !== undefined ? patch.energyKcal : p.energyKcal,
-        proteinG: patch.proteinG !== undefined ? patch.proteinG : p.proteinG,
-        fatG: patch.fatG !== undefined ? patch.fatG : p.fatG,
-        carbG: patch.carbG !== undefined ? patch.carbG : p.carbG,
-      };
-      nutritionFromProductFields(fields);
-      p.energyKcal = fields.energyKcal;
-      p.proteinG = fields.proteinG;
-      p.fatG = fields.fatG;
-      p.carbG = fields.carbG;
-      if (p.source === 'catalog' || p.source === 'label') p.source = 'user';
-      p.updatedAt = nowIso();
-      notify();
-      return { ...p };
-    },
-    softDeleteProduct(productId) {
-      const p = products.get(productId);
-      if (!p || p.deletedAt) throw new Error('Product not found');
-      p.deletedAt = nowIso();
-      p.updatedAt = p.deletedAt;
       notify();
       return { ...p };
     },
@@ -1228,16 +1295,6 @@ export function createMemoryFoodRepository(seed?: {
     lastGramsForProduct(productId) {
       const hit = [...entries.values()]
         .filter((e) => e.deletedAt == null && e.productId === productId && e.grams > 0)
-        .sort((a, b) => {
-          const byTime = b.createdAt.localeCompare(a.createdAt);
-          if (byTime !== 0) return byTime;
-          return b.id.localeCompare(a.id);
-        })[0];
-      return hit ? hit.grams : null;
-    },
-    lastGramsForRecipe(recipeId) {
-      const hit = [...entries.values()]
-        .filter((e) => e.deletedAt == null && e.recipeId === recipeId && e.grams > 0)
         .sort((a, b) => {
           const byTime = b.createdAt.localeCompare(a.createdAt);
           if (byTime !== 0) return byTime;
@@ -1678,7 +1735,6 @@ export function createMemoryFoodRepository(seed?: {
         weighedAt: ts,
         kg,
         createdAt: nowIso(),
-        deletedAt: null,
       };
       weightEntries.set(entry.id, entry);
       notify();
@@ -1686,20 +1742,12 @@ export function createMemoryFoodRepository(seed?: {
     },
     listWeights(limit = 30) {
       return [...weightEntries.values()]
-        .filter((w) => w.deletedAt == null)
         .sort((a, b) => b.weighedAt.localeCompare(a.weighedAt))
         .slice(0, limit);
     },
     latestWeight() {
       const list = api.listWeights(1);
       return list[0] ?? null;
-    },
-    softDeleteWeight(weightId) {
-      const entry = weightEntries.get(weightId);
-      if (!entry || entry.deletedAt) throw new Error('Weight entry not found');
-      entry.deletedAt = nowIso();
-      notify();
-      return { ...entry };
     },
     toggleHabit(dateLocal, habitKey) {
       const id = habitId(dateLocal, habitKey);
@@ -2052,6 +2100,283 @@ export function createMemoryFoodRepository(seed?: {
       }
       return { current, target: c.target, ratio, status: c.status };
     },
+    listPantryItems() {
+      return [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({ ...p }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
+    },
+    upsertPantryItem(input) {
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Pantry name required');
+      if (input.quantityG != null) assertNonNegativeFinite(input.quantityG, 'quantityG');
+      if (input.quantityCount != null) assertNonNegativeFinite(input.quantityCount, 'quantityCount');
+      const ts = nowIso();
+      const existing = input.id ? pantryItems.get(input.id) : undefined;
+      if (input.id && (!existing || existing.deletedAt)) throw new Error('Pantry item not found');
+      const source: PantrySource =
+        input.source === 'purchase' || input.source === 'user'
+          ? input.source
+          : (existing?.source ?? 'user');
+      const item: PantryItem = {
+        id: existing?.id ?? newId(),
+        displayName: name,
+        productId: input.productId === undefined ? (existing?.productId ?? null) : input.productId,
+        location: input.location,
+        quantityG: input.quantityG === undefined ? (existing?.quantityG ?? null) : input.quantityG,
+        quantityCount:
+          input.quantityCount === undefined ? (existing?.quantityCount ?? null) : input.quantityCount,
+        unit: input.unit,
+        expiresOn: input.expiresOn === undefined ? (existing?.expiresOn ?? null) : input.expiresOn,
+        source,
+        createdAt: existing?.createdAt ?? ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      pantryItems.set(item.id, item);
+      notify();
+      return { ...item };
+    },
+    softDeletePantryItem(pantryItemId) {
+      const item = pantryItems.get(pantryItemId);
+      if (!item || item.deletedAt) throw new Error('Pantry item not found');
+      item.deletedAt = nowIso();
+      item.updatedAt = item.deletedAt;
+      notify();
+      return { ...item };
+    },
+    listPurchases() {
+      return [...purchases.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({ ...p }))
+        .sort((a, b) => b.purchasedOn.localeCompare(a.purchasedOn) || b.createdAt.localeCompare(a.createdAt));
+    },
+    listPurchaseLines(purchaseId) {
+      return [...purchaseLines.values()]
+        .filter((l) => l.purchaseId === purchaseId && !l.deletedAt)
+        .map((l) => ({ ...l }))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    },
+    findPurchaseByFingerprint(fingerprint) {
+      const hit = [...purchases.values()].find(
+        (p) => !p.deletedAt && p.fingerprint === fingerprint && p.confirmedAt != null,
+      );
+      return hit ? { ...hit } : null;
+    },
+    confirmNewPurchase(input) {
+      if (!isConfirmablePurchaseStatus(input.status)) {
+        throw new Error('Подтверждение только для delivered / fiscal_receipt');
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.purchasedOn)) {
+        throw new Error('purchasedOn must be YYYY-MM-DD');
+      }
+      if (input.totalRub != null) assertNonNegativeFinite(input.totalRub, 'totalRub');
+      if (input.lines.length === 0) throw new Error('Нужна хотя бы одна позиция');
+
+      const validatedLines = input.lines.map((l) => {
+        const displayName = l.displayName.trim();
+        if (!displayName) throw new Error('Пустое название позиции');
+        if (l.quantity != null) assertNonNegativeFinite(l.quantity, 'quantity');
+        if (l.lineTotalRub != null) assertNonNegativeFinite(l.lineTotalRub, 'lineTotalRub');
+        if (l.unitPriceRub != null) assertNonNegativeFinite(l.unitPriceRub, 'unitPriceRub');
+        if (l.discountRub != null) assertNonNegativeFinite(l.discountRub, 'discountRub');
+        return {
+          rawName: l.rawName.trim() || displayName,
+          displayName,
+          quantity: l.quantity ?? null,
+          unit: l.unit ?? null,
+          packageSizeText: l.packageSizeText ?? null,
+          unitPriceRub: l.unitPriceRub ?? null,
+          lineTotalRub: l.lineTotalRub ?? null,
+          discountRub: l.discountRub ?? null,
+          isFood: !!l.isFood,
+          excluded: !!l.excluded,
+          productId: l.productId ?? null,
+          barcode: l.barcode ?? null,
+          retailerSku: l.retailerSku ?? null,
+          matchConfidence: l.matchConfidence ?? null,
+        };
+      });
+
+      const fingerprint = purchaseFingerprint({
+        storeLabel: input.storeLabel ?? null,
+        purchasedOn: input.purchasedOn,
+        totalRub: input.totalRub ?? null,
+        lines: validatedLines.map((l) => ({
+          displayName: l.displayName,
+          quantity: l.quantity,
+          unit: l.unit,
+          lineTotalRub: l.lineTotalRub,
+          excluded: l.excluded,
+        })),
+      });
+
+      const dup = api.findPurchaseByFingerprint(fingerprint);
+      if (dup) throw new Error('Такая покупка уже подтверждена (дубликат чека)');
+
+      // After dedupe: match or create catalog products (nutrition stays null unless matched seed/OFF).
+      const catalogSnapshot = api.listProducts();
+      const draftLines = validatedLines.map((l) => {
+        let productId = l.productId;
+        let matchConfidence = l.matchConfidence;
+        if (l.isFood && !l.excluded) {
+          const match = matchPurchaseProduct(
+            { displayName: l.displayName, barcode: l.barcode, productId },
+            catalogSnapshot,
+          );
+          if (match.productId) {
+            productId = match.productId;
+            matchConfidence = match.confidence;
+          } else {
+            const digits = l.barcode?.replace(/\D/g, '') ?? '';
+            const created = api.createProduct({
+              name: l.displayName,
+              barcode: /^\d{8,14}$/.test(digits) ? digits : null,
+              energyKcal: null,
+              proteinG: null,
+              fatG: null,
+              carbG: null,
+              source: 'user',
+            });
+            productId = created.id;
+            matchConfidence = null;
+            catalogSnapshot.push(created);
+          }
+        }
+        return { ...l, productId, matchConfidence };
+      });
+
+      const ts = nowIso();
+      const purchaseId = newId();
+      const createdLines: PurchaseLine[] = [];
+      const createdPantry: PantryItem[] = [];
+
+      for (const l of draftLines) {
+        const line: PurchaseLine = {
+          id: newId(),
+          purchaseId,
+          rawName: l.rawName,
+          displayName: l.displayName,
+          quantity: l.quantity,
+          unit: l.unit,
+          packageSizeText: l.packageSizeText,
+          unitPriceRub: l.unitPriceRub,
+          lineTotalRub: l.lineTotalRub,
+          discountRub: l.discountRub,
+          isFood: l.isFood,
+          excluded: l.excluded,
+          productId: l.productId,
+          barcode: l.barcode,
+          retailerSku: l.retailerSku,
+          matchConfidence: l.matchConfidence,
+          pantryItemId: null,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        purchaseLines.set(line.id, line);
+        createdLines.push(line);
+
+        // Price observation only when unit + price known — never invent.
+        if (l.isFood && !l.excluded && l.unit) {
+          let unitPrice = l.unitPriceRub;
+          if (
+            unitPrice == null &&
+            l.lineTotalRub != null &&
+            l.quantity != null &&
+            l.quantity > 0
+          ) {
+            unitPrice = l.lineTotalRub / l.quantity;
+          }
+          if (unitPrice != null) {
+            api.upsertProductPrice({
+              productKey: shoppingKey(l.displayName, l.unit),
+              priceRub: unitPrice,
+              unit: l.unit,
+              observedOn: input.purchasedOn,
+              source: 'user',
+              storeId: input.storePreferenceId ?? null,
+            });
+          }
+        }
+      }
+
+      for (let i = 0; i < draftLines.length; i++) {
+        const apply = draftLines[i];
+        if (!linesForPantryApply([apply]).length) continue;
+        const unit: PantryUnit = apply.unit ?? 'pcs';
+        if (apply.quantity != null) assertNonNegativeFinite(apply.quantity, 'quantity');
+        const quantityG = unit === 'g' || unit === 'ml' ? apply.quantity : null;
+        const quantityCount = unit === 'pcs' ? apply.quantity : null;
+        const pantry: PantryItem = {
+          id: newId(),
+          displayName: apply.displayName,
+          productId: apply.productId,
+          location: suggestPantryLocation(apply.displayName),
+          quantityG,
+          quantityCount,
+          unit,
+          expiresOn: null,
+          source: 'purchase',
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        pantryItems.set(pantry.id, pantry);
+        createdPantry.push(pantry);
+        const line = createdLines[i];
+        line.pantryItemId = pantry.id;
+        line.updatedAt = ts;
+        purchaseLines.set(line.id, line);
+      }
+
+      const expenseAmount = resolveExpenseAmountRub({
+        totalRub: input.totalRub ?? null,
+        lines: draftLines,
+      });
+      let expense: FoodExpense | null = null;
+      if (expenseAmount != null) {
+        expense = {
+          id: newId(),
+          amountRub: expenseAmount,
+          category: input.expenseCategory ?? 'groceries',
+          spentOn: input.purchasedOn,
+          note: `Покупка · ${(input.storeLabel ?? 'чек').slice(0, 40)} · ${draftLines.length} поз.`,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        foodExpenses.set(expense.id, expense);
+      }
+
+      const purchase: Purchase = {
+        id: purchaseId,
+        status: input.status,
+        storePreferenceId: input.storePreferenceId ?? null,
+        storeLabel: input.storeLabel ?? null,
+        purchasedOn: input.purchasedOn,
+        currency: 'RUB',
+        totalRub: input.totalRub ?? null,
+        sourceKind: input.sourceKind,
+        fingerprint,
+        rawPayloadRef: input.rawPayloadRef ?? null,
+        parseConfidence: input.parseConfidence ?? null,
+        confirmedAt: ts,
+        expenseId: expense?.id ?? null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      purchases.set(purchase.id, purchase);
+      api.reconcileOpenShoppingWithPurchase(purchase.id);
+      notify();
+      return {
+        purchase: { ...purchase },
+        lines: createdLines.map((l) => ({ ...purchaseLines.get(l.id)! })),
+        pantryItems: createdPantry.map((p) => ({ ...p })),
+        expense: expense ? { ...expense } : null,
+      };
+    },
     listCookedBatches(opts) {
       return [...cookedBatches.values()]
         .filter((b) => {
@@ -2262,18 +2587,6 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...m };
     },
-    copyPlannedMeal(plannedMealId, args) {
-      const source = plannedMeals.get(plannedMealId);
-      if (!source || source.deletedAt) throw new Error('Planned meal not found');
-      return api.addPlannedMeal({
-        dateLocal: args.dateLocal,
-        meal: args.meal,
-        displayName: source.displayName,
-        grams: source.grams,
-        recipeId: source.recipeId,
-        productId: source.productId,
-      });
-    },
     addPlannedMeal(input) {
       const name = input.displayName.trim();
       if (!name) throw new Error('Display name required');
@@ -2368,6 +2681,517 @@ export function createMemoryFoodRepository(seed?: {
       m.updatedAt = nowIso();
       notify();
       return { ...entry };
+    },
+    listShoppingLists() {
+      return [...shoppingLists.values()]
+        .filter((l) => !l.deletedAt)
+        .map((l) => ({ ...l }))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    getShoppingList(listId) {
+      const l = shoppingLists.get(listId);
+      if (!l || l.deletedAt) return null;
+      return { ...l };
+    },
+    listShoppingItems(listId) {
+      return [...shoppingItems.values()]
+        .filter((i) => i.listId === listId && !i.deletedAt)
+        .map((i) => ({ ...i }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
+    },
+    createEmptyShoppingList(title) {
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId: null,
+        title: (title?.trim() || 'Список покупок').slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      notify();
+      return { ...list };
+    },
+    createShoppingListFromRecipe(recipeId, title) {
+      const recipe = recipes.get(recipeId);
+      if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
+      const ings = ingredients.get(recipeId) ?? [];
+      const ingInputs = ings.map((ing) => ({
+        displayName: ing.displayName,
+        quantity: ing.rawGrams,
+        unit: 'g' as const,
+        productId: ing.productId,
+      }));
+      const pantryCov = [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({
+          displayName: p.displayName,
+          productId: p.productId,
+          quantityG: p.quantityG,
+          quantityCount: p.quantityCount,
+          unit: p.unit,
+        }));
+      const priceMap = new Map<
+        string,
+        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+      >();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const existing = priceMap.get(pp.productKey);
+        if (!existing || pp.observedOn >= existing.priceAsOf) {
+          priceMap.set(pp.productKey, {
+            priceRub: pp.priceRub,
+            priceAsOf: pp.observedOn,
+            priceSource: pp.source,
+          });
+        }
+      }
+      const lines = aggregateShopping(ingInputs, pantryCov, priceMap);
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId: null,
+        title: (title?.trim() || `Покупки · ${recipe.name}`).slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      for (const line of lines) {
+        if (line.needToBuy <= 0) continue;
+        const item: ShoppingItem = {
+          id: newId(),
+          listId: list.id,
+          displayName: line.displayName,
+          quantity: line.quantity,
+          unit: line.unit,
+          coveredByPantry: line.coveredByPantry,
+          needToBuy: line.needToBuy,
+          checked: false,
+          priceRub: line.priceRub,
+          priceAsOf: line.priceAsOf,
+          priceSource: line.priceSource,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        shoppingItems.set(item.id, item);
+      }
+      notify();
+      return { ...list };
+    },
+    addShoppingItem(input) {
+      const list = shoppingLists.get(input.listId);
+      if (!list || list.deletedAt) throw new Error('Shopping list not found');
+      assertPositiveFinite(input.quantity, 'quantity');
+      const name = input.displayName.trim();
+      if (!name) throw new Error('Название позиции обязательно');
+      const ts = nowIso();
+      const item: ShoppingItem = {
+        id: newId(),
+        listId: input.listId,
+        displayName: name.slice(0, 120),
+        quantity: input.quantity,
+        unit: input.unit,
+        coveredByPantry: 0,
+        needToBuy: input.quantity,
+        checked: false,
+        priceRub: null,
+        priceAsOf: null,
+        priceSource: null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingItems.set(item.id, item);
+      list.updatedAt = ts;
+      notify();
+      return { ...item };
+    },
+    reconcileOpenShoppingWithPurchase(purchaseId) {
+      const purchase = purchases.get(purchaseId);
+      if (!purchase || purchase.deletedAt) return { patched: 0 };
+      const lines = [...purchaseLines.values()].filter(
+        (l) => l.purchaseId === purchaseId && !l.deletedAt,
+      );
+      const purchasePayload = lines.map((l) => ({
+        displayName: l.displayName,
+        quantity: l.quantity,
+        unit: l.unit,
+        excluded: l.excluded,
+        isFood: l.isFood,
+      }));
+      let patched = 0;
+      for (const list of shoppingLists.values()) {
+        if (list.deletedAt || list.status !== 'open') continue;
+        const items = [...shoppingItems.values()]
+          .filter((i) => i.listId === list.id && !i.deletedAt)
+          .map((i) => ({
+            id: i.id,
+            displayName: i.displayName,
+            unit: i.unit,
+            needToBuy: i.needToBuy,
+            checked: i.checked,
+          }));
+        const patches = reconcileShoppingWithPurchaseLines(items, purchasePayload);
+        const ts = nowIso();
+        for (const p of patches) {
+          const item = shoppingItems.get(p.itemId);
+          if (!item || item.deletedAt) continue;
+          item.needToBuy = p.needToBuy;
+          item.checked = p.checked;
+          item.updatedAt = ts;
+          patched += 1;
+        }
+        if (patches.length) list.updatedAt = ts;
+      }
+      return { patched };
+    },
+    createShoppingListFromPlan(planId, title) {
+      const plan = mealPlans.get(planId);
+      if (!plan || plan.deletedAt) throw new Error('Meal plan not found');
+      const planned = [...plannedMeals.values()].filter(
+        (m) => m.planId === planId && !m.deletedAt && m.status !== 'skipped',
+      );
+      const ingInputs: Array<{
+        displayName: string;
+        quantity: number;
+        unit: 'g' | 'ml' | 'pcs';
+        productId?: string | null;
+      }> = [];
+      for (const pm of planned) {
+        if (pm.recipeId) {
+          const recipe = recipes.get(pm.recipeId);
+          if (!recipe || recipe.deletedAt) continue;
+          const ings = ingredients.get(pm.recipeId) ?? [];
+          for (const ing of ings) {
+            const qty = scaleIngredientGrams(ing.rawGrams, recipe.cookedYieldG, pm.grams);
+            ingInputs.push({
+              displayName: ing.displayName,
+              quantity: qty,
+              unit: 'g',
+              productId: ing.productId,
+            });
+          }
+        } else if (pm.productId) {
+          const product = products.get(pm.productId);
+          ingInputs.push({
+            displayName: product?.name ?? pm.displayName,
+            quantity: pm.grams,
+            unit: 'g',
+            productId: pm.productId,
+          });
+        } else {
+          ingInputs.push({
+            displayName: pm.displayName,
+            quantity: pm.grams,
+            unit: 'g',
+          });
+        }
+      }
+      const pantryCov = [...pantryItems.values()]
+        .filter((p) => !p.deletedAt)
+        .map((p) => ({
+          displayName: p.displayName,
+          productId: p.productId,
+          quantityG: p.quantityG,
+          quantityCount: p.quantityCount,
+          unit: p.unit,
+        }));
+      const priceMap = new Map<
+        string,
+        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+      >();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const existing = priceMap.get(pp.productKey);
+        if (!existing || pp.observedOn >= existing.priceAsOf) {
+          priceMap.set(pp.productKey, {
+            priceRub: pp.priceRub,
+            priceAsOf: pp.observedOn,
+            priceSource: pp.source,
+          });
+        }
+      }
+      const lines = aggregateShopping(ingInputs, pantryCov, priceMap);
+      const ts = nowIso();
+      const list: ShoppingList = {
+        id: newId(),
+        planId,
+        title: (title?.trim() || `Покупки ${plan.startDate}–${plan.endDate}`).slice(0, 120),
+        status: 'open',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      shoppingLists.set(list.id, list);
+      // Persist only missing quantities — fully covered lines stay out of the actionable list.
+      for (const line of lines) {
+        if (line.needToBuy <= 0) continue;
+        const item: ShoppingItem = {
+          id: newId(),
+          listId: list.id,
+          displayName: line.displayName,
+          quantity: line.quantity,
+          unit: line.unit,
+          coveredByPantry: line.coveredByPantry,
+          needToBuy: line.needToBuy,
+          checked: false,
+          priceRub: line.priceRub,
+          priceAsOf: line.priceAsOf,
+          priceSource: line.priceSource,
+          createdAt: ts,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        shoppingItems.set(item.id, item);
+      }
+      notify();
+      return { ...list };
+    },
+    setShoppingItemChecked(itemId, checked) {
+      const item = shoppingItems.get(itemId);
+      if (!item || item.deletedAt) throw new Error('Shopping item not found');
+      item.checked = checked;
+      item.updatedAt = nowIso();
+      notify();
+      return { ...item };
+    },
+    setShoppingItemPrice(itemId, args) {
+      const item = shoppingItems.get(itemId);
+      if (!item || item.deletedAt) throw new Error('Shopping item not found');
+      if (args.priceRub !== null) assertNonNegativeFinite(args.priceRub, 'priceRub');
+      item.priceRub = args.priceRub;
+      item.priceAsOf = args.priceAsOf === undefined ? item.priceAsOf : args.priceAsOf;
+      item.priceSource =
+        args.priceSource === undefined
+          ? args.priceRub === null
+            ? null
+            : (item.priceSource ?? 'user')
+          : args.priceSource;
+      if (args.priceRub !== null && !item.priceAsOf) {
+        item.priceAsOf = nowIso().slice(0, 10);
+      }
+      if (args.priceRub !== null) {
+        item.priceSource = item.priceSource ?? 'user';
+        const key = shoppingKey(item.displayName, item.unit);
+        // Persist ₽/kg (or ₽/L) for eaten-cost amortization; line price stays on item.
+        let catalogPrice = args.priceRub;
+        if ((item.unit === 'g' || item.unit === 'ml') && item.needToBuy > 0) {
+          catalogPrice = (args.priceRub / item.needToBuy) * 1000;
+        }
+        api.upsertProductPrice({
+          productKey: key,
+          priceRub: catalogPrice,
+          unit: item.unit,
+          observedOn: item.priceAsOf ?? nowIso().slice(0, 10),
+          source: item.priceSource ?? 'user',
+        });
+      }
+      item.updatedAt = nowIso();
+      notify();
+      return { ...item };
+    },
+    softDeleteShoppingList(listId) {
+      const list = shoppingLists.get(listId);
+      if (!list || list.deletedAt) throw new Error('Shopping list not found');
+      const ts = nowIso();
+      list.deletedAt = ts;
+      list.updatedAt = ts;
+      for (const i of shoppingItems.values()) {
+        if (i.listId === listId && !i.deletedAt) {
+          i.deletedAt = ts;
+          i.updatedAt = ts;
+        }
+      }
+      notify();
+      return { ...list };
+    },
+    openShoppingProjection() {
+      const baskets = [...shoppingLists.values()]
+        .filter((l) => !l.deletedAt)
+        .map((l) => {
+          const total = api.shoppingBasketTotal(l.id);
+          return {
+            status: l.status,
+            deletedAt: l.deletedAt,
+            totalRub: total.totalRub,
+            needLineCount: total.needLineCount,
+            pricedNeedCount: total.pricedNeedCount,
+            label: total.label,
+          };
+        });
+      return projectOpenShoppingSpend(baskets);
+    },
+    shoppingBasketTotal(listId) {
+      const items = api.listShoppingItems(listId).map((i) => ({
+        key: shoppingKey(i.displayName, i.unit),
+        displayName: i.displayName,
+        quantity: i.quantity,
+        unit: i.unit,
+        coveredByPantry: i.coveredByPantry,
+        needToBuy: i.checked ? 0 : i.needToBuy,
+        priceRub: i.priceRub,
+        priceAsOf: i.priceAsOf,
+        priceSource: i.priceSource,
+      }));
+      return estimateBasketTotal(items);
+    },
+    upsertProductPrice(input) {
+      assertNonNegativeFinite(input.priceRub, 'priceRub');
+      const key = input.productKey.trim();
+      if (!key) throw new Error('productKey required');
+      const ts = nowIso();
+      const existing = [...productPrices.values()].find(
+        (p) => !p.deletedAt && p.productKey === key && (p.storeId ?? null) === (input.storeId ?? null),
+      );
+      if (existing) {
+        existing.priceRub = input.priceRub;
+        existing.unit = input.unit;
+        existing.observedOn = input.observedOn;
+        existing.source = input.source ?? 'user';
+        existing.updatedAt = ts;
+        notify();
+        return { ...existing };
+      }
+      const row: ProductPrice = {
+        id: newId(),
+        productKey: key,
+        storeId: input.storeId ?? null,
+        priceRub: input.priceRub,
+        unit: input.unit,
+        observedOn: input.observedOn,
+        source: input.source ?? 'user',
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      productPrices.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    getFoodBudget(month) {
+      const b = [...foodBudgets.values()].find((x) => !x.deletedAt && x.month === month);
+      return b ? { ...b } : null;
+    },
+    setFoodBudget(month, limitRub) {
+      assertPositiveFinite(limitRub, 'limitRub');
+      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      const ts = nowIso();
+      const existing = [...foodBudgets.values()].find((x) => !x.deletedAt && x.month === month);
+      if (existing) {
+        existing.limitRub = limitRub;
+        existing.updatedAt = ts;
+        notify();
+        return { ...existing };
+      }
+      const row: FoodBudget = {
+        id: newId(),
+        month,
+        limitRub,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      foodBudgets.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    listFoodExpenses(month) {
+      return [...foodExpenses.values()]
+        .filter((e) => !e.deletedAt && e.spentOn.startsWith(month))
+        .map((e) => ({ ...e }))
+        .sort((a, b) => b.spentOn.localeCompare(a.spentOn));
+    },
+    addFoodExpense(input) {
+      assertNonNegativeFinite(input.amountRub, 'amountRub');
+      const ts = nowIso();
+      const row: FoodExpense = {
+        id: newId(),
+        amountRub: input.amountRub,
+        category: input.category,
+        spentOn: input.spentOn,
+        note: input.note?.trim() ? input.note.trim() : null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      foodExpenses.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    softDeleteFoodExpense(expenseId) {
+      const e = foodExpenses.get(expenseId);
+      if (!e || e.deletedAt) throw new Error('Expense not found');
+      e.deletedAt = nowIso();
+      e.updatedAt = e.deletedAt;
+      notify();
+      return { ...e };
+    },
+    monthBudgetSnapshot(month, asOfDateLocal) {
+      const budget = api.getFoodBudget(month);
+      const amounts = api.listFoodExpenses(month).map((e) => e.amountRub);
+      return buildMonthBudgetSnapshot({
+        month,
+        limitRub: budget?.limitRub ?? null,
+        expenseAmounts: amounts,
+        asOfDateLocal,
+      });
+    },
+    monthEatenCostEstimate(month) {
+      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      const priceByKey = new Map<string, ProductPrice>();
+      for (const pp of productPrices.values()) {
+        if (pp.deletedAt) continue;
+        const prev = priceByKey.get(pp.productKey);
+        if (!prev || pp.observedOn >= prev.observedOn) priceByKey.set(pp.productKey, pp);
+      }
+      const monthEntries = [...entries.values()].filter(
+        (e) => !e.deletedAt && e.dateLocal.startsWith(month),
+      );
+      const estimates: Array<number | null> = monthEntries.map((e) => {
+        const keyG = shoppingKey(e.displayName, 'g');
+        const keyMl = shoppingKey(e.displayName, 'ml');
+        const keyPcs = shoppingKey(e.displayName, 'pcs');
+        const pp = priceByKey.get(keyG) ?? priceByKey.get(keyMl) ?? priceByKey.get(keyPcs) ?? null;
+        if (!pp) return null;
+        if (pp.unit === 'pcs') {
+          // Diary is grams — cannot amortize piece price honestly.
+          return null;
+        }
+        return estimateEatenCostRub({
+          grams: e.grams,
+          priceRub: pp.priceRub,
+          pricePerUnitG: 1000,
+        });
+      });
+      const summed = sumEatenCost(estimates);
+      return {
+        totalRub: summed.total,
+        knownSumRub: summed.knownSum,
+        knownCount: summed.knownCount,
+        totalCount: summed.totalCount,
+        incomplete: summed.incomplete,
+      };
+    },
+    listStorePreferences() {
+      if (storePreferences.size === 0) {
+        for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
+      }
+      return [...storePreferences.values()]
+        .map((s) => ({ ...s }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+    },
+    setStorePreferenceSelected(storeId, selected) {
+      const row = [...storePreferences.values()].find((s) => s.storeId === storeId);
+      if (!row) throw new Error('Store preference not found');
+      row.selected = selected;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
     },
     exportAll() {
       return JSON.stringify(

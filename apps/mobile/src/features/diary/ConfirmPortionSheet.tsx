@@ -224,9 +224,7 @@ export function ConfirmPortionSheet({
           {source} · в {mealLabel}
         </Text>
         <Text style={styles.portionLead}>
-          {target.kind === 'recipe'
-            ? 'Сколько съел этой порции? КБЖУ ниже — на указанные граммы готового блюда, не на весь выход рецепта.'
-            : 'Сколько съел с упаковки? КБЖУ ниже пересчитаются на эти граммы — не на всю пачку.'}
+          Сколько съел с упаковки? КБЖУ ниже пересчитаются на эти граммы — не на всю пачку.
         </Text>
 
         <View
@@ -265,7 +263,7 @@ export function ConfirmPortionSheet({
           </Text>
         ) : null}
 
-        <PrimaryButton label={`Добавить ${Math.round(grams)} г в дневник`} onPress={submit} />
+        <PrimaryButton label="Добавить в дневник" onPress={submit} />
       </FormScrollView>
     </SwipeToDismissSheet>
   );
@@ -373,11 +371,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fieldInput: {
+    minHeight: 44,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 44,
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
+    backgroundColor: colors.surface,
     paddingHorizontal: space.md,
     fontSize: type.body,
     fontWeight: '600',

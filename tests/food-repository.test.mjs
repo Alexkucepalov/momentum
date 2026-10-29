@@ -477,16 +477,3 @@ test('listRecentEntries dedupes same product+grams', () => {
   assert.equal(same250.length, 1);
   assert.equal(recent.filter((e) => e.productId === product.id).length, 2);
 });
-
-test('updateProduct and softDeleteProduct keep unknown macros null', () => {
-  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
-  const p = repo.createProduct({ name: 'Творог', source: 'user' });
-  assert.equal(p.energyKcal, null);
-  const edited = repo.updateProduct(p.id, { name: 'Творог 5%', energyKcal: 121, proteinG: 17 });
-  assert.equal(edited.name, 'Творог 5%');
-  assert.equal(edited.energyKcal, 121);
-  assert.equal(edited.fatG, null);
-  repo.softDeleteProduct(p.id);
-  assert.equal(repo.listProducts().some((x) => x.id === p.id), false);
-  assert.throws(() => repo.updateProduct(p.id, { name: 'X' }), /not found/i);
-});

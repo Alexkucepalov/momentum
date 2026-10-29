@@ -1,7 +1,6 @@
 export type AddFoodTab =
   | 'recent'
   | 'favorites'
-  | 'mine'
   | 'recipes'
   | 'manual'
   | 'quick'
@@ -9,12 +8,11 @@ export type AddFoodTab =
 
 /** Primary catalog tabs (search covers full catalog — no separate «Все»). */
 export const PRIMARY_ADD_FOOD_TABS: Array<{
-  id: Extract<AddFoodTab, 'recent' | 'favorites' | 'mine' | 'recipes'>;
+  id: Extract<AddFoodTab, 'recent' | 'favorites' | 'recipes'>;
   label: string;
 }> = [
   { id: 'recent', label: 'Недавние' },
-  { id: 'favorites', label: 'Избр.' },
-  { id: 'mine', label: 'Мои' },
+  { id: 'favorites', label: 'Избранное' },
   { id: 'recipes', label: 'Рецепты' },
 ];
 

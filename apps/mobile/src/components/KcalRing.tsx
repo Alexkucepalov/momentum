@@ -381,7 +381,11 @@ function Macro({
 
 const styles = StyleSheet.create({
   compactWrap: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: space.md,
   },
   compactHead: {
@@ -487,7 +491,11 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.88 },
   wrap: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     padding: space.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: space.lg,
   },
   ringRow: {

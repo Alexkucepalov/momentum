@@ -273,9 +273,9 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
   input: {
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,
@@ -284,9 +284,9 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   textArea: {
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
     minHeight: 100,
     paddingHorizontal: space.md,

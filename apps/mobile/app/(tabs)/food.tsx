@@ -1,22 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 
-import {
-  defaultProductPortionGrams,
-  defaultRecipePortionGrams,
-} from '../../../../src/domain/defaultPortionGrams';
 import { portion } from '../../../../src/domain/nutrition';
 import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
-import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
-import { DayStrip } from '@/src/components/DayStrip';
+import { DateSwitcher } from '@/src/components/DateSwitcher';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
+import { KcalRing } from '@/src/components/KcalRing';
 import { PortionEditModal } from '@/src/components/PortionEditModal';
 import { SaveMealModal } from '@/src/components/SaveMealModal';
+import { ScreenFooter } from '@/src/components/ScreenFooter';
 import { UndoBar } from '@/src/components/UndoBar';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
@@ -34,15 +31,7 @@ import { MealSection } from '@/src/features/diary/MealSection';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { shell } from '@/src/theme/shell';
-import { colors, space, touchMin, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
-import { CalorieHero } from '@/src/ui/CalorieHero';
-import { CircleIconButton } from '@/src/ui/CircleIconButton';
-import { Fab } from '@/src/ui/Fab';
-import { MacroGrid } from '@/src/ui/MacroGrid';
-import { SectionTitle } from '@/src/ui/SectionTitle';
-import { SoftHeader } from '@/src/ui/SoftHeader';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealSlot, string> = {
@@ -53,6 +42,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 };
 
 export default function FoodScreen() {
+  const navigation = useNavigation();
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, meal, setMeal, refresh, revision, setUndo, showFlash } =
     useData();
@@ -103,6 +93,33 @@ export default function FoodScreen() {
     return map;
   }, [entries]);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => router.push('/plan')}
+            accessibilityRole="button"
+            accessibilityLabel="План питания"
+            style={styles.headerBtn}
+            hitSlop={8}
+          >
+            <Ionicons name="compass-outline" size={22} color={colors.text} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/recipes')}
+            accessibilityRole="button"
+            accessibilityLabel="Рецепты"
+            style={styles.headerBtn}
+            hitSlop={8}
+          >
+            <Ionicons name="book-outline" size={22} color={colors.text} />
+          </Pressable>
+        </View>
+      ),
+    });
+  }, [navigation, router]);
+
   const selectSegment = (next: FoodSegment) => {
     setSegment(next);
     if (next === 'diary') setQuery('');
@@ -119,26 +136,26 @@ export default function FoodScreen() {
     setOpen(true);
   };
 
-  /** UX-01: recent/repeat opens ConfirmPortion — same pipeline as catalog (+). */
   const repeatEntry = (e: FoodEntry) => {
+    if (!allowAdd()) return;
     if (e.productId) {
-      const product = products.find((p) => p.id === e.productId);
-      if (!product) return;
-      setPortionTarget({ target: { kind: 'product', product }, initialGrams: e.grams });
+      repo.addEntryFromProduct({
+        productId: e.productId,
+        dateLocal,
+        meal,
+        grams: e.grams,
+      });
+    } else if (e.recipeId) {
+      repo.addEntryFromRecipe({
+        recipeId: e.recipeId,
+        dateLocal,
+        meal,
+        grams: e.grams,
+      });
+    } else {
       return;
     }
-    if (e.recipeId) {
-      const recipe = recipes.find((r) => r.id === e.recipeId);
-      if (!recipe) return;
-      setPortionTarget({
-        target: {
-          kind: 'recipe',
-          recipe,
-          ingredients: repo.getRecipeIngredients(recipe.id),
-        },
-        initialGrams: e.grams,
-      });
-    }
+    refresh();
   };
 
   const repeatMealSlot = (slot: MealSlot) => {
@@ -166,46 +183,23 @@ export default function FoodScreen() {
   };
 
   const openProductPortion = (p: FoodProduct) => {
-    setPortionTarget({
-      target: { kind: 'product', product: p },
-      initialGrams: defaultProductPortionGrams(repo.lastGramsForProduct(p.id)),
-    });
+    setPortionTarget({ target: { kind: 'product', product: p }, initialGrams: 100 });
   };
 
   const openRecipePortion = (r: Recipe) => {
     const ingredients = repo.getRecipeIngredients(r.id);
     setPortionTarget({
       target: { kind: 'recipe', recipe: r, ingredients },
-      initialGrams: defaultRecipePortionGrams(repo.lastGramsForRecipe(r.id), r.cookedYieldG),
+      initialGrams: Math.min(200, r.cookedYieldG),
     });
   };
 
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <SoftHeader
-          eyebrow="Дневник"
-          title="Питание"
-          action={
-            <View style={styles.headerActions}>
-              <CircleIconButton
-                size="sm"
-                icon="compass-outline"
-                onPress={() => router.push('/plan')}
-                accessibilityLabel="План питания"
-              />
-              <CircleIconButton
-                size="sm"
-                icon="book-outline"
-                onPress={() => router.push('/recipes')}
-                accessibilityLabel="Рецепты"
-              />
-            </View>
-          }
-        />
-        <DayStrip
+        <DateSwitcher
           selected={dateLocal}
-          today={localDateKey(new Date(), profile.timezone)}
+          timeZone={profile.timezone}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
         />
@@ -214,58 +208,31 @@ export default function FoodScreen() {
 
         {segment === 'diary' ? (
           <>
-            <CalorieHero
-              eaten={totals.energyKcal}
-              target={dailyTargets.energyKcal}
-              onEditTarget={() => router.push('/profile')}
-            />
-            <MacroGrid
-              proteinG={totals.proteinG}
-              carbG={totals.carbG}
-              fatG={totals.fatG}
-              proteinTarget={dailyTargets.proteinG}
-              carbTarget={dailyTargets.carbG}
-              fatTarget={dailyTargets.fatG}
+            <KcalRing
+              variant="compact"
+              totals={totals}
+              targets={dailyTargets}
+              activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
+              activityMinutes={repo.activityMinutesForDate(dateLocal)}
+              onSetTarget={() => router.push('/profile')}
             />
 
             <TodayPlanStrip />
+
             <CopyYesterdayButton />
 
-            <SectionTitle title="Еда за день" />
-            {entries.length === 0 ? (
-              <AppCard style={styles.emptyDay}>
-                <Text style={styles.emptyDayTitle}>Пока пусто</Text>
-                <Text style={styles.emptyDayBody}>
-                  Плюс внизу записывает еду за секунды. Приём выбирается в листе.
-                </Text>
-              </AppCard>
-            ) : (
-              MEALS.map((slot) => (
-                <MealSection
-                  key={slot}
-                  meal={slot}
-                  entries={mealEntries[slot]}
-                  onDelete={onDelete}
-                  onEditGrams={setEditing}
-                  onAdd={() => openForMeal(slot)}
-                  onRepeatMeal={() => repeatMealSlot(slot)}
-                  onSaveMeal={() => setSaveMealSlot(slot)}
-                />
-              ))
-            )}
-            <View style={styles.slotAdds}>
-              {MEALS.filter((slot) => mealEntries[slot].length === 0).map((slot) => (
-                <Pressable
-                  key={slot}
-                  onPress={() => openForMeal(slot)}
-                  style={styles.slotAdd}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить в ${MEAL_LABELS[slot]}`}
-                >
-                  <Text style={styles.slotAddText}>+ {MEAL_LABELS[slot]}</Text>
-                </Pressable>
-              ))}
-            </View>
+            {MEALS.map((slot) => (
+              <MealSection
+                key={slot}
+                meal={slot}
+                entries={mealEntries[slot]}
+                onDelete={onDelete}
+                onEditGrams={setEditing}
+                onAdd={() => openForMeal(slot)}
+                onRepeatMeal={() => repeatMealSlot(slot)}
+                onSaveMeal={() => setSaveMealSlot(slot)}
+              />
+            ))}
 
             <Pressable
               onPress={() => router.push('/plan/eat-now')}
@@ -278,30 +245,28 @@ export default function FoodScreen() {
           </>
         ) : (
           <>
-            <AppCard padding="none" style={styles.searchCard}>
-              <View style={styles.searchBox}>
-                <Ionicons name="search" size={18} color={colors.textMuted} />
-                <TextInput
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Яйцо, овсянка, рецепт…"
-                  placeholderTextColor={colors.textMuted}
-                  style={styles.searchInput}
-                  accessibilityLabel="Поиск продукта или рецепта"
-                  returnKeyType="search"
-                />
-                {query.length > 0 ? (
-                  <Pressable
-                    onPress={() => setQuery('')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Очистить поиск"
-                    hitSlop={8}
-                  >
-                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                  </Pressable>
-                ) : null}
-              </View>
-            </AppCard>
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Яйцо, овсянка, рецепт…"
+                placeholderTextColor={colors.textMuted}
+                style={styles.searchInput}
+                accessibilityLabel="Поиск продукта или рецепта"
+                returnKeyType="search"
+              />
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery('')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Очистить поиск"
+                  hitSlop={8}
+                >
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
+            </View>
 
             <FoodCatalogList
               filter={catalogFilter}
@@ -312,7 +277,6 @@ export default function FoodScreen() {
               frequent={frequent}
               query={query}
               recipeIngredientCounts={recipeIngredientCounts}
-              getRecipeIngredients={(id) => repo.getRecipeIngredients(id)}
               onAddProduct={openProductPortion}
               onAddRecipe={openRecipePortion}
               onOpenRecipe={(r) => router.push(`/recipes/${r.id}`)}
@@ -327,15 +291,25 @@ export default function FoodScreen() {
         )}
       </FormScrollView>
 
-      <Fab onPress={() => setOpen(true)} accessibilityLabel="Добавить еду" />
-      <Pressable
-        style={styles.barcodeFab}
-        onPress={() => setBarcodeOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Сканировать штрихкод"
-      >
-        <Ionicons name="barcode-outline" size={22} color={colors.text} />
-      </Pressable>
+      <ScreenFooter>
+        <Pressable
+          style={({ pressed }) => [styles.footerIcon, pressed && styles.pressed]}
+          onPress={() => setBarcodeOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Сканировать штрихкод"
+        >
+          <Ionicons name="barcode-outline" size={22} color={colors.text} />
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.footerScan, pressed && styles.pressed]}
+          onPress={() => setOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Добавить еду"
+        >
+          <Ionicons name="add" size={22} color={colors.primaryButtonText} />
+          <Text style={styles.footerScanText}>Добавить еду</Text>
+        </Pressable>
+      </ScreenFooter>
 
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
       <BarcodeLookupSheet visible={barcodeOpen} onClose={() => setBarcodeOpen(false)} />
@@ -420,8 +394,14 @@ export default function FoodScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: shell.screenBottom },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  content: { padding: space.lg, paddingBottom: 140 },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  headerBtn: {
+    minWidth: touchMin,
+    minHeight: touchMin,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   secondaryLink: {
     paddingVertical: space.sm,
     minHeight: touchMin,
@@ -434,13 +414,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  searchCard: { marginBottom: space.md },
+  footerIcon: {
+    width: touchMin,
+    height: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   searchBox: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     paddingHorizontal: space.md,
     minHeight: touchMin,
+    marginBottom: space.md,
   },
   searchInput: {
     flex: 1,
@@ -448,38 +443,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingVertical: space.sm,
   },
-  barcodeFab: {
-    position: 'absolute',
-    right: 88,
-    bottom: shell.fabBottom + 4,
-    width: touchMin,
-    height: touchMin,
-    borderRadius: touchMin / 2,
-    backgroundColor: colors.surface,
+  footerScan: {
+    flex: 1,
+    minHeight: touchMin,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryButton,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...({
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 4,
-    } as const),
+    gap: space.sm,
+  },
+  footerScanText: {
+    fontSize: type.body,
+    fontWeight: '800',
+    color: colors.primaryButtonText,
   },
   pressed: { opacity: 0.88 },
-  emptyDay: { marginBottom: space.md, gap: space.xs },
-  emptyDayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  emptyDayBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
-  slotAdds: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-    marginBottom: space.md,
-  },
-  slotAdd: {
-    minHeight: 40,
-    justifyContent: 'center',
-    paddingHorizontal: space.sm,
-  },
-  slotAddText: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
 });

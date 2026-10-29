@@ -2,9 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { localDateKey } from '../../../../src/storage/validation';
-import { colors, space, touchMin, type } from '../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
-import { dateChrome } from '@/src/ui/dateChrome';
+import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 function addDays(iso: string, delta: number): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -44,12 +42,7 @@ export function DateSwitcher({
   const title = formatTitle(selected, today);
 
   return (
-    <AppCard
-      padding="none"
-      style={styles.wrap}
-      accessibilityRole="summary"
-      accessibilityLabel={title}
-    >
+    <View style={styles.wrap} accessibilityRole="adjustable" accessibilityLabel={title}>
       <Pressable
         onPress={() => onSelect(addDays(selected, -1))}
         style={({ pressed }) => [styles.arrow, pressed && styles.pressed]}
@@ -94,7 +87,7 @@ export function DateSwitcher({
           <Ionicons name="calendar-outline" size={20} color={colors.text} />
         </Pressable>
       ) : null}
-    </AppCard>
+    </View>
   );
 }
 
@@ -102,9 +95,12 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: space.lg,
-    minHeight: dateChrome.controlMin + 8,
-    paddingHorizontal: space.xs,
+    minHeight: touchMin + 8,
   },
   arrow: {
     width: touchMin,
@@ -136,5 +132,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: space.xs,
   },
-  pressed: { opacity: 0.88 },
+  pressed: { opacity: 0.75 },
 });

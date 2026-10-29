@@ -14,7 +14,6 @@ import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { collectFlexibleReportInput } from './collectFlexibleReport';
 import { shareHtmlAsPdf } from './shareReportPdf';
-import { AppCard } from '@/src/ui/AppCard';
 
 const ALL_CATS: ReportCategory[] = ['profile', 'nutrition', 'activity', 'weight', 'habits'];
 
@@ -101,7 +100,7 @@ export function FlexibleReportPanel() {
   };
 
   return (
-    <AppCard padding="lg" style={styles.wrap}>
+    <View style={styles.wrap}>
       <View style={styles.hero}>
         <View style={styles.icon}>
           <Ionicons name="document-text-outline" size={20} color={colors.text} />
@@ -183,17 +182,20 @@ export function FlexibleReportPanel() {
       <Text style={styles.hint}>{selectedLabel}</Text>
 
       <PrimaryButton
-        variant="secondary"
         label={busy ? 'Собираю…' : Platform.OS === 'web' ? 'Открыть отчёт' : 'Сформировать PDF'}
         onPress={() => void generate()}
         disabled={busy || cats.length === 0}
       />
-    </AppCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
     marginBottom: space.xl,
   },
@@ -220,11 +222,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 8,
     borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
   },
-  chipOn: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.text },
+  chipOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
   chipText: { fontSize: type.micro, fontWeight: '600', color: colors.textSecondary },
-  chipTextOn: { color: colors.text, fontWeight: '800' },
+  chipTextOn: { color: colors.primaryButtonText },
   dateRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.lg },
   dateCol: { flex: 1 },
   micro: { fontSize: type.micro, color: colors.textMuted, marginBottom: 4, fontWeight: '700' },

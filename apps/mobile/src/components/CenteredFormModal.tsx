@@ -57,7 +57,7 @@ export function CenteredFormModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlayScrim,
+    backgroundColor: 'rgba(17,17,17,0.45)',
     justifyContent: 'center',
     padding: space.xl,
   },

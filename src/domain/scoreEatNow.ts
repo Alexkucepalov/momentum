@@ -5,7 +5,13 @@ import {
   type MacroRemaining,
 } from './remainingMacros';
 
-export type EatNowFilterId = 'all' | 'no_cook' | 'quick_15' | 'more_protein';
+export type EatNowFilterId =
+  | 'all'
+  | 'at_home'
+  | 'to_buy'
+  | 'no_cook'
+  | 'quick_15'
+  | 'more_protein';
 
 export type EatNowSourceKind = 'recipe' | 'product' | 'cooked_batch' | 'combo';
 
@@ -16,9 +22,14 @@ export type EatNowCandidateInput = {
   /** Nutrition per 100 g of the edible item. */
   per100: Nutrition;
   prepMinutes: number | null;
-  /** Last logged portion of this item; preferred over remaining-based sizing. */
-  lastGrams?: number | null;
-  photoUri?: string | null;
+  /** True when pantry / leftovers imply available without shopping. */
+  atHome: boolean;
+  /** True when suggestion may require a store run (catalog / not in pantry). */
+  toBuy?: boolean;
+  /** 0..1 ingredient pantry coverage; null if unknown / N/A. */
+  pantryRatio?: number | null;
+  /** Short RU hint e.g. «3/5 дома». */
+  coverageHint?: string | null;
 };
 
 export type EatNowCandidate = {
@@ -26,9 +37,6 @@ export type EatNowCandidate = {
   kind: EatNowSourceKind;
   title: string;
   suggestedGrams: number;
-  /** True when suggestedGrams came from the last logged portion. */
-  fromLastPortion: boolean;
-  photoUri: string | null;
   energyKcal: number | null;
   proteinG: number | null;
   fatG: number | null;
@@ -156,7 +164,14 @@ function matchesFilters(
 
   const matched: EatNowFilterId[] = [];
   for (const f of active) {
-    if (f === 'no_cook') {
+    if (f === 'at_home') {
+      if (!input.atHome) return { ok: false, matched };
+      matched.push(f);
+    } else if (f === 'to_buy') {
+      const buy = input.toBuy === true || input.atHome === false;
+      if (!buy) return { ok: false, matched };
+      matched.push(f);
+    } else if (f === 'no_cook') {
       if (input.prepMinutes === null || input.prepMinutes > 5) return { ok: false, matched };
       matched.push(f);
     } else if (f === 'quick_15') {
@@ -169,36 +184,39 @@ function matchesFilters(
   return { ok: true, matched };
 }
 
-/** Valid last portion in grams, or null. */
-export function usableLastGrams(lastGrams: number | null | undefined): number | null {
-  if (lastGrams == null || !Number.isFinite(lastGrams) || lastGrams <= 0) return null;
-  return Math.round(lastGrams);
-}
-
 function explanationFor(
   input: EatNowCandidateInput,
   matched: EatNowFilterId[],
-  fromLastPortion: boolean,
-  opts: { fitScore: number | null; remainingComparable: boolean },
+  fitScore: number | null,
+  portion: MacroFour,
+  remaining: MacroFour,
 ): string {
   const parts: string[] = [];
-  if (input.kind === 'cooked_batch') parts.push('Уже готово');
-  if (fromLastPortion) parts.push('Как в прошлый раз');
+  const hint = input.coverageHint?.trim();
   if (matched.includes('no_cook')) parts.push('Без готовки');
   else if (matched.includes('quick_15') || (input.prepMinutes !== null && input.prepMinutes <= 15)) {
     parts.push('Быстрый вариант');
+  } else if (input.atHome) {
+    parts.push('Из того, что уже есть');
+  } else if (hint && input.kind === 'recipe') {
+    parts.push('Не хватает ингредиентов');
   } else if (matched.includes('more_protein')) {
     parts.push('С акцентом на белок');
+  } else if (fitScore !== null && fitScore >= 0.7) {
+    parts.push('Хорошо ложится в остаток');
   } else if (input.kind === 'recipe') {
     parts.push('Из ваших рецептов');
-  } else if (input.kind !== 'cooked_batch') {
-    parts.push('Из ваших продуктов');
+  } else {
+    parts.push('Из продуктов');
   }
-  // Never claim a KBJU fit when remaining or item macros cannot be compared.
-  if (!opts.remainingComparable) {
-    parts.push('Без сравнения с остатком дня');
-  } else if (opts.fitScore === null) {
-    parts.push('КБЖУ неполные — точный fit недоступен');
+  if (hint) parts.push(hint);
+
+  if (portion.energyKcal !== null && remaining.energyKcal !== null) {
+    if (remaining.energyKcal > 0 && portion.energyKcal > remaining.energyKcal) {
+      parts.push(`порция ~${Math.round(portion.energyKcal)} ккал > остатка ${Math.round(remaining.energyKcal)}`);
+    } else if (remaining.energyKcal > MEAL_ENERGY_CAP_KCAL) {
+      parts.push(`порция на приём ~${Math.round(portion.energyKcal)} ккал`);
+    }
   }
   return parts.join(' · ');
 }
@@ -220,16 +238,11 @@ export function scoreEatNow(
     const { ok, matched } = matchesFilters(c, filters);
     if (!ok) continue;
 
-    const last = usableLastGrams(c.lastGrams);
     let suggestedGrams: number;
-    if (last !== null) {
-      suggestedGrams = last;
-    } else {
-      try {
-        suggestedGrams = suggestEatNowPortionGrams(c.per100, remaining, { preferProtein });
-      } catch {
-        continue;
-      }
+    try {
+      suggestedGrams = suggestEatNowPortionGrams(c.per100, remaining, { preferProtein });
+    } catch {
+      continue;
     }
 
     let n: Nutrition;
@@ -240,16 +253,15 @@ export function scoreEatNow(
     }
 
     const macros = nutritionToMacros(n);
-    const remainingComparable = hasAnyKnownRemaining(remaining);
-    const fitScore = remainingComparable ? computeFitScore(macros, remaining) : null;
+    const fitScore = hasAnyKnownRemaining(remaining)
+      ? computeFitScore(macros, remaining)
+      : null;
 
     out.push({
       id: c.id,
       kind: c.kind,
       title: c.title,
       suggestedGrams,
-      fromLastPortion: last !== null,
-      photoUri: c.photoUri ?? null,
       energyKcal: macros.energyKcal,
       proteinG: macros.proteinG,
       fatG: macros.fatG,
@@ -257,12 +269,13 @@ export function scoreEatNow(
       prepMinutes: c.prepMinutes,
       filtersMatched: matched,
       fitScore,
-      explanation: explanationFor(c, matched, last !== null, {
-        fitScore,
-        remainingComparable,
-      }),
+      explanation: explanationFor(c, matched, fitScore, macros, remaining),
     });
   }
+
+  const ratioById = new Map(
+    candidates.map((c) => [`${c.kind}:${c.id}`, c.pantryRatio ?? null] as const),
+  );
 
   out.sort((a, b) => {
     if (preferProtein) {
@@ -277,6 +290,13 @@ export function scoreEatNow(
     if (sa !== null && sb !== null && sa !== sb) return sb - sa;
     if (sa !== null && sb === null) return -1;
     if (sa === null && sb !== null) return 1;
+    const ra = ratioById.get(`${a.kind}:${a.id}`);
+    const rb = ratioById.get(`${b.kind}:${b.id}`);
+    if (ra !== null && ra !== undefined && rb !== null && rb !== undefined && ra !== rb) {
+      return rb - ra;
+    }
+    if (ra != null && rb == null) return -1;
+    if (ra == null && rb != null) return 1;
     return a.title.localeCompare(b.title, 'ru');
   });
 

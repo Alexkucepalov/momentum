@@ -8,10 +8,8 @@ export type WeeklyInsightInput = {
   energyHasUnknown: boolean;
   activityMinutes: number;
   workoutsCount: number;
-  /** Habits that reached their weekly target. */
-  habitsMetGoal: number;
-  /** Habits that have a weekly target. */
-  habitCount: number;
+  habitCompletions: number;
+  habitTargetsSum: number;
   challengesActive: number;
   challengesCompleted: number;
 };
@@ -38,12 +36,10 @@ export function buildWeeklyInsight(input: WeeklyInsightInput): WeeklyInsight {
       : 'Еда: на этой неделе пока без записей',
   );
 
-  if (input.foodDaysLogged === 0) {
-    lines.push('Ккал за неделю: нет записей питания');
-  } else if (input.energyHasUnknown || input.energyKcalSum == null) {
+  if (input.energyHasUnknown || input.energyKcalSum == null) {
     lines.push('Ккал за неделю: часть значений неизвестна — сумма не считается');
   } else {
-    lines.push(`Ккал за неделю (сумма дней с записями): ${Math.round(input.energyKcalSum)}`);
+    lines.push(`Ккал за неделю (сумма дней): ${Math.round(input.energyKcalSum)}`);
   }
 
   lines.push(
@@ -52,9 +48,9 @@ export function buildWeeklyInsight(input: WeeklyInsightInput): WeeklyInsight {
       : 'Активность: тренировок на этой неделе нет',
   );
 
-  if (input.habitCount > 0) {
+  if (input.habitTargetsSum > 0) {
     lines.push(
-      `Привычки: ${input.habitsMetGoal} из ${input.habitCount} достигли недельной цели`,
+      `Привычки: ${input.habitCompletions} из ${input.habitTargetsSum} по недельным целям`,
     );
   } else {
     lines.push('Привычки: целей на неделю пока нет');
@@ -95,10 +91,7 @@ export function collectWeeklyInsightStats(args: {
     const t = args.dailyTotals(day);
     if (t.entryCount > 0) foodDaysLogged += 1;
     entryCount += t.entryCount;
-    // Empty days must not contribute a known 0 kcal to the week sum.
-    if (t.entryCount === 0) {
-      // skip energy
-    } else if (t.hasUnknownFields || t.energyKcal == null) {
+    if (t.hasUnknownFields || t.energyKcal == null) {
       energyHasUnknown = true;
       energyKcalSum = null;
     } else if (energyKcalSum != null) {
@@ -109,10 +102,8 @@ export function collectWeeklyInsightStats(args: {
   }
 
   const habitStats = args.habitWeekStats();
-  const habitCount = habitStats.filter((h) => h.target > 0).length;
-  const habitsMetGoal = habitStats.filter(
-    (h) => h.target > 0 && h.completed >= h.target,
-  ).length;
+  const habitCompletions = habitStats.reduce((s, h) => s + Math.max(0, h.completed), 0);
+  const habitTargetsSum = habitStats.reduce((s, h) => s + Math.max(0, h.target), 0);
   const challenges = args.challenges();
   const challengesActive = challenges.filter((c) => c.status === 'active').length;
   const challengesCompleted = challenges.filter((c) => c.status === 'completed').length;
@@ -121,12 +112,12 @@ export function collectWeeklyInsightStats(args: {
     endDateLocal: args.endDateLocal,
     foodDaysLogged,
     entryCount,
-    energyKcalSum: foodDaysLogged === 0 ? null : energyKcalSum,
-    energyHasUnknown: foodDaysLogged === 0 ? false : energyHasUnknown,
+    energyKcalSum,
+    energyHasUnknown,
     activityMinutes,
     workoutsCount,
-    habitsMetGoal,
-    habitCount,
+    habitCompletions,
+    habitTargetsSum,
     challengesActive,
     challengesCompleted,
   });

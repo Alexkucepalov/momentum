@@ -104,7 +104,7 @@ export function RecookRecipeSheet({
       <FormScrollView variant="sheet" contentContainerStyle={styles.body}>
         <View style={styles.header}>
           <Text style={styles.title} accessibilityRole="header">
-            Новая приготовленная партия
+            Приготовить снова
           </Text>
           <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Закрыть">
             <Text style={styles.close}>Закрыть</Text>
@@ -112,8 +112,8 @@ export function RecookRecipeSheet({
         </View>
 
         <Text style={styles.lead}>
-          Партия ≠ съеденная порция и ≠ правка рецепта. Укажи граммы ингредиентов и выход готового —
-          исходный рецепт останется как был. В дневник потом добавляй порцию отдельно.
+          Укажи фактические граммы ингредиентов и вес готового блюда. Создастся отдельная партия —
+          исходный рецепт не изменится. Потом добавляй в дневник по 250–350 г.
         </Text>
 
         {ingredients.length > 0 ? (
@@ -167,7 +167,7 @@ export function RecookRecipeSheet({
           </Text>
         ) : null}
 
-        <PrimaryButton label="Создать партию (рецепт не меняется)" onPress={submit} />
+        <PrimaryButton label="Создать партию" onPress={submit} />
       </FormScrollView>
     </SwipeToDismissSheet>
   );
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
   },
   ingName: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
   ingInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
     width: 72,
     minHeight: touchMin - 4,
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.md,
+    backgroundColor: colors.surface,
     textAlign: 'center',
     fontSize: type.body,
     fontWeight: '700',
@@ -231,12 +231,12 @@ const styles = StyleSheet.create({
   ingUnit: { fontSize: type.caption, color: colors.textMuted, fontWeight: '600', width: 16 },
   yieldRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.lg },
   yieldInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
     flex: 1,
     minHeight: touchMin,
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.md,
+    backgroundColor: colors.surface,
     paddingHorizontal: space.md,
     fontSize: type.title,
     fontWeight: '800',

@@ -10,7 +10,6 @@ const ICONS: Record<
 > = {
   recent: { off: 'time-outline', on: 'time' },
   favorites: { off: 'star-outline', on: 'star' },
-  mine: { off: 'basket-outline', on: 'basket' },
   recipes: { off: 'restaurant-outline', on: 'restaurant' },
 };
 

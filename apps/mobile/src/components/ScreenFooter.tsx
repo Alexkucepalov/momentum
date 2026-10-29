@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, elevation, space } from '../theme/tokens';
+import { colors, space } from '../theme/tokens';
 
 /** Sticky bottom bar above tab bar — pads for home indicator / gesture nav. */
 export function ScreenFooter({ children }: { children: ReactNode }) {
@@ -26,9 +26,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     paddingHorizontal: space.lg,
-    paddingTop: space.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 0,
-    ...elevation.tabBar,
+    paddingTop: space.sm,
+    backgroundColor: colors.background,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
 });

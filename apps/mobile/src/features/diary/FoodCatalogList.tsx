@@ -2,19 +2,9 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 
 import { sortProductsByFrequency } from '../../../../../src/domain/productFrequency';
-import {
-  macrosForStrip,
-  nutritionPer100gCooked,
-} from '../../../../../src/domain/recipeNutrition';
-import type {
-  FoodEntry,
-  FoodProduct,
-  Recipe,
-  RecipeIngredient,
-} from '../../../../../src/storage/types';
+import type { FoodEntry, FoodProduct, Recipe } from '../../../../../src/storage/types';
 import { MacroStrip } from '../../components/MacroStrip';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
 
 const SOURCE_RU: Record<string, string> = {
   user: 'свой',
@@ -24,7 +14,7 @@ const SOURCE_RU: Record<string, string> = {
   missing: 'нет данных',
 };
 
-export type CatalogFilter = 'all' | 'favorites' | 'frequent' | 'recent' | 'recipes' | 'mine';
+export type CatalogFilter = 'all' | 'favorites' | 'frequent' | 'recent' | 'recipes';
 
 export function FoodCatalogList({
   filter,
@@ -35,7 +25,6 @@ export function FoodCatalogList({
   frequent,
   query,
   recipeIngredientCounts,
-  getRecipeIngredients,
   onAddProduct,
   onAddRecipe,
   onOpenRecipe,
@@ -53,8 +42,6 @@ export function FoodCatalogList({
   query: string;
   /** Optional map recipeId → ingredient count for richer cards. */
   recipeIngredientCounts?: Record<string, number>;
-  /** Required for consistent KBJU (Q-05); falls back to stored per-100g only if omitted. */
-  getRecipeIngredients?: (recipeId: string) => RecipeIngredient[];
   onAddProduct: (p: FoodProduct) => void;
   onAddRecipe: (r: Recipe) => void;
   onOpenRecipe?: (r: Recipe) => void;
@@ -79,12 +66,9 @@ export function FoodCatalogList({
     let list = products.filter((p) => {
       if (!searching) {
         if (filter === 'favorites' && !p.isFavorite) return false;
-        if (filter === 'mine' && p.source !== 'user') return false;
         if (filter === 'frequent') return freqScore.has(p.id);
         if (filter === 'recent' || filter === 'recipes') return false;
       } else if (filter === 'favorites' && !p.isFavorite) {
-        return false;
-      } else if (filter === 'mine' && p.source !== 'user') {
         return false;
       } else if (filter === 'frequent' && !freqScore.has(p.id)) {
         return false;
@@ -121,15 +105,10 @@ export function FoodCatalogList({
   })();
 
   const favoriteCount = products.filter((p) => p.isFavorite).length;
-  const mineCount = products.filter((p) => p.source === 'user').length;
   const showRecent = filter === 'recent' || (filter === 'all' && !searching);
   const showFrequentStrip = filter === 'all' && !searching && frequent.length > 0;
   const showProducts =
-    searching ||
-    filter === 'all' ||
-    filter === 'favorites' ||
-    filter === 'frequent' ||
-    filter === 'mine';
+    searching || filter === 'all' || filter === 'favorites' || filter === 'frequent';
   const showRecipes =
     searching || filter === 'recipes' || (filter === 'all' && recipes.length > 0);
 
@@ -148,14 +127,13 @@ export function FoodCatalogList({
     { id: 'all', label: 'Все', count: products.length + recipes.length, icon: 'grid-outline' },
     { id: 'frequent', label: 'Частые', count: frequent.length, icon: 'flash-outline' },
     { id: 'favorites', label: 'Избр.', count: favoriteCount, icon: 'star-outline' },
-    { id: 'mine', label: 'Мои', count: mineCount, icon: 'basket-outline' },
     { id: 'recent', label: 'Недавн.', count: recentUnique.length, icon: 'time-outline' },
     { id: 'recipes', label: 'Рецепты', count: recipes.length, icon: 'restaurant-outline' },
   ];
 
   return (
     <View style={styles.wrap}>
-      <AppCard padding="md" style={styles.panel}>
+      <View style={styles.panel}>
         <View style={styles.sectionHead}>
           <View>
             <Text style={styles.section} accessibilityRole="header">
@@ -216,7 +194,7 @@ export function FoodCatalogList({
           })}
         </ScrollView>
       ) : null}
-      </AppCard>
+      </View>
 
       {searching && !anyHits ? (
         <Text style={styles.hint}>
@@ -293,16 +271,7 @@ export function FoodCatalogList({
         <View style={styles.block}>
           {filter === 'all' ? <Text style={styles.sub}>Рецепты</Text> : null}
           {filteredRecipes.map((r) => {
-            const ings = getRecipeIngredients?.(r.id) ?? [];
-            const ingCount = recipeIngredientCounts?.[r.id] ?? ings.length;
-            const per100 = getRecipeIngredients
-              ? macrosForStrip(nutritionPer100gCooked(r, ings))
-              : {
-                  energyKcal: r.energyKcalPer100g,
-                  proteinG: r.proteinGPer100g,
-                  fatG: r.fatGPer100g,
-                  carbG: r.carbGPer100g,
-                };
+            const ingCount = recipeIngredientCounts?.[r.id] ?? 0;
             return (
               <View key={r.id} style={styles.card}>
                 <Pressable
@@ -330,7 +299,12 @@ export function FoodCatalogList({
                       Выход {r.cookedYieldG} г
                       {ingCount > 0 ? ` · ${ingCount} ингр.` : ''}
                     </Text>
-                    <MacroStrip {...per100} />
+                    <MacroStrip
+                      energyKcal={r.energyKcalPer100g}
+                      proteinG={r.proteinGPer100g}
+                      fatG={r.fatGPer100g}
+                      carbG={r.carbGPer100g}
+                    />
                   </View>
                 </Pressable>
                 <Pressable
@@ -467,6 +441,10 @@ export function FoodCatalogList({
 const styles = StyleSheet.create({
   wrap: { marginTop: space.sm, marginBottom: space.xl },
   panel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.md,
     marginBottom: space.md,
   },
@@ -540,7 +518,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  countPillOn: { backgroundColor: colors.chipOnInverse },
+  countPillOn: { backgroundColor: 'rgba(255,255,255,0.22)' },
   countText: { fontSize: type.micro, fontWeight: '800', color: colors.text },
   countTextOn: { color: colors.primaryButtonText },
   hint: {
@@ -553,6 +531,10 @@ const styles = StyleSheet.create({
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
     width: 140,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.md,
     minHeight: 120,
   },
@@ -576,26 +558,29 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: space.xs,
-    marginBottom: space.xs,
+    gap: space.sm,
+    marginBottom: space.sm,
   },
   cardMain: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
     minHeight: touchMin,
   },
   thumb: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.sm,
+    width: 68,
+    height: 68,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  cardBody: { flex: 1, paddingVertical: 0 },
+  cardBody: { flex: 1, paddingVertical: 2 },
   name: { fontSize: type.body, fontWeight: '700', color: colors.text },
   nameFlex: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text },
   metaRow: {
@@ -603,13 +588,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: space.xs,
-    marginTop: 2,
+    marginTop: 4,
   },
   sourcePill: {
     backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
     paddingHorizontal: space.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   sourcePillRef: {
     backgroundColor: colors.successSoft,
@@ -637,6 +622,10 @@ const styles = StyleSheet.create({
   },
   emptyCta: {
     minHeight: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.md,

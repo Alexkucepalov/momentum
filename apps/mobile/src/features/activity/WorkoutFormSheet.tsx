@@ -351,12 +351,12 @@ const styles = StyleSheet.create({
   preset: {
     flex: 1,
     minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   presetOn: {
     backgroundColor: colors.primaryButton,
@@ -367,9 +367,9 @@ const styles = StyleSheet.create({
   field: { marginBottom: space.md },
   fieldLabel: { fontSize: type.caption, color: colors.textSecondary, marginBottom: space.xs },
   input: {
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,

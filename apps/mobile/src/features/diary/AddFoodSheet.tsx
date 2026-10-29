@@ -11,10 +11,6 @@ import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeLookupSheet } from './BarcodeLookupSheet';
-import {
-  defaultProductPortionGrams,
-  defaultRecipePortionGrams,
-} from '../../../../../src/domain/defaultPortionGrams';
 import { ConfirmPortionSheet, type PortionTarget } from './ConfirmPortionSheet';
 import { AddFoodTabs } from './addFood/AddFoodTabs';
 import { FoodPickRow } from './addFood/FoodPickRow';
@@ -34,7 +30,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'mine', 'recipes'];
+const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'recipes'];
 
 export function AddFoodSheet({
   visible,
@@ -73,7 +69,6 @@ export function AddFoodSheet({
 
   const recent = repo.listRecentEntries(16);
   const favorites = repo.listFavorites();
-  const mineProducts = repo.listProducts().filter((p) => p.source === 'user');
   const recipes = repo.listRecipes();
   const products = repo.listProducts();
   const savedMeals = repo.listSavedMeals();
@@ -155,21 +150,15 @@ export function AddFoodSheet({
     finishQuick(`Добавлено: ${r.name}`);
   };
 
-  const openProductConfirm = (product: FoodProduct, initialGrams?: number) => {
-    setConfirm({
-      target: { kind: 'product', product },
-      initialGrams:
-        initialGrams ?? defaultProductPortionGrams(repo.lastGramsForProduct(product.id)),
-    });
+  const openProductConfirm = (product: FoodProduct, initialGrams = 100) => {
+    setConfirm({ target: { kind: 'product', product }, initialGrams });
   };
 
   const openRecipeConfirm = (recipe: Recipe, initialGrams?: number) => {
     const ings = repo.getRecipeIngredients(recipe.id);
     setConfirm({
       target: { kind: 'recipe', recipe, ingredients: ings },
-      initialGrams:
-        initialGrams ??
-        defaultRecipePortionGrams(repo.lastGramsForRecipe(recipe.id), recipe.cookedYieldG),
+      initialGrams: initialGrams ?? Math.min(200, recipe.cookedYieldG),
     });
   };
 
@@ -363,14 +352,11 @@ export function AddFoodSheet({
               searchHits.length === 0 ? (
                 <EmptyHint
                   title="Ничего не найдено"
-                  body="Сбрось фильтр поиска или добавь продукт вручную — нули за тебя не придумаем."
-                  actionLabel="Ввести вручную"
-                  onAction={() => setTab('manual')}
-                  secondaryActionLabel="Быстрый ввод"
-                  onSecondaryAction={() => setTab('quick')}
+                  body="Попробуй другое название или добавь продукт вручную / быстро."
                 />
               ) : (
                 <>
+                  <Text style={styles.tip}>Справочник, свои продукты, рецепты и недавние</Text>
                   {searchHits.map((hit) => {
                     if (hit.kind === 'recent') {
                       const e = hit.entry;
@@ -401,12 +387,8 @@ export function AddFoodSheet({
                               : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
                           }
                           icon="nutrition-outline"
-                          onPress={() =>
-                            openProductConfirm(p, defaultProductPortionGrams(last))
-                          }
-                          onQuickAdd={() =>
-                            quickAddProduct(p, defaultProductPortionGrams(last))
-                          }
+                          onPress={() => openProductConfirm(p, last ?? 100)}
+                          onQuickAdd={() => quickAddProduct(p, last ?? 100)}
                           accessibilityLabel={`Выбрать порцию ${p.name}`}
                         />
                       );
@@ -477,56 +459,8 @@ export function AddFoodSheet({
                             : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
                         }
                         icon="star-outline"
-                        onPress={() =>
-                          openProductConfirm(p, defaultProductPortionGrams(last))
-                        }
-                        onQuickAdd={() =>
-                          quickAddProduct(p, defaultProductPortionGrams(last))
-                        }
-                        accessibilityLabel={`Выбрать порцию ${p.name}`}
-                      />
-                    );
-                  })}
-                </>
-              )
-            ) : null}
-
-            {!searching && tab === 'mine' ? (
-              mineProducts.length === 0 ? (
-                <EmptyHint
-                  title="Нет своих продуктов"
-                  body="План → Мои продукты: вставь список названий. КБЖУ можно дописать позже — не выдумываем."
-                />
-              ) : (
-                <>
-                  <Text style={styles.tip}>
-                    Свои позиции. Без КБЖУ — порция всё равно спросит граммы, ккал останутся неизвестны.
-                  </Text>
-                  {mineProducts.map((p) => {
-                    const last = repo.lastGramsForProduct(p.id);
-                    const unknown =
-                      p.energyKcal == null &&
-                      p.proteinG == null &&
-                      p.fatG == null &&
-                      p.carbG == null;
-                    return (
-                      <FoodPickRow
-                        key={p.id}
-                        title={p.name}
-                        meta={
-                          unknown
-                            ? 'КБЖУ неизвестны'
-                            : last != null
-                              ? `Последняя порция · ${last} г`
-                              : `${p.energyKcal === null ? '—' : p.energyKcal} ккал/100г`
-                        }
-                        icon="basket-outline"
-                        onPress={() =>
-                          openProductConfirm(p, defaultProductPortionGrams(last))
-                        }
-                        onQuickAdd={() =>
-                          quickAddProduct(p, defaultProductPortionGrams(last))
-                        }
+                        onPress={() => openProductConfirm(p, last ?? 100)}
+                        onQuickAdd={() => quickAddProduct(p, last ?? 100)}
                         accessibilityLabel={`Выбрать порцию ${p.name}`}
                       />
                     );
@@ -645,7 +579,6 @@ export function AddFoodSheet({
                 <RecipesPanel
                   recipes={recipes}
                   getIngredientCount={(id) => repo.getRecipeIngredients(id).length}
-                  getRecipeIngredients={(id) => repo.getRecipeIngredients(id)}
                   onPickRecipe={(r) => openRecipeConfirm(r)}
                   onQuickAddRecipe={quickAddRecipe}
                   onCreateRecipe={(input) => {
@@ -741,45 +674,11 @@ export function AddFoodSheet({
   );
 }
 
-function EmptyHint({
-  title,
-  body,
-  actionLabel,
-  onAction,
-  secondaryActionLabel,
-  onSecondaryAction,
-}: {
-  title: string;
-  body: string;
-  actionLabel?: string;
-  onAction?: () => void;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
-}) {
+function EmptyHint({ title, body }: { title: string; body: string }) {
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyBody}>{body}</Text>
-      {actionLabel && onAction ? (
-        <Pressable
-          onPress={onAction}
-          style={({ pressed }) => [styles.emptyAction, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={actionLabel}
-        >
-          <Text style={styles.emptyActionText}>{actionLabel}</Text>
-        </Pressable>
-      ) : null}
-      {secondaryActionLabel && onSecondaryAction ? (
-        <Pressable
-          onPress={onSecondaryAction}
-          style={({ pressed }) => [styles.emptySecondary, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={secondaryActionLabel}
-        >
-          <Text style={styles.emptySecondaryText}>{secondaryActionLabel}</Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -842,17 +741,17 @@ const styles = StyleSheet.create({
   actionLabel: { fontSize: type.micro, fontWeight: '700', color: colors.text },
   actionLabelOn: { color: colors.primaryButtonText },
   searchBox: {
-    borderWidth: 1,
-    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     marginHorizontal: space.lg,
     marginBottom: space.sm,
     paddingHorizontal: space.md,
-    minHeight: touchMin,
-    backgroundColor: colors.surface,
+    minHeight: 44,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
   header: {
@@ -929,6 +828,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     marginBottom: space.md,
@@ -940,6 +843,10 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   empty: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
   },
   emptyTitle: {
@@ -953,35 +860,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 22,
   },
-  emptyAction: {
-    marginTop: space.md,
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.lg,
-  },
-  emptyActionText: {
-    fontWeight: '800',
-    color: colors.primaryButtonText,
-    fontSize: type.body,
-  },
-  emptySecondary: {
-    marginTop: space.sm,
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.lg,
-  },
-  emptySecondaryText: {
-    fontWeight: '700',
-    color: colors.text,
-    fontSize: type.caption,
-  },
-  pressed: { opacity: 0.88 },
 });
