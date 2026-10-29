@@ -232,18 +232,40 @@ export default function FoodScreen() {
             <CopyYesterdayButton />
 
             <SectionTitle title="Еда за день" />
-            {MEALS.map((slot) => (
-              <MealSection
-                key={slot}
-                meal={slot}
-                entries={mealEntries[slot]}
-                onDelete={onDelete}
-                onEditGrams={setEditing}
-                onAdd={() => openForMeal(slot)}
-                onRepeatMeal={() => repeatMealSlot(slot)}
-                onSaveMeal={() => setSaveMealSlot(slot)}
-              />
-            ))}
+            {entries.length === 0 ? (
+              <AppCard style={styles.emptyDay}>
+                <Text style={styles.emptyDayTitle}>Пока пусто</Text>
+                <Text style={styles.emptyDayBody}>
+                  Плюс внизу записывает еду за секунды. Приём выбирается в листе.
+                </Text>
+              </AppCard>
+            ) : (
+              MEALS.map((slot) => (
+                <MealSection
+                  key={slot}
+                  meal={slot}
+                  entries={mealEntries[slot]}
+                  onDelete={onDelete}
+                  onEditGrams={setEditing}
+                  onAdd={() => openForMeal(slot)}
+                  onRepeatMeal={() => repeatMealSlot(slot)}
+                  onSaveMeal={() => setSaveMealSlot(slot)}
+                />
+              ))
+            )}
+            <View style={styles.slotAdds}>
+              {MEALS.filter((slot) => mealEntries[slot].length === 0).map((slot) => (
+                <Pressable
+                  key={slot}
+                  onPress={() => openForMeal(slot)}
+                  style={styles.slotAdd}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Добавить в ${MEAL_LABELS[slot]}`}
+                >
+                  <Text style={styles.slotAddText}>+ {MEAL_LABELS[slot]}</Text>
+                </Pressable>
+              ))}
+            </View>
 
             <Pressable
               onPress={() => router.push('/plan/eat-now')}
@@ -445,4 +467,19 @@ const styles = StyleSheet.create({
     } as const),
   },
   pressed: { opacity: 0.88 },
+  emptyDay: { marginBottom: space.md, gap: space.xs },
+  emptyDayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
+  emptyDayBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
+  slotAdds: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginBottom: space.md,
+  },
+  slotAdd: {
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: space.sm,
+  },
+  slotAddText: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
 });

@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { SharedValue } from 'react-native-reanimated';
 
 import type { MealSlot, PlannedMeal } from '../../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, type } from '@/src/theme/tokens';
 import { AppCard } from '@/src/ui/AppCard';
 import { PlannedMealCard } from './PlannedMealCard';
 import { usePlanDrag, type DropTarget } from './planDragContext';
@@ -19,6 +18,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 export function MealSlotSection({
   slot,
   meals,
+  slotKcal,
   kcalFor,
   onAdd,
   onOpenMenu,
@@ -28,6 +28,7 @@ export function MealSlotSection({
 }: {
   slot: MealSlot;
   meals: PlannedMeal[];
+  slotKcal: string;
   kcalFor: (m: PlannedMeal) => string;
   onAdd: () => void;
   onOpenMenu: (m: PlannedMeal) => void;
@@ -57,8 +58,12 @@ export function MealSlotSection({
         accessibilityRole="summary"
       >
         <View style={styles.head}>
-          <Text style={[styles.heading, hot && styles.headingHot]}>{MEAL_LABELS[slot]}</Text>
-          {hot ? <Text style={styles.hotHint}>Отпустите сюда</Text> : null}
+          <Text style={styles.heading}>{MEAL_LABELS[slot]}</Text>
+          {hot ? (
+            <Text style={styles.hotHint}>Отпустите сюда</Text>
+          ) : slotKcal ? (
+            <Text style={styles.kcal}>{slotKcal}</Text>
+          ) : null}
         </View>
 
         {meals.map((m) => (
@@ -79,8 +84,7 @@ export function MealSlotSection({
           accessibilityRole="button"
           accessibilityLabel={`Добавить блюдо в ${MEAL_LABELS[slot]}`}
         >
-          <Ionicons name="add" size={20} color={colors.text} />
-          <Text style={styles.addText}>Добавить</Text>
+          <Text style={styles.addText}>+ Добавить блюдо</Text>
         </Pressable>
       </AppCard>
     </View>
@@ -100,29 +104,27 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   heading: {
+    flex: 1,
     fontSize: type.subtitle,
     fontWeight: '800',
     color: colors.text,
   },
-  headingHot: { color: colors.text },
+  kcal: {
+    fontSize: type.caption,
+    fontWeight: '800',
+    color: colors.textSecondary,
+  },
   hotHint: {
     fontSize: type.micro,
     fontWeight: '800',
     color: colors.textMuted,
   },
   add: {
-    minHeight: touchMin,
-    flexDirection: 'row',
-    alignItems: 'center',
+    minHeight: 44,
     justifyContent: 'center',
-    gap: space.sm,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentSoft,
-    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
-  addHot: {
-    backgroundColor: colors.focusSoft,
-  },
-  addText: { fontSize: type.body, fontWeight: '700', color: colors.text },
+  addHot: {},
+  addText: { fontSize: type.body, fontWeight: '700', color: colors.textSecondary },
   pressed: { opacity: 0.88 },
 });

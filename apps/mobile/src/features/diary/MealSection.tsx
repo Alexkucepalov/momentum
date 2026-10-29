@@ -50,32 +50,15 @@ export function MealSection({
   const canSave =
     !!onSaveMeal && entries.some((e) => e.productId != null || e.recipeId != null);
 
-  if (empty) {
-    return (
-      <AppCard onPress={onAdd} style={styles.emptyCard} accessibilityLabel={`${MEAL_LABELS[meal]} — добавить`}>
-        <View style={styles.emptyRow}>
-          <View style={styles.flex}>
-            <Text style={styles.heading}>{MEAL_LABELS[meal]}</Text>
-            <Text style={styles.hint}>нажми, чтобы добавить</Text>
-          </View>
-          <View style={styles.plus}>
-            <Ionicons name="add" size={22} color={colors.text} />
-          </View>
-        </View>
-      </AppCard>
-    );
-  }
+  if (empty) return null;
 
   return (
     <AppCard padding="none" style={styles.card}>
-      <View style={styles.head}>
-        <View style={styles.flex}>
-          <Text style={styles.heading}>{MEAL_LABELS[meal]}</Text>
-          <Text style={styles.meta}>
-            {sectionKcal === null ? 'ккал частично неизвестны' : `${fmtKcal(sectionKcal)} ккал`}
-            {entries.length > 1 ? ` · ${entries.length}` : ''}
-          </Text>
-        </View>
+        <View style={styles.head}>
+        <Text style={styles.heading}>{MEAL_LABELS[meal]}</Text>
+        <Text style={styles.kcalHead}>
+          {sectionKcal === null ? '— ккал' : `${fmtKcal(sectionKcal)} ккал`}
+        </Text>
         {canSave ? (
           <IconBtn label={`Сохранить ${MEAL_LABELS[meal]}`} icon="bookmark-outline" onPress={onSaveMeal!} />
         ) : null}
@@ -128,7 +111,7 @@ const styles = StyleSheet.create({
   emptyCard: { marginBottom: space.sm },
   emptyRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   flex: { flex: 1 },
-  heading: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
+  heading: { fontSize: type.subtitle, fontWeight: '800', color: colors.text, flex: 1 },
   hint: { marginTop: 2, fontSize: type.caption, color: colors.textMuted },
   meta: { marginTop: 2, fontSize: type.caption, color: colors.textMuted },
   plus: {
@@ -142,10 +125,16 @@ const styles = StyleSheet.create({
   head: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs,
+    justifyContent: 'space-between',
+    gap: space.sm,
     paddingHorizontal: space.md,
     paddingTop: space.md,
     paddingBottom: space.sm,
+  },
+  kcalHead: {
+    fontSize: type.caption,
+    fontWeight: '800',
+    color: colors.textSecondary,
   },
   iconBtn: {
     width: 40,
