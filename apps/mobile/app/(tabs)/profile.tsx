@@ -2,23 +2,17 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
-import {
-  nutritionConsistencyHint,
-  parseMacroField,
-} from '../../../../src/domain/nutritionConsistency';
 import { localDateKey } from '../../../../src/storage/validation';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { shell } from '@/src/theme/shell';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
-import { SoftHeader } from '@/src/ui/SoftHeader';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -42,6 +36,7 @@ function profileToFields(profile: {
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { repo, refresh, revision, showFlash, setDateLocal } = useData();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
@@ -75,18 +70,6 @@ export default function ProfileScreen() {
     if (profile.waterTargetMl != null) chips.push(`${profile.waterTargetMl} мл воды`);
     return chips;
   }, [profile]);
-
-  /** Soft note only — never auto-rewrite independent daily targets. */
-  const targetsMacroHint = useMemo(() => {
-    const hint = nutritionConsistencyHint({
-      energyKcal: parseMacroField(kcalRaw),
-      proteinG: parseMacroField(proteinRaw),
-      fatG: parseMacroField(fatRaw),
-      carbG: parseMacroField(carbRaw),
-    });
-    if (!hint) return null;
-    return 'ккал и БЖУ заданы независимо — по формуле 4/9/4 они сейчас расходятся. Цели не меняем без тебя.';
-  }, [kcalRaw, proteinRaw, fatRaw, carbRaw]);
 
   const parseOptionalPositive = (raw: string, label: string): number | null => {
     const t = raw.trim();
@@ -263,11 +246,13 @@ export default function ProfileScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <SoftHeader eyebrow="Профиль" title="Цели и данные" />
         <View style={styles.hero}>
           <View style={styles.avatar}>
             <Ionicons name="person" size={28} color={colors.text} />
           </View>
+          <Text style={styles.name} accessibilityRole="header">
+            Профиль
+          </Text>
           <Text style={styles.meta}>Только на устройстве · {profile.timezone}</Text>
           {summary.length > 0 ? (
             <View style={styles.summaryRow} accessibilityLabel={`Активные цели: ${summary.join(', ')}`}>
@@ -282,9 +267,36 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        <View style={styles.secondaryLinks} accessibilityRole="summary">
+          <Pressable
+            onPress={() => router.push('/(tabs)/food')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Питание"
+          >
+            <Text style={styles.secondaryLinkText}>Питание →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/recipes')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Рецепты"
+          >
+            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(tabs)/progress')}
+            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel="Прогресс"
+          >
+            <Text style={styles.secondaryLinkText}>Прогресс →</Text>
+          </Pressable>
+        </View>
+
         <SettingsCard
           title="КБЖУ на день"
-          hint="Свои числа · пусто = без цели · ккал и БЖУ независимы"
+          hint="Твои числа, без автонорм. Сохраняется, когда уходишь с поля. Пусто = без цели."
           icon="flame-outline"
         >
           <LabeledField
@@ -343,14 +355,32 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
-          {targetsMacroHint ? (
-            <Text style={styles.targetsHint} accessibilityLiveRegion="polite">
-              {targetsMacroHint}
-            </Text>
-          ) : null}
         </SettingsCard>
 
-        <SettingsCard title="Вода" hint="Цель на Сегодня · пресет или своё число" icon="water-outline">
+        <SettingsCard
+          title="Рост"
+          hint="Для ИМТ в Прогрессе. Сохраняется при уходе с поля. Справочно, не диагноз."
+          icon="resize-outline"
+        >
+          <LabeledField
+            label="Сантиметры"
+            value={heightRaw}
+            onChangeText={setHeightRaw}
+            onCommit={(t) => {
+              setHeightRaw(t);
+              commitHeight(t);
+            }}
+            keyboardType="decimal-pad"
+            placeholder="например 175"
+            accessibilityLabel="Рост в сантиметрах"
+          />
+        </SettingsCard>
+
+        <SettingsCard
+          title="Вода"
+          hint="Мягкая подсказка на Сегодня. Пресет или своё число — сохраняется сразу."
+          icon="water-outline"
+        >
           <View style={styles.presets}>
             {WATER_PRESETS.map((ml) => {
               const on = profile.waterTargetMl === ml;
@@ -389,22 +419,7 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
-        <SettingsCard title="Рост" hint="Для ИМТ в Прогрессе" icon="resize-outline">
-          <LabeledField
-            label="Сантиметры"
-            value={heightRaw}
-            onChangeText={setHeightRaw}
-            onCommit={(t) => {
-              setHeightRaw(t);
-              commitHeight(t);
-            }}
-            keyboardType="decimal-pad"
-            placeholder="например 175"
-            accessibilityLabel="Рост в сантиметрах"
-          />
-        </SettingsCard>
-
-        <SettingsCard title="Приватность" hint="Локально на устройстве" icon="shield-outline">
+        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
           <PrivacyRow
             icon="phone-portrait-outline"
             text="Дневник, вес и привычки хранятся локально на устройстве."
@@ -425,25 +440,16 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="Данные"
-          hint="Экспорт / импорт · импорт заменяет локальные данные"
+          hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
           icon="folder-outline"
         >
           <PrimaryButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
           <View style={{ height: space.sm }} />
-          <PrimaryButton
-            variant="secondary"
-            label="Загрузить демо 2 недели"
-            onPress={onImportDemo}
-          />
+          <PrimaryButton label="Загрузить демо 2 недели" onPress={onImportDemo} />
+          <View style={{ height: space.sm }} />
+          <PrimaryButton label="Импорт из буфера телефона" onPress={() => void onImportClipboard()} />
           <View style={{ height: space.sm }} />
           <PrimaryButton
-            variant="secondary"
-            label="Импорт из буфера телефона"
-            onPress={() => void onImportClipboard()}
-          />
-          <View style={{ height: space.sm }} />
-          <PrimaryButton
-            variant="secondary"
             label="Вставить JSON"
             onPress={() => {
               setPasteRaw('');
@@ -523,7 +529,7 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <AppCard style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.cardHead}>
         <View style={styles.cardIcon}>
           <Ionicons name={icon} size={18} color={colors.text} />
@@ -536,7 +542,7 @@ function SettingsCard({
         </View>
       </View>
       {children}
-    </AppCard>
+    </View>
   );
 }
 
@@ -597,7 +603,7 @@ function PrivacyRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: shell.screenBottom },
+  content: { padding: space.lg },
   secondaryLinks: {
     marginBottom: space.lg,
     gap: space.xs,
@@ -612,16 +618,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  hero: { alignItems: 'center', marginBottom: space.md },
+  hero: { alignItems: 'center', marginBottom: space.xl },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space.md,
   },
+  name: { fontSize: type.title, fontWeight: '800', color: colors.text },
   meta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 4 },
   summaryRow: {
     flexDirection: 'row',
@@ -631,7 +638,9 @@ const styles = StyleSheet.create({
     marginTop: space.md,
   },
   summaryChip: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.pill,
     paddingHorizontal: space.md,
     paddingVertical: 6,
@@ -642,14 +651,13 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     color: colors.textMuted,
   },
-  targetsHint: {
-    marginTop: space.sm,
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
   card: {
-    marginBottom: space.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
+    marginBottom: space.lg,
     gap: space.sm,
   },
   cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },
@@ -662,11 +670,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardHeadText: { flex: 1 },
-  cardTitle: {
-    fontSize: type.subtitle,
-    fontWeight: '800',
-    color: colors.text,
-  },
+  cardTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
   cardHint: {
     fontSize: type.caption,
     color: colors.textSecondary,
@@ -767,10 +771,10 @@ const styles = StyleSheet.create({
   },
   pasteInput: {
     flex: 1,
-    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
+    backgroundColor: colors.surface,
     padding: space.md,
     fontSize: 12,
     fontFamily: 'monospace',

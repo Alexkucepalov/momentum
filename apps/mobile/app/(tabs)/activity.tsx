@@ -1,27 +1,22 @@
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from 'expo-router';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
 import type { WorkoutType } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
-import { DayStrip } from '@/src/components/DayStrip';
+import { DateSwitcher } from '@/src/components/DateSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
+import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
 import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
-import { shell } from '@/src/theme/shell';
-import { colors, space, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
-import { BentoRow } from '@/src/ui/BentoRow';
-import { BentoStat } from '@/src/ui/BentoStat';
-import { Fab } from '@/src/ui/Fab';
-import { IconTile } from '@/src/ui/IconTile';
-import { SectionTitle } from '@/src/ui/SectionTitle';
-import { SoftHeader } from '@/src/ui/SoftHeader';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -31,8 +26,8 @@ const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Io
   { type: 'other', label: 'Другое', icon: 'fitness-outline' },
 ];
 
-/** Activity — Nutrition Soft Light (same language as Food/Progress). */
 export default function ActivityScreen() {
+  const navigation = useNavigation();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
   const [formOpen, setFormOpen] = useState(false);
@@ -49,6 +44,22 @@ export default function ActivityScreen() {
   const totalMin = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => openForm('walking')}
+          accessibilityRole="button"
+          accessibilityLabel="Добавить тренировку"
+          style={styles.headerBtn}
+          hitSlop={8}
+        >
+          <Ionicons name="add" size={26} color={colors.text} />
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
+
   const weekMinutes = useMemo(() => {
     const start = weekStartMonday(dateLocal);
     const dates = datesInWeekFromStart(start);
@@ -61,96 +72,98 @@ export default function ActivityScreen() {
     return { start, end: dates[6] ?? start, sum, days };
   }, [repo, dateLocal, revision]);
   const todayKey = localDateKey(new Date(), profile.timezone);
-  const emptyWeek = workouts.length === 0 && weekMinutes.sum === 0;
 
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <SoftHeader eyebrow="Движение" title="Активность" />
-        <DayStrip
+        <DateSwitcher
           selected={dateLocal}
-          today={todayKey}
+          timeZone={profile.timezone}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
         />
 
-        <SectionTitle title="Сегодня" />
-        <BentoRow>
-          <BentoStat label="Минуты" value={String(totalMin)} meta="за день" />
-          <BentoStat
-            label="Оценка"
-            value={activityKcal != null ? String(activityKcal) : '—'}
-            meta="ккал MET"
-          />
-        </BentoRow>
-        <BentoStat
-          label="Неделя"
-          value={String(weekMinutes.sum)}
-          meta={`мин · ${formatWeekRangeRu(weekMinutes.start, weekMinutes.end)}`}
-          wide
-        />
-        <Text style={styles.summaryHint}>
-          Ккал тренировок не вычитаются из еды — только факт движения
-        </Text>
-
-        {emptyWeek ? (
-          <EmptyState
-            compact
-            icon="fitness-outline"
-            title="Начни с первой активности"
-            body="Запись останется на устройстве."
-          />
-        ) : (
-          <WeekBarChart
-            title="Неделя активности"
-            subtitle={`${formatWeekRangeRu(weekMinutes.start, weekMinutes.end)} · ${weekMinutes.sum} мин`}
-            selectedDate={dateLocal}
-            todayDate={todayKey}
-            onSelectDate={setDateLocal}
-            footnote="Столбик — минуты тренировок за день. Пустой день — просто нет записей."
-            days={weekMinutes.days.map((d) => ({
-              dateLocal: d.date,
-              weekdayIndex: d.weekdayIndex,
-              value: d.min,
-              valueLabel: d.min === 0 ? '·' : String(d.min),
-            }))}
-          />
-        )}
-
-        <SectionTitle title="Быстрый старт" />
-        <View style={styles.tileGrid}>
-          {TYPE_META.map((t) => (
-            <IconTile
-              key={t.type}
-              icon={t.icon}
-              label={t.label}
-              onPress={() => openForm(t.type)}
-              accessibilityLabel={`Добавить ${t.label}`}
+        {workouts.length === 0 && weekMinutes.sum === 0 ? (
+          <>
+            <EmptyState
+              compact
+              icon="fitness-outline"
+              title="Начни с первой активности"
+              body="Запись останется на устройстве. Ккал тренировок не вычитаются из еды."
+              actionLabel="+ Тренировка"
+              onAction={() => openForm('walking')}
             />
-          ))}
-        </View>
-
-        <SectionTitle title="Записи дня" />
-        {workouts.length === 0 ? (
-          <AppCard style={styles.emptyDay}>
-            <Text style={styles.emptyDayText}>В этот день пока пусто</Text>
-          </AppCard>
+            <Text style={styles.quickLabel}>Быстрый старт</Text>
+            <View style={styles.quickRow}>
+              {TYPE_META.map((t) => (
+                <Pressable
+                  key={t.type}
+                  style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                  onPress={() => openForm(t.type)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Добавить ${t.label}`}
+                >
+                  <Ionicons name={t.icon} size={18} color={colors.text} />
+                  <Text style={styles.quickChipText}>{t.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
         ) : (
-          workouts.map((w) => (
-            <WorkoutRow
-              key={w.id}
-              workout={w}
-              onDelete={() => {
-                repo.softDeleteWorkout(w.id);
-                refresh();
-                showFlash('Тренировка удалена');
-              }}
+          <>
+            <View style={styles.summary} accessibilityRole="summary">
+              <Text style={styles.summaryValue}>{totalMin}</Text>
+              <Text style={styles.summaryLabel}>мин за выбранный день</Text>
+              <Text style={styles.summaryHint}>
+                {activityKcal != null
+                  ? `Оценка ~${activityKcal} ккал (MET) · не вычитается из еды`
+                  : 'Ккал тренировок не вычитаются из еды — только факт движения'}
+              </Text>
+            </View>
+
+            <WeekBarChart
+              title="Неделя активности"
+              subtitle={`${formatWeekRangeRu(weekMinutes.start, weekMinutes.end)} · ${weekMinutes.sum} мин`}
+              selectedDate={dateLocal}
+              todayDate={todayKey}
+              onSelectDate={setDateLocal}
+              footnote="Столбик — минуты тренировок за день. Пустой день — просто нет записей."
+              days={weekMinutes.days.map((d) => ({
+                dateLocal: d.date,
+                weekdayIndex: d.weekdayIndex,
+                value: d.min,
+                valueLabel: d.min === 0 ? '·' : String(d.min),
+              }))}
             />
-          ))
+
+            <PrimaryButton label="+ Тренировка" onPress={() => openForm('walking')} />
+
+            <SectionHeader title="Записи дня" />
+            {workouts.length === 0 ? (
+              <EmptyState
+                compact
+                icon="fitness-outline"
+                title="В этот день пусто"
+                body="Добавь тренировку или выбери другой день на неделе."
+                actionLabel="+ Тренировка"
+                onAction={() => openForm('walking')}
+              />
+            ) : (
+              workouts.map((w) => (
+                <WorkoutRow
+                  key={w.id}
+                  workout={w}
+                  onDelete={() => {
+                    repo.softDeleteWorkout(w.id);
+                    refresh();
+                    showFlash('Тренировка удалена');
+                  }}
+                />
+              ))
+            )}
+          </>
         )}
       </ScrollView>
-
-      <Fab onPress={() => openForm('walking')} accessibilityLabel="Добавить тренировку" />
 
       <WorkoutFormSheet
         visible={formOpen}
@@ -175,25 +188,59 @@ export default function ActivityScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: shell.screenBottom },
-  summaryHint: {
+  content: { padding: space.lg, paddingBottom: 48 },
+  headerBtn: {
+    minWidth: touchMin,
+    minHeight: touchMin,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: space.sm,
+  },
+  summary: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.xl,
+    alignItems: 'center',
     marginBottom: space.md,
+  },
+  summaryValue: { fontSize: type.hero, fontWeight: '800', color: colors.text },
+  summaryLabel: { fontSize: type.body, color: colors.textSecondary, marginTop: 4 },
+  summaryHint: {
+    marginTop: space.sm,
     fontSize: type.caption,
     color: colors.textMuted,
+    textAlign: 'center',
   },
-  tileGrid: {
+  pressed: { opacity: 0.88 },
+  quickLabel: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginBottom: space.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  quickRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space.sm,
-    marginBottom: space.md,
   },
-  emptyDay: {
-    marginBottom: space.md,
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: touchMin,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  emptyDayText: {
-    fontSize: type.body,
-    fontWeight: '600',
-    color: colors.textMuted,
-    textAlign: 'center',
+  quickChipText: {
+    fontSize: type.caption,
+    fontWeight: '700',
+    color: colors.text,
   },
 });

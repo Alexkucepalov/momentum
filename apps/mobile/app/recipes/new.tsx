@@ -5,12 +5,10 @@ import { useRouter } from 'expo-router';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { RecipeEditorForm } from '@/src/features/recipes/RecipeEditorForm';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
-import { clearImportTextDraft } from '@/src/features/recipes/importTextDraftStore';
 import { consumeRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
 import { useData } from '@/src/state/DataContext';
-import { colors, space, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
+import { colors, radius, space, type } from '@/src/theme/tokens';
 
 export default function NewRecipeScreen() {
   const router = useRouter();
@@ -21,13 +19,13 @@ export default function NewRecipeScreen() {
   return (
     <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
       {fromImport ? (
-        <AppCard padding="md" style={styles.banner} accessibilityRole="summary">
+        <View style={styles.banner} accessibilityRole="summary">
           <Text style={styles.bannerTitle}>Черновик из текста</Text>
           <Text style={styles.bannerBody}>
             Проверь название, выход и граммы. Пустые КБЖУ — это нормально: не подставляем нули.
             Сохрани, когда всё ок.
           </Text>
-        </AppCard>
+        </View>
       ) : (
         <View style={styles.alt}>
           <Text style={styles.altTitle}>Другие способы</Text>
@@ -59,7 +57,6 @@ export default function NewRecipeScreen() {
                 repo.updateRecipe(recipe.id, { photoUri: values.photoUri });
               }
             }
-            if (fromImport) void clearImportTextDraft();
             refresh();
             showFlash(`Рецепт сохранён: ${recipe.name}`);
             router.replace(`/recipes/${recipe.id}`);
@@ -74,8 +71,12 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg },
   banner: {
-    backgroundColor: colors.focusSoft,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.md,
+    padding: space.md,
     marginBottom: space.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   bannerTitle: { fontWeight: '800', fontSize: type.subtitle, color: colors.text },
   bannerBody: {

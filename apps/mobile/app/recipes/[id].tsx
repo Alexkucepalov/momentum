@@ -12,17 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { portion } from '../../../../src/domain/nutrition';
-import {
-  nutritionForRecipePortion,
-  nutritionPer100gCooked,
-} from '../../../../src/domain/recipeNutrition';
+import { nutritionForRecipePortion } from '../../../../src/domain/recipeNutrition';
 import { ConfirmPortionSheet } from '@/src/features/diary/ConfirmPortionSheet';
 import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, space, touchMin, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
+import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL_LABELS = {
   breakfast: 'Завтрак',
@@ -51,7 +47,7 @@ export default function RecipeDetailScreen() {
   const preview = useMemo(() => {
     if (!recipe) return null;
     try {
-      return nutritionPer100gCooked(recipe, ingredients);
+      return nutritionForRecipePortion(recipe, ingredients, 100);
     } catch {
       return null;
     }
@@ -91,35 +87,39 @@ export default function RecipeDetailScreen() {
             style={styles.hero}
             accessibilityLabel={`Фото ${recipe.name}`}
           />
-        ) : null}
+        ) : (
+          <View style={[styles.hero, styles.heroEmpty]}>
+            <Ionicons name="restaurant-outline" size={40} color={colors.textMuted} />
+          </View>
+        )}
 
         <Text style={styles.title} accessibilityRole="header">
           {recipe.name}
         </Text>
         <Text style={styles.meta}>Выход {recipe.cookedYieldG} г готового</Text>
 
-        <AppCard padding="md" style={styles.macros}>
+        <View style={styles.macros}>
           <Macro label="ккал/100г" value={fmt(preview?.kcal ?? null)} />
           <Macro label="Б" value={fmt(preview?.protein ?? null)} />
           <Macro label="Ж" value={fmt(preview?.fat ?? null)} />
           <Macro label="У" value={fmt(preview?.carbs ?? null)} />
-        </AppCard>
+        </View>
 
         {recipe.description ? (
-          <AppCard padding="md" style={styles.block}>
+          <View style={styles.block}>
             <Text style={styles.blockTitle}>Описание</Text>
             <Text style={styles.blockBody}>{recipe.description}</Text>
-          </AppCard>
+          </View>
         ) : null}
 
         {recipe.instructions ? (
-          <AppCard padding="md" style={styles.block}>
+          <View style={styles.block}>
             <Text style={styles.blockTitle}>Как готовить</Text>
             <Text style={styles.blockBody}>{recipe.instructions}</Text>
-          </AppCard>
+          </View>
         ) : null}
 
-        <AppCard padding="md" style={styles.block}>
+        <View style={styles.block}>
           <Text style={styles.blockTitle}>
             Ингредиенты · {ingredients.length}
           </Text>
@@ -144,24 +144,31 @@ export default function RecipeDetailScreen() {
               </View>
             ))
           )}
-        </AppCard>
+        </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerHint}>
-            Съеденная порция → дневник ({MEAL_LABELS[meal]}). Партия — отдельная заготовка, не лог еды.
-          </Text>
-          <PrimaryButton label="Добавить съеденную порцию" onPress={() => setConfirmOpen(true)} />
+          <Text style={styles.footerHint}>В дневник попадёт в текущий приём: {MEAL_LABELS[meal]}</Text>
+          <PrimaryButton label="Добавить порцию в дневник" onPress={() => setConfirmOpen(true)} />
 
-          <PrimaryButton
-            variant="secondary"
-            label="Приготовить партию"
+          <Pressable
+            style={styles.editBtn}
             onPress={() => setRecookOpen(true)}
-          />
-          <PrimaryButton
-            variant="secondary"
-            label="Редактировать"
+            accessibilityRole="button"
+            accessibilityLabel="Приготовить снова"
+          >
+            <Ionicons name="flame-outline" size={18} color={colors.text} />
+            <Text style={styles.editBtnText}>Приготовить снова</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.editBtn}
             onPress={() => router.push(`/recipes/edit/${recipe.id}`)}
-          />
+            accessibilityRole="button"
+            accessibilityLabel="Редактировать рецепт"
+          >
+            <Ionicons name="create-outline" size={18} color={colors.text} />
+            <Text style={styles.editBtnText}>Редактировать</Text>
+          </Pressable>
 
           <Pressable
             style={styles.deleteBtn}
@@ -218,7 +225,7 @@ export default function RecipeDetailScreen() {
         onConfirm={(draft) => {
           const batch = repo.cookAgainRecipe(recipe.id, draft, dateLocal);
           refresh();
-          showFlash(`Партия создана (рецепт не изменён): ${batch.name}`);
+          showFlash(`Партия: ${batch.name}`);
           setRecookOpen(false);
           router.replace(`/recipes/${batch.id}`);
         }}
@@ -243,9 +250,10 @@ const styles = StyleSheet.create({
   missingTitle: { fontSize: type.title, fontWeight: '700', color: colors.text },
   hero: {
     width: '100%',
-    height: 180,
+    height: 220,
     backgroundColor: colors.accentSoft,
   },
+  heroEmpty: { alignItems: 'center', justifyContent: 'center' },
   title: {
     fontSize: type.hero - 4,
     fontWeight: '800',
@@ -263,6 +271,10 @@ const styles = StyleSheet.create({
   macros: {
     flexDirection: 'row',
     marginHorizontal: space.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingVertical: space.md,
     marginBottom: space.lg,
   },
@@ -272,6 +284,11 @@ const styles = StyleSheet.create({
   block: {
     marginHorizontal: space.lg,
     marginBottom: space.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
   },
   blockTitle: {
     fontSize: type.caption,
@@ -311,6 +328,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
     minHeight: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   editBtnText: { fontWeight: '700', color: colors.text, fontSize: type.body },
   deleteBtn: {

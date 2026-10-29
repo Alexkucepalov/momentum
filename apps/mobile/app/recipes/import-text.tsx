@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -10,15 +10,9 @@ import {
 } from '../../../../src/domain/parseRecipeText';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
-import {
-  clearImportTextDraft,
-  loadImportTextDraft,
-  saveImportTextDraft,
-} from '@/src/features/recipes/importTextDraftStore';
 import { parsedRecipeToFormInitial } from '@/src/features/recipes/parsedRecipeToFormInitial';
 import { setRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
 import { alertMessage } from '@/src/utils/confirmAction';
 
 /** Per-100g macros from parser only — never invent. */
@@ -36,32 +30,6 @@ export default function ImportRecipeTextScreen() {
   const router = useRouter();
   const [raw, setRaw] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [draftReady, setDraftReady] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const saved = await loadImportTextDraft();
-      if (!cancelled && saved) setRaw(saved);
-      if (!cancelled) setDraftReady(true);
-    })();
-    return () => {
-      cancelled = true;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!draftReady) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      void saveImportTextDraft(raw);
-    }, 400);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [raw, draftReady]);
 
   const preview = useMemo(() => {
     const t = raw.trim();
@@ -96,8 +64,6 @@ export default function ImportRecipeTextScreen() {
     }
     setError(null);
     setRecipeImportDraft(parsedRecipeToFormInitial(parsed));
-    // Keep file draft until recipe is saved — user may back out of editor.
-    void saveImportTextDraft(t);
     router.replace('/recipes/new');
   };
 
@@ -107,11 +73,11 @@ export default function ImportRecipeTextScreen() {
 
   return (
     <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <AppCard padding="lg" style={styles.steps}>
+      <View style={styles.steps}>
         <Step n={1} text="Вставь текст из чата или заметки" />
-        <Step n={2} text="Проверь предпросмотр (черновик сохранится, если уйдёшь)" />
+        <Step n={2} text="Проверь предпросмотр" />
         <Step n={3} text="Открой редактор и сохрани" />
-      </AppCard>
+      </View>
 
       <View style={styles.pasteRow}>
         <Pressable
@@ -128,7 +94,6 @@ export default function ImportRecipeTextScreen() {
             onPress={() => {
               setRaw('');
               setError(null);
-              void clearImportTextDraft();
             }}
             style={({ pressed }) => [styles.pasteBtn, pressed && styles.pressed]}
             accessibilityRole="button"
@@ -156,7 +121,7 @@ export default function ImportRecipeTextScreen() {
       />
 
       {preview && raw.trim() ? (
-        <AppCard padding="lg" style={styles.preview} accessibilityLabel="Предпросмотр разбора">
+        <View style={styles.preview} accessibilityLabel="Предпросмотр разбора">
           <Text style={styles.previewTitle}>Что распознали</Text>
           <Text style={styles.previewLine}>Название: {preview.name ?? '—'}</Text>
           <Text style={styles.previewLine}>
@@ -187,7 +152,7 @@ export default function ImportRecipeTextScreen() {
           <Text style={styles.hint}>
             Пустые Б/Ж/У — неизвестны, не ноль. В редакторе поправь только сомнительные поля.
           </Text>
-        </AppCard>
+        </View>
       ) : (
         <Text style={styles.idleHint}>Вставь текст — ниже появится разбор без выдуманных цифр.</Text>
       )}
@@ -225,7 +190,11 @@ function Step({ n, text }: { n: number; text: string }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.lg, gap: space.lg, paddingBottom: 40 },
-  steps: {
+  steps: { 
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
     gap: space.md,
   },
@@ -251,25 +220,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    shadowColor: colors.shadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 2,
+    elevation: 1,
   },
   pasteBtnText: { fontWeight: '700', fontSize: type.body, color: colors.text },
   input: {
     minHeight: 240,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
     padding: space.lg,
     fontSize: type.body,
     color: colors.text,
     lineHeight: 22,
-    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   preview: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    padding: space.lg,
     gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   previewTitle: {
     fontSize: type.subtitle,

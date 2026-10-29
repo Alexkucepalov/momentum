@@ -12,17 +12,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 
 import {
-  macrosForStrip,
-  nutritionPer100gCooked,
-  recipeHasManualPer100g,
-} from '../../../../src/domain/recipeNutrition';
-import type { Recipe, RecipeIngredient } from '../../../../src/storage/types';
+  formatPantryCoverageBadge,
+  recipePantryCoverage,
+} from '../../../../src/domain/recipePantryCoverage';
+import { recipeHasManualPer100g } from '../../../../src/domain/recipeNutrition';
+import type { Recipe } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
 
 type Filter = 'all' | 'mine' | 'archive';
 
@@ -38,11 +37,23 @@ export default function RecipesIndexScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const recipes = repo.listRecipes();
+  const pantry = repo.listPantryItems();
+  const pantryNonEmpty = pantry.length > 0;
 
   useLayoutEffect(() => {
-    // Single create path lives in RecipeHubActions — no duplicate header +.
-    navigation.setOptions({ headerRight: () => null });
-  }, [navigation]);
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => router.push('/recipes/new')}
+          accessibilityRole="button"
+          accessibilityLabel="Новый рецепт вручную"
+          style={styles.headerBtn}
+        >
+          <Ionicons name="add" size={26} color={colors.text} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, router]);
 
   const counts = useMemo(() => {
     let archive = 0;
@@ -123,7 +134,7 @@ export default function RecipesIndexScreen() {
                 <Ionicons
                   name={f.icon}
                   size={14}
-                  color={on ? colors.text : colors.textSecondary}
+                  color={on ? colors.primaryButtonText : colors.textSecondary}
                 />
                 <Text style={[styles.chipText, on && styles.chipTextOn]}>
                   {f.label} · {f.count}
@@ -164,10 +175,12 @@ export default function RecipesIndexScreen() {
         }
         renderItem={({ item }) => {
           const ings = repo.getRecipeIngredients(item.id);
+          const coverage = pantryNonEmpty ? recipePantryCoverage(ings, pantry) : null;
           return (
             <RecipeCard
               recipe={item}
-              ingredients={ings}
+              ingredientCount={ings.length}
+              pantryBadge={coverage ? formatPantryCoverageBadge(coverage) : null}
               onPress={() => router.push(`/recipes/${item.id}`)}
             />
           );
@@ -179,33 +192,46 @@ export default function RecipesIndexScreen() {
 
 function RecipeCard({
   recipe,
-  ingredients,
+  ingredientCount,
+  pantryBadge,
   onPress,
 }: {
   recipe: Recipe;
-  ingredients: RecipeIngredient[];
+  ingredientCount: number;
+  pantryBadge: string | null;
   onPress: () => void;
 }) {
   const hasManual = recipeHasManualPer100g(recipe);
   const fromArchive = isArchiveRecipe(recipe);
-  const per100 = macrosForStrip(nutritionPer100gCooked(recipe, ingredients));
   return (
-    <AppCard
-      padding="none"
-      style={styles.card}
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Рецепт ${recipe.name}`}
+      accessibilityLabel={`Рецепт ${recipe.name}${pantryBadge ? `, ${pantryBadge}` : ''}`}
     >
       {recipe.photoUri ? (
         <Image source={{ uri: recipe.photoUri }} style={styles.thumb} />
-      ) : null}
+      ) : (
+        <View style={[styles.thumb, styles.thumbEmpty, fromArchive && styles.thumbArchive]}>
+          <Ionicons
+            name={fromArchive ? 'library-outline' : 'restaurant-outline'}
+            size={20}
+            color={colors.textMuted}
+          />
+        </View>
+      )}
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
-          <Text style={styles.cardTitle} numberOfLines={3}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
             {recipe.name}
           </Text>
-          {fromArchive ? (
+          {pantryBadge ? (
+            <View style={styles.badge}>
+              <Ionicons name="cube-outline" size={11} color={colors.textSecondary} />
+              <Text style={styles.badgeText}>{pantryBadge}</Text>
+            </View>
+          ) : fromArchive ? (
             <View style={styles.badge}>
               <Ionicons name="library-outline" size={11} color={colors.textSecondary} />
               <Text style={styles.badgeText}>архив</Text>
@@ -213,12 +239,20 @@ function RecipeCard({
           ) : null}
         </View>
         <Text style={styles.cardMeta} numberOfLines={1}>
-          {recipe.cookedYieldG} г · {ingredients.length} ингр.
+          {recipe.cookedYieldG} г готового · {ingredientCount} ингр.
           {hasManual ? ' · КБЖУ вручную' : ''}
         </Text>
-        <MacroStrip {...per100} />
+        <MacroStrip
+          energyKcal={recipe.energyKcalPer100g}
+          proteinG={recipe.proteinGPer100g}
+          fatG={recipe.fatGPer100g}
+          carbG={recipe.carbGPer100g}
+        />
       </View>
-    </AppCard>
+      <View style={styles.chevron}>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -240,36 +274,32 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
     marginBottom: space.md,
   },
   searchInput: { flex: 1, fontSize: type.body, color: colors.text },
-  filters: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: space.sm,
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.lg,
-    padding: 4,
-  },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.sm },
   chip: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: space.sm,
+    paddingHorizontal: space.md,
     paddingVertical: 8,
-    borderRadius: radius.md,
-    backgroundColor: 'transparent',
-    minHeight: 48,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    minHeight: 36,
   },
   chipOn: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primaryButton,
+    borderColor: colors.primaryButton,
   },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.textSecondary },
-  chipTextOn: { color: colors.text, fontWeight: '800' },
+  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  chipTextOn: { color: colors.primaryButtonText },
   list: { paddingHorizontal: space.lg, paddingBottom: 48, paddingTop: space.xs },
   emptyFilter: {
     padding: space.xxl,
@@ -302,18 +332,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    marginBottom: space.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+    marginBottom: space.sm,
     minHeight: touchMin,
   },
   thumb: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.sm,
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
   },
-  cardBody: { flex: 1, gap: 1 },
+  thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
+  thumbArchive: { backgroundColor: colors.accentSoft },
+  cardBody: { flex: 1, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   cardTitle: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text, lineHeight: 20 },
   badge: {
@@ -327,5 +362,11 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
   cardMeta: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 16 },
+  chevron: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   pressed: { opacity: 0.85 },
 });

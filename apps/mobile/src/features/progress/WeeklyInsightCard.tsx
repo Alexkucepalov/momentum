@@ -1,37 +1,60 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { formatDateRu } from '../../../../../src/domain/dateFormatRu';
 import type { WeeklyInsight } from '../../../../../src/domain/weeklyInsight';
-import { colors, space, type } from '../../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
+import { colors, radius, space, type } from '../../theme/tokens';
 
 export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
   return (
-    <AppCard style={styles.card}>
-      <Text style={styles.range}>
-        {formatDateRu(insight.weekStart)} — {formatDateRu(insight.weekEnd)}
-      </Text>
+    <View style={styles.card}>
+      <View style={styles.head}>
+        <View style={styles.icon}>
+          <Ionicons name="calendar-outline" size={18} color={colors.text} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.title} accessibilityRole="header">
+            Неделя
+          </Text>
+          <Text style={styles.range}>
+            {formatDateRu(insight.weekStart)} → {formatDateRu(insight.weekEnd)}
+          </Text>
+        </View>
+      </View>
       {insight.lines.map((line) => (
         <Text key={line} style={styles.line}>
           {line}
         </Text>
       ))}
-    </AppCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: space.md, gap: space.sm },
-  range: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    color: colors.textMuted,
-    marginBottom: space.xs,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
+    marginBottom: space.xl,
   },
+  head: { flexDirection: 'row', gap: space.md, marginBottom: space.md, alignItems: 'center' },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flex: { flex: 1 },
+  title: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
+  range: { fontSize: type.micro, color: colors.textMuted, marginTop: 2 },
   line: {
-    fontSize: type.body,
-    color: colors.text,
-    lineHeight: 22,
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: space.xs,
   },
 });

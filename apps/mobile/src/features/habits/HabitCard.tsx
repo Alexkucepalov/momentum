@@ -4,9 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { HabitWeekDayMark } from '../../../../../src/domain/habitWeek';
 import { formatHabitWeekLabel } from '../../../../../src/domain/habitWeek';
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
 import { HabitFormFields } from './HabitFormFields';
 import { HabitProgressBar } from './HabitProgressBar';
 import { HabitWeekStrip } from './HabitWeekStrip';
@@ -70,7 +68,7 @@ export function HabitCard({
 }) {
   if (editing) {
     return (
-      <AppCard style={styles.card}>
+      <View style={styles.card}>
         <Text style={styles.editTitle}>Изменить привычку</Text>
         <HabitFormFields
           name={editName}
@@ -87,21 +85,31 @@ export function HabitCard({
           onChangeAutoSource={onChangeEditAutoSource}
         />
         <View style={styles.editActions}>
-          <View style={styles.editFlex}>
-            <PrimaryButton variant="secondary" label="Отмена" onPress={onCancelEdit} />
-          </View>
-          <View style={styles.editFlex}>
-            <PrimaryButton label="Сохранить" onPress={onSaveEdit} />
-          </View>
+          <Pressable
+            style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
+            onPress={onCancelEdit}
+            accessibilityRole="button"
+            accessibilityLabel="Отмена"
+          >
+            <Text style={styles.secondaryText}>Отмена</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+            onPress={onSaveEdit}
+            accessibilityRole="button"
+            accessibilityLabel="Сохранить привычку"
+          >
+            <Text style={styles.primaryText}>Сохранить</Text>
+          </Pressable>
         </View>
-      </AppCard>
+      </View>
     );
   }
 
   const weekLabel = formatHabitWeekLabel(completed, target, kind === 'quantity' ? unit : null);
 
   return (
-    <AppCard style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.top}>
         <View style={styles.titleBlock}>
           <Text style={styles.name} numberOfLines={2}>
@@ -187,12 +195,17 @@ export function HabitCard({
           </Text>
         </Pressable>
       )}
-    </AppCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.lg,
     marginBottom: space.md,
   },
   top: {
@@ -250,6 +263,24 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   editActions: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
-  editFlex: { flex: 1 },
+  secondaryBtn: {
+    flex: 1,
+    minHeight: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryText: { fontWeight: '700', color: colors.text },
+  primaryBtn: {
+    flex: 1,
+    minHeight: touchMin,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryText: { fontWeight: '700', color: colors.primaryButtonText },
   pressed: { opacity: 0.88 },
 });

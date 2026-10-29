@@ -10,7 +10,6 @@ import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { HabitCard } from './HabitCard';
 import { HabitFormFields } from './HabitFormFields';
-import { AppCard } from '@/src/ui/AppCard';
 
 const emptyForm = {
   name: '',
@@ -215,7 +214,7 @@ export function FlexibleHabitsPanel() {
       })}
 
       {composerOpen ? (
-        <AppCard padding="lg" style={styles.composer}>
+        <View style={styles.composer}>
           <Text style={styles.composerTitle}>Новая привычка</Text>
           <HabitFormFields
             name={form.name}
@@ -252,7 +251,7 @@ export function FlexibleHabitsPanel() {
               <PrimaryButton label="Добавить" onPress={create} />
             </View>
           </View>
-        </AppCard>
+        </View>
       ) : habits.length > 0 ? (
         <Pressable
           style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
@@ -307,6 +306,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   composer: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
     marginBottom: space.md,
   },
@@ -329,6 +332,11 @@ const styles = StyleSheet.create({
   secondaryText: { fontWeight: '700', color: colors.text },
   addRow: {
     minHeight: touchMin,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

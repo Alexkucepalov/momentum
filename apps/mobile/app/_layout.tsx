@@ -2,7 +2,6 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
@@ -37,18 +36,17 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <View style={styles.root}>
-          <DataProvider repo={repo}>
-            <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="recipes" options={{ headerShown: false }} />
-            </Stack>
-          </DataProvider>
-        </View>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        <DataProvider repo={repo}>
+          <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="recipes" options={{ headerShown: false }} />
+            <Stack.Screen name="plan" options={{ headerShown: false }} />
+          </Stack>
+        </DataProvider>
+      </View>
+    </SafeAreaProvider>
   );
 }
 

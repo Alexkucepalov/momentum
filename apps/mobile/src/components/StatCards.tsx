@@ -2,10 +2,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, space, type } from '../theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
+import { colors, radius, space, type } from '../theme/tokens';
 
-/** Compact water + activity rows (optional; Today prefers quiet single water row). */
+/** Compact water + activity — food logging lives in AddFoodBlock / KcalRing. */
 export function StatCards({
   waterMl,
   waterTargetMl,
@@ -27,9 +26,8 @@ export function StatCards({
 
   return (
     <View style={styles.row}>
-      <AppCard
-        padding="none"
-        style={styles.card}
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
         onPress={() => onAddWater(250)}
         accessibilityRole="button"
         accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
@@ -40,10 +38,9 @@ export function StatCards({
         </View>
         <Text style={styles.value}>{waterLabel}</Text>
         <Text style={styles.hintAction}>+250 мл</Text>
-      </AppCard>
-      <AppCard
-        padding="none"
-        style={styles.card}
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
         onPress={() => router.push('/activity')}
         accessibilityRole="button"
         accessibilityLabel={`Активность ${activityMinutes} минут. Открыть вкладку`}
@@ -54,7 +51,7 @@ export function StatCards({
         </View>
         <Text style={styles.value}>{activityMinutes > 0 ? `${activityMinutes} мин` : '—'}</Text>
         <Text style={styles.hintAction}>{activityMinutes > 0 ? 'открыть' : 'добавить'}</Text>
-      </AppCard>
+      </Pressable>
     </View>
   );
 }
@@ -67,15 +64,19 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    minHeight: 72,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+    minHeight: 96,
   },
+  pressed: { opacity: 0.88 },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
+    marginBottom: space.sm,
   },
   title: {
     fontSize: type.micro,
@@ -85,14 +86,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   value: {
-    fontSize: type.body,
+    fontSize: type.subtitle,
     fontWeight: '800',
     color: colors.text,
   },
   hintAction: {
-    marginTop: 2,
+    marginTop: 4,
     fontSize: type.micro,
-    color: colors.textMuted,
+    color: colors.text,
     fontWeight: '700',
   },
 });

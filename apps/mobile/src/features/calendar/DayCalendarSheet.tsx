@@ -184,22 +184,19 @@ export function DayCalendarSheet({
                 <Pressable
                   key={iso}
                   onPress={() => setPreview(iso)}
-                  style={({ pressed }) => [styles.cell, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.cell,
+                    selected && styles.cellOn,
+                    isToday && !selected && styles.cellToday,
+                    pressed && styles.pressed,
+                  ]}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                   accessibilityLabel={`${iso}${m?.hasFood ? ', еда' : ''}${m?.hasActivity ? ', активность' : ''}${m?.hasWeight ? ', вес' : ''}`}
                 >
-                  <View
-                    style={[
-                      styles.bubble,
-                      selected && styles.bubbleOn,
-                      isToday && !selected && styles.bubbleToday,
-                    ]}
-                  >
-                    <Text style={[styles.cellNum, selected && styles.cellNumOn]}>
-                      {Number(iso.slice(8, 10))}
-                    </Text>
-                  </View>
+                  <Text style={[styles.cellNum, selected && styles.cellNumOn]}>
+                    {Number(iso.slice(8, 10))}
+                  </Text>
                   <View style={styles.dots}>
                     {m?.hasFood ? <View style={[styles.dot, styles.dotFood]} /> : null}
                     {m?.hasActivity ? <View style={[styles.dot, styles.dotActivity]} /> : null}
@@ -240,7 +237,7 @@ export function DayCalendarSheet({
             <View style={styles.todayLink} />
           )}
           <View style={styles.footerBtn}>
-            <PrimaryButton label="Готово" onPress={applyDay} />
+            <PrimaryButton label="Открыть этот день" onPress={applyDay} />
           </View>
         </View>
       </View>
@@ -388,17 +385,15 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
   },
-  bubble: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  cellOn: { backgroundColor: colors.primaryButton },
+  cellToday: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  bubbleOn: { backgroundColor: colors.primaryButton },
-  bubbleToday: { borderWidth: 1.5, borderColor: colors.focus },
   cellNum: { fontSize: type.body, fontWeight: '700', color: colors.text },
   cellNumOn: { color: colors.primaryButtonText },
   dots: { flexDirection: 'row', gap: 3, marginTop: 4, minHeight: 5 },
@@ -415,6 +410,10 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendLabel: { fontSize: type.micro, color: colors.textSecondary, fontWeight: '600' },
   detail: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
   },
   detailTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },

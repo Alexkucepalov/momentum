@@ -103,11 +103,6 @@ export type Profile = {
   dailyProteinG: number | null;
   dailyFatG: number | null;
   dailyCarbG: number | null;
-  /**
-   * ISO timestamp when user skipped first-run goals sheet (UX-03).
-   * null = may still prompt when all daily* targets are null.
-   */
-  targetsPromptDismissedAt: string | null;
 };
 
 export type DailyNutritionTargets = {
@@ -139,8 +134,6 @@ export type WeightEntry = {
   weighedAt: string;
   kg: number;
   createdAt: string;
-  /** Soft-delete; absent/null = active (legacy snapshots). */
-  deletedAt?: string | null;
 };
 
 export type HabitCheck = {
@@ -532,7 +525,6 @@ export type StoreSnapshotAny = {
     dailyProteinG?: number | null;
     dailyFatG?: number | null;
     dailyCarbG?: number | null;
-    targetsPromptDismissedAt?: string | null;
   };
   products: FoodProduct[];
   recipes: LegacyRecipe[];

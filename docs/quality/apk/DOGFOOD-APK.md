@@ -1,8 +1,7 @@
-build_date: 2026-10-28T23:18:29Z
+build_date: 2026-10-21T10:39:13Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 57853330
-sha256: b55e0528d46318e72a12db0e11dd69e1b0b835d938ffd1f17b957f5711b396dd
-git: 6020a47
-includes: Soft Light plan finish (date family + Food density) #148; arm64-only
-size_note: ~55 MB arm64-only dogfood
+bytes: 140430630
+sha256: 6f1093d68e1ec06aa1c26af57f1993420327567492dd2b0eae2384edeed301d2
+git: 44c4d40d199493f250ab151524f98d1bf87f77ac
+includes: text search always visible + ~198 offline staple foods (seed catalog)
 dogfood_gate: pending

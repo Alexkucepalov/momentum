@@ -26,9 +26,10 @@ function recipePer100(recipe: Recipe, ingredients: RecipeIngredient[]): Nutritio
 export function eatNowInputsFromRecipes(
   recipes: Recipe[],
   ingredientsByRecipeId: (recipeId: string) => RecipeIngredient[],
-  opts?: { defaultPrepMinutes?: number | null },
+  opts?: { defaultPrepMinutes?: number | null; atHome?: boolean },
 ): EatNowCandidateInput[] {
   const prep = opts?.defaultPrepMinutes ?? 20;
+  const atHome = opts?.atHome ?? true;
   const out: EatNowCandidateInput[] = [];
   for (const r of recipes) {
     if (r.deletedAt) continue;
@@ -40,14 +41,17 @@ export function eatNowInputsFromRecipes(
       title: r.name,
       per100,
       prepMinutes: prep,
-      photoUri: r.photoUri ?? null,
+      atHome,
     });
   }
   return out;
 }
 
 /** Map products → Eat Now inputs (treat as no-cook ≤5 min). */
-export function eatNowInputsFromProducts(products: FoodProduct[]): EatNowCandidateInput[] {
+export function eatNowInputsFromProducts(
+  products: FoodProduct[],
+  opts?: { atHome?: boolean | ((productId: string) => boolean) },
+): EatNowCandidateInput[] {
   const out: EatNowCandidateInput[] = [];
   for (const p of products) {
     if (p.deletedAt) continue;
@@ -55,19 +59,24 @@ export function eatNowInputsFromProducts(products: FoodProduct[]): EatNowCandida
     if (per100.kcal === null && per100.protein === null && per100.fat === null && per100.carbs === null) {
       continue;
     }
+    const atHome =
+      typeof opts?.atHome === 'function'
+        ? opts.atHome(p.id)
+        : (opts?.atHome ?? false);
     out.push({
       id: p.id,
       kind: 'product',
       title: p.brand ? `${p.name} · ${p.brand}` : p.name,
       per100,
       prepMinutes: 2,
+      atHome,
     });
   }
   return out;
 }
 
 /**
- * Cooked batches → Eat Now (quick reheat).
+ * Cooked batches → Eat Now (at home, quick reheat).
  * Uses recipe nutrition; id is batch id; caller logs via recipeId on open.
  */
 export function eatNowInputsFromCookedBatches(
@@ -92,7 +101,7 @@ export function eatNowInputsFromCookedBatches(
       title: `${recipe.name} · остаток ${Math.round(b.remainingG)} г`,
       per100,
       prepMinutes: 5,
-      photoUri: recipe.photoUri ?? null,
+      atHome: true,
     });
   }
   return out;

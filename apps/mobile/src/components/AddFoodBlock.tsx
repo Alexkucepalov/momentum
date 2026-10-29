@@ -12,13 +12,23 @@ const MEAL_RU: Record<MealSlot, string> = {
   snack: 'перекус',
 };
 
+const MEAL_TITLE: Record<MealSlot, string> = {
+  breakfast: 'Завтрак',
+  lunch: 'Обед',
+  dinner: 'Ужин',
+  snack: 'Перекус',
+};
+
 export type QuickRepeatItem = {
   id: string;
   displayName: string;
   grams: number;
 };
 
-/** Recent / quick-repeat on Today — Food-density card, one primary Add. */
+/**
+ * Recent / quick-repeat on Today.
+ * Meal chips optional — default off fold; override lives in AddFoodSheet.
+ */
 export function AddFoodBlock({
   meal,
   onChangeMeal,
@@ -27,7 +37,6 @@ export function AddFoodBlock({
   onRepeat,
   onCopyYesterday,
   onOpenDiary,
-  onAddFood,
   showMealChips = false,
 }: {
   meal: MealSlot;
@@ -36,10 +45,12 @@ export function AddFoodBlock({
   quickRepeats: QuickRepeatItem[];
   onRepeat: (id: string) => void;
   onCopyYesterday?: () => void;
+  /** Open full Food diary (meals, edit, delete). */
   onOpenDiary?: () => void;
-  onAddFood?: () => void;
+  /** When true, show meal chips (legacy). Today keeps false. */
   showMealChips?: boolean;
 }) {
+  const last = todayEntries.slice(0, 3);
   const entryCount = todayEntries.length;
 
   return (
@@ -75,23 +86,16 @@ export function AddFoodBlock({
             <MealChips value={meal} onChange={onChangeMeal} compact />
           </View>
         </>
-      ) : null}
-
-      {onAddFood ? (
-        <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
-          onPress={onAddFood}
-          accessibilityRole="button"
-          accessibilityLabel="Добавить еду"
-        >
-          <Ionicons name="add" size={20} color={colors.primaryButtonText} />
-          <Text style={styles.addBtnText}>Добавить еду</Text>
-        </Pressable>
-      ) : null}
+      ) : (
+        <Text style={styles.mealHint} accessibilityLiveRegion="polite">
+          В {MEAL_TITLE[meal].toLowerCase()} · приём можно сменить при добавлении
+        </Text>
+      )}
 
       {quickRepeats.length > 0 ? (
         <View style={styles.list}>
-          {quickRepeats.slice(0, 3).map((e) => (
+          <Text style={styles.sectionLabel}>Быстрый повтор</Text>
+          {quickRepeats.slice(0, 4).map((e) => (
             <Pressable
               key={e.id}
               style={({ pressed }) => [styles.repeatRow, pressed && styles.pressed]}
@@ -114,6 +118,32 @@ export function AddFoodBlock({
         </View>
       ) : null}
 
+      {last.length > 0 ? (
+        <View style={styles.list}>
+          <Text style={styles.sectionLabel}>Сегодня</Text>
+          {last.map((e) => (
+            <View key={e.id} style={styles.row}>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle} numberOfLines={1}>
+                  {e.displayName}
+                </Text>
+                <Text style={styles.rowMeta}>
+                  {e.grams} г · {MEAL_RU[e.meal]}
+                  {e.energyKcal == null ? '' : ` · ~${Math.round(e.energyKcal)} ккал`}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : quickRepeats.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>Пока без записей</Text>
+          <Text style={styles.emptyBody}>
+            Нажмите «Добавить еду» внизу или отсканируйте штрихкод рядом.
+          </Text>
+        </View>
+      ) : null}
+
       {onCopyYesterday ? (
         <Pressable
           style={({ pressed }) => [styles.copyBtn, pressed && styles.pressed]}
@@ -131,6 +161,10 @@ export function AddFoodBlock({
 
 const styles = StyleSheet.create({
   wrap: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: space.lg,
     marginBottom: space.lg,
   },
@@ -163,8 +197,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginBottom: space.sm,
   },
+  mealHint: {
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    marginBottom: space.md,
+    lineHeight: 18,
+  },
   chipsWrap: { marginBottom: space.md },
+  sectionLabel: {
+    fontSize: type.micro,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: space.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
   list: { marginBottom: space.sm },
+  row: {
+    paddingVertical: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
   repeatRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,21 +231,14 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: type.body, fontWeight: '600', color: colors.text },
   rowMeta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 2 },
   plus: { fontSize: 20, fontWeight: '700', color: colors.text, paddingHorizontal: space.xs },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-    minHeight: touchMin,
-    marginBottom: space.md,
+  empty: {
+    backgroundColor: colors.accentSoft,
     borderRadius: radius.md,
-    backgroundColor: colors.primaryButton,
+    padding: space.md,
+    marginBottom: space.sm,
   },
-  addBtnText: {
-    fontWeight: '800',
-    color: colors.primaryButtonText,
-    fontSize: type.body,
-  },
+  emptyTitle: { fontWeight: '800', color: colors.text, fontSize: type.body, marginBottom: 4 },
+  emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   copyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
