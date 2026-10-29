@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, type SharedValue } from 'react-native-reanimated';
 
 import type { PlannedMeal } from '../../../../../../src/storage/types';
-import { colors, elevation, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { colors, space, touchMin, type } from '@/src/theme/tokens';
 import { usePlanDrag, type DropTarget } from './planDragContext';
 
 const LONG_PRESS_MS = 300;
@@ -155,17 +155,13 @@ export function PlannedMealCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: space.sm,
-    paddingLeft: space.sm,
-    paddingRight: space.xs,
-    marginBottom: space.sm,
     minHeight: touchMin + 8,
     gap: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   cardDragging: {
     opacity: 0.35,

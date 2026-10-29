@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { DayPlanNutritionSummary } from '../../../../../../src/domain/plannedMealNutrition';
 import { colors, space, type } from '@/src/theme/tokens';
-import { AppCard } from '@/src/ui/AppCard';
 
 function fmt(n: number | null): string {
   return n === null ? '—' : String(Math.round(n));
@@ -22,15 +21,13 @@ export function DayNutritionBar({
 }) {
   if (summary.empty) {
     return (
-      <AppCard
-        padding="md"
-        style={styles.wrap}
-        accessibilityRole="summary"
-        accessibilityLabel="План дня пуст"
-      >
-        <Text style={styles.emptyTitle}>День без плана</Text>
-        <Text style={styles.emptyBody}>Добавьте первое блюдо — это ещё не дневник.</Text>
-      </AppCard>
+      <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel="План дня пуст">
+        <View style={styles.kcalRow}>
+          <Text style={styles.kcal}>—</Text>
+          <Text style={styles.kcalUnit}>ккал</Text>
+        </View>
+        <Text style={styles.emptyBody}>День без плана. Добавьте первое блюдо — это ещё не дневник.</Text>
+      </View>
     );
   }
 
@@ -38,8 +35,7 @@ export function DayNutritionBar({
   const target = targets.energyKcal;
 
   return (
-    <AppCard
-      padding="md"
+    <View
       style={styles.wrap}
       accessibilityRole="summary"
       accessibilityLabel={
@@ -62,7 +58,7 @@ export function DayNutritionBar({
       {summary.incomplete ? (
         <Text style={styles.incomplete}>Есть неизвестные КБЖУ — сумма неполная</Text>
       ) : null}
-    </AppCard>
+    </View>
   );
 }
 

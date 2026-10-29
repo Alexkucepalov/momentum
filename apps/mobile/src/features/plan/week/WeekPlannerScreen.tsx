@@ -20,18 +20,19 @@ import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { shell } from '@/src/theme/shell';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { SegmentedControl } from '@/src/ui/SegmentedControl';
 import { AddToPlanSheet } from './AddToPlanSheet';
 import { DayNutritionBar } from './DayNutritionBar';
 import { DragOverlay } from './DragOverlay';
 import { MealActionSheet } from './MealActionSheet';
 import { MealSlotSection } from './MealSlotSection';
 import { MoveCopySheet, type MoveCopyMode } from './MoveCopySheet';
+import { PortionAdjustSheet } from './PortionAdjustSheet';
 import { PlanDragProvider, usePlanDrag, type DropTarget } from './planDragContext';
 import { WeekOverview } from './WeekOverview';
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const PERIODS: MealPlanPeriodDays[] = [3, 5, 7];
-const PORTION_STEPS = [100, 150, 200, 250, 300];
 
 type PlannerView = 'day' | 'week';
 
@@ -80,6 +81,7 @@ function WeekPlannerBody() {
 
   const [addSlot, setAddSlot] = useState<MealSlot | null>(null);
   const [menuMeal, setMenuMeal] = useState<PlannedMeal | null>(null);
+  const [portionMeal, setPortionMeal] = useState<PlannedMeal | null>(null);
   const [transfer, setTransfer] = useState<{
     mode: MoveCopyMode;
     meal: PlannedMeal;
@@ -131,6 +133,16 @@ function WeekPlannerBody() {
   const nutritionOf = (m: PlannedMeal) => nutritionForPlannedMeal(m, lookup);
   const macrosFor = (m: PlannedMeal) => fmtMacroLine(nutritionOf(m));
   const kcalFor = (m: PlannedMeal) => kcalLabel(nutritionOf(m));
+  const slotKcal = (meals: PlannedMeal[]): string => {
+    if (meals.length === 0) return '';
+    let sum = 0;
+    for (const meal of meals) {
+      const kcal = nutritionOf(meal).kcal;
+      if (kcal == null) return '— ккал';
+      sum += kcal;
+    }
+    return `${Math.round(sum)} ккал`;
+  };
 
   const weekSummaries = useMemo(() => {
     const map: Record<string, ReturnType<typeof summarizePlannedDayNutrition>> = {};
@@ -211,15 +223,10 @@ function WeekPlannerBody() {
     }
   };
 
-  const cyclePortion = (m: PlannedMeal) => {
-    const idx = PORTION_STEPS.findIndex((g) => g >= m.grams);
-    const next =
-      idx < 0 || idx === PORTION_STEPS.length - 1
-        ? PORTION_STEPS[0]!
-        : PORTION_STEPS[idx + 1]!;
-    repo.updatePlannedMealGrams(m.id, next);
+  const cyclePortion = (m: PlannedMeal, grams: number) => {
+    repo.updatePlannedMealGrams(m.id, grams);
     refresh();
-    showFlash(`Порция ${next} г`);
+    showFlash(`Порция ${grams} г`);
   };
 
   const replaceMeal = (m: PlannedMeal) => {
@@ -249,29 +256,6 @@ function WeekPlannerBody() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <View style={styles.viewToggle} accessibilityRole="tablist">
-          {(
-            [
-              ['day', 'День'],
-              ['week', 'Неделя'],
-            ] as const
-          ).map(([id, label]) => {
-            const on = view === id;
-            return (
-              <Pressable
-                key={id}
-                onPress={() => setView(id)}
-                style={[styles.viewChip, on && styles.viewChipOn]}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={label}
-              >
-                <Text style={[styles.viewChipText, on && styles.viewChipTextOn]}>{label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
         <DayStrip
           selected={selectedDate}
           today={dateLocal}
@@ -281,6 +265,24 @@ function WeekPlannerBody() {
           hoverDate={hover?.kind === 'day' ? hover.dateLocal : null}
           onDayBox={setDayBox}
         />
+
+        <View style={styles.todayRow}>
+          <Text style={styles.dayTitle}>
+            {formatDateRu(selectedDate)}
+            {selectedDate === dateLocal ? ' · сегодня' : ''}
+          </Text>
+          <View style={styles.toggleWrap}>
+            <SegmentedControl
+              dense
+              value={view}
+              options={[
+                { id: 'day', label: 'День' },
+                { id: 'week', label: 'Неделя' },
+              ]}
+              onChange={setView}
+            />
+          </View>
+        </View>
 
         {view === 'week' ? (
           <WeekOverview
@@ -294,23 +296,6 @@ function WeekPlannerBody() {
 
         {view === 'day' ? (
           <>
-            <View style={styles.todayRow}>
-              <Text style={styles.dayTitle}>
-                {formatDateRu(selectedDate)}
-                {selectedDate === dateLocal ? ' · сегодня' : ''}
-              </Text>
-              {selectedDate !== dateLocal ? (
-                <Pressable
-                  onPress={() => selectDate(dateLocal)}
-                  accessibilityRole="button"
-                  accessibilityLabel="К сегодня"
-                  hitSlop={8}
-                >
-                  <Text style={styles.todayLink}>Сегодня</Text>
-                </Pressable>
-              ) : null}
-            </View>
-
             <DayNutritionBar
               summary={daySummary}
               targets={{
@@ -321,17 +306,12 @@ function WeekPlannerBody() {
               }}
             />
 
-            {daySummary.empty ? (
-              <Text style={styles.emptyHint} accessibilityRole="text">
-                Добавь первое блюдо
-              </Text>
-            ) : null}
-
             {SLOTS.map((slot) => (
               <MealSlotSection
                 key={slot}
                 slot={slot}
                 meals={bySlot[slot]}
+                slotKcal={slotKcal(bySlot[slot])}
                 kcalFor={kcalFor}
                 onAdd={() => setAddSlot(slot)}
                 onOpenMenu={(m) => setMenuMeal(m)}
@@ -451,7 +431,7 @@ function WeekPlannerBody() {
           const m = menuMeal;
           if (!m) return;
           setMenuMeal(null);
-          if (id === 'portion') cyclePortion(m);
+          if (id === 'portion') setPortionMeal(m);
           else if (id === 'replace') replaceMeal(m);
           else if (id === 'move') setTransfer({ mode: 'move', meal: m });
           else if (id === 'copy') setTransfer({ mode: 'copy', meal: m });
@@ -465,6 +445,23 @@ function WeekPlannerBody() {
             refresh();
             showFlash(`В дневник: ${m.displayName}`);
           }
+        }}
+      />
+
+      <PortionAdjustSheet
+        visible={portionMeal != null}
+        title={portionMeal?.displayName ?? ''}
+        grams={portionMeal?.grams ?? 100}
+        preview={(grams) =>
+          portionMeal
+            ? nutritionForPlannedMeal({ ...portionMeal, grams }, lookup)
+            : { kcal: null, protein: null, fat: null, carbs: null }
+        }
+        onClose={() => setPortionMeal(null)}
+        onSave={(grams) => {
+          if (!portionMeal) return;
+          cyclePortion(portionMeal, grams);
+          setPortionMeal(null);
         }}
       />
 
@@ -539,8 +536,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.xs,
+    gap: space.sm,
+    marginBottom: space.sm,
   },
+  toggleWrap: { width: 168 },
   dayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
   todayLink: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   emptyHint: {

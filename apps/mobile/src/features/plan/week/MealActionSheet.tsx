@@ -49,41 +49,31 @@ export function MealActionSheet({
           {Math.round(meal.grams)} г · {macrosLine}
         </Text>
         <View style={styles.list}>
-          {ACTIONS.map((a) => (
+          {ACTIONS.filter((a) => a.id !== 'log').map((a) => (
             <Pressable
               key={a.id}
               onPress={() => onAction(a.id)}
-              style={({ pressed }) => [
-                styles.row,
-                a.primary && styles.rowPrimary,
-                pressed && styles.pressed,
-              ]}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel={a.label}
             >
               <Ionicons
                 name={a.icon}
                 size={20}
-                color={
-                  a.primary
-                    ? colors.primaryButtonText
-                    : a.danger
-                      ? colors.danger
-                      : colors.text
-                }
+                color={a.danger ? colors.danger : colors.text}
               />
-              <Text
-                style={[
-                  styles.rowText,
-                  a.primary && styles.rowTextPrimary,
-                  a.danger && styles.rowTextDanger,
-                ]}
-              >
-                {a.label}
-              </Text>
+              <Text style={[styles.rowText, a.danger && styles.rowTextDanger]}>{a.label}</Text>
             </Pressable>
           ))}
         </View>
+        <Pressable
+          onPress={() => onAction('log')}
+          style={({ pressed }) => [styles.log, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="В дневник"
+        >
+          <Text style={styles.logText}>В дневник</Text>
+        </Pressable>
         <Pressable onPress={onClose} style={styles.cancel} accessibilityRole="button">
           <Text style={styles.cancelText}>Отмена</Text>
         </Pressable>
@@ -96,26 +86,34 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.sm },
   title: { fontSize: type.title, fontWeight: '800', color: colors.text },
   meta: { fontSize: type.caption, color: colors.textSecondary, marginBottom: space.sm },
-  list: { gap: space.sm },
+  list: { gap: 0 },
   row: {
     minHeight: touchMin,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  rowPrimary: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   rowText: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text },
-  rowTextPrimary: { color: colors.primaryButtonText },
   rowTextDanger: { color: colors.danger },
-  cancel: { minHeight: touchMin, alignItems: 'center', justifyContent: 'center' },
+  log: {
+    minHeight: touchMin,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryButton,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: space.md,
+  },
+  logText: { color: colors.primaryButtonText, fontWeight: '800', fontSize: type.body },
+  cancel: {
+    minHeight: touchMin,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   cancelText: { fontWeight: '700', color: colors.textSecondary },
   pressed: { opacity: 0.88 },
 });
