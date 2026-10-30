@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 export type FoodSegment = 'diary' | 'catalog';
 
@@ -30,9 +30,9 @@ export function FoodSegmentTabs({
             accessibilityState={{ selected: on }}
             accessibilityLabel={s.label}
           >
-            <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
+            <AppText variant="caption" tone={on ? 'inverse' : 'secondary'} style={styles.label}>
               {s.label}
-            </Text>
+            </AppText>
           </Pressable>
         );
       })}
@@ -43,8 +43,10 @@ export function FoodSegmentTabs({
 const styles = StyleSheet.create({
   wrap: {
     marginBottom: space.md,
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     padding: 4,
     flexDirection: 'row',
     gap: 4,
@@ -55,18 +57,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: space.sm,
     paddingHorizontal: space.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     minHeight: touchMin,
   },
   tabOn: {
     backgroundColor: colors.primaryButton,
   },
   label: {
-    fontSize: type.caption,
     fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  labelOn: {
-    color: colors.primaryButtonText,
   },
 });
