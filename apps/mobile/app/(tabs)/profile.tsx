@@ -9,10 +9,18 @@ import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/impor
 import { localDateKey } from '../../../../src/storage/validation';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+  type,
+} from '@/src/design-system';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -246,24 +254,28 @@ export default function ProfileScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
+        <View style={styles.hero} testID="profile-hero">
           <View style={styles.avatar}>
-            <Ionicons name="person" size={28} color={colors.text} />
+            <Ionicons name="person" size={28} color={colors.ink} />
           </View>
-          <Text style={styles.name} accessibilityRole="header">
+          <AppText variant="title" style={styles.name} accessibilityRole="header">
             Профиль
-          </Text>
-          <Text style={styles.meta}>Только на устройстве · {profile.timezone}</Text>
+          </AppText>
+          <AppText variant="caption" tone="secondary">
+            nf-fit · только на устройстве · {profile.timezone}
+          </AppText>
           {summary.length > 0 ? (
             <View style={styles.summaryRow} accessibilityLabel={`Активные цели: ${summary.join(', ')}`}>
               {summary.map((chip) => (
                 <View key={chip} style={styles.summaryChip}>
-                  <Text style={styles.summaryText}>{chip}</Text>
+                  <AppText variant="label">{chip}</AppText>
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={styles.summaryEmpty}>Цели пока не заданы — всё опционально</Text>
+            <AppText variant="caption" tone="muted" style={styles.summaryEmpty}>
+              Цели пока не заданы — всё опционально
+            </AppText>
           )}
         </View>
 
@@ -443,14 +455,19 @@ export default function ProfileScreen() {
           hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
           icon="folder-outline"
         >
-          <PrimaryButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
+          <AppButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
           <View style={{ height: space.sm }} />
-          <PrimaryButton label="Загрузить демо 2 недели" onPress={onImportDemo} />
+          <AppButton label="Загрузить демо 2 недели" variant="secondary" onPress={onImportDemo} />
           <View style={{ height: space.sm }} />
-          <PrimaryButton label="Импорт из буфера телефона" onPress={() => void onImportClipboard()} />
+          <AppButton
+            label="Импорт из буфера телефона"
+            variant="secondary"
+            onPress={() => void onImportClipboard()}
+          />
           <View style={{ height: space.sm }} />
-          <PrimaryButton
+          <AppButton
             label="Вставить JSON"
+            variant="secondary"
             onPress={() => {
               setPasteRaw('');
               setPasteOpen(true);
@@ -463,11 +480,15 @@ export default function ProfileScreen() {
             accessibilityLabel="Удалить все локальные данные"
           >
             <Ionicons name="trash-outline" size={18} color={colors.danger} />
-            <Text style={styles.dangerText}>Удалить все локальные данные</Text>
+            <AppText variant="caption" tone="danger">
+              Удалить все локальные данные
+            </AppText>
           </Pressable>
         </SettingsCard>
 
-        <Text style={styles.version}>Momentum · v0.1.0 · snapshot v9</Text>
+        <AppText variant="caption" tone="muted" style={styles.version}>
+          nf-fit · v0.1.0 · offline
+        </AppText>
       </FormScrollView>
 
       <Modal visible={pasteOpen} animationType="slide" accessibilityViewIsModal>
@@ -481,21 +502,23 @@ export default function ProfileScreen() {
           ]}
         >
           <View style={styles.pasteHead}>
-            <Text style={styles.pasteTitle} accessibilityRole="header">
+            <AppText variant="title" accessibilityRole="header">
               Вставить JSON
-            </Text>
+            </AppText>
             <Pressable
               onPress={() => setPasteOpen(false)}
               accessibilityRole="button"
               accessibilityLabel="Закрыть"
             >
-              <Text style={styles.pasteClose}>Закрыть</Text>
+              <AppText variant="body" tone="accent">
+                Закрыть
+              </AppText>
             </Pressable>
           </View>
-          <Text style={styles.pasteHint}>
-            Вставь сюда содержимое экспорта Momentum (Ctrl/Cmd+V или «Вставить» из меню). Не из
+          <AppText variant="caption" tone="secondary" style={styles.pasteHint}>
+            Вставь сюда содержимое экспорта nf-fit (Ctrl/Cmd+V или «Вставить» из меню). Не из
             буфера другого компьютера — только то, что уже на этом устройстве.
-          </Text>
+          </AppText>
           <TextInput
             value={pasteRaw}
             onChangeText={setPasteRaw}
@@ -508,7 +531,7 @@ export default function ProfileScreen() {
             accessibilityLabel="JSON экспорта"
             textAlignVertical="top"
           />
-          <PrimaryButton label="Проверить и восстановить" onPress={onImportPaste} />
+          <AppButton label="Проверить и восстановить" onPress={onImportPaste} />
         </View>
       </Modal>
 
@@ -529,20 +552,22 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <View style={styles.card}>
+    <AppCard style={styles.card}>
       <View style={styles.cardHead}>
         <View style={styles.cardIcon}>
-          <Ionicons name={icon} size={18} color={colors.text} />
+          <Ionicons name={icon} size={18} color={colors.ink} />
         </View>
         <View style={styles.cardHeadText}>
-          <Text style={styles.cardTitle} accessibilityRole="header">
+          <AppText variant="subtitle" style={styles.cardTitle} accessibilityRole="header">
             {title}
-          </Text>
-          <Text style={styles.cardHint}>{hint}</Text>
+          </AppText>
+          <AppText variant="caption" tone="secondary">
+            {hint}
+          </AppText>
         </View>
       </View>
       {children}
-    </View>
+    </AppCard>
   );
 }
 
@@ -594,15 +619,17 @@ function PrivacyRow({
   return (
     <View style={styles.privacyRow}>
       <View style={styles.privacyIcon}>
-        <Ionicons name={icon} size={16} color={colors.text} />
+        <Ionicons name={icon} size={16} color={colors.ink} />
       </View>
-      <Text style={styles.privacyText}>{text}</Text>
+      <AppText variant="caption" tone="secondary" style={styles.privacyText}>
+        {text}
+      </AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg },
   secondaryLinks: {
     marginBottom: space.lg,
@@ -628,8 +655,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: space.md,
   },
-  name: { fontSize: type.title, fontWeight: '800', color: colors.text },
-  meta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 4 },
+  name: { fontWeight: '800' },
   summaryRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

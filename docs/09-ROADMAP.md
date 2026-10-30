@@ -9,8 +9,11 @@ Rebrand to **nf-fit**, design-system tokens/primitives, tab shell, SQLite versio
 ## Phase 1 — nf-fit Nutrition Core (done, #162)
 Food catalog (local) + diary by date; add/edit grams/delete+undo; domain nutrition snapshots (`unknown ≠ 0`); recent + favorites ≤10s; SQLite persistence; Food UI on Minimal Soft Utility.
 
-## Phase 2 — nf-fit Recipes (current)
-Recipe CRUD + ingredients + cooked yield + portion calc; text/personal import without invented nutrients; Recipes UI on Minimal Soft Utility; SCHEMA_VERSION 4. Out of scope: full Plan/week planner, widgets binary.
+## Phase 2 — nf-fit Recipes (done, #163)
+Recipe CRUD + ingredients + cooked yield + portion calc; text/personal import without invented nutrients; Recipes UI on Minimal Soft Utility; SCHEMA_VERSION 4.
+
+## Phase 3 — nf-fit Today + Profile (current)
+Today status (energy/water/activity, unknown ≠ 0), quick add + Plan/Recipes links; Profile goals, export/import/delete, privacy; SCHEMA_VERSION 5. Out of scope: Activity/Progress deep charts, Plan polish, widgets binary.
 
 ## Phase 0 — historical skeleton (done under Momentum branding)
 P0-01 Expo Android scaffold targeting API 36-compatible SDK, Router, lint/typecheck/tests; verify EAS. AC: app opens Android emulator/device.
