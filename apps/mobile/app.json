@@ -58,7 +58,8 @@
       "expo-font",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/withNfFitWidgets.js"
     ],
     "experiments": {
       "typedRoutes": true

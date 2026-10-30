@@ -17,7 +17,9 @@
 - `11-QUALITY.md`: testing, security, performance, reliability
 - `12-METRICS.md`: analytics, product metrics, data privacy
 - `13-RESEARCH.md`: checked official references, 2026-10-16
-- `13-WIDGETS-SCAFFOLD.md`: Android home widgets research + scaffold plan (ADR-010)
+- `13-WIDGETS-SCAFFOLD.md`: Android home widgets research + Phase 6 scaffold (ADR-010)
+- `PHASE6-QUALITY-BETA.md`: Quality/beta DoD checklist (Play still human-gated)
+- `quality/DOGFOOD-READINESS-NF-FIT.md`: short dogfood smoke before friends beta
 - `14-DECISIONS.md`: architecture decisions and unknowns
 - `15-BUSINESS.md`: pricing, unit economics and experiments
 - `16-OPERATIONS.md`: ownership, costs and recurring review

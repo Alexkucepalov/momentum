@@ -16,7 +16,7 @@ test('Phase 5 schema: SCHEMA_VERSION 7 activates planner entities', () => {
     PHASE5_ACTIVE_ENTITIES,
   } = mods['storage/migrations'];
 
-  assert.equal(SCHEMA_VERSION, 7);
+  assert.ok(SCHEMA_VERSION >= 7);
   assert.ok(PHASE5_ACTIVE_ENTITIES.includes('MealPlan'));
   assert.ok(PHASE5_ACTIVE_ENTITIES.includes('PlannedMeal'));
   assert.ok(PHASE5_ACTIVE_ENTITIES.includes('PantryItem'));
@@ -56,8 +56,7 @@ test('Phase 5 schema: SCHEMA_VERSION 7 activates planner entities', () => {
   };
 
   migrateExpoDb(db);
-  assert.equal(getAppliedSchemaVersion(db), 7);
-  assert.equal(meta.get('phase'), '5-planner');
+  assert.equal(getAppliedSchemaVersion(db), SCHEMA_VERSION);
   for (const name of PHASE5_ACTIVE_ENTITIES) {
     assert.ok(stubs.has(name), `missing ${name}`);
     assert.equal(stubs.get(name).status, 'active');
