@@ -6,9 +6,10 @@
  * V4: activate Phase 2 recipe entities (CRUD + cooked yield); still no invented nutrients.
  * V5: activate Phase 3 Today+Profile entities (UserProfile, WaterEntry).
  * V6: activate Phase 4 Activity+Progress entities (WeightEntry, Workout, Habit).
+ * V7: activate Phase 5 Planner entities (MealPlan, Pantry, Shopping, Budget, Stores).
  */
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const MIGRATION_V1 = `
 PRAGMA foreign_keys = ON;
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS schema_entity_stub (
 );
 `;
 
-/** Domain entity registry — Phase 1–4 marked active; never seed fake nutrients. */
+/** Domain entity registry — Phase 1–5 marked active; never seed fake nutrients. */
 export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{
   entity_name: string;
   status: 'planned' | 'active';
@@ -58,6 +59,14 @@ export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{
   { entity_name: 'WeightEntry', status: 'active', notes: 'Phase 4 Progress weight' },
   { entity_name: 'Workout', status: 'active', notes: 'Phase 4; no auto food kcal offset' },
   { entity_name: 'Habit', status: 'active', notes: 'Phase 4 flexible habits' },
+  { entity_name: 'MealPlan', status: 'active', notes: 'Phase 5; plan ≠ diary' },
+  { entity_name: 'PlannedMeal', status: 'active', notes: 'Phase 5; explicit log only' },
+  { entity_name: 'PantryItem', status: 'active', notes: 'Phase 5 pantry' },
+  { entity_name: 'ShoppingList', status: 'active', notes: 'Phase 5 shopping' },
+  { entity_name: 'ShoppingItem', status: 'active', notes: 'Phase 5 shopping lines' },
+  { entity_name: 'Store', status: 'active', notes: 'Phase 5 store prefs' },
+  { entity_name: 'ProductPrice', status: 'active', notes: 'Phase 5 user prices only' },
+  { entity_name: 'BudgetEntry', status: 'active', notes: 'Phase 5 food budget' },
 ] as const;
 
 /** Entities activated in migration V3 (Phase 1 Nutrition Core). */
@@ -80,6 +89,18 @@ export const PHASE3_ACTIVE_ENTITIES = ['UserProfile', 'WaterEntry'] as const;
 
 /** Entities activated in migration V6 (Phase 4 Activity + Progress). */
 export const PHASE4_ACTIVE_ENTITIES = ['WeightEntry', 'Workout', 'Habit'] as const;
+
+/** Entities activated in migration V7 (Phase 5 Planner). */
+export const PHASE5_ACTIVE_ENTITIES = [
+  'MealPlan',
+  'PlannedMeal',
+  'PantryItem',
+  'ShoppingList',
+  'ShoppingItem',
+  'Store',
+  'ProductPrice',
+  'BudgetEntry',
+] as const;
 
 export type MigrateDb = {
   execSync(sql: string): void;
@@ -169,6 +190,10 @@ function applyV6Phase4(db: MigrateDb): void {
   activateEntities(db, PHASE4_ACTIVE_ENTITIES, 'Phase 4 Activity+Progress', '4-activity-progress');
 }
 
+function applyV7Phase5(db: MigrateDb): void {
+  activateEntities(db, PHASE5_ACTIVE_ENTITIES, 'Phase 5 Planner', '5-planner');
+}
+
 export function migrateExpoDb(db: MigrateDb): void {
   const current = getAppliedSchemaVersion(db);
   if (current < 1) {
@@ -195,5 +220,9 @@ export function migrateExpoDb(db: MigrateDb): void {
   if (current < 6) {
     applyV6Phase4(db);
     markApplied(db, 6);
+  }
+  if (current < 7) {
+    applyV7Phase5(db);
+    markApplied(db, 7);
   }
 }
