@@ -4,7 +4,6 @@ import {
   Image,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -21,7 +20,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 type Filter = 'all' | 'mine' | 'archive';
 
@@ -49,7 +48,7 @@ export default function RecipesIndexScreen() {
           accessibilityLabel="Новый рецепт вручную"
           style={styles.headerBtn}
         >
-          <Ionicons name="add" size={26} color={colors.text} />
+          <Ionicons name="add" size={26} color={colors.ink} />
         </Pressable>
       ),
     });
@@ -136,9 +135,13 @@ export default function RecipesIndexScreen() {
                   size={14}
                   color={on ? colors.primaryButtonText : colors.textSecondary}
                 />
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                <AppText
+                  variant="caption"
+                  tone={on ? 'inverse' : 'ink'}
+                  style={[styles.chipText, on && styles.chipTextOn]}
+                >
                   {f.label} · {f.count}
-                </Text>
+                </AppText>
               </Pressable>
             );
           })}
@@ -155,10 +158,12 @@ export default function RecipesIndexScreen() {
               <View style={styles.emptyIcon}>
                 <Ionicons name="search-outline" size={28} color={colors.textMuted} />
               </View>
-              <Text style={styles.emptyFilterTitle}>Ничего не найдено</Text>
-              <Text style={styles.emptyFilterBody}>
+              <AppText variant="subtitle" style={styles.emptyFilterTitle}>
+                Ничего не найдено
+              </AppText>
+              <AppText variant="body" tone="secondary" style={styles.emptyFilterBody}>
                 Сбрось фильтр или поиск — либо добавь рецепт кнопками сверху.
-              </Text>
+              </AppText>
             </View>
           ) : (
             <EmptyState
@@ -205,59 +210,66 @@ function RecipeCard({
   const fromArchive = isArchiveRecipe(recipe);
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [pressed && styles.pressed]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Рецепт ${recipe.name}${pantryBadge ? `, ${pantryBadge}` : ''}`}
+      testID={`recipe-card-${recipe.id}`}
     >
-      {recipe.photoUri ? (
-        <Image source={{ uri: recipe.photoUri }} style={styles.thumb} />
-      ) : (
-        <View style={[styles.thumb, styles.thumbEmpty, fromArchive && styles.thumbArchive]}>
-          <Ionicons
-            name={fromArchive ? 'library-outline' : 'restaurant-outline'}
-            size={20}
-            color={colors.textMuted}
+      <AppCard style={styles.card}>
+        {recipe.photoUri ? (
+          <Image source={{ uri: recipe.photoUri }} style={styles.thumb} />
+        ) : (
+          <View style={[styles.thumb, styles.thumbEmpty, fromArchive && styles.thumbArchive]}>
+            <Ionicons
+              name={fromArchive ? 'library-outline' : 'restaurant-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
+          </View>
+        )}
+        <View style={styles.cardBody}>
+          <View style={styles.titleRow}>
+            <AppText variant="body" style={styles.cardTitle} numberOfLines={2}>
+              {recipe.name}
+            </AppText>
+            {pantryBadge ? (
+              <View style={styles.badge}>
+                <Ionicons name="cube-outline" size={11} color={colors.textSecondary} />
+                <AppText variant="label" tone="secondary">
+                  {pantryBadge}
+                </AppText>
+              </View>
+            ) : fromArchive ? (
+              <View style={styles.badge}>
+                <Ionicons name="library-outline" size={11} color={colors.textSecondary} />
+                <AppText variant="label" tone="secondary">
+                  архив
+                </AppText>
+              </View>
+            ) : null}
+          </View>
+          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+            {recipe.cookedYieldG} г готового · {ingredientCount} ингр.
+            {hasManual ? ' · КБЖУ вручную' : ''}
+          </AppText>
+          <MacroStrip
+            energyKcal={recipe.energyKcalPer100g}
+            proteinG={recipe.proteinGPer100g}
+            fatG={recipe.fatGPer100g}
+            carbG={recipe.carbGPer100g}
           />
         </View>
-      )}
-      <View style={styles.cardBody}>
-        <View style={styles.titleRow}>
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {recipe.name}
-          </Text>
-          {pantryBadge ? (
-            <View style={styles.badge}>
-              <Ionicons name="cube-outline" size={11} color={colors.textSecondary} />
-              <Text style={styles.badgeText}>{pantryBadge}</Text>
-            </View>
-          ) : fromArchive ? (
-            <View style={styles.badge}>
-              <Ionicons name="library-outline" size={11} color={colors.textSecondary} />
-              <Text style={styles.badgeText}>архив</Text>
-            </View>
-          ) : null}
+        <View style={styles.chevron}>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </View>
-        <Text style={styles.cardMeta} numberOfLines={1}>
-          {recipe.cookedYieldG} г готового · {ingredientCount} ингр.
-          {hasManual ? ' · КБЖУ вручную' : ''}
-        </Text>
-        <MacroStrip
-          energyKcal={recipe.energyKcalPer100g}
-          proteinG={recipe.proteinGPer100g}
-          fatG={recipe.fatGPer100g}
-          carbG={recipe.carbGPer100g}
-        />
-      </View>
-      <View style={styles.chevron}>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-      </View>
+      </AppCard>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   top: { paddingHorizontal: space.lg, paddingTop: space.md },
   hubCard: {
     marginBottom: space.md,
@@ -274,13 +286,13 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingHorizontal: space.md,
     minHeight: touchMin,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     marginBottom: space.md,
   },
-  searchInput: { flex: 1, fontSize: type.body, color: colors.text },
+  searchInput: { flex: 1, fontSize: 15, color: colors.ink },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.sm },
   chip: {
     flexDirection: 'row',
@@ -289,7 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     minHeight: 36,
@@ -298,9 +310,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryButton,
     borderColor: colors.primaryButton,
   },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  chipText: { fontWeight: '700' },
   chipTextOn: { color: colors.primaryButtonText },
-  list: { paddingHorizontal: space.lg, paddingBottom: 48, paddingTop: space.xs },
+  list: { paddingHorizontal: space.lg, paddingBottom: 48, paddingTop: space.xs, gap: space.sm },
   emptyFilter: {
     padding: space.xxl,
     alignItems: 'center',
@@ -316,14 +328,10 @@ const styles = StyleSheet.create({
   },
   emptyFilterTitle: {
     fontWeight: '800',
-    fontSize: type.subtitle,
-    color: colors.text,
     marginBottom: space.sm,
     textAlign: 'center',
   },
   emptyFilterBody: {
-    fontSize: type.body,
-    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 280,
@@ -332,13 +340,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: space.md,
-    marginBottom: space.sm,
     minHeight: touchMin,
+    marginBottom: space.sm,
   },
   thumb: {
     width: 52,
@@ -350,7 +354,7 @@ const styles = StyleSheet.create({
   thumbArchive: { backgroundColor: colors.accentSoft },
   cardBody: { flex: 1, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
-  cardTitle: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text, lineHeight: 20 },
+  cardTitle: { flex: 1, fontWeight: '700', lineHeight: 20 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -360,8 +364,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
-  cardMeta: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 16 },
   chevron: {
     width: 28,
     height: 28,
