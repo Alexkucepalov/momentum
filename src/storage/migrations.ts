@@ -7,9 +7,10 @@
  * V5: activate Phase 3 Today+Profile entities (UserProfile, WaterEntry).
  * V6: activate Phase 4 Activity+Progress entities (WeightEntry, Workout, Habit).
  * V7: activate Phase 5 Planner entities (MealPlan, Pantry, Shopping, Budget, Stores).
+ * V8: Phase 6 quality/beta meta (widgets scaffold; no new domain tables).
  */
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 export const MIGRATION_V1 = `
 PRAGMA foreign_keys = ON;
@@ -101,6 +102,12 @@ export const PHASE5_ACTIVE_ENTITIES = [
   'ProductPrice',
   'BudgetEntry',
 ] as const;
+
+/** Phase 6 — no new entities; meta marker only. */
+export const PHASE6_META = {
+  phase: '6-quality-beta',
+  widgetsScaffold: true,
+} as const;
 
 export type MigrateDb = {
   execSync(sql: string): void;
@@ -194,6 +201,25 @@ function applyV7Phase5(db: MigrateDb): void {
   activateEntities(db, PHASE5_ACTIVE_ENTITIES, 'Phase 5 Planner', '5-planner');
 }
 
+function applyV8Phase6(db: MigrateDb): void {
+  const now = new Date().toISOString();
+  db.runSync('INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)', [
+    'schema_target',
+    String(SCHEMA_VERSION),
+    now,
+  ]);
+  db.runSync('INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)', [
+    'phase',
+    PHASE6_META.phase,
+    now,
+  ]);
+  db.runSync('INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)', [
+    'widgets_scaffold',
+    PHASE6_META.widgetsScaffold ? '1' : '0',
+    now,
+  ]);
+}
+
 export function migrateExpoDb(db: MigrateDb): void {
   const current = getAppliedSchemaVersion(db);
   if (current < 1) {
@@ -224,5 +250,9 @@ export function migrateExpoDb(db: MigrateDb): void {
   if (current < 7) {
     applyV7Phase5(db);
     markApplied(db, 7);
+  }
+  if (current < 8) {
+    applyV8Phase6(db);
+    markApplied(db, 8);
   }
 }
