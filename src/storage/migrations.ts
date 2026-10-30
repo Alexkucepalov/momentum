@@ -1,5 +1,10 @@
-/** SQL schema for Expo SQLite persistence of StoreSnapshot (+ future relational use). */
-export const SCHEMA_VERSION = 1;
+/**
+ * Versioned SQLite migrations for Expo persistence.
+ * V1: store_snapshot blob (existing dogfood).
+ * V2: nf-fit foundation meta stub — no seed food / invented nutrients.
+ */
+
+export const SCHEMA_VERSION = 2;
 
 export const MIGRATION_V1 = `
 PRAGMA foreign_keys = ON;
@@ -16,6 +21,33 @@ CREATE TABLE IF NOT EXISTS store_snapshot (
 );
 `;
 
+/** Foundation tables only — entity columns reserved; no production food rows. */
+export const MIGRATION_V2 = `
+CREATE TABLE IF NOT EXISTS app_meta (
+  key TEXT PRIMARY KEY NOT NULL,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS schema_entity_stub (
+  entity_name TEXT PRIMARY KEY NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('planned', 'active', 'deprecated')),
+  notes TEXT
+);
+`;
+
+/** Planned domain entities (documentation for Phase 1+); not populated with fake food. */
+export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{ entity_name: string; status: 'planned'; notes: string }> = [
+  { entity_name: 'UserProfile', status: 'planned', notes: 'Phase 3 Profile' },
+  { entity_name: 'NutritionTarget', status: 'planned', notes: 'Phase 1; unknown ≠ 0' },
+  { entity_name: 'FoodProduct', status: 'planned', notes: 'Phase 1 catalog' },
+  { entity_name: 'FoodEntry', status: 'planned', notes: 'Phase 1 diary + nutrient snapshot' },
+  { entity_name: 'WaterEntry', status: 'planned', notes: 'Phase 3' },
+  { entity_name: 'WeightEntry', status: 'planned', notes: 'Phase 4' },
+  { entity_name: 'Workout', status: 'planned', notes: 'Phase 4; no auto food kcal offset' },
+  { entity_name: 'Habit', status: 'planned', notes: 'Phase 4' },
+] as const;
+
 export type MigrateDb = {
   execSync(sql: string): void;
   getFirstSync: <T>(sql: string, params?: SQLiteBindLike) => T | null;
@@ -24,7 +56,7 @@ export type MigrateDb = {
 
 type SQLiteBindLike = Array<string | number | null | boolean>;
 
-export function migrateExpoDb(db: MigrateDb): void {
+export function getAppliedSchemaVersion(db: MigrateDb): number {
   db.execSync(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version INTEGER PRIMARY KEY NOT NULL,
@@ -34,12 +66,43 @@ export function migrateExpoDb(db: MigrateDb): void {
   const row = db.getFirstSync<{ version: number | null }>(
     'SELECT MAX(version) AS version FROM schema_migrations',
   );
-  const current = row?.version ?? 0;
+  return row?.version ?? 0;
+}
+
+function markApplied(db: MigrateDb, version: number): void {
+  db.runSync('INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)', [
+    version,
+    new Date().toISOString(),
+  ]);
+}
+
+function applyV2Stubs(db: MigrateDb): void {
+  const now = new Date().toISOString();
+  db.runSync(
+    'INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)',
+    ['product', 'nf-fit', now],
+  );
+  db.runSync(
+    'INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)',
+    ['schema_target', String(SCHEMA_VERSION), now],
+  );
+  for (const stub of SCHEMA_ENTITY_STUBS) {
+    db.runSync(
+      'INSERT OR IGNORE INTO schema_entity_stub (entity_name, status, notes) VALUES (?, ?, ?)',
+      [stub.entity_name, stub.status, stub.notes],
+    );
+  }
+}
+
+export function migrateExpoDb(db: MigrateDb): void {
+  const current = getAppliedSchemaVersion(db);
   if (current < 1) {
     db.execSync(MIGRATION_V1);
-    db.runSync('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)', [
-      1,
-      new Date().toISOString(),
-    ]);
+    markApplied(db, 1);
+  }
+  if (current < 2) {
+    db.execSync(MIGRATION_V2);
+    applyV2Stubs(db);
+    markApplied(db, 2);
   }
 }

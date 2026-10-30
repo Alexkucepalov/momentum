@@ -1,9 +1,13 @@
 # Document map
+- `00-PROJECT-BLUEPRINT.md`: **nf-fit** canonical product blueprint (Phase 0+)
+- `project-context.md` / `visual-direction.md`: short context + visual verdict
 - `01-PRD.md`: product direction, personas, scope, priorities, acceptance criteria
 - `02-MARKET.md`: hypotheses/competitive positioning and validation research
 - `03-UX.md`: IA, screens, navigation, user flows, micro-interactions, accessibility
-- `04-DESIGN-SYSTEM.md`: tokens and components
+- `04-DESIGN-SYSTEM.md`: nf-fit Minimal Soft Utility tokens and components
+- `05-DESIGN-REFERENCES.md`: design board index (take/don't-take); PNGs in `design/references/`
 - `05-ARCHITECTURE.md`: app, local storage, sync, backend, tradeoffs
+- `design/references/`: PNG boards + `NOTES.md`
 - `06-DATA-MODEL.md`: entities, invariants, API contracts
 - `07-AGENTS.md`: runtime AI agency/orchestration/safety
 - `08-AUTOMATION.md`: AI-assisted development, permissions and workflows
@@ -13,6 +17,7 @@
 - `11-QUALITY.md`: testing, security, performance, reliability
 - `12-METRICS.md`: analytics, product metrics, data privacy
 - `13-RESEARCH.md`: checked official references, 2026-10-16
+- `13-WIDGETS-SCAFFOLD.md`: Android home widgets research + scaffold plan (ADR-010)
 - `14-DECISIONS.md`: architecture decisions and unknowns
 - `15-BUSINESS.md`: pricing, unit economics and experiments
 - `16-OPERATIONS.md`: ownership, costs and recurring review

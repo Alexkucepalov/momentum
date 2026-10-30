@@ -1,5 +1,12 @@
 # Roadmap & backlog (sequence not promises)
-## Phase 0 — skeleton / 3–5 working sessions
+
+**nf-fit product roadmap** (see `docs/00-PROJECT-BLUEPRINT.md`):  
+0 Foundation → 1 Nutrition → 2 Recipes → 3 Today+Profile → 4 Activity+Progress → 5 Planner → 6 Quality+Beta (+ **home widgets**).
+
+## Phase 0 — nf-fit Foundation (current)
+Rebrand to **nf-fit**, design-system tokens/primitives, tab shell, SQLite versioned migrations scaffold, widget research (`docs/13-WIDGETS-SCAFFOLD.md`, ADR-010). AC: `npm run verify`; no fabricated nutrition.
+
+## Phase 0 — historical skeleton (done under Momentum branding)
 P0-01 Expo Android scaffold targeting API 36-compatible SDK, Router, lint/typecheck/tests; verify EAS. AC: app opens Android emulator/device.
 P0-02 Domain nutrition library & unit tests. AC: per100g/recipe cooked yield calculations, unknown fields, bad input.
 P0-03 Local SQLite schema and migrations. AC: restart and offline edits persist.

@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, type } from '@/src/theme/tokens';
+import { colors, type } from '@/src/design-system';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -16,6 +16,10 @@ function tint(color: unknown): string {
   return typeof color === 'string' ? color : colors.textSecondary;
 }
 
+/**
+ * nf-fit tab shell: Today / Food / Activity / Progress / Profile.
+ * RU labels for dogfood; English names in a11y for blueprint parity.
+ */
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
@@ -24,7 +28,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.text,
+        tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontSize: type.micro,
@@ -40,8 +44,8 @@ export default function TabLayout() {
           height: tabBarHeight,
           paddingBottom: bottomInset,
         },
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },
+        headerStyle: { backgroundColor: colors.canvas },
+        headerTitleStyle: { color: colors.ink, fontWeight: '700', fontSize: type.title },
         headerShadowVisible: false,
       }}
     >
@@ -50,7 +54,7 @@ export default function TabLayout() {
         options={{
           title: 'Сегодня',
           tabBarLabel: 'Сегодня',
-          tabBarAccessibilityLabel: 'Вкладка Сегодня',
+          tabBarAccessibilityLabel: 'Today tab, Сегодня',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'home' : 'home-outline'} color={tint(color)} />
           ),
@@ -61,7 +65,7 @@ export default function TabLayout() {
         options={{
           title: 'Питание',
           tabBarLabel: 'Питание',
-          tabBarAccessibilityLabel: 'Вкладка Питание',
+          tabBarAccessibilityLabel: 'Food tab, Питание',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'restaurant' : 'restaurant-outline'} color={tint(color)} />
           ),
@@ -72,7 +76,7 @@ export default function TabLayout() {
         options={{
           title: 'Активность',
           tabBarLabel: 'Активность',
-          tabBarAccessibilityLabel: 'Вкладка Активность',
+          tabBarAccessibilityLabel: 'Activity tab, Активность',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'walk' : 'walk-outline'} color={tint(color)} />
           ),
@@ -83,7 +87,7 @@ export default function TabLayout() {
         options={{
           title: 'Прогресс',
           tabBarLabel: 'Прогресс',
-          tabBarAccessibilityLabel: 'Вкладка Прогресс',
+          tabBarAccessibilityLabel: 'Progress tab, Прогресс',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'stats-chart' : 'stats-chart-outline'} color={tint(color)} />
           ),
@@ -94,7 +98,7 @@ export default function TabLayout() {
         options={{
           title: 'Профиль',
           tabBarLabel: 'Профиль',
-          tabBarAccessibilityLabel: 'Вкладка Профиль',
+          tabBarAccessibilityLabel: 'Profile tab, Профиль',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'person' : 'person-outline'} color={tint(color)} />
           ),

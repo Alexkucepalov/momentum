@@ -1,22 +1,22 @@
 {
   "expo": {
-    "name": "Momentum",
-    "slug": "momentum",
+    "name": "nf-fit",
+    "slug": "nf-fit",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "momentum",
+    "scheme": "nffit",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.momentum.dogfood"
+      "bundleIdentifier": "app.nffit.dogfood"
     },
     "android": {
-      "package": "app.momentum.dogfood",
+      "package": "app.nffit.dogfood",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#F7F8F6",
+        "backgroundColor": "#F3F4F6",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -36,7 +36,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F7F8F6"
+          "backgroundColor": "#F3F4F6"
         }
       ],
       [
