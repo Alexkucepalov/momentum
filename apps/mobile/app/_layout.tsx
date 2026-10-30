@@ -9,7 +9,7 @@ import { createMemoryFoodRepository } from '../../../src/storage/foodRepository'
 import type { FoodRepository } from '../../../src/storage/foodRepository';
 import { openPersistentFoodRepository } from '@/src/storage/expoFoodStore';
 import { DataProvider } from '@/src/state/DataContext';
-import { colors } from '@/src/theme/tokens';
+import { colors } from '@/src/design-system';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -39,7 +39,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <View style={styles.root}>
         <DataProvider repo={repo}>
-          <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+          <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="recipes" options={{ headerShown: false }} />
             <Stack.Screen name="plan" options={{ headerShown: false }} />
@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     width: '100%',
-    backgroundColor: colors.background,
+    backgroundColor: colors.canvas,
   },
 });

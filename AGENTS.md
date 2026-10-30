@@ -1,7 +1,7 @@
 # Instructions for ALL coding agents
-Project: Momentum. Read `docs/00-NAVIGATION.md` and relevant specifications first. Treat docs as current baseline unless ADR is added.
+Project: **nf-fit** (repo remote may still be `momentum`). Read `docs/00-PROJECT-BLUEPRINT.md`, `docs/00-NAVIGATION.md` and relevant specifications first. Treat docs as current baseline unless ADR is added.
 ## Mission
-Ship delightful, reliable low-friction offline-first nutrition/habits/fitness Android app. Optimize repeated logging speed and privacy. Do not add feature bloat.
+Ship delightful, reliable low-friction offline-first nutrition/habits/fitness Android app (**nf-fit**). Optimize repeated logging speed and privacy. Do not add feature bloat.
 ## Rules
 1. Implement **one GitHub issue per branch/PR**, with tests and acceptance checklist. No direct merge to main.
 2. No fake screen claiming functional backend, no silent AI guesses, no invented nutrition values or sources.
