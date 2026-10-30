@@ -4,14 +4,13 @@ import {
   PanResponder,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { nutritionConsistencyHint } from '../../../../../src/domain/nutritionConsistency';
 import type { FoodEntry, MealSlot } from '../../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -66,11 +65,15 @@ export function MealSection({
         style={({ pressed }) => [styles.compactEmpty, pressed && styles.pressed]}
         onPress={onAdd}
         accessibilityRole="button"
-        accessibilityLabel={`${MEAL_LABELS[meal]} — ничего не добавлено. Добавить`}
+        accessibilityLabel={`${MEAL_LABELS[meal]} — пока пусто. Добавить`}
       >
         <View style={styles.compactText}>
-          <Text style={styles.compactLabel}>{MEAL_LABELS[meal]}</Text>
-          <Text style={styles.compactHint}>нажми, чтобы добавить</Text>
+          <AppText variant="body" style={styles.compactLabel}>
+            {MEAL_LABELS[meal]}
+          </AppText>
+          <AppText variant="caption" tone="muted">
+            нажми, чтобы добавить
+          </AppText>
         </View>
         <View style={styles.compactPlus}>
           <Ionicons name="add" size={22} color={colors.primaryButtonText} />
@@ -80,14 +83,14 @@ export function MealSection({
   }
 
   return (
-    <View style={styles.card} accessibilityRole="list" accessibilityLabel={MEAL_LABELS[meal]}>
+    <AppCard accessibilityLabel={MEAL_LABELS[meal]} style={styles.card}>
       <View style={styles.head}>
         <View style={styles.headText}>
-          <Text style={styles.heading}>{MEAL_LABELS[meal]}</Text>
-          <Text style={styles.sectionKcal}>
+          <AppText variant="subtitle">{MEAL_LABELS[meal]}</AppText>
+          <AppText variant="caption" tone="muted">
             {sectionKcal === null ? 'ккал частично неизвестны' : fmtKcal(sectionKcal)}
             {entries.length > 1 ? ` · ${entries.length} зап.` : ''}
-          </Text>
+          </AppText>
         </View>
         {canSave ? (
           <Pressable
@@ -96,7 +99,7 @@ export function MealSection({
             accessibilityRole="button"
             accessibilityLabel={`Сохранить ${MEAL_LABELS[meal]} как шаблон`}
           >
-            <Ionicons name="bookmark-outline" size={18} color={colors.text} />
+            <Ionicons name="bookmark-outline" size={18} color={colors.ink} />
           </Pressable>
         ) : null}
         {canRepeat ? (
@@ -106,7 +109,7 @@ export function MealSection({
             accessibilityRole="button"
             accessibilityLabel={`Повторить ${MEAL_LABELS[meal]} в выбранный приём`}
           >
-            <Ionicons name="copy-outline" size={18} color={colors.text} />
+            <Ionicons name="copy-outline" size={18} color={colors.ink} />
           </Pressable>
         ) : null}
         {onAdd ? (
@@ -116,7 +119,7 @@ export function MealSection({
             accessibilityRole="button"
             accessibilityLabel={`Добавить в ${MEAL_LABELS[meal]}`}
           >
-            <Ionicons name="add" size={22} color={colors.text} />
+            <Ionicons name="add" size={22} color={colors.ink} />
           </Pressable>
         ) : null}
       </View>
@@ -129,7 +132,7 @@ export function MealSection({
           onEdit={() => onEditGrams(entry)}
         />
       ))}
-    </View>
+    </AppCard>
   );
 }
 
@@ -181,7 +184,9 @@ function SwipeEntryRow({
           accessibilityRole="button"
           accessibilityLabel={`Удалить ${entry.displayName}`}
         >
-          <Text style={styles.deleteActionText}>Удалить</Text>
+          <AppText variant="caption" tone="inverse" style={styles.deleteActionText}>
+            Удалить
+          </AppText>
         </Pressable>
       </View>
       <Animated.View
@@ -195,17 +200,19 @@ function SwipeEntryRow({
           accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы. Свайп влево — удалить`}
           accessibilityHint="Свайп влево, чтобы удалить"
         >
-          <Text style={styles.name} numberOfLines={2}>
+          <AppText variant="body" style={styles.name} numberOfLines={2}>
             {entry.displayName}
-          </Text>
-          <Text style={styles.meta}>
+          </AppText>
+          <AppText variant="caption" tone="secondary">
             {entry.grams} г · Б {fmtMacro(entry.proteinG)} · Ж {fmtMacro(entry.fatG)} · У{' '}
             {fmtMacro(entry.carbG)}
             {incomplete ? ' · неполно' : ''}
             {diverge ? ' · ккал≠БЖУ' : ''}
-          </Text>
+          </AppText>
         </Pressable>
-        <Text style={styles.kcal}>{fmtKcal(entry.energyKcal)}</Text>
+        <AppText variant="caption" style={styles.kcal}>
+          {fmtKcal(entry.energyKcal)}
+        </AppText>
       </Animated.View>
     </View>
   );
@@ -217,7 +224,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.border,
@@ -226,33 +233,22 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
     minHeight: 56,
   },
-  compactText: { flex: 1 },
+  compactText: { flex: 1, gap: 2 },
   compactLabel: {
-    fontSize: type.body,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  compactHint: {
-    marginTop: 2,
-    fontSize: type.caption,
-    color: colors.textMuted,
+    fontWeight: '700',
   },
   compactPlus: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.pill,
     backgroundColor: colors.primaryButton,
     alignItems: 'center',
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
     marginBottom: space.md,
     overflow: 'hidden',
+    padding: space.md,
   },
   head: {
     flexDirection: 'row',
@@ -260,22 +256,12 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
     gap: space.sm,
   },
-  headText: { flex: 1 },
-  heading: {
-    fontSize: type.subtitle,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  sectionKcal: {
-    marginTop: 2,
-    fontSize: type.caption,
-    color: colors.textMuted,
-  },
+  headText: { flex: 1, gap: 2 },
   iconBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.accentSoft,
+    borderRadius: radius.pill,
+    backgroundColor: colors.canvas,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -303,9 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteActionText: {
-    color: colors.primaryButtonText,
     fontWeight: '800',
-    fontSize: type.caption,
   },
   rowFront: {
     flexDirection: 'row',
@@ -320,19 +304,10 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
   },
   name: {
-    fontSize: type.body,
-    color: colors.text,
     fontWeight: '600',
   },
-  meta: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
   kcal: {
-    fontSize: type.caption,
     fontWeight: '700',
-    color: colors.text,
     marginRight: space.xs,
   },
   pressed: { opacity: 0.75 },

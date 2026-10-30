@@ -2,9 +2,10 @@
  * Versioned SQLite migrations for Expo persistence.
  * V1: store_snapshot blob (existing dogfood).
  * V2: nf-fit foundation meta stub — no seed food / invented nutrients.
+ * V3: activate Phase 1 nutrition entities (catalog + diary); still no invented rows.
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const MIGRATION_V1 = `
 PRAGMA foreign_keys = ON;
@@ -36,16 +37,29 @@ CREATE TABLE IF NOT EXISTS schema_entity_stub (
 );
 `;
 
-/** Planned domain entities (documentation for Phase 1+); not populated with fake food. */
-export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{ entity_name: string; status: 'planned'; notes: string }> = [
+/** Domain entity registry — Phase 1 nutrition marked active; never seed fake nutrients. */
+export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{
+  entity_name: string;
+  status: 'planned' | 'active';
+  notes: string;
+}> = [
   { entity_name: 'UserProfile', status: 'planned', notes: 'Phase 3 Profile' },
-  { entity_name: 'NutritionTarget', status: 'planned', notes: 'Phase 1; unknown ≠ 0' },
-  { entity_name: 'FoodProduct', status: 'planned', notes: 'Phase 1 catalog' },
-  { entity_name: 'FoodEntry', status: 'planned', notes: 'Phase 1 diary + nutrient snapshot' },
+  { entity_name: 'NutritionTarget', status: 'active', notes: 'Phase 1; unknown ≠ 0' },
+  { entity_name: 'FoodProduct', status: 'active', notes: 'Phase 1 catalog' },
+  { entity_name: 'FoodEntry', status: 'active', notes: 'Phase 1 diary + nutrient snapshot' },
+  { entity_name: 'MealTemplate', status: 'active', notes: 'Phase 1 saved meals / favorites repeat' },
   { entity_name: 'WaterEntry', status: 'planned', notes: 'Phase 3' },
   { entity_name: 'WeightEntry', status: 'planned', notes: 'Phase 4' },
   { entity_name: 'Workout', status: 'planned', notes: 'Phase 4; no auto food kcal offset' },
   { entity_name: 'Habit', status: 'planned', notes: 'Phase 4' },
+] as const;
+
+/** Entities activated in migration V3 (Phase 1 Nutrition Core). */
+export const PHASE1_ACTIVE_ENTITIES = [
+  'NutritionTarget',
+  'FoodProduct',
+  'FoodEntry',
+  'MealTemplate',
 ] as const;
 
 export type MigrateDb = {
@@ -94,6 +108,27 @@ function applyV2Stubs(db: MigrateDb): void {
   }
 }
 
+function applyV3Phase1(db: MigrateDb): void {
+  const now = new Date().toISOString();
+  db.runSync('INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)', [
+    'schema_target',
+    String(SCHEMA_VERSION),
+    now,
+  ]);
+  db.runSync('INSERT OR REPLACE INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)', [
+    'phase',
+    '1-nutrition',
+    now,
+  ]);
+  for (const name of PHASE1_ACTIVE_ENTITIES) {
+    db.runSync(
+      `INSERT INTO schema_entity_stub (entity_name, status, notes) VALUES (?, 'active', ?)
+       ON CONFLICT(entity_name) DO UPDATE SET status = 'active', notes = excluded.notes`,
+      [name, 'Phase 1 Nutrition Core'],
+    );
+  }
+}
+
 export function migrateExpoDb(db: MigrateDb): void {
   const current = getAppliedSchemaVersion(db);
   if (current < 1) {
@@ -104,5 +139,9 @@ export function migrateExpoDb(db: MigrateDb): void {
     db.execSync(MIGRATION_V2);
     applyV2Stubs(db);
     markApplied(db, 2);
+  }
+  if (current < 3) {
+    applyV3Phase1(db);
+    markApplied(db, 3);
   }
 }

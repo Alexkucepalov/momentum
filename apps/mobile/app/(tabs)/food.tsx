@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 
@@ -10,7 +10,6 @@ import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DateSwitcher } from '@/src/components/DateSwitcher';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { KcalRing } from '@/src/components/KcalRing';
 import { PortionEditModal } from '@/src/components/PortionEditModal';
 import { SaveMealModal } from '@/src/components/SaveMealModal';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
@@ -22,6 +21,7 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
+import { DiaryDaySummary } from '@/src/features/diary/DiaryDaySummary';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
 import {
   FoodSegmentTabs,
@@ -31,7 +31,15 @@ import { MealSection } from '@/src/features/diary/MealSection';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import {
+  AppButton,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+  type,
+} from '@/src/design-system';
 
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealSlot, string> = {
@@ -208,13 +216,9 @@ export default function FoodScreen() {
 
         {segment === 'diary' ? (
           <>
-            <KcalRing
-              variant="compact"
+            <DiaryDaySummary
               totals={totals}
-              targets={dailyTargets}
-              activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
-              activityMinutes={repo.activityMinutesForDate(dateLocal)}
-              onSetTarget={() => router.push('/profile')}
+              energyTargetKcal={dailyTargets.energyKcal}
             />
 
             <TodayPlanStrip />
@@ -240,7 +244,9 @@ export default function FoodScreen() {
               accessibilityRole="link"
               accessibilityLabel="Что съесть сейчас"
             >
-              <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
+              <AppText variant="caption" tone="secondary" style={styles.secondaryLinkText}>
+                Что съесть сейчас →
+              </AppText>
             </Pressable>
           </>
         ) : (
@@ -298,17 +304,14 @@ export default function FoodScreen() {
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
         >
-          <Ionicons name="barcode-outline" size={22} color={colors.text} />
+          <Ionicons name="barcode-outline" size={22} color={colors.ink} />
         </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.footerScan, pressed && styles.pressed]}
+        <AppButton
+          label="Добавить еду"
           onPress={() => setOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Добавить еду"
-        >
-          <Ionicons name="add" size={22} color={colors.primaryButtonText} />
-          <Text style={styles.footerScanText}>Добавить еду</Text>
-        </Pressable>
+          style={styles.footerScan}
+          testID="food-add-cta"
+        />
       </ScreenFooter>
 
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
@@ -393,7 +396,7 @@ export default function FoodScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140 },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerBtn: {
@@ -410,15 +413,13 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   secondaryLinkText: {
-    fontSize: type.caption,
     fontWeight: '700',
-    color: colors.textSecondary,
   },
   footerIcon: {
     width: touchMin,
     height: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',
@@ -430,9 +431,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     marginBottom: space.md,
@@ -440,23 +441,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: type.body,
-    color: colors.text,
+    color: colors.ink,
     paddingVertical: space.sm,
   },
   footerScan: {
     flex: 1,
-    minHeight: touchMin,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryButton,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-  },
-  footerScanText: {
-    fontSize: type.body,
-    fontWeight: '800',
-    color: colors.primaryButtonText,
   },
   pressed: { opacity: 0.88 },
 });

@@ -3,8 +3,11 @@
 **nf-fit product roadmap** (see `docs/00-PROJECT-BLUEPRINT.md`):  
 0 Foundation → 1 Nutrition → 2 Recipes → 3 Today+Profile → 4 Activity+Progress → 5 Planner → 6 Quality+Beta (+ **home widgets**).
 
-## Phase 0 — nf-fit Foundation (current)
+## Phase 0 — nf-fit Foundation (done, #161)
 Rebrand to **nf-fit**, design-system tokens/primitives, tab shell, SQLite versioned migrations scaffold, widget research (`docs/13-WIDGETS-SCAFFOLD.md`, ADR-010). AC: `npm run verify`; no fabricated nutrition.
+
+## Phase 1 — nf-fit Nutrition Core (current)
+Food catalog (local) + diary by date; add/edit grams/delete+undo; domain nutrition snapshots (`unknown ≠ 0`); recent + favorites ≤10s; SQLite persistence; Food UI on Minimal Soft Utility. Out of scope: full Recipes CRUD, Plan, widgets binary.
 
 ## Phase 0 — historical skeleton (done under Momentum branding)
 P0-01 Expo Android scaffold targeting API 36-compatible SDK, Router, lint/typecheck/tests; verify EAS. AC: app opens Android emulator/device.
