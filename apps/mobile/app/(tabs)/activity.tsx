@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 
@@ -8,15 +8,23 @@ import type { WorkoutType } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
 import { DateSwitcher } from '@/src/components/DateSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
+import { ActivityDaySummary } from '@/src/features/activity/ActivityDaySummary';
 import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+} from '@/src/design-system';
 
 const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -54,7 +62,7 @@ export default function ActivityScreen() {
           style={styles.headerBtn}
           hitSlop={8}
         >
-          <Ionicons name="add" size={26} color={colors.text} />
+          <Ionicons name="add" size={26} color={colors.ink} />
         </Pressable>
       ),
     });
@@ -74,7 +82,7 @@ export default function ActivityScreen() {
   const todayKey = localDateKey(new Date(), profile.timezone);
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} testID="activity-screen">
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <DateSwitcher
           selected={dateLocal}
@@ -93,33 +101,31 @@ export default function ActivityScreen() {
               actionLabel="+ Тренировка"
               onAction={() => openForm('walking')}
             />
-            <Text style={styles.quickLabel}>Быстрый старт</Text>
+            <AppText variant="label" tone="secondary" style={styles.quickLabel}>
+              Быстрый старт
+            </AppText>
             <View style={styles.quickRow}>
               {TYPE_META.map((t) => (
                 <Pressable
                   key={t.type}
-                  style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                  style={({ pressed }) => [pressed && styles.pressed]}
                   onPress={() => openForm(t.type)}
                   accessibilityRole="button"
                   accessibilityLabel={`Добавить ${t.label}`}
                 >
-                  <Ionicons name={t.icon} size={18} color={colors.text} />
-                  <Text style={styles.quickChipText}>{t.label}</Text>
+                  <AppCard style={styles.quickChip}>
+                    <Ionicons name={t.icon} size={18} color={colors.ink} />
+                    <AppText variant="caption" style={styles.quickChipText}>
+                      {t.label}
+                    </AppText>
+                  </AppCard>
                 </Pressable>
               ))}
             </View>
           </>
         ) : (
           <>
-            <View style={styles.summary} accessibilityRole="summary">
-              <Text style={styles.summaryValue}>{totalMin}</Text>
-              <Text style={styles.summaryLabel}>мин за выбранный день</Text>
-              <Text style={styles.summaryHint}>
-                {activityKcal != null
-                  ? `Оценка ~${activityKcal} ккал (MET) · не вычитается из еды`
-                  : 'Ккал тренировок не вычитаются из еды — только факт движения'}
-              </Text>
-            </View>
+            <ActivityDaySummary totalMinutes={totalMin} activityKcal={activityKcal} />
 
             <WeekBarChart
               title="Неделя активности"
@@ -136,7 +142,7 @@ export default function ActivityScreen() {
               }))}
             />
 
-            <PrimaryButton label="+ Тренировка" onPress={() => openForm('walking')} />
+            <AppButton label="+ Тренировка" onPress={() => openForm('walking')} />
 
             <SectionHeader title="Записи дня" />
             {workouts.length === 0 ? (
@@ -187,8 +193,8 @@ export default function ActivityScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, paddingBottom: 48 },
+  root: { flex: 1, backgroundColor: colors.canvas },
+  content: { padding: space.lg, paddingBottom: 48, gap: space.sm },
   headerBtn: {
     minWidth: touchMin,
     minHeight: touchMin,
@@ -196,31 +202,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: space.sm,
   },
-  summary: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.xl,
-    alignItems: 'center',
-    marginBottom: space.md,
-  },
-  summaryValue: { fontSize: type.hero, fontWeight: '800', color: colors.text },
-  summaryLabel: { fontSize: type.body, color: colors.textSecondary, marginTop: 4 },
-  summaryHint: {
-    marginTop: space.sm,
-    fontSize: type.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
   pressed: { opacity: 0.88 },
   quickLabel: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
     marginBottom: space.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    marginTop: space.md,
   },
   quickRow: {
     flexDirection: 'row',
@@ -233,14 +218,10 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    paddingVertical: space.sm,
+    borderRadius: radius.card,
   },
   quickChipText: {
-    fontSize: type.caption,
     fontWeight: '700',
-    color: colors.text,
   },
 });
