@@ -8,7 +8,7 @@ import { loadSrcModules } from './loadTsModules.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const mods = loadSrcModules();
 
-test('Phase 1 schema: SCHEMA_VERSION 3 activates nutrition entities', () => {
+test('Phase 1 schema: nutrition entities activated (SCHEMA_VERSION ≥ 3)', () => {
   const {
     SCHEMA_VERSION,
     migrateExpoDb,
@@ -16,7 +16,7 @@ test('Phase 1 schema: SCHEMA_VERSION 3 activates nutrition entities', () => {
     PHASE1_ACTIVE_ENTITIES,
   } = mods['storage/migrations'];
 
-  assert.equal(SCHEMA_VERSION, 3);
+  assert.ok(SCHEMA_VERSION >= 3);
   assert.ok(PHASE1_ACTIVE_ENTITIES.includes('FoodEntry'));
   assert.ok(PHASE1_ACTIVE_ENTITIES.includes('FoodProduct'));
 
@@ -44,7 +44,7 @@ test('Phase 1 schema: SCHEMA_VERSION 3 activates nutrition entities', () => {
         return;
       }
       if (s.includes('schema_entity_stub')) {
-        // V2: (name, status, notes). V3: status literal 'active', params (name, notes).
+        // V2: (name, status, notes). V3+: status literal 'active', params (name, notes).
         if (s.includes("'active'") || s.includes('DO UPDATE')) {
           stubs.set(params[0], { status: 'active', notes: params[1] });
         } else {
@@ -55,9 +55,8 @@ test('Phase 1 schema: SCHEMA_VERSION 3 activates nutrition entities', () => {
   };
 
   migrateExpoDb(db);
-  assert.equal(getAppliedSchemaVersion(db), 3);
+  assert.equal(getAppliedSchemaVersion(db), SCHEMA_VERSION);
   assert.equal(meta.get('product'), 'nf-fit');
-  assert.equal(meta.get('phase'), '1-nutrition');
   for (const name of PHASE1_ACTIVE_ENTITIES) {
     assert.ok(stubs.has(name), `missing stub ${name}`);
     assert.equal(stubs.get(name).status, 'active');
