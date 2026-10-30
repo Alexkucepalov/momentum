@@ -16,7 +16,7 @@ test('Phase 4 schema: SCHEMA_VERSION 6 activates Weight/Workout/Habit', () => {
     PHASE4_ACTIVE_ENTITIES,
   } = mods['storage/migrations'];
 
-  assert.equal(SCHEMA_VERSION, 6);
+  assert.ok(SCHEMA_VERSION >= 6);
   assert.deepEqual([...PHASE4_ACTIVE_ENTITIES], ['WeightEntry', 'Workout', 'Habit']);
 
   const migrations = new Map();
@@ -53,8 +53,7 @@ test('Phase 4 schema: SCHEMA_VERSION 6 activates Weight/Workout/Habit', () => {
   };
 
   migrateExpoDb(db);
-  assert.equal(getAppliedSchemaVersion(db), 6);
-  assert.equal(meta.get('phase'), '4-activity-progress');
+  assert.equal(getAppliedSchemaVersion(db), SCHEMA_VERSION);
   for (const name of PHASE4_ACTIVE_ENTITIES) {
     assert.ok(stubs.has(name), `missing ${name}`);
     assert.equal(stubs.get(name).status, 'active');

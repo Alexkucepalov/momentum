@@ -15,8 +15,11 @@ Recipe CRUD + ingredients + cooked yield + portion calc; text/personal import wi
 ## Phase 3 — nf-fit Today + Profile (done, #164)
 Today status (energy/water/activity, unknown ≠ 0), quick add + Plan/Recipes links; Profile goals, export/import/delete, privacy; SCHEMA_VERSION 5.
 
-## Phase 4 — nf-fit Activity + Progress (current)
-Workouts (no food kcal offset), weight, habits; Progress tabs on design system; absence ≠ zero; SCHEMA_VERSION 6. Out of scope: Plan polish, widgets binary.
+## Phase 4 — nf-fit Activity + Progress (done, #165)
+Workouts (no food kcal offset), weight, habits; Progress tabs on design system; absence ≠ zero; SCHEMA_VERSION 6.
+
+## Phase 5 — nf-fit Planner (current)
+Plan hub on design system; MealPlan/Pantry/Shopping/Budget entities active; plan ≠ diary (explicit log only); SCHEMA_VERSION 7. Out of scope: widgets binary (Phase 6).
 
 ## Phase 0 — historical skeleton (done under Momentum branding)
 P0-01 Expo Android scaffold targeting API 36-compatible SDK, Router, lint/typecheck/tests; verify EAS. AC: app opens Android emulator/device.

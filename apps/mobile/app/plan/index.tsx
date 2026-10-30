@@ -1,9 +1,16 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import {
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+} from '@/src/design-system';
 
 type HubItem = {
   key: string;
@@ -22,7 +29,7 @@ type HubItem = {
   primary?: boolean;
 };
 
-/** Primary = daily loop; secondary = planning/money — same screens, clearer hierarchy. */
+/** Primary = daily loop; secondary = planning/money — plan ≠ diary. */
 const PRIMARY: HubItem[] = [
   {
     key: 'eat-now',
@@ -86,40 +93,61 @@ function HubRow({ item }: { item: HubItem }) {
   return (
     <Pressable
       onPress={() => router.push(item.href)}
-      style={({ pressed }) => [styles.card, item.primary && styles.cardPrimary, pressed && styles.pressed]}
+      style={({ pressed }) => [pressed && styles.pressed]}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
+      testID={`plan-hub-${item.key}`}
     >
-      <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
-        <Ionicons name={item.icon} size={22} color={colors.text} />
-      </View>
-      <View style={styles.cardText}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardSub}>{item.subtitle}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <AppCard style={[styles.card, item.primary && styles.cardPrimary]}>
+        <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
+          <Ionicons name={item.icon} size={22} color={colors.ink} />
+        </View>
+        <View style={styles.cardText}>
+          <AppText variant="subtitle" style={styles.cardTitle}>
+            {item.title}
+          </AppText>
+          <AppText variant="caption" tone="secondary">
+            {item.subtitle}
+          </AppText>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </AppCard>
     </Pressable>
   );
 }
 
 export default function PlanHubScreen() {
   return (
-    <FormScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.kicker} accessibilityRole="header">
-        План питания
-      </Text>
-      <Text style={styles.lead}>
+    <FormScrollView contentContainerStyle={styles.content} testID="plan-hub">
+      <AppText variant="label" tone="secondary" accessibilityRole="header">
+        План питания · nf-fit
+      </AppText>
+      <AppText variant="body" tone="secondary" style={styles.lead}>
         Сейчас — что съесть. Рецепты и запасы рядом. Меню и покупки — когда планируешь неделю.
-      </Text>
+        План не пишет в дневник сам — только по явной команде.
+      </AppText>
 
-      <Text style={styles.section}>Сейчас</Text>
+      <AppCard style={styles.notice} accessibilityLabel="План не равен дневнику">
+        <AppText variant="label" tone="accent">
+          Plan ≠ diary
+        </AppText>
+        <AppText variant="caption" tone="secondary">
+          Запланированное не считается съеденным, пока не подтвердишь порцию.
+        </AppText>
+      </AppCard>
+
+      <AppText variant="label" tone="muted" style={styles.section}>
+        Сейчас
+      </AppText>
       <View style={styles.list} accessibilityRole="list">
         {PRIMARY.map((item) => (
           <HubRow key={item.key} item={item} />
         ))}
       </View>
 
-      <Text style={styles.section}>Неделя и деньги</Text>
+      <AppText variant="label" tone="muted" style={styles.section}>
+        Неделя и деньги
+      </AppText>
       <View style={styles.list} accessibilityRole="list">
         {SECONDARY.map((item) => (
           <HubRow key={item.key} item={item} />
@@ -134,26 +162,17 @@ const styles = StyleSheet.create({
     padding: space.lg,
     paddingBottom: space.xxl,
     gap: space.md,
-  },
-  kicker: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    letterSpacing: 0.2,
+    backgroundColor: colors.canvas,
   },
   lead: {
-    fontSize: type.body,
-    color: colors.textSecondary,
     marginBottom: space.xs,
     lineHeight: 22,
   },
+  notice: {
+    gap: space.xs,
+  },
   section: {
     marginTop: space.sm,
-    fontSize: type.micro,
-    fontWeight: '800',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   list: { gap: space.sm },
   card: {
@@ -163,13 +182,9 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   cardPrimary: {
-    borderColor: colors.text,
+    borderColor: colors.ink,
   },
   pressed: { opacity: 0.88 },
   iconWrap: {
@@ -184,6 +199,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
   },
   cardText: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  cardSub: { fontSize: type.caption, color: colors.textSecondary },
+  cardTitle: { fontWeight: '700' },
 });
