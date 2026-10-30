@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, radius, space, type } from '../theme/tokens';
+import { AppCard, AppText, colors, space } from '../design-system';
 
 /** Compact water + activity — food logging lives in AddFoodBlock / KcalRing. */
 export function StatCards({
@@ -25,32 +25,48 @@ export function StatCards({
         : '0 л';
 
   return (
-    <View style={styles.row}>
+    <View style={styles.row} testID="today-stat-cards">
       <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.press, pressed && styles.pressed]}
         onPress={() => onAddWater(250)}
         accessibilityRole="button"
         accessibilityLabel={`Вода ${waterLabel}. Добавить 250 миллилитров`}
       >
-        <View style={styles.cardTop}>
-          <Ionicons name="water-outline" size={18} color={colors.text} />
-          <Text style={styles.title}>Вода</Text>
-        </View>
-        <Text style={styles.value}>{waterLabel}</Text>
-        <Text style={styles.hintAction}>+250 мл</Text>
+        <AppCard style={styles.card}>
+          <View style={styles.cardTop}>
+            <Ionicons name="water-outline" size={18} color={colors.ink} />
+            <AppText variant="label" tone="secondary">
+              Вода
+            </AppText>
+          </View>
+          <AppText variant="subtitle" style={styles.value}>
+            {waterLabel}
+          </AppText>
+          <AppText variant="caption" tone="accent">
+            +250 мл
+          </AppText>
+        </AppCard>
       </Pressable>
       <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.press, pressed && styles.pressed]}
         onPress={() => router.push('/activity')}
         accessibilityRole="button"
         accessibilityLabel={`Активность ${activityMinutes} минут. Открыть вкладку`}
       >
-        <View style={styles.cardTop}>
-          <Ionicons name="walk-outline" size={18} color={colors.text} />
-          <Text style={styles.title}>Активность</Text>
-        </View>
-        <Text style={styles.value}>{activityMinutes > 0 ? `${activityMinutes} мин` : '—'}</Text>
-        <Text style={styles.hintAction}>{activityMinutes > 0 ? 'открыть' : 'добавить'}</Text>
+        <AppCard style={styles.card}>
+          <View style={styles.cardTop}>
+            <Ionicons name="walk-outline" size={18} color={colors.ink} />
+            <AppText variant="label" tone="secondary">
+              Активность
+            </AppText>
+          </View>
+          <AppText variant="subtitle" style={styles.value}>
+            {activityMinutes > 0 ? `${activityMinutes} мин` : '—'}
+          </AppText>
+          <AppText variant="caption" tone="muted">
+            {activityMinutes > 0 ? 'открыть' : 'добавить'}
+          </AppText>
+        </AppCard>
       </Pressable>
     </View>
   );
@@ -62,14 +78,12 @@ const styles = StyleSheet.create({
     gap: space.sm,
     marginBottom: space.lg,
   },
-  card: {
+  press: {
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
+  },
+  card: {
     minHeight: 96,
+    gap: space.xs,
   },
   pressed: { opacity: 0.88 },
   cardTop: {
@@ -78,22 +92,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: space.sm,
   },
-  title: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
   value: {
-    fontSize: type.subtitle,
     fontWeight: '800',
-    color: colors.text,
-  },
-  hintAction: {
-    marginTop: 4,
-    fontSize: type.micro,
-    color: colors.text,
-    fontWeight: '700',
   },
 });

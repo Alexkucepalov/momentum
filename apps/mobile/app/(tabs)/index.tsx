@@ -19,7 +19,6 @@ import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
 import { SectionHeader } from '@/src/components/SectionHeader';
 import { StatCards } from '@/src/components/StatCards';
@@ -32,9 +31,18 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
+import { TodayStatusSummary } from '@/src/features/today/TodayStatusSummary';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+} from '@/src/design-system';
 
 const MEAL_LABELS = {
   breakfast: 'Завтрак',
@@ -141,14 +149,24 @@ export default function TodayScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
-        {/* Fold: date → KBJU → primary Add (footer sticky) → recent */}
-        <Text style={styles.dateLine}>{dateLine}</Text>
+        {/* Fold: date → status → KBJU ring → primary Add (footer sticky) */}
+        <AppText variant="body" tone="secondary" style={styles.dateLine}>
+          {dateLine}
+        </AppText>
 
         <DayStrip
           selected={dateLocal}
           today={today}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
+        />
+
+        <TodayStatusSummary
+          totals={totals}
+          waterMl={waterMl}
+          waterTargetMl={profile.waterTargetMl}
+          activityMinutes={activityMinutes}
+          energyTargetKcal={profile.dailyEnergyKcal}
         />
 
         <KcalRing
@@ -248,13 +266,15 @@ export default function TodayScreen() {
         {favorites.length > 0 ? (
           <>
             <SectionHeader title="Избранное" />
-            <Text style={styles.favHint}>Сначала порция — в дневник только после подтверждения</Text>
+            <AppText variant="label" tone="muted" style={styles.favHint}>
+              Сначала порция — в дневник только после подтверждения
+            </AppText>
             {favorites.map((p) => {
               const lastG = repo.lastGramsForProduct(p.id) ?? 100;
               return (
                 <Pressable
                   key={p.id}
-                  style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
+                  style={({ pressed }) => [pressed && styles.pressed]}
                   onPress={() => {
                     setPortionTarget({
                       target: { kind: 'product', product: p },
@@ -264,17 +284,23 @@ export default function TodayScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`Добавить ${p.name}, выбрать порцию`}
                 >
-                  <View style={styles.iconBubble}>
-                    <Ionicons name="star" size={16} color={colors.fat} />
-                  </View>
-                  <View style={styles.quickBody}>
-                    <Text style={styles.quickTitle}>{p.name}</Text>
-                    <Text style={styles.quickMeta}>
-                      обычно {lastG} г → {MEAL_RU[meal]}
-                      {p.energyKcal === null ? '' : ` · ~${Math.round((p.energyKcal * lastG) / 100)} ккал`}
-                    </Text>
-                  </View>
-                  <Text style={styles.quickAction}>+</Text>
+                  <AppCard style={styles.quick}>
+                    <View style={styles.iconBubble}>
+                      <Ionicons name="star" size={16} color={colors.fat} />
+                    </View>
+                    <View style={styles.quickBody}>
+                      <AppText variant="body" style={styles.quickTitle}>
+                        {p.name}
+                      </AppText>
+                      <AppText variant="caption" tone="secondary">
+                        обычно {lastG} г → {MEAL_RU[meal]}
+                        {p.energyKcal === null
+                          ? ''
+                          : ` · ~${Math.round((p.energyKcal * lastG) / 100)} ккал`}
+                      </AppText>
+                    </View>
+                    <AppText variant="title">+</AppText>
+                  </AppCard>
                 </Pressable>
               );
             })}
@@ -282,22 +308,16 @@ export default function TodayScreen() {
         ) : null}
 
         <View style={styles.secondaryLinks} accessibilityRole="summary">
-          <Pressable
+          <AppButton
+            label="Что съесть сейчас"
+            variant="secondary"
             onPress={() => router.push('/plan/eat-now')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Что съесть сейчас"
-          >
-            <Text style={styles.secondaryLinkText}>Что съесть сейчас →</Text>
-          </Pressable>
-          <Pressable
+          />
+          <AppButton
+            label="Рецепты"
+            variant="secondary"
             onPress={() => router.push('/recipes')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Рецепты"
-          >
-            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
-          </Pressable>
+          />
         </View>
       </FormScrollView>
 
@@ -308,10 +328,10 @@ export default function TodayScreen() {
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
         >
-          <Ionicons name="barcode-outline" size={22} color={colors.text} />
+          <Ionicons name="barcode-outline" size={22} color={colors.ink} />
         </Pressable>
         <View style={styles.footerBtn}>
-          <PrimaryButton label="Добавить еду" onPress={() => setOpen(true)} />
+          <AppButton label="Добавить еду" onPress={() => setOpen(true)} />
         </View>
       </ScreenFooter>
 
@@ -348,21 +368,15 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140 },
   dateLine: {
     marginBottom: space.sm,
-    fontSize: type.body,
-    color: colors.textSecondary,
     fontWeight: '600',
   },
   quick: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: space.md,
     marginBottom: space.sm,
     minHeight: touchMin,
@@ -378,40 +392,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quickBody: { flex: 1 },
-  quickTitle: { fontSize: type.body, fontWeight: '600', color: colors.text },
-  quickMeta: { fontSize: type.caption, color: colors.textSecondary, marginTop: 2 },
-  quickAction: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.text,
-    paddingHorizontal: space.sm,
-  },
+  quickTitle: { fontWeight: '600' },
   favHint: {
-    fontSize: type.micro,
-    color: colors.textMuted,
     marginBottom: space.sm,
     marginTop: -4,
   },
   secondaryLinks: {
     marginTop: space.md,
     marginBottom: space.sm,
-    gap: space.xs,
-  },
-  secondaryLink: {
-    paddingVertical: space.sm,
-    minHeight: touchMin,
-    justifyContent: 'center',
-  },
-  secondaryLinkText: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
+    gap: space.sm,
   },
   footerScan: {
     width: touchMin,
     height: touchMin,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',
