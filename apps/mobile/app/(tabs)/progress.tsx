@@ -7,7 +7,6 @@ import { buildWeekNutrition } from '../../../../src/domain/weekNutrition';
 import { collectWeeklyInsightStats } from '../../../../src/domain/weeklyInsight';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
 import { WeightSparkline } from '@/src/components/WeightSparkline';
@@ -16,7 +15,17 @@ import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  MetricCard,
+  colors,
+  radius,
+  space,
+  touchMin,
+  type,
+} from '@/src/design-system';
 
 type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
 
@@ -129,9 +138,14 @@ export default function ProgressScreen() {
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={t.label}
               >
-                <Text style={[styles.tabText, on && styles.tabTextOn]} numberOfLines={1}>
+                <AppText
+                  variant="label"
+                  tone={on ? 'inverse' : 'secondary'}
+                  style={[styles.tabText, on && styles.tabTextOn]}
+                  numberOfLines={1}
+                >
                   {t.label}
-                </Text>
+                </AppText>
               </Pressable>
             );
           })}
@@ -141,9 +155,9 @@ export default function ProgressScreen() {
 
         {tab === 'habits' ? (
           <>
-            <Text style={styles.habitsLead}>
+            <AppText variant="caption" tone="secondary" style={styles.habitsLead}>
               Отметки за сегодня — на вкладке «Сегодня». Здесь настройка целей и челленджей.
-            </Text>
+            </AppText>
             <FlexibleHabitsPanel />
             <ChallengesPanel />
           </>
@@ -151,19 +165,22 @@ export default function ProgressScreen() {
 
         {tab === 'body' ? (
           <>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Вес</Text>
-              <Text style={styles.cardValue}>{latest ? `${latest.kg} кг` : '—'}</Text>
-              <Text style={styles.cardHint}>
-                {latest
-                  ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'добавь первое значение — это наблюдение, не цель'}
-              </Text>
+            <AppCard style={styles.card} testID="progress-weight-card">
+              <MetricCard
+                label="Вес"
+                value={latest ? latest.kg : null}
+                unit="кг"
+                meta={
+                  latest
+                    ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'наблюдение, не цель'
+                }
+              />
 
               <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
 
@@ -176,39 +193,49 @@ export default function ProgressScreen() {
                 style={styles.input}
                 accessibilityLabel="Вес в килограммах"
               />
-              <PrimaryButton label="Сохранить вес" onPress={onSaveWeight} />
-            </View>
+              <AppButton label="Сохранить вес" onPress={onSaveWeight} />
+            </AppCard>
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>ИМТ и здоровье</Text>
+            <AppCard style={styles.card}>
+              <AppText variant="label" tone="muted">
+                ИМТ и здоровье
+              </AppText>
               {bmiInfo ? (
                 <>
-                  <Text style={styles.cardValue}>{formatBmi(bmiInfo.value)}</Text>
-                  <Text style={styles.bmiLabel}>{bmiInfo.band.labelRu}</Text>
-                  <Text style={styles.cardHint}>{bmiInfo.band.rangeRu}</Text>
-                  <Text style={styles.healthBody}>{bmiInfo.band.hintRu}</Text>
+                  <AppText variant="metric">{formatBmi(bmiInfo.value)}</AppText>
+                  <AppText variant="subtitle">{bmiInfo.band.labelRu}</AppText>
+                  <AppText variant="caption" tone="secondary">
+                    {bmiInfo.band.rangeRu}
+                  </AppText>
+                  <AppText variant="caption" tone="secondary">
+                    {bmiInfo.band.hintRu}
+                  </AppText>
                 </>
               ) : (
                 <>
-                  <Text style={styles.cardValue}>—</Text>
-                  <Text style={styles.cardHint}>
+                  <AppText variant="metric">—</AppText>
+                  <AppText variant="caption" tone="secondary">
                     {profile.heightCm == null
                       ? 'Укажи рост в Профиле и вес выше — появится ИМТ'
                       : 'Добавь вес — ИМТ посчитается автоматически'}
-                  </Text>
+                  </AppText>
                 </>
               )}
               <View style={styles.healthBox}>
-                <Text style={styles.healthTitle}>Кратко</Text>
-                <Text style={styles.healthBody}>
+                <AppText variant="label" tone="muted">
+                  Кратко
+                </AppText>
+                <AppText variant="caption" tone="secondary">
                   ИМТ = вес (кг) ÷ рост² (м). Это справочный ориентир ВОЗ для взрослых, не диагноз и
                   не план питания. При вопросах о здоровье — к врачу.
-                </Text>
+                </AppText>
                 {profile.heightCm != null ? (
-                  <Text style={styles.healthMeta}>Рост в профиле: {profile.heightCm} см</Text>
+                  <AppText variant="label" tone="muted">
+                    Рост в профиле: {profile.heightCm} см
+                  </AppText>
                 ) : null}
               </View>
-            </View>
+            </AppCard>
 
             {weights.length > 0 ? (
               <View style={styles.list}>
@@ -235,59 +262,68 @@ export default function ProgressScreen() {
               onSelectDate={setDateLocal}
               timeZone={profile.timezone}
             />
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Питание за неделю</Text>
-              <Text style={styles.cardValue}>
-                {weekDays.filter((d) => d.entryCount > 0).length} / 7 дней
-              </Text>
-              <Text style={styles.cardHint}>
+            <AppCard style={styles.card}>
+              <AppText variant="label" tone="muted">
+                Питание за неделю
+              </AppText>
+              <AppText variant="metric">
+                {weekDays.filter((d) => d.entryCount > 0).length} / 7
+              </AppText>
+              <AppText variant="caption" tone="secondary">
                 График — только здесь. Неизвестные ккал не считаем нулём.
-              </Text>
+              </AppText>
               {weekDays.map((d) => (
                 <View key={d.dateLocal} style={styles.foodRow}>
-                  <Text style={styles.foodDay}>{d.dateLocal.slice(5)}</Text>
-                  <Text style={styles.foodMeta}>
+                  <AppText variant="body" style={styles.foodDay}>
+                    {d.dateLocal.slice(5)}
+                  </AppText>
+                  <AppText variant="caption" tone="secondary">
                     {d.entryCount > 0
                       ? d.energyKcal != null
                         ? `${Math.round(d.energyKcal)} ккал · ${d.entryCount}`
                         : `ккал неизв. · ${d.entryCount}`
                       : '—'}
-                  </Text>
+                  </AppText>
                 </View>
               ))}
-            </View>
+            </AppCard>
           </>
         ) : null}
 
         {tab === 'sport' ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Спорт за неделю</Text>
-            <Text style={styles.cardValue}>{sportWeekMinutes.count} тренировок</Text>
-            <Text style={styles.cardHint}>{sportWeekMinutes.mins} мин суммарно</Text>
-            <Text style={styles.healthBody}>
+          <AppCard style={styles.card} testID="progress-sport-card">
+            <MetricCard
+              label="Тренировки"
+              value={sportWeekMinutes.count}
+              unit="шт"
+              meta={`${sportWeekMinutes.mins} мин · MET не вычитается из еды`}
+            />
+            <AppText variant="caption" tone="secondary">
               Оценка энергии — ориентир по MET, не вычитается из дневника еды. Детали — во вкладке
               Активность.
-            </Text>
-          </View>
+            </AppText>
+          </AppCard>
         ) : null}
 
         {tab === 'summary' ? (
           <>
             <FlexibleReportPanel />
             <SectionHeader title="Бэкап" />
-            <Text style={styles.backupHint}>
+            <AppText variant="caption" tone="muted" style={styles.backupHint}>
               Полное удаление и настройки приватности — также во вкладке Профиль.
-            </Text>
-            <PrimaryButton label="Экспорт JSON" onPress={() => void onExport()} />
+            </AppText>
+            <AppButton label="Экспорт JSON" onPress={() => void onExport()} />
 
             {lastExport ? (
-              <View style={styles.preview}>
-                <Text style={styles.previewLabel}>Превью экспорта</Text>
+              <AppCard style={styles.preview}>
+                <AppText variant="caption" tone="secondary">
+                  Превью экспорта
+                </AppText>
                 <Text style={styles.previewBody} selectable>
                   {lastExport.slice(0, 800)}
                   {lastExport.length > 800 ? '…' : ''}
                 </Text>
-              </View>
+              </AppCard>
             ) : null}
           </>
         ) : null}
@@ -298,7 +334,7 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   scroll: { flex: 1 },
   content: { padding: space.lg },
   tabs: {
@@ -311,7 +347,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 8,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     minHeight: 36,
@@ -321,74 +357,35 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryButton,
     borderColor: colors.primaryButton,
   },
-  tabText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
+  tabText: { fontWeight: '700' },
   tabTextOn: { color: colors.primaryButtonText },
   habitsLead: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: space.md,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.xl,
     marginBottom: space.xl,
-  },
-  cardTitle: { fontSize: type.caption, color: colors.textMuted },
-  cardValue: { fontSize: type.hero, fontWeight: '800', color: colors.text, marginTop: 4 },
-  cardHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: space.sm,
-  },
-  bmiLabel: {
-    fontSize: type.subtitle,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: space.xs,
+    gap: space.sm,
   },
   healthBox: {
     marginTop: space.md,
     paddingTop: space.md,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-  },
-  healthTitle: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginBottom: space.xs,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  healthBody: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  healthMeta: {
-    marginTop: space.sm,
-    fontSize: type.micro,
-    color: colors.textMuted,
+    gap: space.xs,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     marginBottom: space.md,
     fontSize: type.body,
-    color: colors.text,
+    color: colors.ink,
   },
   list: { marginBottom: space.xl },
   backupHint: {
-    fontSize: type.caption,
-    color: colors.textMuted,
     marginBottom: space.sm,
     lineHeight: 18,
   },
@@ -397,12 +394,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: space.md,
     marginBottom: space.sm,
   },
-  weightKg: { fontWeight: '700', color: colors.text },
+  weightKg: { fontWeight: '700', color: colors.ink },
   weightDate: { color: colors.textSecondary },
   foodRow: {
     flexDirection: 'row',
@@ -411,17 +408,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  foodDay: { fontWeight: '700', color: colors.text },
-  foodMeta: { color: colors.textSecondary, fontSize: type.caption },
+  foodDay: { fontWeight: '700' },
   preview: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
     marginTop: space.lg,
   },
-  previewLabel: { fontSize: type.caption, color: colors.textSecondary, marginBottom: space.sm },
-  previewBody: { fontSize: 12, color: colors.text, fontFamily: 'monospace' },
+  previewBody: { fontSize: 12, color: colors.ink, fontFamily: 'monospace' },
   pressed: { opacity: 0.88 },
 });

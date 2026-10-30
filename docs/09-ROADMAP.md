@@ -12,8 +12,11 @@ Food catalog (local) + diary by date; add/edit grams/delete+undo; domain nutriti
 ## Phase 2 — nf-fit Recipes (done, #163)
 Recipe CRUD + ingredients + cooked yield + portion calc; text/personal import without invented nutrients; Recipes UI on Minimal Soft Utility; SCHEMA_VERSION 4.
 
-## Phase 3 — nf-fit Today + Profile (current)
-Today status (energy/water/activity, unknown ≠ 0), quick add + Plan/Recipes links; Profile goals, export/import/delete, privacy; SCHEMA_VERSION 5. Out of scope: Activity/Progress deep charts, Plan polish, widgets binary.
+## Phase 3 — nf-fit Today + Profile (done, #164)
+Today status (energy/water/activity, unknown ≠ 0), quick add + Plan/Recipes links; Profile goals, export/import/delete, privacy; SCHEMA_VERSION 5.
+
+## Phase 4 — nf-fit Activity + Progress (current)
+Workouts (no food kcal offset), weight, habits; Progress tabs on design system; absence ≠ zero; SCHEMA_VERSION 6. Out of scope: Plan polish, widgets binary.
 
 ## Phase 0 — historical skeleton (done under Momentum branding)
 P0-01 Expo Android scaffold targeting API 36-compatible SDK, Router, lint/typecheck/tests; verify EAS. AC: app opens Android emulator/device.

@@ -5,9 +5,10 @@
  * V3: activate Phase 1 nutrition entities (catalog + diary); still no invented rows.
  * V4: activate Phase 2 recipe entities (CRUD + cooked yield); still no invented nutrients.
  * V5: activate Phase 3 Today+Profile entities (UserProfile, WaterEntry).
+ * V6: activate Phase 4 Activity+Progress entities (WeightEntry, Workout, Habit).
  */
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export const MIGRATION_V1 = `
 PRAGMA foreign_keys = ON;
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS schema_entity_stub (
 );
 `;
 
-/** Domain entity registry — Phase 1–3 marked active; never seed fake nutrients. */
+/** Domain entity registry — Phase 1–4 marked active; never seed fake nutrients. */
 export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{
   entity_name: string;
   status: 'planned' | 'active';
@@ -54,9 +55,9 @@ export const SCHEMA_ENTITY_STUBS: ReadonlyArray<{
   { entity_name: 'RecipeIngredient', status: 'active', notes: 'Phase 2; null macros stay null' },
   { entity_name: 'RecipeSnapshot', status: 'active', notes: 'Phase 2 diary portion snapshots' },
   { entity_name: 'WaterEntry', status: 'active', notes: 'Phase 3 Today water log' },
-  { entity_name: 'WeightEntry', status: 'planned', notes: 'Phase 4' },
-  { entity_name: 'Workout', status: 'planned', notes: 'Phase 4; no auto food kcal offset' },
-  { entity_name: 'Habit', status: 'planned', notes: 'Phase 4' },
+  { entity_name: 'WeightEntry', status: 'active', notes: 'Phase 4 Progress weight' },
+  { entity_name: 'Workout', status: 'active', notes: 'Phase 4; no auto food kcal offset' },
+  { entity_name: 'Habit', status: 'active', notes: 'Phase 4 flexible habits' },
 ] as const;
 
 /** Entities activated in migration V3 (Phase 1 Nutrition Core). */
@@ -76,6 +77,9 @@ export const PHASE2_ACTIVE_ENTITIES = [
 
 /** Entities activated in migration V5 (Phase 3 Today + Profile). */
 export const PHASE3_ACTIVE_ENTITIES = ['UserProfile', 'WaterEntry'] as const;
+
+/** Entities activated in migration V6 (Phase 4 Activity + Progress). */
+export const PHASE4_ACTIVE_ENTITIES = ['WeightEntry', 'Workout', 'Habit'] as const;
 
 export type MigrateDb = {
   execSync(sql: string): void;
@@ -161,6 +165,10 @@ function applyV5Phase3(db: MigrateDb): void {
   activateEntities(db, PHASE3_ACTIVE_ENTITIES, 'Phase 3 Today+Profile', '3-today-profile');
 }
 
+function applyV6Phase4(db: MigrateDb): void {
+  activateEntities(db, PHASE4_ACTIVE_ENTITIES, 'Phase 4 Activity+Progress', '4-activity-progress');
+}
+
 export function migrateExpoDb(db: MigrateDb): void {
   const current = getAppliedSchemaVersion(db);
   if (current < 1) {
@@ -183,5 +191,9 @@ export function migrateExpoDb(db: MigrateDb): void {
   if (current < 5) {
     applyV5Phase3(db);
     markApplied(db, 5);
+  }
+  if (current < 6) {
+    applyV6Phase4(db);
+    markApplied(db, 6);
   }
 }
