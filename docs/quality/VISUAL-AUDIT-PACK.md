@@ -8,9 +8,9 @@
 | Индекс | [`visual-audit-pack/README.md`](./visual-audit-pack/README.md) |
 | Скрипт | `scripts/capture-visual-audit-pack.mjs` |
 | Текущий evidence | **Expo web** 390×844 @2x |
-| Android Pass | **не выставлен** — нет устройства/AVD; для Pass → `visual-audit-pack/android-device/` |
+| Android Pass | **не выставлен** (Stage 11 open) — для Pass → `visual-audit-pack/android-device/` + APK sha |
 | Синтетика | демо 2 недели + `docs/fixtures/synthetic-purchases.json` (Пятёрочка) |
-| Дата съёмки | 2026-10-21 |
+| Дата съёмки (web) | 2026-10-21 · IA tabs обновлены 2026-11-01 (Сон ≠ root tab) |
 
 ---
 

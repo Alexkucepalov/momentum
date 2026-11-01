@@ -1,21 +1,22 @@
 # Momentum — Product Quality Audit
 
-**Дата:** 2026-10-20 (baseline) · **Refresh:** 2026-11-01 (Stage 1 docs sync)  
+**Дата:** 2026-10-20 (baseline) · **Refresh:** 2026-11-01 (Stage 11 docs sync)  
 **Статус baseline:** утверждён 2026-10-20.  
 **Актуальный overhaul SoT:** `docs/PRODUCT-OVERHAUL-AUDIT.md`, `docs/PRODUCT-ROADMAP.md`, `docs/DESIGN-AUDIT.md`.  
-**Метод baseline:** static + code/docs review. Device E2E по-прежнему не закрыт.
+**Метод baseline:** static + code/docs review. Device E2E по-прежнему не закрыт (`needs-human`).
 
-### Факт на 2026-11-01 (не заменяет детальный overhaul-audit)
+### Факт на 2026-11-01 Stage 11 (не заменяет детальный overhaul-audit)
 
 | Слой | Факт |
 |------|------|
-| Ветка | `feat/garmin-personal-sync` (+ dogfood Garmin/sleep/reports) |
-| Tabs | 6 temporary (Сон отдельной вкладкой); target = 5 «Движение» |
+| Ветка | `main` (overhaul Stages 1–9 merged; 10–11 docs/perf) |
+| Tabs | **5:** Сегодня · Питание · Движение · Прогресс · Профиль (Сон = сегмент Движения) |
 | Snapshot | **v18** (sleepNights + dailyActivityStats + garminSync) |
 | SQL migrations stub | SCHEMA_VERSION **8** (не путать со snapshot) |
 | Integrations | Garmin Personal API (SecureStore); Zepp CSV; OFF barcode |
 | Reports | PDF + plain text clipboard for ChatGPT (no direct API) |
 | Persist | Full JSON snapshot per mutation (risk noted; no rewrite without metrics) |
+| Catalog list | `FlatList` + virtualize threshold 24 |
 
 Связанные артефакты: `UX-FLOWS.md`, `SCREEN-AUDIT.md`, `DESIGN-SYSTEM-AUDIT.md`, `PERFORMANCE-BASELINE.md`, `TECHNICAL-AUDIT.md`, `E2E-TEST-MATRIX.md`, `QUALITY-BACKLOG.md`, `QUALITY-ROADMAP.md`, `docs/garmin-personal-sync.md`.
 
@@ -29,7 +30,7 @@
 | 2 | **Today перегружен конкурирующими CTA** — shortcuts, ring, plan strip, add block, habits, water, favorites, journey chips | `apps/mobile/app/(tabs)/index.tsx` (~386 строк): JourneyShortcuts + TodayPlanStrip + AddFoodBlock + TodayChecklist + … | Evidence |
 | 3 | **Food tab = дневник + каталог + план + поиск** на одном скролле; dual path с Today для add | `food.tsx` (~514 строк): DateSwitcher, WeekStrip, KcalRing, TodayPlanStrip, meals, catalog, search | Evidence |
 | 4 | **AddFoodSheet монолит ~842 LOC** — главный путь логирования; высокий риск регрессий и медленных правок | `apps/mobile/src/features/diary/AddFoodSheet.tsx` | Evidence |
-| 5 | **Нет виртуализации списков** — FormScrollView везде; при росте дневника/каталога UI деградирует | `rg FlatList` ≈ нет в UI; каталог рендерит массивы в ScrollView | Evidence; perf на 10k — Hypothesis |
+| 5 | **Catalog jank на device не измерен** — FlatList+threshold есть; diary/короткие списки в ScrollView | `FoodCatalogList` FlatList; Stage 10 Node benches green; UI jank Hypothesis | Evidence (code) + Hypothesis (device) |
 | 6 | **Persist = полный JSON snapshot в SQLite** на каждое изменение — O(size) write; нет посущностных запросов | `expoFoodStore.native.ts` `writeSnapshot` всей `StoreSnapshot` | Evidence; latency — Hypothesis |
 | 7 | **God-repository ~2760 LOC** — вся доменная мутация в одном файле | `src/storage/foodRepository.ts` | Evidence |
 | 8 | **Дизайн-система расходится с docs** — код Nothing-mono (`#111`), docs draft teal/gold | `apps/mobile/src/theme/tokens.ts` vs `docs/04-DESIGN-SYSTEM.md` | Evidence |
@@ -44,7 +45,7 @@
 
 | Слой | Факт |
 |------|------|
-| Платформа | Expo Router; **2026-11-01:** 6 tabs incl. Sleep (target 5) |
+| Платформа | Expo Router; **2026-11-01:** 5 tabs (Движение = Activity\|Sleep) |
 | Стек | React Native + strict TS + in-memory repo + SQLite snapshot persist |
 | Snapshot | **`version: 18`** (sleepNights; was 13 at baseline audit) |
 | Domain | ~32 TS модуля в `src/domain` |
