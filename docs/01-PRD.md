@@ -28,7 +28,7 @@ Log repeated food in under 10 seconds; understand progress at a glance; plan sma
 - Weight trend; progress charts; flexible PDF + **plain-text report for ChatGPT paste**.
 - **Garmin Connect Personal API** (user’s own key in SecureStore): weight, activities+details, steps, **sleep summaries**.
 - Zepp/Amazfit body CSV weight import (when scale data is not in Garmin Connect).
-- Sleep UI (temporary root tab; target IA merges into «Движение»).
+- Sleep UI inside **Движение** (Activity | Sleep) — 5 root tabs.
 - Android home widget scaffold.
 ## P2
 - Typed text/voice parsing; image recognition with human confirmation; multi-agent coaching, social challenges, optional backup/sync.

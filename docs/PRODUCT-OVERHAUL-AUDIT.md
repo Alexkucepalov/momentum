@@ -293,14 +293,14 @@ tests/*.mjs           node:test + transpile TS
 
 ---
 
-## Документы, которые нужно обновить после approve Этапа 0
+## Документы после Этапа 0 (статус Stage 11)
 
-1. `docs/01-PRD.md` — Garmin Personal dogfood; sleep; report-to-ChatGPT copy.  
-2. `docs/03-UX.md` — 6 tabs / Sleep IA.  
-3. `docs/04-DESIGN-SYSTEM.md` — sync с Premium Minimal Utility после approve DS.  
-4. `docs/quality/SCREEN-AUDIT.md`, `PRODUCT-AUDIT.md` — tabs, snapshot v18, Garmin.  
-5. `src/design-system/tokens.ts` `TAB_SHELL`.  
-6. `docs/17-DEV-PLAN.md` — overhaul phases A–I.
+1. `docs/01-PRD.md` — **synced** Garmin / sleep-in-Movement / ChatGPT clipboard.  
+2. `docs/03-UX.md` — **synced** 5 tabs IA.  
+3. `docs/04-DESIGN-SYSTEM.md` / `DESIGN-SYSTEM.md` — Premium Minimal Utility.  
+4. `docs/quality/SCREEN-AUDIT.md`, `PRODUCT-AUDIT.md` — **synced** tabs, v18, FlatList.  
+5. `TAB_SHELL` — aligned `today/food/movement/progress/profile`.  
+6. `docs/17-DEV-PLAN.md` — Stages 1–9 merged; 10–11 perf/docs; **device Pass open**.
 
 ---
 

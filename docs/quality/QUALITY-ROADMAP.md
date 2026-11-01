@@ -9,13 +9,14 @@
 
 | Этап | Status |
 |------|--------|
-| Node baseline | Done (#39) |
-| Android dogfood / #36–#38 | **Pending** |
+| Node baseline | Done (#39) · **re-run 2026-11-01** (Stage 10) |
+| Android dogfood / #36–#38 | **Pending** (`needs-human`, Stage 11) |
 | S2-1 Today | **Merged** #43 |
 | S2-2 Food | **Merged** #45 |
 | S2-3 Sheet + a11y | **Merged** #47 |
 | S2-4 Recipes/Plan hub | **Merged** #49 |
-| FlatList / DS full / Activity deep polish | Deferred / next |
+| Catalog FlatList | **Shipped** (threshold 24); device jank unmeasured |
+| Overhaul Stages 1–9 | **Merged** (#174–#179) |
 | Release | **Blocked** on device gates |
 
 ## Not DONE criteria

@@ -5,9 +5,9 @@ Inventory from Expo Router (`apps/mobile/app/**`).
 
 Шкала цели экрана: ✅ ясно / ⚠️ размыто / ❌ конфликт.
 
-> **2026-11-01 refresh (Stage 3):** вкладки = Сегодня / Питание / **Движение** / Прогресс / Профиль (+ stacks recipes, plan, garmin).  
+> **2026-11-01 refresh (Stage 11):** вкладки = Сегодня / Питание / **Движение** / Прогресс / Профиль (+ stacks recipes, plan, garmin).  
 > Движение = сегменты Активность | Сон; `(tabs)/sleep` hidden + redirect.  
-> Snapshot store: **v18** (`sleepNights`). Плотность Today/Food — Этап 4; не использовать этот файл как единственный SoT.
+> Snapshot store: **v18** (`sleepNights`). Catalog = FlatList (threshold 24). Device TalkBack / visual Pass — **open**.
 
 ---
 
@@ -36,7 +36,7 @@ Inventory from Expo Router (`apps/mobile/app/**`).
 | Цель | ⚠️ | Diary + week strip + catalog + plan |
 | Primary | ⚠️ | Sticky add exists but catalog dominates scroll |
 | Duality | ❌ | Overlaps Today logging |
-| Lists | ❌ | No FlatList — catalog in ScrollView |
+| Lists | ✅ | Catalog `FlatList` (virtualize ≥24); diary ScrollView OK |
 | Search | ✅ | Local query |
 | Header | ⚠️ | Plan icon + other actions |
 

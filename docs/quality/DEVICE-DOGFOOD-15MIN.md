@@ -1,7 +1,8 @@
 # Device dogfood — 15–20 минут (Android)
 
 **Цель:** первый подтверждённый прогон на реальном телефоне.  
-**Не отмечать Pass в PERFORMANCE-BASELINE без этого прогона.**
+**Не отмечать Pass в PERFORMANCE-BASELINE / Visual Audit без этого прогона.**  
+**IA (2026-11-01):** 5 tabs — Сегодня · Питание · Движение · Прогресс · Профиль (Сон внутри Движения).
 
 ---
 
@@ -11,12 +12,12 @@
 
 ```bash
 cd apps/mobile && npm run build:apk:local
-# → apps/mobile/dist/momentum-dogfood.apk
+# → apps/mobile/dist/momentum-dogfood.apk · package `app.nffit.dogfood`
 ```
 
-Альтернатива: Expo Go + ветка/`main` после merge #39 (зафиксируй commit SHA в отчёте).
+Альтернатива: Expo Go + `main` (зафиксируй commit SHA в отчёте).
 
-Установи APK, отключи батарею-оптимизацию для Momentum на время теста (опционально).
+Установи APK, отключи батарею-оптимизацию для nf-fit / Momentum на время теста (опционально).
 
 Запиши в блокнот:
 
@@ -24,7 +25,7 @@ cd apps/mobile && npm run build:apk:local
 |------|----------|
 | Дата / время | |
 | Устройство / Android | |
-| Сборка | APK path или Expo + SHA |
+| Сборка | APK path + sha256 или Expo + SHA |
 | Сеть | online / airplane |
 
 ---
@@ -86,9 +87,9 @@ cd apps/mobile && npm run build:apk:local
 
 Секундомер на телефоне:
 
-1. Старт: палец над кнопкой Recent / «повторить».
+1. Старт: палец над **Повторить вчера** (если есть) или Recent «+».
 2. Тап → (порция если есть) → Confirm → видна строка в дневнике / flash.
-3. Стоп.
+3. Стоп. При необходимости проверь **Отменить**.
 
 Повтори **5 раз** (можно один продукт).
 
@@ -104,10 +105,21 @@ cd apps/mobile && npm run build:apk:local
 
 ---
 
+## 4b. Spot-checks (≈2 мин, опционально)
+
+| Check | Pass? | Note |
+|-------|-------|------|
+| Движение → сегмент Сон открывается | | |
+| План: notice «Запланированное ≠ съеденное» | | `testID=plan-neq-diary` |
+| Каталог: длинный список скроллится без зависания | | FlatList |
+| Garmin (если ключ): last sync / warnings | | см. `docs/quality/GARMIN-DEVICE-QA.md` |
+
+---
+
 ## 5. Что прислать обратно
 
 1. Заполненные таблицы выше (можно фото блокнота).
-2. 2–4 скриншота: дневник после add; после force-stop; (опц.) Progress/totals.
+2. 2–4 скриншота: дневник после add; после force-stop; (опц.) Progress/Движение.
 3. Fail: что нажал, что увидел, Android version.
 
 После этого обновим `PERFORMANCE-BASELINE.md` колонку Device — **только по твоим цифрам**.
