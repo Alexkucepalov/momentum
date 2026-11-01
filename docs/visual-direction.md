@@ -29,7 +29,7 @@
 - `canvas`: светлый нейтральный серый (cool) `#F3F4F6`
 - `surface`: `#FFFFFF`
 - `ink`: `#000000` / secondary cool gray
-- `accent`: насыщенный red/coral `#E4574D` (один токен)
+- `accent`: нейтральный ink `#111827` (без coral/red chrome)
 - `radius.card`: высокий squircle (~24–28)
 - `radius.pill`: stadium
 - `type.label`: geometric sans, small caps / uppercase labels ok

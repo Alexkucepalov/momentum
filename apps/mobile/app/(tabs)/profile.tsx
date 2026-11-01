@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
 import { localDateKey } from '../../../../src/storage/validation';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
+import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
+import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { useData } from '@/src/state/DataContext';
 import {
   AppButton,
@@ -45,7 +46,7 @@ function profileToFields(profile: {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash, setDateLocal } = useData();
+  const { repo, refresh, revision, showFlash, setDateLocal, dateLocal } = useData();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
   const fields = profileToFields(profile);
@@ -210,24 +211,23 @@ export default function ProfileScreen() {
       if (!json) {
         alertMessage(
           'Буфер пуст',
-          'Буфер Mac и телефона — разные. На Mac в браузере нажми «Загрузить демо 2 недели» или «Вставить JSON».',
+          'Буфер Mac и телефона — разные. На телефоне: «Вставить JSON» или скопируй экспорт в буфер устройства.',
         );
         return;
       }
       confirmAndImport(json, 'Из буфера обмена');
     } catch {
-      alertMessage(
-        'Импорт',
-        'Не удалось прочитать буфер — используй «Загрузить демо» / «Вставить JSON».',
-      );
+      alertMessage('Импорт', 'Не удалось прочитать буфер — используй «Вставить JSON».');
     }
   };
 
-  const onImportDemo = () => {
+  const onCopyDayReport = async () => {
     try {
-      confirmAndImport(getDemo2WeeksExportJson(), 'Демо-фикстура (синтетика, 2 недели)');
+      const text = collectDayReportText(repo, dateLocal);
+      await Clipboard.setStringAsync(text);
+      showFlash('Отчёт за день скопирован — вставь в ChatGPT');
     } catch (e) {
-      alertMessage('Импорт', e instanceof Error ? e.message : 'Демо недоступно в этой сборке');
+      alertMessage('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
     }
   };
 
@@ -431,6 +431,22 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
+        <SettingsCard
+          title="Garmin"
+          hint="Personal API: вес, тренировки и шаги. Ключ на устройстве. Автосинк при открытии приложения."
+          icon="watch-outline"
+        >
+          <AppButton label="Настроить Garmin" onPress={() => router.push('/garmin' as Href)} />
+          <View style={{ height: space.sm }} />
+          <AppButton
+            label="Данные Garmin"
+            variant="secondary"
+            onPress={() => router.push('/garmin/data' as Href)}
+          />
+        </SettingsCard>
+
+        <ZeppCsvImportCard />
+
         <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
           <PrivacyRow
             icon="phone-portrait-outline"
@@ -439,6 +455,10 @@ export default function ProfileScreen() {
           <PrivacyRow
             icon="barcode-outline"
             text="Штрихкод: в сеть уходит только код (Open Food Facts). Фото этикетки не загружаем."
+          />
+          <PrivacyRow
+            icon="watch-outline"
+            text="Garmin Personal API: запросы идут в Garmin по твоему ключу; ключ в SecureStore, не в экспорте."
           />
           <PrivacyRow
             icon="person-outline"
@@ -451,13 +471,25 @@ export default function ProfileScreen() {
         </SettingsCard>
 
         <SettingsCard
+          title="Отчёт для ChatGPT"
+          hint="Прямого коннекта нет — данные не уходят сами. Копируешь текст за выбранный день и вставляешь вручную."
+          icon="chatbubble-ellipses-outline"
+        >
+          <AppButton
+            label="Копировать отчёт за день"
+            onPress={() => void onCopyDayReport()}
+          />
+          <AppText variant="caption" tone="muted" style={styles.reportHint}>
+            День = текущая дата в приложении. Период и PDF — во вкладке Прогресс · Отчёты.
+          </AppText>
+        </SettingsCard>
+
+        <SettingsCard
           title="Данные"
           hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
           icon="folder-outline"
         >
           <AppButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
-          <View style={{ height: space.sm }} />
-          <AppButton label="Загрузить демо 2 недели" variant="secondary" onPress={onImportDemo} />
           <View style={{ height: space.sm }} />
           <AppButton
             label="Импорт из буфера телефона"
@@ -769,6 +801,10 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.88 },
   dangerText: { color: colors.danger, fontWeight: '700', fontSize: type.body },
+  reportHint: {
+    marginTop: space.sm,
+    lineHeight: 18,
+  },
   version: {
     marginTop: space.sm,
     marginBottom: space.lg,

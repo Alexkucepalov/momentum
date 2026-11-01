@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -8,20 +8,15 @@ import {
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
 import { localDateKey } from '../../../../src/storage/validation';
-import {
-  repeatableDayFromEntries,
-  shiftDateLocal,
-} from '../../../../src/domain/repeatMeal';
 import type { FoodProduct } from '../../../../src/storage/types';
-import { AddFoodBlock } from '@/src/components/AddFoodBlock';
 import { DayStrip } from '@/src/components/DayStrip';
+import { DaySwipeArea } from '@/src/components/DaySwipeArea';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { KcalRing } from '@/src/components/KcalRing';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
 import { SectionHeader } from '@/src/components/SectionHeader';
-import { StatCards } from '@/src/components/StatCards';
 import { TodayChecklist } from '@/src/components/TodayChecklist';
 import { UndoBar } from '@/src/components/UndoBar';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
@@ -31,7 +26,10 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
+import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
+import { TodayActivityCard } from '@/src/features/activity/TodayActivityCard';
 import { TodayStatusSummary } from '@/src/features/today/TodayStatusSummary';
+import { StatCards } from '@/src/components/StatCards';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
@@ -95,9 +93,18 @@ export default function TodayScreen() {
   const today = localDateKey(new Date(), profile.timezone);
   const activityMinutes = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
+  const dayWorkouts = repo.listWorkoutsForDate(dateLocal);
+  const daySteps = repo.getDailyActivityStats(dateLocal)?.steps ?? null;
   const dateLine = formatDateLine(dateLocal, today);
-  const yesterdayCount = repo.listEntriesForDate(shiftDateLocal(dateLocal, -1)).length;
-
+  const weekActivityDays = useMemo(() => {
+    const start = weekStartMonday(dateLocal);
+    return datesInWeekFromStart(start).map((d) => ({
+      dateLocal: d,
+      minutes: repo.activityMinutesForDate(d),
+      isToday: d === today,
+      selected: d === dateLocal,
+    }));
+  }, [repo, dateLocal, today, revision]);
   const flexibleRows = useMemo(() => {
     return repo
       .listFlexibleHabits()
@@ -148,10 +155,28 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.root}>
+      <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
       <FormScrollView contentContainerStyle={styles.content}>
         {/* Fold: date → status → KBJU ring → primary Add (footer sticky) */}
-        <AppText variant="body" tone="secondary" style={styles.dateLine}>
-          {dateLine}
+        <View style={styles.dateRow}>
+          <AppText variant="body" tone="secondary" style={styles.dateLine}>
+            {dateLine}
+          </AppText>
+          {dateLocal !== today ? (
+            <Pressable
+              onPress={() => setDateLocal(today)}
+              accessibilityRole="button"
+              accessibilityLabel="К сегодня"
+              hitSlop={8}
+            >
+              <AppText variant="caption" style={styles.todayJump}>
+                Сегодня
+              </AppText>
+            </Pressable>
+          ) : null}
+        </View>
+        <AppText variant="caption" tone="muted" style={styles.swipeHint}>
+          Свайп влево / вправо — другой день
         </AppText>
 
         <DayStrip
@@ -183,56 +208,25 @@ export default function TodayScreen() {
           onSetTarget={() => router.push('/profile')}
         />
 
-        <AddFoodBlock
-          meal={meal}
-          onChangeMeal={setMeal}
-          showMealChips={false}
-          todayEntries={todayEntries}
-          quickRepeats={recent.map((e) => ({
-            id: e.id,
-            displayName: e.displayName,
-            grams: e.grams,
-          }))}
-          onRepeat={(id) => {
-            const e = recent.find((r) => r.id === id);
-            if (e) repeat(e);
+        <StatCards
+          waterMl={waterMl}
+          waterTargetMl={profile.waterTargetMl}
+          activityMinutes={activityMinutes}
+          onAddWater={(ml) => {
+            repo.addWater(dateLocal, ml);
+            refresh();
+            showFlash(`+${ml} мл воды`);
           }}
-          onCopyYesterday={
-            yesterdayCount > 0
-              ? () => {
-                  if (!allowAdd()) return;
-                  const yesterday = shiftDateLocal(dateLocal, -1);
-                  const items = repeatableDayFromEntries(repo.listEntriesForDate(yesterday));
-                  if (items.length === 0) {
-                    showFlash('Вчерашний рацион пуст или без продукта/рецепта');
-                    return;
-                  }
-                  for (const item of items) {
-                    if (item.kind === 'product') {
-                      repo.addEntryFromProduct({
-                        productId: item.productId,
-                        dateLocal,
-                        meal: item.meal,
-                        grams: item.grams,
-                      });
-                    } else {
-                      repo.addEntryFromRecipe({
-                        recipeId: item.recipeId,
-                        dateLocal,
-                        meal: item.meal,
-                        grams: item.grams,
-                      });
-                    }
-                  }
-                  refresh();
-                  showFlash(`Повторили вчера · ${items.length}`);
-                }
-              : undefined
-          }
-          onOpenDiary={() => router.push('/(tabs)/food')}
         />
 
-        {/* Below fold: plan, habits, water, favorites, secondary links */}
+        <TodayActivityCard
+          steps={daySteps}
+          workouts={dayWorkouts}
+          weekDays={weekActivityDays}
+          onSelectDay={setDateLocal}
+        />
+
+        {/* Below fold: plan, habits, favorites */}
         <TodayPlanStrip />
 
         <TodayChecklist
@@ -249,17 +243,6 @@ export default function TodayScreen() {
               refresh();
               showFlash(habit ? `Отмечено: ${habit.name}` : 'Отмечено');
             }
-          }}
-        />
-
-        <StatCards
-          waterMl={waterMl}
-          waterTargetMl={profile.waterTargetMl}
-          activityMinutes={activityMinutes}
-          onAddWater={(ml) => {
-            repo.addWater(dateLocal, ml);
-            refresh();
-            showFlash(`+${ml} мл воды`);
           }}
         />
 
@@ -320,6 +303,7 @@ export default function TodayScreen() {
           />
         </View>
       </FormScrollView>
+      </DaySwipeArea>
 
       <ScreenFooter>
         <Pressable
@@ -370,9 +354,23 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140 },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
+    marginBottom: 2,
+  },
   dateLine: {
-    marginBottom: space.sm,
+    flex: 1,
     fontWeight: '600',
+  },
+  todayJump: {
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  swipeHint: {
+    marginBottom: space.sm,
   },
   quick: {
     flexDirection: 'row',

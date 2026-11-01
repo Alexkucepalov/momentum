@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, type } from '@/src/design-system';
+import { GarminAutoSyncHost } from '@/src/features/garmin/GarminAutoSyncHost';
+import { useWidgetSync } from '@/src/widgets/useWidgetSync';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -24,8 +26,11 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
   const tabBarHeight = 52 + bottomInset;
+  useWidgetSync();
 
   return (
+    <View style={{ flex: 1 }}>
+      <GarminAutoSyncHost />
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.ink,
@@ -83,6 +88,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="sleep"
+        options={{
+          title: 'Сон',
+          tabBarLabel: 'Сон',
+          tabBarAccessibilityLabel: 'Sleep tab, Сон',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'moon' : 'moon-outline'} color={tint(color)} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="progress"
         options={{
           title: 'Прогресс',
@@ -105,5 +121,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }

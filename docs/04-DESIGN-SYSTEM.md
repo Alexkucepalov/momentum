@@ -19,7 +19,7 @@ Calm, capable, private. Light neutral canvas, white surfaces, black ink, sparse 
 | ink / text | `#000000` | Primary copy |
 | textSecondary | `#6B7280` | Supporting |
 | textMuted | `#9CA3AF` | Hints |
-| accent | `#E4574D` | Sparse highlight / alert / active day |
+| accent | `#111827` | Sparse highlight / active day (neutral ink, no coral) |
 | accentSoft | `#FCECEA` | Soft accent fills |
 | primaryButton | `#000000` | Primary CTA fill |
 | primaryButtonText / textOnInverse | `#FFFFFF` | On black |

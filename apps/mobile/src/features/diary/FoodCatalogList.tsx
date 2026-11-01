@@ -133,29 +133,28 @@ export function FoodCatalogList({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.panel}>
-        <View style={styles.sectionHead}>
-          <View>
-            <Text style={styles.section} accessibilityRole="header">
-              {searching ? 'Результаты' : 'Каталог'}
-            </Text>
-            {!searching ? (
-              <Text style={styles.sectionLead}>Справочник, свои продукты и рецепты</Text>
-            ) : null}
-          </View>
-          {!searching && onBrowseRecipes ? (
-            <Pressable
-              onPress={onBrowseRecipes}
-              accessibilityRole="button"
-              accessibilityLabel="Открыть все рецепты"
-              hitSlop={8}
-              style={styles.linkBtn}
-            >
-              <Text style={styles.link}>Все рецепты</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.text} />
-            </Pressable>
+      <View style={styles.sectionHead}>
+        <View style={styles.sectionText}>
+          <Text style={styles.section} accessibilityRole="header">
+            {searching ? 'Результаты' : 'Каталог'}
+          </Text>
+          {!searching ? (
+            <Text style={styles.sectionLead}>Свои продукты, справочник и рецепты</Text>
           ) : null}
         </View>
+        {!searching && onBrowseRecipes ? (
+          <Pressable
+            onPress={onBrowseRecipes}
+            accessibilityRole="button"
+            accessibilityLabel="Открыть все рецепты"
+            hitSlop={8}
+            style={styles.linkBtn}
+          >
+            <Text style={styles.link}>Рецепты</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.text} />
+          </Pressable>
+        ) : null}
+      </View>
 
       {!searching ? (
         <ScrollView
@@ -178,23 +177,20 @@ export function FoodCatalogList({
                 ]}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
-                  accessibilityLabel={`Фильтр ${label}: ${count}`}
+                accessibilityLabel={`Фильтр ${label}: ${count}`}
               >
                 <Ionicons
                   name={icon}
-                  size={16}
+                  size={15}
                   color={on ? colors.primaryButtonText : colors.textSecondary}
                 />
                 <Text style={[styles.filterText, on && styles.filterTextOn]}>{label}</Text>
-                <View style={[styles.countPill, on && styles.countPillOn]}>
-                  <Text style={[styles.countText, on && styles.countTextOn]}>{count}</Text>
-                </View>
+                <Text style={[styles.countText, on && styles.countTextOn]}>{count}</Text>
               </Pressable>
             );
           })}
         </ScrollView>
       ) : null}
-      </View>
 
       {searching && !anyHits ? (
         <Text style={styles.hint}>
@@ -439,29 +435,22 @@ export function FoodCatalogList({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space.sm, marginBottom: space.xl },
-  panel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.md,
-    marginBottom: space.md,
-  },
+  wrap: { marginTop: space.xs, marginBottom: space.xl },
   sectionHead: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.md,
+    marginBottom: space.sm,
     gap: space.sm,
   },
+  sectionText: { flex: 1, minWidth: 0 },
   section: {
     fontSize: type.subtitle,
     fontWeight: '800',
     color: colors.text,
   },
   sectionLead: {
-    fontSize: type.micro,
+    fontSize: type.caption,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -469,10 +458,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    minHeight: touchMin,
-    paddingHorizontal: space.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
+    minHeight: 36,
+    paddingHorizontal: space.sm,
   },
   link: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   sub: {
@@ -488,60 +475,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space.sm,
     paddingRight: space.sm,
+    marginBottom: space.md,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingLeft: space.md,
-    paddingRight: space.sm,
-    paddingVertical: space.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
+    paddingHorizontal: space.md,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: colors.background,
-    minHeight: touchMin,
+    backgroundColor: colors.surface,
+    minHeight: 40,
   },
   filterChipOn: {
     backgroundColor: colors.primaryButton,
     borderColor: colors.primaryButton,
   },
   pressed: { opacity: 0.88 },
-  filterText: { fontSize: type.caption, fontWeight: '800', color: colors.text },
+  filterText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
   filterTextOn: { color: colors.primaryButtonText },
-  countPill: {
-    minWidth: 24,
-    paddingHorizontal: 7,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countPillOn: { backgroundColor: 'rgba(255,255,255,0.22)' },
-  countText: { fontSize: type.micro, fontWeight: '800', color: colors.text },
-  countTextOn: { color: colors.primaryButtonText },
+  countText: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
+  countTextOn: { color: 'rgba(255,255,255,0.8)' },
   hint: {
     fontSize: type.caption,
     color: colors.textSecondary,
     lineHeight: 20,
-    marginHorizontal: space.md,
     marginBottom: space.md,
   },
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
-    width: 140,
+    width: 132,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: space.md,
-    minHeight: 120,
+    minHeight: 112,
   },
   recentIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -567,16 +543,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: space.md,
     minHeight: touchMin,
   },
   thumb: {
-    width: 68,
-    height: 68,
-    borderRadius: radius.md,
+    width: 56,
+    height: 56,
+    borderRadius: radius.sm,
     backgroundColor: colors.accentSoft,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
@@ -592,18 +568,17 @@ const styles = StyleSheet.create({
   },
   sourcePill: {
     backgroundColor: colors.accentSoft,
-    borderRadius: radius.pill,
+    borderRadius: radius.sm,
     paddingHorizontal: space.sm,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   sourcePillRef: {
     backgroundColor: colors.successSoft,
   },
   sourcePillText: {
     fontSize: type.micro,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.text,
-    letterSpacing: 0.3,
   },
   meta: { fontSize: type.caption, color: colors.textSecondary },
   starHit: {
@@ -615,7 +590,7 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     width: touchMin,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     backgroundColor: colors.primaryButton,
     alignItems: 'center',
     justifyContent: 'center',
@@ -623,7 +598,7 @@ const styles = StyleSheet.create({
   emptyCta: {
     minHeight: touchMin,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 
 import { formatDateRu, parseDateRu } from '../../../../../src/domain/dateFormatRu';
 import {
   REPORT_CATEGORY_LABELS_RU,
   buildFlexibleReport,
   flexibleReportToHtml,
+  flexibleReportToPlainText,
   type ReportCategory,
 } from '../../../../../src/domain/flexibleReport';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -54,17 +56,21 @@ export function FlexibleReportPanel() {
     setStart(formatDateRu(shiftDaysIso(dateLocal, -(days - 1))));
   };
 
+  const buildReport = () => {
+    const periodStart = parseDateRu(start);
+    const periodEnd = parseDateRu(end);
+    const input = collectFlexibleReportInput(repo, {
+      periodStart,
+      periodEnd,
+      categories: cats,
+    });
+    return { input, report: buildFlexibleReport(input), periodStart, periodEnd };
+  };
+
   const generate = async () => {
     try {
       setBusy(true);
-      const periodStart = parseDateRu(start);
-      const periodEnd = parseDateRu(end);
-      const input = collectFlexibleReportInput(repo, {
-        periodStart,
-        periodEnd,
-        categories: cats,
-      });
-      const report = buildFlexibleReport(input);
+      const { input, report, periodStart, periodEnd } = buildReport();
       const html = flexibleReportToHtml(report, input.generatedAtIso);
 
       if (Platform.OS === 'web') {
@@ -99,6 +105,20 @@ export function FlexibleReportPanel() {
     }
   };
 
+  const copyForChatGpt = async () => {
+    try {
+      setBusy(true);
+      const { input, report } = buildReport();
+      const text = flexibleReportToPlainText(report, input.generatedAtIso);
+      await Clipboard.setStringAsync(text);
+      showFlash('Текст отчёта скопирован — вставь в ChatGPT');
+    } catch (e) {
+      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <View style={styles.wrap}>
       <View style={styles.hero}>
@@ -110,8 +130,8 @@ export function FlexibleReportPanel() {
             Гибкий отчёт
           </Text>
           <Text style={styles.sub}>
-            Сам выбираешь период и разделы. PDF собирается на устройстве — без облака и без
-            выдуманных КБЖУ.
+            Период и разделы сам. PDF на устройстве или текст для вставки в ChatGPT — без прямого
+            коннекта и без выдуманных КБЖУ.
           </Text>
         </View>
       </View>
@@ -186,6 +206,16 @@ export function FlexibleReportPanel() {
         onPress={() => void generate()}
         disabled={busy || cats.length === 0}
       />
+      <Pressable
+        style={({ pressed }) => [styles.copyBtn, pressed && styles.pressed]}
+        onPress={() => void copyForChatGpt()}
+        disabled={busy || cats.length === 0}
+        accessibilityRole="button"
+        accessibilityLabel="Скопировать отчёт для ChatGPT"
+      >
+        <Ionicons name="copy-outline" size={18} color={colors.text} />
+        <Text style={styles.copyText}>Копировать текст для ChatGPT</Text>
+      </Pressable>
     </View>
   );
 }
@@ -249,4 +279,18 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   pressed: { opacity: 0.88 },
+  copyBtn: {
+    marginTop: space.sm,
+    minHeight: touchMin,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: space.md,
+  },
+  copyText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
 });

@@ -29,6 +29,7 @@ function metaFor(w: Workout): string {
   if (w.distanceM != null) {
     parts.push(`${(w.distanceM / 1000).toFixed(2)} км`);
   }
+  if (w.source === 'garmin') parts.push('Garmin');
   if (w.notes) {
     // For "other", title already took first segment — show rest if any.
     if (w.type === 'other') {
@@ -44,20 +45,34 @@ function metaFor(w: Workout): string {
 export function WorkoutRow({
   workout,
   onDelete,
+  onPress,
 }: {
   workout: Workout;
   onDelete: () => void;
+  onPress?: () => void;
 }) {
   const meta = TYPE_META[workout.type];
+  const extras: string[] = [];
+  if (workout.calories != null) extras.push(`${Math.round(workout.calories)} ккал`);
+  if (workout.avgHeartRate != null) extras.push(`${Math.round(workout.avgHeartRate)} уд`);
+  if (workout.avgPowerW != null) extras.push(`${Math.round(workout.avgPowerW)} Вт`);
+  const line = [metaFor(workout), ...extras].join(' · ');
+
   return (
-    <View style={styles.row}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `Открыть ${titleFor(workout)}` : undefined}
+      style={({ pressed }) => [styles.row, pressed && onPress ? styles.rowPressed : null]}
+    >
       <View style={styles.icon}>
         <Ionicons name={meta.icon} size={18} color={colors.text} />
       </View>
       <View style={styles.body}>
         <Text style={styles.title}>{titleFor(workout)}</Text>
         <Text style={styles.meta} numberOfLines={2}>
-          {metaFor(workout)}
+          {line}
         </Text>
       </View>
       <Pressable
@@ -68,7 +83,7 @@ export function WorkoutRow({
       >
         <Ionicons name="close" size={20} color={colors.textMuted} />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
@@ -103,4 +118,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pressed: { opacity: 0.88 },
+  rowPressed: { opacity: 0.92 },
 });

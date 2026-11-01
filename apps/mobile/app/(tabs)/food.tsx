@@ -8,6 +8,7 @@ import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DateSwitcher } from '@/src/components/DateSwitcher';
+import { DaySwipeArea } from '@/src/components/DaySwipeArea';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { PortionEditModal } from '@/src/components/PortionEditModal';
@@ -21,7 +22,7 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
-import { DiaryDaySummary } from '@/src/features/diary/DiaryDaySummary';
+import { KcalRing } from '@/src/components/KcalRing';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
 import {
   FoodSegmentTabs,
@@ -204,21 +205,27 @@ export default function FoodScreen() {
 
   return (
     <View style={styles.root}>
+      <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
       <FormScrollView contentContainerStyle={styles.content}>
         <DateSwitcher
           selected={dateLocal}
           timeZone={profile.timezone}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
+          showSwipeHint
         />
 
         <FoodSegmentTabs value={segment} onChange={selectSegment} />
 
         {segment === 'diary' ? (
           <>
-            <DiaryDaySummary
+            <KcalRing
+              variant="compact"
               totals={totals}
-              energyTargetKcal={dailyTargets.energyKcal}
+              targets={dailyTargets}
+              activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
+              activityMinutes={repo.activityMinutesForDate(dateLocal)}
+              onSetTarget={() => router.push('/profile')}
             />
 
             <TodayPlanStrip />
@@ -296,6 +303,7 @@ export default function FoodScreen() {
           </>
         )}
       </FormScrollView>
+      </DaySwipeArea>
 
       <ScreenFooter>
         <Pressable
