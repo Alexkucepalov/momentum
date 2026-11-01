@@ -20,10 +20,15 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 | **7 Garmin UX (L)** | **Merged #177** | Last-sync · warnings · device QA doc |
 | **8 Analytics (M)** | **Merged #178** | 30-day overview · report DS · secrets guard |
 | **9 Planner (N)** | **Merged #179** | Hub stores demoted · budget plan/fact · plan≠diary |
-| **10 Perf (O)** | **Ready** | Node benches refresh · FlatList note · baseline honesty |
-| **11 Android QA (P)** | **Ready (docs)** | Checklists synced · device / TalkBack / visual Pass **needs-human** |
+| **10 Perf (O)** | **Merged #180** | Node benches refresh · FlatList note · baseline honesty |
+| **11 Android QA (P)** | **Merged #180** | Checklists synced · device / TalkBack / visual Pass **needs-human** |
 
 **A9 TAB_SHELL:** aligned — UI matches `today/food/movement/progress/profile`.
+
+## Release Lock (Friends Beta)
+
+**Verdict:** BLOCKED on device Pass — SoT `docs/release/FRIENDS-BETA-STATUS.md`.  
+Until B1–B3 clear: no Play production, no major new features/tabs/backend; only device-proven bugs / data-loss / status updates. Human next: install dogfood APK → `docs/quality/DEVICE-DOGFOOD-15MIN.md`.
 
 ## Quality Freeze (утверждён 2026-10-20, 2–3 недели)
 
