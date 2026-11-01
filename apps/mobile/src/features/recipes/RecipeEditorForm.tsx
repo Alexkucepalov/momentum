@@ -1,24 +1,15 @@
 import { useState } from 'react';
-import {
-  Alert,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { Nutrition } from '../../../../../src/domain/nutrition';
 import { autoKcalStringFromMacroStrings } from '../../../../../src/domain/nutritionConsistency';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAutoKcalFromMacros } from '../../hooks/useAutoKcalFromMacros';
 import {
   pickRecipePhotoFromLibrary,
   takeRecipePhoto,
 } from '../../media/recipePhoto';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton, Field, colors, radius, space, touchMin, type } from '@/src/design-system';
 import { emptyIngredient, type DraftIngredient } from '../diary/addFood/types';
 
 export type RecipeFormValues = {
@@ -365,40 +356,7 @@ export function RecipeEditorForm({
           {error}
         </Text>
       ) : null}
-      <PrimaryButton label={submitLabel} onPress={save} />
-    </View>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChangeText,
-  keyboardType,
-  placeholder,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  keyboardType?: 'default' | 'decimal-pad';
-  placeholder?: string;
-  multiline?: boolean;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, multiline && styles.inputMulti]}
-        multiline={multiline}
-        textAlignVertical={multiline ? 'top' : 'center'}
-        accessibilityLabel={label}
-      />
+      <AppButton label={submitLabel} onPress={save} />
     </View>
   );
 }
@@ -409,31 +367,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     marginBottom: space.md,
   },
   photo: { width: '100%', height: '100%' },
   photoEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.sm },
   photoHint: { color: colors.textMuted, fontWeight: '600', fontSize: type.caption },
-  field: { marginBottom: space.sm },
-  fieldLabel: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginBottom: 4,
-    fontWeight: '600',
-  },
-  input: {
-    minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    paddingHorizontal: space.md,
-    fontSize: type.body,
-    color: colors.text,
-  },
-  inputMulti: { minHeight: 88, paddingVertical: space.sm },
   blockLabel: {
     marginTop: space.lg,
     marginBottom: space.xs,

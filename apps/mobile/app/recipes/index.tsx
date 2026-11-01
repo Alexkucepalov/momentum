@@ -20,7 +20,7 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { MacroStrip } from '@/src/components/MacroStrip';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { useData } from '@/src/state/DataContext';
-import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
+import { AppCard, AppText, Chip, colors, radius, space, touchMin } from '@/src/design-system';
 
 type Filter = 'all' | 'mine' | 'archive';
 
@@ -110,41 +110,19 @@ export default function RecipesIndexScreen() {
         <View style={styles.filters} accessibilityRole="tablist">
           {(
             [
-              { id: 'all' as const, label: 'Все', count: counts.all, icon: 'apps-outline' as const },
-              { id: 'mine' as const, label: 'Свои', count: counts.mine, icon: 'person-outline' as const },
-              {
-                id: 'archive' as const,
-                label: 'Архив',
-                count: counts.archive,
-                icon: 'library-outline' as const,
-              },
+              { id: 'all' as const, label: 'Все', count: counts.all },
+              { id: 'mine' as const, label: 'Свои', count: counts.mine },
+              { id: 'archive' as const, label: 'Архив', count: counts.archive },
             ]
-          ).map((f) => {
-            const on = filter === f.id;
-            return (
-              <Pressable
-                key={f.id}
-                onPress={() => setFilter(f.id)}
-                style={[styles.chip, on && styles.chipOn]}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={`${f.label}, ${f.count}`}
-              >
-                <Ionicons
-                  name={f.icon}
-                  size={14}
-                  color={on ? colors.primaryButtonText : colors.textSecondary}
-                />
-                <AppText
-                  variant="caption"
-                  tone={on ? 'inverse' : 'ink'}
-                  style={[styles.chipText, on && styles.chipTextOn]}
-                >
-                  {f.label} · {f.count}
-                </AppText>
-              </Pressable>
-            );
-          })}
+          ).map((f) => (
+            <Chip
+              key={f.id}
+              label={`${f.label} ${f.count}`}
+              selected={filter === f.id}
+              onPress={() => setFilter(f.id)}
+              accessibilityLabel={`${f.label}, ${f.count}`}
+            />
+          ))}
         </View>
       </View>
 
@@ -293,24 +271,6 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 15, color: colors.ink },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.sm },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 36,
-  },
-  chipOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
-  },
-  chipText: { fontWeight: '700' },
-  chipTextOn: { color: colors.primaryButtonText },
   list: { paddingHorizontal: space.lg, paddingBottom: 48, paddingTop: space.xs, gap: space.sm },
   emptyFilter: {
     padding: space.xxl,

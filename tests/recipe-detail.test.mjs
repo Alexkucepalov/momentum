@@ -121,3 +121,29 @@ test('v6 recipe migrates optional detail fields', () => {
   assert.equal(r?.energyKcalPer100g, null);
   assert.equal(repo.toSnapshot().version, 18);
 });
+
+test('diary snapshot keeps unknown recipe macros as null (not zero)', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const recipe = repo.createRecipe({
+    name: 'Без КБЖУ',
+    cookedYieldG: 400,
+    nutritionPer100g: { kcal: null, protein: null, fat: null, carbs: null },
+    ingredients: [],
+  });
+  const entry = repo.addEntryFromRecipe({
+    recipeId: recipe.id,
+    dateLocal: '2026-11-01',
+    meal: 'dinner',
+    grams: 200,
+    nutritionSnapshot: {
+      energyKcal: null,
+      proteinG: null,
+      fatG: null,
+      carbG: null,
+    },
+  });
+  assert.equal(entry.energyKcal, null);
+  assert.equal(entry.proteinG, null);
+  assert.equal(entry.grams, 200);
+  assert.equal(repo.dailyTotals('2026-11-01').hasUnknownFields, true);
+});
