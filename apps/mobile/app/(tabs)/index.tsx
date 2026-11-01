@@ -9,6 +9,7 @@ import {
 } from '../../../../src/domain/habitWeek';
 import { localDateKey } from '../../../../src/storage/validation';
 import type { FoodProduct } from '../../../../src/storage/types';
+import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DayStrip } from '@/src/components/DayStrip';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
 import { FlashBar } from '@/src/components/FlashBar';
@@ -75,7 +76,7 @@ function formatDateLine(iso: string, today: string): string {
 export default function TodayScreen() {
   const navigation = useNavigation();
   const router = useRouter();
-  const { repo, dateLocal, setDateLocal, meal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, setDateLocal, meal, refresh, revision, showFlash, setUndo } = useData();
   void revision;
   const allowAdd = useAddGuard();
   const [open, setOpen] = useState(false);
@@ -191,6 +192,8 @@ export default function TodayScreen() {
             }}
           />
 
+          <CopyYesterdayButton testID="today-copy-yesterday" />
+
           <TodayChecklist
             flexibleHabits={flexibleRows}
             onManageHabits={() => router.push('/progress')}
@@ -283,7 +286,7 @@ export default function TodayScreen() {
           if (!allowAdd()) return;
           const product = portionTarget.target.product as FoodProduct;
           repo.updateProductNutrition(product.id, result.per100g);
-          repo.addEntryFromProduct({
+          const created = repo.addEntryFromProduct({
             productId: product.id,
             dateLocal,
             meal,
@@ -292,6 +295,7 @@ export default function TodayScreen() {
           refresh();
           setPortionTarget(null);
           showFlash(`Добавлено: ${product.name}`);
+          setUndo({ entryIds: [created.id], message: `Добавлено: ${product.name}` });
         }}
       />
       <FlashBar />

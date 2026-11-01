@@ -6,7 +6,16 @@ import { localDateKey } from '../../../../src/storage/validation';
 import type { MealSlot } from '../../../../src/storage/types';
 import { feedbackDayChange } from '@/src/utils/dayChangeFeedback';
 
-type UndoState = { entryId: string; message: string } | null;
+/**
+ * Undo toast:
+ * - `entryId` — restore soft-deleted entry (undo delete)
+ * - `entryIds` — soft-delete newly added entries (undo add / copy yesterday)
+ */
+export type UndoState = {
+  message: string;
+  entryId?: string;
+  entryIds?: string[];
+} | null;
 
 type DataContextValue = {
   repo: FoodRepository;
@@ -54,7 +63,17 @@ export function DataProvider({
 
   const performUndo = useCallback(() => {
     if (!undo) return;
-    repo.undoDeleteEntry(undo.entryId);
+    if (undo.entryIds && undo.entryIds.length > 0) {
+      for (const id of undo.entryIds) {
+        try {
+          repo.softDeleteEntry(id);
+        } catch {
+          // Entry may already be gone — ignore.
+        }
+      }
+    } else if (undo.entryId) {
+      repo.undoDeleteEntry(undo.entryId);
+    }
     setUndo(null);
     refresh();
   }, [undo, repo, refresh]);

@@ -32,7 +32,7 @@ export function UndoBar() {
         onPress={performUndo}
         style={styles.btn}
         accessibilityRole="button"
-        accessibilityLabel="Отменить удаление"
+        accessibilityLabel="Отменить"
         hitSlop={8}
       >
         <Text style={styles.btnText}>Отменить</Text>
