@@ -14,6 +14,7 @@ import {
   type,
 } from '@/src/design-system';
 import { verifyGarminApiKey } from '@/src/features/garmin/garminAuth';
+import { GarminWarningsBlock } from '@/src/features/garmin/GarminWarningsBlock';
 import {
   clearGarminApiKey,
   getGarminApiKey,
@@ -47,12 +48,14 @@ export default function GarminConnectScreen() {
   const [keyHint, setKeyHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [statusNote, setStatusNote] = useState<string | null>(null);
+  const [lastWarnings, setLastWarnings] = useState<string[]>([]);
   const sync = repo.getGarminSyncState();
   const imported = useMemo(
     () => ({
       weights: repo.listIntegratedWeights('garmin', 2000).length,
       workouts: repo.listIntegratedWorkouts('garmin', 2000).length,
       days: repo.listIntegratedDailyActivityStats('garmin', 2000).length,
+      sleep: repo.listSleepNights(2000).filter((n) => n.source === 'garmin').length,
     }),
     [repo, revision],
   );
@@ -99,21 +102,17 @@ export default function GarminConnectScreen() {
     try {
       const result = await runGarminSync(repo, { mode });
       refresh();
+      setLastWarnings(result.warnings);
       if (!result.ok) {
         const msg = result.error ?? 'Синхронизация не удалась';
         setStatusNote(msg);
         showFlash(msg);
         return;
       }
-      const base = `Готово: вес ${result.weightsUpserted}, тренировки ${result.workoutsUpserted}, дни шагов ${result.stepsUpserted}, сон ${result.sleepUpserted}`;
-      const warn =
-        result.warnings.length > 0
-          ? result.warnings.length <= 3
-            ? result.warnings.join(' · ')
-            : `${result.warnings.slice(0, 3).join(' · ')} · ещё ${result.warnings.length - 3}`
-          : null;
-      const note = warn ? `${base}. Частично: ${warn}` : base;
-      setStatusNote(note);
+      const note = `Готово: вес ${result.weightsUpserted}, тренировки ${result.workoutsUpserted}, дни шагов ${result.stepsUpserted}, сон ${result.sleepUpserted}`;
+      setStatusNote(
+        result.warnings.length > 0 ? `${note}. Есть предупреждения — раскрой блок ниже.` : note,
+      );
       showFlash(
         mode === 'full'
           ? `Полная выгрузка: ${result.workoutsUpserted} тр. / ${result.stepsUpserted} дн.`
@@ -170,14 +169,18 @@ export default function GarminConnectScreen() {
               Ключ ещё не сохранён на телефоне
             </AppText>
           )}
-          <AppText variant="caption" tone="secondary" style={styles.line}>
+          <AppText variant="caption" tone="secondary" style={styles.line} testID="garmin-last-sync">
             Последняя успешная: {formatSyncAt(sync.lastSuccessfulSyncAt)}
           </AppText>
           {sync.lastSyncedFrom && sync.lastSyncedTo ? (
             <AppText variant="caption" tone="muted" style={styles.line}>
-              Окно: {sync.lastSyncedFrom} → {sync.lastSyncedTo}
+              Окно данных: {sync.lastSyncedFrom} → {sync.lastSyncedTo}
             </AppText>
-          ) : null}
+          ) : (
+            <AppText variant="caption" tone="muted" style={styles.line}>
+              После первой полной выгрузки появится окно дат.
+            </AppText>
+          )}
           {statusNote ? (
             <AppText
               variant="caption"
@@ -187,14 +190,18 @@ export default function GarminConnectScreen() {
               {statusNote}
             </AppText>
           ) : null}
-          {sync.lastError && !statusNote ? (
-            <AppText variant="caption" tone="danger" style={styles.note}>
-              {sync.lastError}
-            </AppText>
-          ) : null}
+          <GarminWarningsBlock
+            lines={
+              lastWarnings.length > 0
+                ? lastWarnings
+                : sync.lastError && !statusNote
+                  ? [sync.lastError]
+                  : []
+            }
+          />
           <AppText variant="caption" tone="secondary" style={styles.line}>
             В базе: вес {imported.weights} · тренировки {imported.workouts} · дни шагов{' '}
-            {imported.days}
+            {imported.days} · сон {imported.sleep}
           </AppText>
           <AppButton
             label="Открыть все данные Garmin"
@@ -291,8 +298,8 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     minHeight: 48,
     fontSize: type.body,
-    color: colors.text,
-    backgroundColor: colors.background,
+    color: colors.ink,
+    backgroundColor: colors.surface,
   },
   footnote: { lineHeight: 18 },
 });
