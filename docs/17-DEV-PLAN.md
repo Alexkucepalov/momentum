@@ -12,8 +12,9 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 | **2 Design system (B)** | **Done** | PR #169; tokens + shared primitives |
 | **3 Navigation (C)** | **Done (PR #170)** | 5 tabs · Движение = Activity\|Sleep · Food DayStrip |
 | **4.1 Today (D1–D9)** | **Done (PR #171)** | Fold: date + ring + water/activity · Plan header · favorites ≤3 |
-| **4.2 Food (E1–E9)** | **In progress** | SegmentedControl · diary empty · catalog FlatList virtualize |
-| 4.3–11 Screens…QA | Pending | Sequential; one issue/PR at a time |
+| **4.2 Food (E1–E9)** | **Done (PR #172)** | SegmentedControl · diary empty · catalog FlatList |
+| **4.4–4.5 Progress/Profile** | **In progress** | 4 progress segments · Profile Goals→…→Privacy |
+| 4.6 Sheets / 5–11 | Pending | AddFoodSheet split next; then J–P |
 
 **A9 TAB_SHELL:** aligned — UI matches `today/food/movement/progress/profile`.
 

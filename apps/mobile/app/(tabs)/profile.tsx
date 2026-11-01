@@ -404,9 +404,10 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
+        {/* H2 order: goals → body → integrations → reports → data → privacy */}
         <SettingsCard
           title="Garmin"
-          hint="Personal API: вес, тренировки и шаги. Ключ на устройстве. Автосинк при открытии приложения."
+          hint="Personal API: вес, тренировки, шаги и сон. Ключ только в SecureStore. Автосинк при открытии."
           icon="watch-outline"
         >
           <AppButton label="Настроить Garmin" onPress={() => router.push('/garmin' as Href)} />
@@ -419,29 +420,6 @@ export default function ProfileScreen() {
         </SettingsCard>
 
         <ZeppCsvImportCard />
-
-        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
-          <PrivacyRow
-            icon="phone-portrait-outline"
-            text="Дневник, вес и привычки хранятся локально на устройстве."
-          />
-          <PrivacyRow
-            icon="barcode-outline"
-            text="Штрихкод: в сеть уходит только код (Open Food Facts). Фото этикетки не загружаем."
-          />
-          <PrivacyRow
-            icon="watch-outline"
-            text="Garmin Personal API: запросы идут в Garmin по твоему ключу; ключ в SecureStore, не в экспорте."
-          />
-          <PrivacyRow
-            icon="person-outline"
-            text="Нет аккаунта, нет обязательного AI, нет рассылки данных."
-          />
-          <PrivacyRow
-            icon="download-outline"
-            text="Экспорт и полное удаление — только по твоей команде."
-          />
-        </SettingsCard>
 
         <SettingsCard
           title="Отчёт для ChatGPT"
@@ -459,7 +437,7 @@ export default function ProfileScreen() {
 
         <SettingsCard
           title="Данные"
-          hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
+          hint="Экспорт в буфер. Импорт заменяет все локальные данные. Сделай бэкап перед очисткой."
           icon="folder-outline"
         >
           <AppButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
@@ -489,6 +467,29 @@ export default function ProfileScreen() {
               Удалить все локальные данные
             </AppText>
           </Pressable>
+        </SettingsCard>
+
+        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
+          <PrivacyRow
+            icon="phone-portrait-outline"
+            text="Дневник, вес и привычки хранятся локально на устройстве."
+          />
+          <PrivacyRow
+            icon="barcode-outline"
+            text="Штрихкод: в сеть уходит только код (Open Food Facts). Фото этикетки не загружаем."
+          />
+          <PrivacyRow
+            icon="watch-outline"
+            text="Garmin Personal API: запросы в Garmin по твоему ключу; ключ в SecureStore, не в экспорте."
+          />
+          <PrivacyRow
+            icon="person-outline"
+            text="Нет аккаунта, нет обязательного AI, нет рассылки данных."
+          />
+          <PrivacyRow
+            icon="download-outline"
+            text="Экспорт и полное удаление — только по твоей команде."
+          />
         </SettingsCard>
 
         <AppText variant="caption" tone="muted" style={styles.version}>
