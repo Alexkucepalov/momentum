@@ -2,6 +2,19 @@
 
 Источник истины для сессий разработки. Cursor plan — зеркало; при расхождении править этот файл. Читать вместе с `AGENTS.md` перед каждым issue.
 
+## Product Overhaul (2026-11-01)
+
+SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS proposal `docs/DESIGN-SYSTEM.md`.
+
+| Этап | Статус | Notes |
+|------|--------|-------|
+| **1 Stabilization (A1–A11)** | **In progress** | Commit Garmin/sleep/reports; docs v18; PR; export/import test |
+| 2 Design system (B) | Pending | After Stage 1 PR; approve Premium Minimal Utility |
+| 3 Navigation (C) | Pending | 5 tabs · Движение = Activity\|Sleep |
+| 4–11 Screens…QA | Pending | Sequential; one issue/PR at a time |
+
+**A9 TAB_SHELL:** deferred to Stage 3 (after 5-tab merge). Current UI may show 6 tabs.
+
 ## Quality Freeze (утверждён 2026-10-20, 2–3 недели)
 
 **Режим:** product quality first — `docs/quality/QUALITY-ROADMAP.md` (утверждённая последовательность).

@@ -1,16 +1,27 @@
 # Momentum — Product Quality Audit
 
-**Дата:** 2026-10-20  
-**Статус:** аудит **утверждён** основателем с корректировкой приоритетов. Quality Freeze 2–3 нед.  
-**Sprint 1:** Baseline & Reliability (измерения → P0 → UX). Эталон = пищевой лог.  
-**Метод аудита:** static + code/docs review + route inventory + open Issues/PRs.  
-**Не выполнено в аудите:** device UX walkthrough, TalkBack, cold-start on device, Maestro E2E (инфра — в Sprint 1).
+**Дата:** 2026-10-20 (baseline) · **Refresh:** 2026-11-01 (Stage 1 docs sync)  
+**Статус baseline:** утверждён 2026-10-20.  
+**Актуальный overhaul SoT:** `docs/PRODUCT-OVERHAUL-AUDIT.md`, `docs/PRODUCT-ROADMAP.md`, `docs/DESIGN-AUDIT.md`.  
+**Метод baseline:** static + code/docs review. Device E2E по-прежнему не закрыт.
 
-Связанные артефакты: `UX-FLOWS.md`, `SCREEN-AUDIT.md`, `DESIGN-SYSTEM-AUDIT.md`, `PERFORMANCE-BASELINE.md`, `TECHNICAL-AUDIT.md`, `E2E-TEST-MATRIX.md`, `QUALITY-BACKLOG.md`, `QUALITY-ROADMAP.md`.
+### Факт на 2026-11-01 (не заменяет детальный overhaul-audit)
+
+| Слой | Факт |
+|------|------|
+| Ветка | `feat/garmin-personal-sync` (+ dogfood Garmin/sleep/reports) |
+| Tabs | 6 temporary (Сон отдельной вкладкой); target = 5 «Движение» |
+| Snapshot | **v18** (sleepNights + dailyActivityStats + garminSync) |
+| SQL migrations stub | SCHEMA_VERSION **8** (не путать со snapshot) |
+| Integrations | Garmin Personal API (SecureStore); Zepp CSV; OFF barcode |
+| Reports | PDF + plain text clipboard for ChatGPT (no direct API) |
+| Persist | Full JSON snapshot per mutation (risk noted; no rewrite without metrics) |
+
+Связанные артефакты: `UX-FLOWS.md`, `SCREEN-AUDIT.md`, `DESIGN-SYSTEM-AUDIT.md`, `PERFORMANCE-BASELINE.md`, `TECHNICAL-AUDIT.md`, `E2E-TEST-MATRIX.md`, `QUALITY-BACKLOG.md`, `QUALITY-ROADMAP.md`, `docs/garmin-personal-sync.md`.
 
 ---
 
-## Executive Summary — 10 самых серьёзных проблем
+## Executive Summary — 10 самых серьёзных проблем (2026-10-20; many still open)
 
 | # | Проблема | Доказательство | Тип |
 |---|----------|----------------|-----|
@@ -33,9 +44,9 @@
 
 | Слой | Факт |
 |------|------|
-| Платформа | Expo Router, 5 tabs: Сегодня / Питание / Активность / Прогресс / Профиль |
+| Платформа | Expo Router; **2026-11-01:** 6 tabs incl. Sleep (target 5) |
 | Стек | React Native + strict TS + in-memory repo + SQLite snapshot persist |
-| Snapshot | `version: 13` (pantry → meal plan → shopping → budget/stores) |
+| Snapshot | **`version: 18`** (sleepNights; was 13 at baseline audit) |
 | Domain | ~32 TS модуля в `src/domain` |
 | UI | ~55 TSX в `apps/mobile/src`; 25 shared components |
 | Тесты | ~35 `tests/*.mjs`, `npm run verify` зелёный на CI |
