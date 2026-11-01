@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
@@ -6,7 +6,7 @@ import { RecipeEditorForm } from '@/src/features/recipes/RecipeEditorForm';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
 import { useData } from '@/src/state/DataContext';
 import { emptyIngredient } from '@/src/features/diary/addFood/types';
-import { colors, space, type } from '@/src/theme/tokens';
+import { AppText, colors, space } from '@/src/design-system';
 
 export default function EditRecipeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,7 +20,7 @@ export default function EditRecipeScreen() {
   if (!recipe) {
     return (
       <View style={styles.missing}>
-        <Text style={styles.missingTitle}>Рецепт не найден</Text>
+        <AppText variant="title">Рецепт не найден</AppText>
       </View>
     );
   }
@@ -81,8 +81,7 @@ export default function EditRecipeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg },
   missing: { flex: 1, padding: space.xl, justifyContent: 'center' },
-  missingTitle: { fontSize: type.title, fontWeight: '700', color: colors.text },
 });

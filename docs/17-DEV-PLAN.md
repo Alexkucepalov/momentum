@@ -15,8 +15,9 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 | **4.2 Food (E1–E9)** | **Done (PR #172)** | SegmentedControl · diary empty · catalog FlatList |
 | **4.4–4.5 Progress/Profile** | **Done (PR #173)** | 4 progress segments · Profile section order |
 | **4.x Screens** | **Merged #174** | Stages 1–4 squash on main |
-| **5 Fast food (J)** | **In progress** | Copy yesterday on Today+Food · undo add · portion-first confirm |
-| 6–11 | Pending | Recipes → Garmin QA → Planner → perf → Android QA |
+| **5 Fast food (J)** | **Merged #175** | Copy yesterday · undo add · portion-first |
+| **6 Recipes (K)** | **In progress** | DS Field form · Chip filters · snapshot unknown≠0 |
+| 7–11 | Pending | Garmin QA → Planner → perf → Android QA |
 
 **A9 TAB_SHELL:** aligned — UI matches `today/food/movement/progress/profile`.
 

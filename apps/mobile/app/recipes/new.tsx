@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
@@ -8,7 +8,7 @@ import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
 import { consumeRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, type } from '@/src/theme/tokens';
+import { AppText, colors, radius, space } from '@/src/design-system';
 
 export default function NewRecipeScreen() {
   const router = useRouter();
@@ -20,17 +20,23 @@ export default function NewRecipeScreen() {
     <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
       {fromImport ? (
         <View style={styles.banner} accessibilityRole="summary">
-          <Text style={styles.bannerTitle}>Черновик из текста</Text>
-          <Text style={styles.bannerBody}>
+          <AppText variant="subtitle" style={styles.bannerTitle}>
+            Черновик из текста
+          </AppText>
+          <AppText variant="caption" tone="secondary" style={styles.bannerBody}>
             Проверь название, выход и граммы. Пустые КБЖУ — это нормально: не подставляем нули.
             Сохрани, когда всё ок.
-          </Text>
+          </AppText>
         </View>
       ) : (
         <View style={styles.alt}>
-          <Text style={styles.altTitle}>Другие способы</Text>
+          <AppText variant="label" tone="muted" style={styles.altTitle}>
+            Другие способы
+          </AppText>
           <RecipeHubActions compact omit={['manual']} />
-          <Text style={styles.altHint}>Или заполни форму ниже с нуля.</Text>
+          <AppText variant="caption" tone="muted" style={styles.altHint}>
+            Или заполни форму ниже с нуля.
+          </AppText>
         </View>
       )}
       <RecipeEditorForm
@@ -68,35 +74,23 @@ export default function NewRecipeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg },
   banner: {
     backgroundColor: colors.accentSoft,
     borderRadius: radius.md,
     padding: space.md,
     marginBottom: space.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
-  bannerTitle: { fontWeight: '800', fontSize: type.subtitle, color: colors.text },
-  bannerBody: {
-    marginTop: 4,
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
+  bannerTitle: { fontWeight: '800' },
+  bannerBody: { marginTop: 4, lineHeight: 18 },
   alt: { marginBottom: space.md },
   altTitle: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: space.sm,
   },
-  altHint: {
-    fontSize: type.caption,
-    color: colors.textMuted,
-    marginTop: space.xs,
-  },
+  altHint: { marginTop: space.xs },
 });
