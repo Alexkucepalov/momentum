@@ -61,30 +61,41 @@ const SECONDARY: HubItem[] = [
   {
     key: 'receipt',
     title: 'Импорт покупки',
-    subtitle: 'Текст заказа → проверка → запасы',
+    subtitle: 'Текст заказа → preview → подтверждение → запасы',
     icon: 'receipt-outline',
     href: '/plan/receipt',
   },
   {
     key: 'week',
     title: 'Меню на неделю',
-    subtitle: 'План порций · не дневник',
+    subtitle: 'Черновик порций · не дневник',
     icon: 'calendar-outline',
     href: '/plan/week',
   },
   {
     key: 'shop',
     title: 'Покупки',
-    subtitle: 'Список из меню и запасов',
+    subtitle: 'Недостающее из меню и запасов',
     icon: 'cart-outline',
     href: '/plan/shop',
   },
   {
     key: 'budget',
     title: 'Бюджет питания',
-    subtitle: 'Лимит и расходы · без live-цен',
+    subtitle: 'План / факт / оценка · свои цены',
     icon: 'wallet-outline',
     href: '/plan/budget',
+  },
+];
+
+/** N2: stores demoted off the main planning path. */
+const SETTINGS: HubItem[] = [
+  {
+    key: 'stores',
+    title: 'Магазины',
+    subtitle: 'Справочник мест · не live-цены',
+    icon: 'storefront-outline',
+    href: '/plan/stores',
   },
 ];
 
@@ -127,12 +138,12 @@ export default function PlanHubScreen() {
         План не пишет в дневник сам — только по явной команде.
       </AppText>
 
-      <AppCard style={styles.notice} accessibilityLabel="План не равен дневнику">
+      <AppCard style={styles.notice} accessibilityLabel="План не равен дневнику" testID="plan-neq-diary">
         <AppText variant="label" tone="accent">
-          Plan ≠ diary
+          Запланированное ≠ съеденное
         </AppText>
         <AppText variant="caption" tone="secondary">
-          Запланированное не считается съеденным, пока не подтвердишь порцию.
+          План и меню не пишут в дневник сами. В дневник — только явная порция («В дневник»).
         </AppText>
       </AppCard>
 
@@ -150,6 +161,15 @@ export default function PlanHubScreen() {
       </AppText>
       <View style={styles.list} accessibilityRole="list">
         {SECONDARY.map((item) => (
+          <HubRow key={item.key} item={item} />
+        ))}
+      </View>
+
+      <AppText variant="label" tone="muted" style={styles.section}>
+        Ещё
+      </AppText>
+      <View style={styles.list} accessibilityRole="list">
+        {SETTINGS.map((item) => (
           <HubRow key={item.key} item={item} />
         ))}
       </View>

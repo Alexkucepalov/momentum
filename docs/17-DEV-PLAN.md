@@ -18,8 +18,9 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 | **5 Fast food (J)** | **Merged #175** | Copy yesterday · undo add · portion-first |
 | **6 Recipes (K)** | **Merged #176** | DS Field · Chip filters · snapshot unknown≠0 |
 | **7 Garmin UX (L)** | **Merged #177** | Last-sync · warnings · device QA doc |
-| **8 Analytics (M)** | **In progress** | 30-day overview · report DS · secrets guard |
-| 9–11 | Pending | Planner → perf → Android QA |
+| **8 Analytics (M)** | **Merged #178** | 30-day overview · report DS · secrets guard |
+| **9 Planner (N)** | **In progress** | Hub stores demoted · budget plan/fact · plan≠diary |
+| 10–11 | Pending | Perf → Android QA |
 
 **A9 TAB_SHELL:** aligned — UI matches `today/food/movement/progress/profile`.
 
