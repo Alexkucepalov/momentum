@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import {
@@ -7,16 +7,18 @@ import {
 } from '../../../../src/domain/repeatMeal';
 import { useAddGuard } from '../hooks/useAddGuard';
 import { useData } from '../state/DataContext';
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { AppText, colors, radius, space, touchMin } from '../design-system';
 
-/** Copies previous calendar day's linked food entries into the selected day (same meal slots). */
-export function CopyYesterdayButton() {
-  const { repo, dateLocal, refresh, showFlash, revision } = useData();
+/**
+ * One-tap repeat of previous calendar day's linked food (J1/J2).
+ * Sets Undo to soft-delete the newly created entries (J6).
+ */
+export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: string }) {
+  const { repo, dateLocal, refresh, showFlash, setUndo, revision } = useData();
   const allowAdd = useAddGuard();
   void revision;
   const yesterday = shiftDateLocal(dateLocal, -1);
   const sourceCount = repo.listEntriesForDate(yesterday).length;
-  // Hide when yesterday is empty — no dead CTA (Sprint 1 empty-state rule).
   if (sourceCount === 0) return null;
 
   const onCopy = () => {
@@ -26,41 +28,53 @@ export function CopyYesterdayButton() {
       showFlash('Вчерашние записи без продукта/рецепта — повторить нельзя');
       return;
     }
+    const createdIds: string[] = [];
     for (const item of items) {
       if (item.kind === 'product') {
-        repo.addEntryFromProduct({
+        const e = repo.addEntryFromProduct({
           productId: item.productId,
           dateLocal,
           meal: item.meal,
           grams: item.grams,
         });
+        createdIds.push(e.id);
       } else {
-        repo.addEntryFromRecipe({
+        const e = repo.addEntryFromRecipe({
           recipeId: item.recipeId,
           dateLocal,
           meal: item.meal,
           grams: item.grams,
         });
+        createdIds.push(e.id);
       }
     }
     refresh();
-    showFlash(`Повторили вчерашний рацион · ${items.length}`);
+    showFlash(`Повторили вчера · ${createdIds.length}`);
+    setUndo({
+      entryIds: createdIds,
+      message: `Добавлено из вчера · ${createdIds.length}`,
+    });
   };
 
   return (
     <Pressable
+      testID={testID}
       style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       onPress={onCopy}
       accessibilityRole="button"
       accessibilityLabel={`Повторить вчерашний рацион, ${sourceCount} записей`}
-      accessibilityHint="Добавит в выбранный день те же приёмы и порции, что были вчера"
+      accessibilityHint="Добавит в выбранный день те же приёмы и порции. Можно отменить."
     >
       <View style={styles.iconWrap}>
-        <Ionicons name="calendar-outline" size={18} color={colors.text} />
+        <Ionicons name="copy-outline" size={18} color={colors.ink} />
       </View>
       <View style={styles.textCol}>
-        <Text style={styles.label}>Повторить вчерашний рацион</Text>
-        <Text style={styles.meta}>{sourceCount} записей · те же приёмы пищи</Text>
+        <AppText variant="body" style={styles.label}>
+          Повторить вчера
+        </AppText>
+        <AppText variant="caption" tone="secondary">
+          {sourceCount} зап. · те же приёмы · ≤10 с
+        </AppText>
       </View>
       <Ionicons name="arrow-forward" size={18} color={colors.textMuted} />
     </Pressable>
@@ -74,12 +88,12 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: touchMin + 4,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   pressed: { opacity: 0.88 },
   iconWrap: {
@@ -91,6 +105,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textCol: { flex: 1 },
-  label: { fontSize: type.body, fontWeight: '700', color: colors.text },
-  meta: { fontSize: type.micro, color: colors.textSecondary, marginTop: 2 },
+  label: { fontWeight: '700' },
 });

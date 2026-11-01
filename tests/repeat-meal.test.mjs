@@ -111,3 +111,55 @@ test('yesterday → today preserves meal slots', () => {
   }
   assert.equal(repo.listEntriesForDate('2026-10-17')[0].meal, 'dinner');
 });
+
+test('repeat preserves unknown macros (null ≠ 0)', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const p = repo.createProduct({
+    name: 'Unknown macros',
+    energyKcal: null,
+    proteinG: null,
+    fatG: null,
+    carbG: null,
+  });
+  repo.addEntryFromProduct({
+    productId: p.id,
+    dateLocal: '2026-10-16',
+    meal: 'snack',
+    grams: 80,
+  });
+  const items = repeatableDayFromEntries(repo.listEntriesForDate('2026-10-16'));
+  assert.equal(items.length, 1);
+  const created = repo.addEntryFromProduct({
+    productId: items[0].productId,
+    dateLocal: '2026-10-17',
+    meal: items[0].meal,
+    grams: items[0].grams,
+  });
+  assert.equal(created.energyKcal, null);
+  assert.equal(created.proteinG, null);
+  assert.equal(created.fatG, null);
+  assert.equal(created.carbG, null);
+  const totals = repo.dailyTotals('2026-10-17');
+  assert.equal(totals.hasUnknownFields, true);
+  assert.notEqual(created.energyKcal, 0);
+});
+
+test('soft-delete undoes a batch of newly added entries', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const p = repo.createProduct({ name: 'Egg', energyKcal: 140, proteinG: 12, fatG: 10, carbG: 1 });
+  const a = repo.addEntryFromProduct({
+    productId: p.id,
+    dateLocal: '2026-10-17',
+    meal: 'breakfast',
+    grams: 50,
+  });
+  const b = repo.addEntryFromProduct({
+    productId: p.id,
+    dateLocal: '2026-10-17',
+    meal: 'breakfast',
+    grams: 50,
+  });
+  repo.softDeleteEntry(a.id);
+  repo.softDeleteEntry(b.id);
+  assert.equal(repo.listEntriesForDate('2026-10-17').length, 0);
+});

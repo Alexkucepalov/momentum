@@ -178,24 +178,32 @@ export default function FoodScreen() {
     if (!allowAdd()) return;
     const items = repeatableFromEntries(mealEntries[slot]);
     if (items.length === 0) return;
+    const createdIds: string[] = [];
     for (const item of items) {
       if (item.kind === 'product') {
-        repo.addEntryFromProduct({
+        const e = repo.addEntryFromProduct({
           productId: item.productId,
           dateLocal,
           meal,
           grams: item.grams,
         });
+        createdIds.push(e.id);
       } else {
-        repo.addEntryFromRecipe({
+        const e = repo.addEntryFromRecipe({
           recipeId: item.recipeId,
           dateLocal,
           meal,
           grams: item.grams,
         });
+        createdIds.push(e.id);
       }
     }
     refresh();
+    showFlash(`Повторён ${MEAL_LABELS[slot].toLowerCase()} · ${createdIds.length}`);
+    setUndo({
+      entryIds: createdIds,
+      message: `Повторён ${MEAL_LABELS[slot].toLowerCase()} · ${createdIds.length}`,
+    });
   };
 
   const openProductPortion = (p: FoodProduct) => {
@@ -361,14 +369,18 @@ export default function FoodScreen() {
         onConfirm={(result) => {
           if (!portionTarget) return;
           if (!allowAdd()) return;
+          let createdId: string;
+          let label: string;
           if (portionTarget.target.kind === 'product') {
             repo.updateProductNutrition(portionTarget.target.product.id, result.per100g);
-            repo.addEntryFromProduct({
+            const e = repo.addEntryFromProduct({
               productId: portionTarget.target.product.id,
               dateLocal,
               meal,
               grams: result.grams,
             });
+            createdId = e.id;
+            label = portionTarget.target.product.name;
           } else {
             const snap = portion(
               {
@@ -379,7 +391,7 @@ export default function FoodScreen() {
               },
               result.grams,
             );
-            repo.addEntryFromRecipe({
+            const e = repo.addEntryFromRecipe({
               recipeId: portionTarget.target.recipe.id,
               dateLocal,
               meal,
@@ -391,9 +403,13 @@ export default function FoodScreen() {
                 carbG: snap.carbs,
               },
             });
+            createdId = e.id;
+            label = portionTarget.target.recipe.name;
           }
           refresh();
           setPortionTarget(null);
+          showFlash(`Добавлено: ${label}`);
+          setUndo({ entryIds: [createdId], message: `Добавлено: ${label}` });
         }}
       />
       <PortionEditModal

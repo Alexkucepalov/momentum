@@ -7,10 +7,9 @@ import { nutritionForRecipePortion } from '../../../../../src/domain/recipeNutri
 import type { FoodProduct, MealSlot, Recipe, RecipeIngredient } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
 import { PortionStepper } from '../../components/PortionStepper';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAutoKcalFromMacros } from '../../hooks/useAutoKcalFromMacros';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton, colors, radius, space, touchMin, type } from '@/src/design-system';
 
 export type PortionTarget =
   | { kind: 'product'; product: FoodProduct }
@@ -224,26 +223,10 @@ export function ConfirmPortionSheet({
           {source} · в {mealLabel}
         </Text>
         <Text style={styles.portionLead}>
-          Сколько съел с упаковки? КБЖУ ниже пересчитаются на эти граммы — не на всю пачку.
+          Сначала граммы — КБЖУ пересчитаются. Пустые макросы = неизвестно, не ноль.
         </Text>
 
-        <View
-          onLayout={(e) => {
-            macroBlockY.current = e.nativeEvent.layout.y;
-          }}
-        >
-          <Text style={styles.section}>На 100 г</Text>
-          <View style={styles.macroGrid}>
-            <MacroField label="ккал" value={kcal} onChangeText={setKcal} wide onFocus={scrollMacrosIntoView} />
-            <MacroField label="Б" value={protein} onChangeText={setProtein} onFocus={scrollMacrosIntoView} />
-            <MacroField label="Ж" value={fat} onChangeText={setFat} onFocus={scrollMacrosIntoView} />
-            <MacroField label="У" value={carbs} onChangeText={setCarbs} onFocus={scrollMacrosIntoView} />
-          </View>
-          <Text style={styles.hint}>
-            Пустое = неизвестно (не ноль). Если заданы Б, Ж и У — ккал считаются как 4×Б+9×Ж+4×У
-            (этикетку при открытии не перезаписываем, пока не меняешь макросы).
-          </Text>
-        </View>
+        <PortionStepper grams={grams} onChange={setGrams} lastGrams={initialGrams ?? null} />
 
         <View style={styles.preview}>
           <Text style={styles.previewKcal}>{fmt(nutrition?.kcal ?? null)}</Text>
@@ -255,15 +238,30 @@ export function ConfirmPortionSheet({
         </View>
         {consistencyHint ? <Text style={styles.consistency}>{consistencyHint}</Text> : null}
 
-        <PortionStepper grams={grams} onChange={setGrams} lastGrams={initialGrams ?? null} />
-
         {error ? (
           <Text style={styles.error} accessibilityLiveRegion="assertive">
             {error}
           </Text>
         ) : null}
 
-        <PrimaryButton label="Добавить в дневник" onPress={submit} />
+        <AppButton label="Добавить в дневник" onPress={submit} testID="confirm-portion-submit" />
+
+        <View
+          onLayout={(e) => {
+            macroBlockY.current = e.nativeEvent.layout.y;
+          }}
+        >
+          <Text style={styles.section}>На 100 г (по желанию)</Text>
+          <View style={styles.macroGrid}>
+            <MacroField label="ккал" value={kcal} onChangeText={setKcal} wide onFocus={scrollMacrosIntoView} />
+            <MacroField label="Б" value={protein} onChangeText={setProtein} onFocus={scrollMacrosIntoView} />
+            <MacroField label="Ж" value={fat} onChangeText={setFat} onFocus={scrollMacrosIntoView} />
+            <MacroField label="У" value={carbs} onChangeText={setCarbs} onFocus={scrollMacrosIntoView} />
+          </View>
+          <Text style={styles.hint}>
+            Пустое = неизвестно (не ноль). Если заданы Б, Ж и У — ккал = 4×Б+9×Ж+4×У.
+          </Text>
+        </View>
       </FormScrollView>
     </SwipeToDismissSheet>
   );
