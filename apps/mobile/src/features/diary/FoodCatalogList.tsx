@@ -1,10 +1,20 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import {
+  FlatList,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ListRenderItem,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { sortProductsByFrequency } from '../../../../../src/domain/productFrequency';
 import type { FoodEntry, FoodProduct, Recipe } from '../../../../../src/storage/types';
-import { MacroStrip } from '../../components/MacroStrip';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { EmptyState } from '@/src/components/EmptyState';
+import { MacroStrip } from '@/src/components/MacroStrip';
+import { AppText, Chip, colors, radius, space, touchMin, type } from '@/src/design-system';
 
 const SOURCE_RU: Record<string, string> = {
   user: 'свой',
@@ -14,7 +24,16 @@ const SOURCE_RU: Record<string, string> = {
   missing: 'нет данных',
 };
 
+/** Virtualize product/recipe rows once the combined list exceeds this. */
+export const CATALOG_VIRTUALIZE_THRESHOLD = 24;
+
 export type CatalogFilter = 'all' | 'favorites' | 'frequent' | 'recent' | 'recipes';
+
+type CatalogRow =
+  | { key: string; kind: 'section'; title: string }
+  | { key: string; kind: 'product'; product: FoodProduct }
+  | { key: string; kind: 'recipe'; recipe: Recipe; ingCount: number }
+  | { key: string; kind: 'empty'; title: string; body: string; actionLabel?: string; onAction?: () => void };
 
 export function FoodCatalogList({
   filter,
@@ -37,10 +56,8 @@ export function FoodCatalogList({
   products: FoodProduct[];
   recipes: Recipe[];
   recent: FoodEntry[];
-  /** Local frequency index (diary) — ranked, no invented rows. */
   frequent: FoodProduct[];
   query: string;
-  /** Optional map recipeId → ingredient count for richer cards. */
   recipeIngredientCounts?: Record<string, number>;
   onAddProduct: (p: FoodProduct) => void;
   onAddRecipe: (r: Recipe) => void;
@@ -62,7 +79,7 @@ export function FoodCatalogList({
     return nameHit || brandHit || codeHit;
   };
 
-  const filteredProducts = (() => {
+  const filteredProducts = useMemo(() => {
     let list = products.filter((p) => {
       if (!searching) {
         if (filter === 'favorites' && !p.isFavorite) return false;
@@ -79,18 +96,22 @@ export function FoodCatalogList({
       list = sortProductsByFrequency(list, freqScore);
     }
     return list;
-  })();
+  }, [products, filter, searching, q, qDigits, frequent]);
 
-  const filteredRecipes = recipes.filter((r) => {
-    if (!searching) {
-      if (filter !== 'recipes' && filter !== 'all') return false;
-      return true;
-    }
-    if (filter === 'favorites' || filter === 'recent' || filter === 'frequent') return false;
-    return r.name.toLowerCase().includes(q);
-  });
+  const filteredRecipes = useMemo(
+    () =>
+      recipes.filter((r) => {
+        if (!searching) {
+          if (filter !== 'recipes' && filter !== 'all') return false;
+          return true;
+        }
+        if (filter === 'favorites' || filter === 'recent' || filter === 'frequent') return false;
+        return r.name.toLowerCase().includes(q);
+      }),
+    [recipes, searching, filter, q],
+  );
 
-  const recentUnique = (() => {
+  const recentUnique = useMemo(() => {
     const seen = new Set<string>();
     const out: FoodEntry[] = [];
     for (const e of recent) {
@@ -102,7 +123,7 @@ export function FoodCatalogList({
       if (out.length >= 10) break;
     }
     return out;
-  })();
+  }, [recent, searching, q]);
 
   const favoriteCount = products.filter((p) => p.isFavorite).length;
   const showRecent = filter === 'recent' || (filter === 'all' && !searching);
@@ -112,34 +133,109 @@ export function FoodCatalogList({
   const showRecipes =
     searching || filter === 'recipes' || (filter === 'all' && recipes.length > 0);
 
-  const anyHits =
-    filteredProducts.length > 0 ||
-    filteredRecipes.length > 0 ||
-    (showRecent && recentUnique.length > 0) ||
-    (filter === 'frequent' && frequent.length > 0);
-
-  const filters: Array<{
-    id: CatalogFilter;
-    label: string;
-    count: number;
-    icon: keyof typeof Ionicons.glyphMap;
-  }> = [
-    { id: 'all', label: 'Все', count: products.length + recipes.length, icon: 'grid-outline' },
-    { id: 'frequent', label: 'Частые', count: frequent.length, icon: 'flash-outline' },
-    { id: 'favorites', label: 'Избр.', count: favoriteCount, icon: 'star-outline' },
-    { id: 'recent', label: 'Недавн.', count: recentUnique.length, icon: 'time-outline' },
-    { id: 'recipes', label: 'Рецепты', count: recipes.length, icon: 'restaurant-outline' },
+  const filters: Array<{ id: CatalogFilter; label: string; count: number }> = [
+    { id: 'all', label: 'Все', count: products.length + recipes.length },
+    { id: 'frequent', label: 'Частые', count: frequent.length },
+    { id: 'favorites', label: 'Избр.', count: favoriteCount },
+    { id: 'recent', label: 'Недавн.', count: recentUnique.length },
+    { id: 'recipes', label: 'Рецепты', count: recipes.length },
   ];
 
-  return (
-    <View style={styles.wrap}>
+  const rows: CatalogRow[] = useMemo(() => {
+    const out: CatalogRow[] = [];
+
+    if (searching && filteredProducts.length === 0 && filteredRecipes.length === 0) {
+      out.push({
+        key: 'empty-search',
+        kind: 'empty',
+        title: 'Ничего не найдено',
+        body: 'Попробуй другое слово или создай продукт вручную.',
+      });
+      return out;
+    }
+
+    if (showRecipes && filteredRecipes.length > 0) {
+      if (filter === 'all') out.push({ key: 'sec-recipes', kind: 'section', title: 'Рецепты' });
+      for (const r of filteredRecipes) {
+        out.push({
+          key: `recipe-${r.id}`,
+          kind: 'recipe',
+          recipe: r,
+          ingCount: recipeIngredientCounts?.[r.id] ?? 0,
+        });
+      }
+    }
+
+    if (showProducts) {
+      if (filteredProducts.length === 0 && !searching) {
+        const empty =
+          filter === 'favorites'
+            ? {
+                title: 'Нет избранного',
+                body: 'Нажми ★ у продукта, чтобы добавить в избранное.',
+              }
+            : filter === 'frequent'
+              ? {
+                  title: 'Пока нет частых',
+                  body: 'Частые появятся после нескольких записей в дневник.',
+                }
+              : {
+                  title: 'Каталог пуст',
+                  body: 'Создай продукт вручную, через сканер или добавь рецепт.',
+                };
+        out.push({ key: 'empty-products', kind: 'empty', ...empty });
+      } else if (filteredProducts.length > 0) {
+        if (filter === 'all') out.push({ key: 'sec-products', kind: 'section', title: 'Продукты' });
+        for (const p of filteredProducts) {
+          out.push({ key: `product-${p.id}`, kind: 'product', product: p });
+        }
+      }
+    }
+
+    if (filter === 'recent' && recentUnique.length === 0) {
+      out.push({
+        key: 'empty-recent',
+        kind: 'empty',
+        title: 'Нет недавних',
+        body: 'Записи появятся после добавления еды в дневник.',
+      });
+    }
+
+    if (filter === 'recipes' && filteredRecipes.length === 0) {
+      out.push({
+        key: 'empty-recipes',
+        kind: 'empty',
+        title: 'Рецептов пока нет',
+        body: 'Открой раздел рецептов, чтобы создать блюдо.',
+        actionLabel: onBrowseRecipes ? 'Открыть рецепты' : undefined,
+        onAction: onBrowseRecipes,
+      });
+    }
+
+    return out;
+  }, [
+    searching,
+    filteredProducts,
+    filteredRecipes,
+    showRecipes,
+    showProducts,
+    filter,
+    recipeIngredientCounts,
+    recentUnique.length,
+    onBrowseRecipes,
+  ]);
+
+  const header = (
+    <View>
       <View style={styles.sectionHead}>
         <View style={styles.sectionText}>
-          <Text style={styles.section} accessibilityRole="header">
+          <AppText variant="subtitle" style={styles.section}>
             {searching ? 'Результаты' : 'Каталог'}
-          </Text>
+          </AppText>
           {!searching ? (
-            <Text style={styles.sectionLead}>Свои продукты, справочник и рецепты</Text>
+            <AppText variant="caption" tone="muted">
+              Свои продукты, справочник и рецепты
+            </AppText>
           ) : null}
         </View>
         {!searching && onBrowseRecipes ? (
@@ -150,8 +246,10 @@ export function FoodCatalogList({
             hitSlop={8}
             style={styles.linkBtn}
           >
-            <Text style={styles.link}>Рецепты</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.text} />
+            <AppText variant="caption" style={styles.link}>
+              Рецепты
+            </AppText>
+            <Ionicons name="chevron-forward" size={14} color={colors.ink} />
           </Pressable>
         ) : null}
       </View>
@@ -164,43 +262,25 @@ export function FoodCatalogList({
           accessibilityRole="tablist"
           accessibilityLabel="Фильтры каталога продуктов"
         >
-          {filters.map(({ id, label, count, icon }) => {
-            const on = filter === id;
-            return (
-              <Pressable
-                key={id}
-                onPress={() => onFilterChange(id)}
-                style={({ pressed }) => [
-                  styles.filterChip,
-                  on && styles.filterChipOn,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={`Фильтр ${label}: ${count}`}
-              >
-                <Ionicons
-                  name={icon}
-                  size={15}
-                  color={on ? colors.primaryButtonText : colors.textSecondary}
-                />
-                <Text style={[styles.filterText, on && styles.filterTextOn]}>{label}</Text>
-                <Text style={[styles.countText, on && styles.countTextOn]}>{count}</Text>
-              </Pressable>
-            );
-          })}
+          {filters.map(({ id, label, count }) => (
+            <Chip
+              key={id}
+              label={`${label} ${count}`}
+              selected={filter === id}
+              onPress={() => onFilterChange(id)}
+              accessibilityLabel={`Фильтр ${label}: ${count}`}
+            />
+          ))}
         </ScrollView>
-      ) : null}
-
-      {searching && !anyHits ? (
-        <Text style={styles.hint}>
-          Ничего не найдено. Попробуй другое слово, просмотри весь каталог или создай продукт вручную
-        </Text>
       ) : null}
 
       {showRecent && recentUnique.length > 0 ? (
         <View style={styles.block}>
-          {filter === 'all' ? <Text style={styles.sub}>Быстрый повтор</Text> : null}
+          {filter === 'all' ? (
+            <AppText variant="label" tone="muted" style={styles.sub}>
+              Быстрый повтор
+            </AppText>
+          ) : null}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -215,16 +295,17 @@ export function FoodCatalogList({
                 accessibilityLabel={`Повторить ${e.displayName}, ${e.grams} грамм`}
               >
                 <View style={styles.recentIcon}>
-                  <Ionicons name="refresh" size={16} color={colors.text} />
+                  <Ionicons name="refresh" size={16} color={colors.ink} />
                 </View>
-                <Text style={styles.recentName} numberOfLines={2}>
+                <AppText variant="caption" style={styles.recentName} numberOfLines={2}>
                   {e.displayName}
-                </Text>
-                <Text style={styles.recentMeta}>
-                  {e.grams} г ·{' '}
-                  {e.energyKcal === null ? '—' : `${Math.round(e.energyKcal)} ккал`}
-                </Text>
-                <Text style={styles.recentAdd}>+ в дневник</Text>
+                </AppText>
+                <AppText variant="caption" tone="muted">
+                  {e.grams} г · {e.energyKcal === null ? '—' : `${Math.round(e.energyKcal)} ккал`}
+                </AppText>
+                <AppText variant="caption" tone="accent">
+                  + в дневник
+                </AppText>
               </Pressable>
             ))}
           </ScrollView>
@@ -233,209 +314,202 @@ export function FoodCatalogList({
 
       {showFrequentStrip ? (
         <View style={styles.block}>
-          <Text style={styles.sub}>Частые продукты</Text>
+          <AppText variant="label" tone="muted" style={styles.sub}>
+            Частые продукты
+          </AppText>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.recentStrip}
           >
             {frequent.slice(0, 12).map((p) => (
-                <Pressable
-                  key={`freq-${p.id}`}
-                  style={({ pressed }) => [styles.recentCard, pressed && styles.pressed]}
-                  onPress={() => onAddProduct(p)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить частый продукт ${p.name}`}
-                >
+              <Pressable
+                key={`freq-${p.id}`}
+                style={({ pressed }) => [styles.recentCard, pressed && styles.pressed]}
+                onPress={() => onAddProduct(p)}
+                accessibilityRole="button"
+                accessibilityLabel={`Добавить частый продукт ${p.name}`}
+              >
                 <View style={styles.recentIcon}>
-                  <Ionicons name="flash-outline" size={16} color={colors.text} />
+                  <Ionicons name="flash-outline" size={16} color={colors.ink} />
                 </View>
-                <Text style={styles.recentName} numberOfLines={2}>
+                <AppText variant="caption" style={styles.recentName} numberOfLines={2}>
                   {p.name}
-                </Text>
-                <Text style={styles.recentMeta}>
+                </AppText>
+                <AppText variant="caption" tone="muted">
                   {p.energyKcal === null ? '— ккал/100г' : `${Math.round(p.energyKcal)} ккал/100г`}
-                </Text>
-                <Text style={styles.recentAdd}>+ порция</Text>
+                </AppText>
+                <AppText variant="caption" tone="accent">
+                  + порция
+                </AppText>
               </Pressable>
             ))}
           </ScrollView>
         </View>
       ) : null}
-
-      {showRecipes && filteredRecipes.length > 0 ? (
-        <View style={styles.block}>
-          {filter === 'all' ? <Text style={styles.sub}>Рецепты</Text> : null}
-          {filteredRecipes.map((r) => {
-            const ingCount = recipeIngredientCounts?.[r.id] ?? 0;
-            return (
-              <View key={r.id} style={styles.card}>
-                <Pressable
-                  style={styles.cardMain}
-                  onPress={() => (onOpenRecipe ? onOpenRecipe(r) : onAddRecipe(r))}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Открыть рецепт ${r.name}`}
-                >
-                  {r.photoUri ? (
-                    <Image
-                      source={{ uri: r.photoUri }}
-                      style={styles.thumb}
-                      accessibilityLabel={`Фото ${r.name}`}
-                    />
-                  ) : (
-                    <View style={[styles.thumb, styles.thumbEmpty]}>
-                      <Ionicons name="restaurant-outline" size={22} color={colors.textMuted} />
-                    </View>
-                  )}
-                  <View style={styles.cardBody}>
-                    <Text style={styles.name} numberOfLines={2}>
-                      {r.name}
-                    </Text>
-                    <Text style={styles.meta} numberOfLines={1}>
-                      Выход {r.cookedYieldG} г
-                      {ingCount > 0 ? ` · ${ingCount} ингр.` : ''}
-                    </Text>
-                    <MacroStrip
-                      energyKcal={r.energyKcalPer100g}
-                      proteinG={r.proteinGPer100g}
-                      fatG={r.fatGPer100g}
-                      carbG={r.carbGPer100g}
-                    />
-                  </View>
-                </Pressable>
-                <Pressable
-                  onPress={() => onAddRecipe(r)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить порцию ${r.name}`}
-                  style={styles.addBtn}
-                >
-                  <Ionicons name="add" size={22} color={colors.primaryButtonText} />
-                </Pressable>
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
-
-      {showProducts ? (
-        <View style={styles.block}>
-          {filter === 'all' && filteredProducts.length > 0 ? (
-            <Text style={styles.sub}>Продукты</Text>
-          ) : null}
-          {filteredProducts.length === 0 && !searching && filter !== 'all' ? (
-            <Text style={styles.hint}>
-              {filter === 'favorites'
-                ? 'Избранных продуктов пока нет. Нажми ★ у продукта, чтобы добавить в избранное'
-                : 'Создай продукт вручную или добавь через сканер штрихкода'}
-            </Text>
-          ) : filteredProducts.length === 0 && !searching && filter === 'all' ? (
-            <Text style={styles.hint}>
-              Создай первый продукт вручную, через сканер или добавь рецепт
-            </Text>
-          ) : (
-            filteredProducts.map((p) => (
-              <View key={p.id} style={styles.card}>
-                <Pressable
-                  style={styles.cardMain}
-                  onPress={() => onAddProduct(p)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить продукт ${p.name}, ${p.energyKcal === null ? 'калорийность неизвестна' : `${Math.round(p.energyKcal)} калорий на 100 грамм`}`}
-                >
-                  <View style={[styles.thumb, styles.thumbEmpty]}>
-                    <Ionicons name="nutrition-outline" size={22} color={colors.textMuted} />
-                  </View>
-                  <View style={styles.cardBody}>
-                    <Text style={styles.nameFlex} numberOfLines={2}>
-                      {p.name}
-                    </Text>
-                    <View style={styles.metaRow}>
-                      <View
-                        style={[
-                          styles.sourcePill,
-                          p.brand === 'Справочник' && styles.sourcePillRef,
-                        ]}
-                      >
-                        <Text style={styles.sourcePillText}>
-                          {p.brand === 'Справочник'
-                            ? 'справочник'
-                            : SOURCE_RU[p.source] ?? p.source}
-                        </Text>
-                      </View>
-                      {p.brand && p.brand !== 'Справочник' ? (
-                        <Text style={styles.meta} numberOfLines={1}>
-                          {p.brand}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <MacroStrip
-                      energyKcal={p.energyKcal}
-                      proteinG={p.proteinG}
-                      fatG={p.fatG}
-                      carbG={p.carbG}
-                    />
-                  </View>
-                </Pressable>
-                <Pressable
-                  onPress={() => onToggleFavorite(p)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    p.isFavorite
-                      ? `Убрать из избранного ${p.name}`
-                      : `Добавить в избранное ${p.name}`
-                  }
-                  hitSlop={8}
-                  style={styles.starHit}
-                >
-                  <Ionicons
-                    name={p.isFavorite ? 'star' : 'star-outline'}
-                    size={20}
-                    color={p.isFavorite ? colors.fat : colors.textMuted}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => onAddProduct(p)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Добавить порцию ${p.name}`}
-                  style={styles.addBtn}
-                >
-                  <Ionicons name="add" size={22} color={colors.primaryButtonText} />
-                </Pressable>
-              </View>
-            ))
-          )}
-        </View>
-      ) : null}
-
-      {filter === 'recent' && recentUnique.length === 0 ? (
-        <Text style={styles.hint}>Пока нет недавних записей</Text>
-      ) : null}
-      {filter === 'frequent' && frequent.length === 0 ? (
-        <Text style={styles.hint}>
-          Частые продукты появятся после нескольких записей в дневник. Индекс строится только из
-          твоих логов
-        </Text>
-      ) : null}
-      {filter === 'recipes' && filteredRecipes.length === 0 ? (
-        <View>
-          <Text style={styles.hint}>Рецептов пока нет</Text>
-          {onBrowseRecipes ? (
-            <Pressable
-              onPress={onBrowseRecipes}
-              style={styles.emptyCta}
-              accessibilityRole="button"
-              accessibilityLabel="Создать рецепт"
-            >
-              <Text style={styles.emptyCtaText}>Открыть раздел рецептов</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
     </View>
+  );
+
+  const renderItem: ListRenderItem<CatalogRow> = ({ item }) => {
+    if (item.kind === 'section') {
+      return (
+        <AppText variant="label" tone="muted" style={styles.sub}>
+          {item.title}
+        </AppText>
+      );
+    }
+    if (item.kind === 'empty') {
+      return (
+        <EmptyState
+          compact
+          icon="search-outline"
+          title={item.title}
+          body={item.body}
+          actionLabel={item.actionLabel}
+          onAction={item.onAction}
+        />
+      );
+    }
+    if (item.kind === 'recipe') {
+      const { recipe: r, ingCount } = item;
+      return (
+        <View style={styles.card}>
+          <Pressable
+            style={styles.cardMain}
+            onPress={() => (onOpenRecipe ? onOpenRecipe(r) : onAddRecipe(r))}
+            accessibilityRole="button"
+            accessibilityLabel={`Открыть рецепт ${r.name}`}
+          >
+            {r.photoUri ? (
+              <Image
+                source={{ uri: r.photoUri }}
+                style={styles.thumb}
+                accessibilityLabel={`Фото ${r.name}`}
+              />
+            ) : (
+              <View style={[styles.thumb, styles.thumbEmpty]}>
+                <Ionicons name="restaurant-outline" size={22} color={colors.textMuted} />
+              </View>
+            )}
+            <View style={styles.cardBody}>
+              <AppText variant="body" style={styles.name} numberOfLines={2}>
+                {r.name}
+              </AppText>
+              <AppText variant="caption" tone="muted" numberOfLines={1}>
+                Выход {r.cookedYieldG} г
+                {ingCount > 0 ? ` · ${ingCount} ингр.` : ''}
+              </AppText>
+              <MacroStrip
+                energyKcal={r.energyKcalPer100g}
+                proteinG={r.proteinGPer100g}
+                fatG={r.fatGPer100g}
+                carbG={r.carbGPer100g}
+              />
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => onAddRecipe(r)}
+            accessibilityRole="button"
+            accessibilityLabel={`Добавить порцию ${r.name}`}
+            style={styles.addBtn}
+          >
+            <Ionicons name="add" size={22} color={colors.primaryButtonText} />
+          </Pressable>
+        </View>
+      );
+    }
+
+    const p = item.product;
+    return (
+      <View style={styles.card}>
+        <Pressable
+          style={styles.cardMain}
+          onPress={() => onAddProduct(p)}
+          accessibilityRole="button"
+          accessibilityLabel={`Добавить продукт ${p.name}, ${
+            p.energyKcal === null
+              ? 'калорийность неизвестна'
+              : `${Math.round(p.energyKcal)} калорий на 100 грамм`
+          }`}
+        >
+          <View style={[styles.thumb, styles.thumbEmpty]}>
+            <Ionicons name="nutrition-outline" size={22} color={colors.textMuted} />
+          </View>
+          <View style={styles.cardBody}>
+            <AppText variant="body" style={styles.nameFlex} numberOfLines={2}>
+              {p.name}
+            </AppText>
+            <View style={styles.metaRow}>
+              <View
+                style={[styles.sourcePill, p.brand === 'Справочник' && styles.sourcePillRef]}
+              >
+                <AppText variant="caption" style={styles.sourcePillText}>
+                  {p.brand === 'Справочник' ? 'справочник' : SOURCE_RU[p.source] ?? p.source}
+                </AppText>
+              </View>
+              {p.brand && p.brand !== 'Справочник' ? (
+                <AppText variant="caption" tone="muted" numberOfLines={1}>
+                  {p.brand}
+                </AppText>
+              ) : null}
+            </View>
+            <MacroStrip
+              energyKcal={p.energyKcal}
+              proteinG={p.proteinG}
+              fatG={p.fatG}
+              carbG={p.carbG}
+            />
+          </View>
+        </Pressable>
+        <Pressable
+          onPress={() => onToggleFavorite(p)}
+          accessibilityRole="button"
+          accessibilityLabel={
+            p.isFavorite ? `Убрать из избранного ${p.name}` : `Добавить в избранное ${p.name}`
+          }
+          hitSlop={8}
+          style={styles.starHit}
+        >
+          <Ionicons
+            name={p.isFavorite ? 'star' : 'star-outline'}
+            size={20}
+            color={p.isFavorite ? colors.fat : colors.textMuted}
+          />
+        </Pressable>
+        <Pressable
+          onPress={() => onAddProduct(p)}
+          accessibilityRole="button"
+          accessibilityLabel={`Добавить порцию ${p.name}`}
+          style={styles.addBtn}
+        >
+          <Ionicons name="add" size={22} color={colors.primaryButtonText} />
+        </Pressable>
+      </View>
+    );
+  };
+
+  const virtualize = rows.length >= CATALOG_VIRTUALIZE_THRESHOLD;
+
+  return (
+    <FlatList
+      style={styles.list}
+      data={rows}
+      keyExtractor={(item) => item.key}
+      renderItem={renderItem}
+      ListHeaderComponent={header}
+      contentContainerStyle={styles.listContent}
+      keyboardShouldPersistTaps="handled"
+      initialNumToRender={virtualize ? 12 : rows.length}
+      windowSize={virtualize ? 7 : 21}
+      removeClippedSubviews={virtualize}
+      testID="food-catalog-list"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space.xs, marginBottom: space.xl },
+  list: { flex: 1 },
+  listContent: { paddingBottom: 140 },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,29 +518,18 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   sectionText: { flex: 1, minWidth: 0 },
-  section: {
-    fontSize: type.subtitle,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  sectionLead: {
-    fontSize: type.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
+  section: { fontWeight: '800' },
   linkBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.sm,
   },
-  link: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  link: { fontWeight: '700' },
   sub: {
-    fontSize: type.micro,
-    fontWeight: '800',
-    color: colors.textMuted,
     marginBottom: space.sm,
+    marginTop: space.sm,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
@@ -477,33 +540,7 @@ const styles = StyleSheet.create({
     paddingRight: space.sm,
     marginBottom: space.md,
   },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 40,
-  },
-  filterChipOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
-  },
   pressed: { opacity: 0.88 },
-  filterText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  filterTextOn: { color: colors.primaryButtonText },
-  countText: { fontSize: type.micro, fontWeight: '700', color: colors.textMuted },
-  countTextOn: { color: 'rgba(255,255,255,0.8)' },
-  hint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: space.md,
-  },
   recentStrip: { gap: space.sm, paddingRight: space.md },
   recentCard: {
     width: 132,
@@ -513,97 +550,70 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: space.md,
     minHeight: 112,
+    gap: 4,
   },
   recentIcon: {
     width: 28,
     height: 28,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: space.sm,
+    marginBottom: 4,
   },
-  recentName: { fontSize: type.caption, fontWeight: '700', color: colors.text, minHeight: 34 },
-  recentMeta: { fontSize: type.micro, color: colors.textSecondary, marginTop: 4 },
-  recentAdd: {
-    marginTop: space.sm,
-    fontSize: type.micro,
-    fontWeight: '800',
-    color: colors.text,
-  },
+  recentName: { fontWeight: '700', minHeight: 36 },
   card: {
     flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: space.sm,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     marginBottom: space.sm,
+    minHeight: touchMin,
+    overflow: 'hidden',
   },
   cardMain: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     padding: space.md,
+    gap: space.sm,
     minHeight: touchMin,
   },
   thumb: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
   },
-  thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  cardBody: { flex: 1, paddingVertical: 2 },
-  name: { fontSize: type.body, fontWeight: '700', color: colors.text },
-  nameFlex: { flex: 1, fontSize: type.body, fontWeight: '700', color: colors.text },
-  metaRow: {
-    flexDirection: 'row',
+  thumbEmpty: {
+    backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: space.xs,
-    marginTop: 4,
+    justifyContent: 'center',
   },
+  cardBody: { flex: 1, minWidth: 0, gap: 2 },
+  name: { fontWeight: '600' },
+  nameFlex: { fontWeight: '600', flexShrink: 1 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   sourcePill: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  sourcePillRef: {
-    backgroundColor: colors.successSoft,
-  },
-  sourcePillText: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  meta: { fontSize: type.caption, color: colors.textSecondary },
+  sourcePillRef: { backgroundColor: colors.accentSoft },
+  sourcePillText: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
   starHit: {
     minWidth: touchMin,
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
   },
   addBtn: {
     width: touchMin,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryButton,
+    height: touchMin,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyCta: {
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.md,
-  },
-  emptyCtaText: { fontWeight: '700', color: colors.text },
 });
