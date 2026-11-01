@@ -157,9 +157,14 @@ test('Phase 3 UI uses nf-fit design system; no shame copy', () => {
   }
 
   const today = readFileSync(join(root, 'apps/mobile/app/(tabs)/index.tsx'), 'utf8');
-  assert.ok(today.includes('TodayStatusSummary'));
+  // Stage 4.1 fold: KcalRing + StatCards (water/activity); TodayStatusSummary kept as module.
+  assert.ok(today.includes('KcalRing'));
+  assert.ok(today.includes('StatCards'));
+  assert.ok(today.includes('slice(0, 3)'), 'favorites capped at 3 on Today');
   assert.ok(today.includes('@/src/design-system'));
   assert.ok(today.includes('AppButton'));
+  assert.ok(today.includes('План питания'), 'Plan entry in header');
+  assert.ok(!today.includes('TodayActivityCard'), 'activity detail demoted off Today fold');
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(today));
 
   const summary = readFileSync(
