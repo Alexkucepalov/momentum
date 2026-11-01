@@ -3,6 +3,11 @@ import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { bmiBand, computeBmi, formatBmi } from '../../../../src/domain/bmi';
+import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
+import {
+  buildMonthOverview,
+  datesEndingOn,
+} from '../../../../src/domain/monthOverview';
 import { buildWeekNutrition } from '../../../../src/domain/weekNutrition';
 import { collectWeeklyInsightStats } from '../../../../src/domain/weeklyInsight';
 import { FlashBar } from '@/src/components/FlashBar';
@@ -11,13 +16,13 @@ import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
 import { WeightSparkline } from '@/src/components/WeightSparkline';
-import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
 import { localDateKey } from '../../../../src/storage/validation';
 import { ChallengesPanel } from '@/src/features/challenges/ChallengesPanel';
 import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
 import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
+import { MonthOverviewCard } from '@/src/features/progress/MonthOverviewCard';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
 import {
@@ -163,6 +168,32 @@ export default function ProgressScreen() {
     };
   }, [repo, dateLocal, revision]);
 
+  const monthOverview = useMemo(() => {
+    const dates = datesEndingOn(dateLocal, 30);
+    const days = dates.map((d) => {
+      const t = repo.dailyTotals(d);
+      return {
+        dateLocal: d,
+        foodEntryCount: t.entryCount,
+        energyKcal: t.energyKcal,
+        activityMinutes: repo.activityMinutesForDate(d),
+        sleepSec: repo.getSleepForDate(d)?.sleepSec ?? null,
+      };
+    });
+    const monthWeights = repo.listWeights(90);
+    const inWindow = monthWeights.filter((w) => {
+      const key = localDateKey(new Date(w.weighedAt), profile.timezone);
+      return key >= dates[0]! && key <= dates[dates.length - 1]!;
+    });
+    const oldest = inWindow.length ? inWindow[inWindow.length - 1]!.kg : null;
+    const newest = inWindow.length ? inWindow[0]!.kg : null;
+    return buildMonthOverview({
+      days,
+      weightOldestKg: oldest,
+      weightNewestKg: newest,
+    });
+  }, [repo, dateLocal, profile.timezone, revision]);
+
   const onSaveWeight = () => {
     const kg = Number(kgRaw.replace(',', '.'));
     if (!Number.isFinite(kg) || kg <= 0) {
@@ -194,6 +225,7 @@ export default function ProgressScreen() {
         {tab === 'overview' ? (
           <>
             <WeeklyInsightCard insight={weekInsight} />
+            <MonthOverviewCard overview={monthOverview} />
             <View style={styles.kpiGrid}>
               <AppCard style={styles.kpiCard}>
                 <AppText variant="label" tone="muted">
@@ -289,7 +321,8 @@ export default function ProgressScreen() {
         {tab === 'habits' ? (
           <>
             <AppText variant="caption" tone="secondary" style={styles.habitsLead}>
-              Отметки за сегодня — на вкладке «Сегодня». Здесь настройка целей и челленджей.
+              Гибкие цели на неделю — без штрафов за пропуск. Отметки дня — на «Сегодня»; здесь
+              настройка и личные челленджи.
             </AppText>
             <FlexibleHabitsPanel />
             <ChallengesPanel />

@@ -113,3 +113,52 @@ describe('flexible report plain text', () => {
     assert.doesNotMatch(text, /стыдно|неудачник|провал/i);
   });
 });
+
+describe('reports never leak Garmin secrets (M10)', () => {
+  it('day report + snapshot omit api key / bearer / JWT', () => {
+    const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+    repo.upsertSleepNight({
+      dateLocal: '2026-11-01',
+      sleepSec: 28800,
+      deepSec: null,
+      lightSec: null,
+      remSec: null,
+      awakeSec: null,
+      sleepScore: null,
+      source: 'garmin',
+      externalId: 'garmin-sleep:2026-11-01',
+    });
+    const text = buildDayReportText({
+      dateLocal: '2026-11-01',
+      generatedAtIso: '2026-11-01T12:00:00.000Z',
+      nutrition: {
+        entryCount: 0,
+        energyKcal: null,
+        proteinG: null,
+        fatG: null,
+        carbG: null,
+        hasUnknownFields: false,
+      },
+      waterMl: 0,
+      waterTargetMl: null,
+      activityMinutes: 0,
+      steps: null,
+      workouts: [],
+      weightKg: null,
+      sleep: {
+        sleepSec: 28800,
+        deepSec: null,
+        lightSec: null,
+        remSec: null,
+        awakeSec: null,
+        sleepScore: null,
+        avgSpo2: null,
+      },
+      targets: { energyKcal: null, proteinG: null, fatG: null, carbG: null },
+    });
+    assert.doesNotMatch(text, /api[_-]?key|bearer|SecureStore|Authorization/i);
+    const snap = JSON.stringify(repo.toSnapshot());
+    assert.doesNotMatch(snap, /apiKey|accessToken|bearerToken|eyJ[A-Za-z0-9_-]+\./);
+    assert.match(snap, /sleepNights/);
+  });
+});

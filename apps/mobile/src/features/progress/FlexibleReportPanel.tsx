@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 
@@ -11,18 +11,28 @@ import {
   flexibleReportToPlainText,
   type ReportCategory,
 } from '../../../../../src/domain/flexibleReport';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  Chip,
+  colors,
+  radius,
+  space,
+  touchMin,
+  type,
+} from '@/src/design-system';
 import { collectFlexibleReportInput } from './collectFlexibleReport';
 import { shareHtmlAsPdf } from './shareReportPdf';
 
 const ALL_CATS: ReportCategory[] = ['profile', 'nutrition', 'activity', 'weight', 'habits'];
 
+/** M7: user-facing presets emphasize 7 and 30 days. */
 const PRESETS: { label: string; days: number }[] = [
   { label: '7 дней', days: 7 },
-  { label: '14 дней', days: 14 },
   { label: '30 дней', days: 30 },
+  { label: '14 дней', days: 14 },
 ];
 
 function shiftDaysIso(dateLocal: string, delta: number): string {
@@ -31,6 +41,7 @@ function shiftDaysIso(dateLocal: string, delta: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
+/** User-initiated PDF / ChatGPT text only — no silent upload (M9). */
 export function FlexibleReportPanel() {
   const { repo, dateLocal, revision, showFlash } = useData();
   void revision;
@@ -74,9 +85,10 @@ export function FlexibleReportPanel() {
       const html = flexibleReportToHtml(report, input.generatedAtIso);
 
       if (Platform.OS === 'web') {
-        // Web: open printable HTML — user can «Save as PDF» in the browser.
         const g = globalThis as unknown as {
-          open?: (url: string, target: string) => { document: { write: (h: string) => void; close: () => void } } | null;
+          open?: (url: string, target: string) => {
+            document: { write: (h: string) => void; close: () => void };
+          } | null;
         };
         const w = g.open?.('', '_blank');
         if (!w) {
@@ -120,39 +132,40 @@ export function FlexibleReportPanel() {
   };
 
   return (
-    <View style={styles.wrap}>
+    <AppCard style={styles.wrap} testID="flexible-report-panel">
       <View style={styles.hero}>
         <View style={styles.icon}>
-          <Ionicons name="document-text-outline" size={20} color={colors.text} />
+          <Ionicons name="document-text-outline" size={20} color={colors.ink} />
         </View>
         <View style={styles.flex}>
-          <Text style={styles.title} accessibilityRole="header">
+          <AppText variant="subtitle" style={styles.title} accessibilityRole="header">
             Гибкий отчёт
-          </Text>
-          <Text style={styles.sub}>
-            Период и разделы сам. PDF на устройстве или текст для вставки в ChatGPT — без прямого
-            коннекта и без выдуманных КБЖУ.
-          </Text>
+          </AppText>
+          <AppText variant="caption" tone="secondary" style={styles.sub}>
+            Только по твоей кнопке: PDF на устройстве или текст для ChatGPT. Без прямого коннекта и
+            без выдуманных КБЖУ.
+          </AppText>
         </View>
       </View>
 
-      <Text style={styles.label}>Период</Text>
+      <AppText variant="label" tone="secondary" style={styles.label}>
+        Период
+      </AppText>
       <View style={styles.presets}>
         {PRESETS.map((p) => (
-          <Pressable
+          <Chip
             key={p.days}
-            style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+            label={p.label}
             onPress={() => applyPreset(p.days)}
-            accessibilityRole="button"
             accessibilityLabel={p.label}
-          >
-            <Text style={styles.chipText}>{p.label}</Text>
-          </Pressable>
+          />
         ))}
       </View>
       <View style={styles.dateRow}>
         <View style={styles.dateCol}>
-          <Text style={styles.micro}>С</Text>
+          <AppText variant="caption" tone="muted" style={styles.micro}>
+            С
+          </AppText>
           <TextInput
             value={start}
             onChangeText={setStart}
@@ -165,7 +178,9 @@ export function FlexibleReportPanel() {
           />
         </View>
         <View style={styles.dateCol}>
-          <Text style={styles.micro}>По</Text>
+          <AppText variant="caption" tone="muted" style={styles.micro}>
+            По
+          </AppText>
           <TextInput
             value={end}
             onChangeText={setEnd}
@@ -179,57 +194,46 @@ export function FlexibleReportPanel() {
         </View>
       </View>
 
-      <Text style={styles.label}>Что включить</Text>
+      <AppText variant="label" tone="secondary" style={styles.label}>
+        Что включить
+      </AppText>
       <View style={styles.presets}>
-        {ALL_CATS.map((c) => {
-          const on = cats.includes(c);
-          return (
-            <Pressable
-              key={c}
-              style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
-              onPress={() => toggle(c)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: on }}
-              accessibilityLabel={REPORT_CATEGORY_LABELS_RU[c]}
-            >
-              <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                {REPORT_CATEGORY_LABELS_RU[c]}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {ALL_CATS.map((c) => (
+          <Chip
+            key={c}
+            label={REPORT_CATEGORY_LABELS_RU[c]}
+            selected={cats.includes(c)}
+            onPress={() => toggle(c)}
+            accessibilityLabel={REPORT_CATEGORY_LABELS_RU[c]}
+          />
+        ))}
       </View>
-      <Text style={styles.hint}>{selectedLabel}</Text>
+      <AppText variant="caption" tone="muted" style={styles.hint}>
+        {selectedLabel}
+      </AppText>
 
-      <PrimaryButton
+      <AppButton
         label={busy ? 'Собираю…' : Platform.OS === 'web' ? 'Открыть отчёт' : 'Сформировать PDF'}
         onPress={() => void generate()}
         disabled={busy || cats.length === 0}
       />
-      <Pressable
-        style={({ pressed }) => [styles.copyBtn, pressed && styles.pressed]}
+      <View style={{ height: space.sm }} />
+      <AppButton
+        label="Копировать текст для ChatGPT"
+        variant="secondary"
         onPress={() => void copyForChatGpt()}
         disabled={busy || cats.length === 0}
-        accessibilityRole="button"
-        accessibilityLabel="Скопировать отчёт для ChatGPT"
-      >
-        <Ionicons name="copy-outline" size={18} color={colors.text} />
-        <Text style={styles.copyText}>Копировать текст для ChatGPT</Text>
-      </Pressable>
-    </View>
+      />
+    </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
     marginBottom: space.xl,
+    gap: space.xs,
   },
-  hero: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
+  hero: { flexDirection: 'row', gap: space.md, marginBottom: space.md },
   icon: {
     width: 40,
     height: 40,
@@ -239,58 +243,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   flex: { flex: 1 },
-  title: { fontSize: type.subtitle, fontWeight: '800', color: colors.text, marginBottom: 4 },
-  sub: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
-  label: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    marginBottom: space.sm,
-  },
+  title: { fontWeight: '800', marginBottom: 4 },
+  sub: { lineHeight: 18 },
+  label: { marginBottom: space.sm, marginTop: space.sm },
   presets: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginBottom: space.md },
-  chip: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  chipOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
-  chipText: { fontSize: type.micro, fontWeight: '600', color: colors.textSecondary },
-  chipTextOn: { color: colors.primaryButtonText },
-  dateRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.lg },
+  dateRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
   dateCol: { flex: 1 },
-  micro: { fontSize: type.micro, color: colors.textMuted, marginBottom: 4, fontWeight: '700' },
+  micro: { marginBottom: 4, fontWeight: '700' },
   input: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.md,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    color: colors.text,
+    color: colors.ink,
     fontSize: type.body,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   hint: {
-    fontSize: type.micro,
-    color: colors.textMuted,
     marginBottom: space.md,
     lineHeight: 16,
   },
-  pressed: { opacity: 0.88 },
-  copyBtn: {
-    marginTop: space.sm,
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: space.md,
-  },
-  copyText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
 });
