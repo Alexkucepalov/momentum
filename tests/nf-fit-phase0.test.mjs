@@ -113,7 +113,8 @@ test('Phase 0 docs and design references exist', () => {
   assert.equal(appJson.expo.name, 'nf-fit');
   assert.equal(appJson.expo.slug, 'nf-fit');
   const layout = readFileSync(join(root, 'apps/mobile/app/(tabs)/_layout.tsx'), 'utf8');
-  for (const label of ['Today tab', 'Food tab', 'Activity tab', 'Progress tab', 'Profile tab']) {
+  for (const label of ['Today tab', 'Food tab', 'Movement tab', 'Progress tab', 'Profile tab']) {
     assert.ok(layout.includes(label), `tab shell missing a11y ${label}`);
   }
+  assert.ok(layout.includes('href: null'), 'sleep tab should be hidden from tab bar');
 });

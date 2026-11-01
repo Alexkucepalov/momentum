@@ -279,33 +279,6 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <View style={styles.secondaryLinks} accessibilityRole="summary">
-          <Pressable
-            onPress={() => router.push('/(tabs)/food')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Питание"
-          >
-            <Text style={styles.secondaryLinkText}>Питание →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/recipes')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Рецепты"
-          >
-            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(tabs)/progress')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Прогресс"
-          >
-            <Text style={styles.secondaryLinkText}>Прогресс →</Text>
-          </Pressable>
-        </View>
-
         <SettingsCard
           title="КБЖУ на день"
           hint="Твои числа, без автонорм. Сохраняется, когда уходишь с поля. Пусто = без цели."
@@ -663,20 +636,6 @@ function PrivacyRow({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg },
-  secondaryLinks: {
-    marginBottom: space.lg,
-    gap: space.xs,
-  },
-  secondaryLink: {
-    paddingVertical: space.sm,
-    minHeight: touchMin,
-    justifyContent: 'center',
-  },
-  secondaryLinkText: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
   hero: { alignItems: 'center', marginBottom: space.xl },
   avatar: {
     width: 72,

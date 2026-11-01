@@ -55,7 +55,7 @@ Under `apps/mobile/src/design-system/`:
 2. One primary CTA per fold; prefer `AppButton`.
 3. Unknown metrics render as `—`, never as `0`.
 4. One design language across all tabs — no per-tab skins.
-5. Target `TAB_SHELL`: today / food / movement / progress / profile (Sleep merges in Stage 3).
+5. `TAB_SHELL`: today / food / movement / progress / profile (Sleep inside Movement).
 
 ## Accessibility
 

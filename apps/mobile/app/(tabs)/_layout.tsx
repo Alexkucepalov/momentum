@@ -19,8 +19,8 @@ function tint(color: unknown): string {
 }
 
 /**
- * nf-fit tab shell: Today / Food / Activity / Progress / Profile.
- * RU labels for dogfood; English names in a11y for blueprint parity.
+ * nf-fit tab shell: Today / Food / Movement / Progress / Profile (TAB_SHELL).
+ * Sleep lives inside Movement (Activity | Sleep). Route `sleep` hidden + redirects.
  */
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -79,9 +79,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="activity"
         options={{
-          title: 'Активность',
-          tabBarLabel: 'Активность',
-          tabBarAccessibilityLabel: 'Activity tab, Активность',
+          title: 'Движение',
+          tabBarLabel: 'Движение',
+          tabBarAccessibilityLabel: 'Movement tab, Движение',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'walk' : 'walk-outline'} color={tint(color)} />
           ),
@@ -90,12 +90,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="sleep"
         options={{
+          href: null,
           title: 'Сон',
-          tabBarLabel: 'Сон',
-          tabBarAccessibilityLabel: 'Sleep tab, Сон',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'moon' : 'moon-outline'} color={tint(color)} />
-          ),
         }}
       />
       <Tabs.Screen

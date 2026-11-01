@@ -5,10 +5,9 @@ Inventory from Expo Router (`apps/mobile/app/**`).
 
 Шкала цели экрана: ✅ ясно / ⚠️ размыто / ❌ конфликт.
 
-> **2026-11-01 refresh (Stage 1):** полный visual/IA overhaul — `docs/DESIGN-AUDIT.md` + `docs/PRODUCT-OVERHAUL-AUDIT.md`.  
-> Факт вкладок: Сегодня / Питание / Активность / **Сон** / Прогресс / Профиль (+ stacks recipes, plan, garmin).  
-> Target IA: 5 tabs с «Движение» = Activity|Sleep (`docs/PRODUCT-ROADMAP.md`).  
-> Snapshot store: **v18** (`sleepNights`). Этот файл ниже частично устарел по плотности Today/Food — не использовать как единственный SoT.
+> **2026-11-01 refresh (Stage 3):** вкладки = Сегодня / Питание / **Движение** / Прогресс / Профиль (+ stacks recipes, plan, garmin).  
+> Движение = сегменты Активность | Сон; `(tabs)/sleep` hidden + redirect.  
+> Snapshot store: **v18** (`sleepNights`). Плотность Today/Food — Этап 4; не использовать этот файл как единственный SoT.
 
 ---
 

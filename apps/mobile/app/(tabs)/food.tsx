@@ -7,7 +7,7 @@ import { portion } from '../../../../src/domain/nutrition';
 import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
-import { DateSwitcher } from '@/src/components/DateSwitcher';
+import { DayStrip } from '@/src/components/DayStrip';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
@@ -207,12 +207,11 @@ export default function FoodScreen() {
     <View style={styles.root}>
       <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
       <FormScrollView contentContainerStyle={styles.content}>
-        <DateSwitcher
+        <DayStrip
           selected={dateLocal}
-          timeZone={profile.timezone}
+          today={new Date().toISOString().slice(0, 10)}
           onSelect={setDateLocal}
           onOpenCalendar={() => setCalendarOpen(true)}
-          showSwipeHint
         />
 
         <FoodSegmentTabs value={segment} onChange={selectSegment} />
