@@ -1,0 +1,298 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Linking, StyleSheet, TextInput, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
+
+import { FlashBar } from '@/src/components/FlashBar';
+import { FormScrollView } from '@/src/components/FormScrollView';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  type,
+} from '@/src/design-system';
+import { verifyGarminApiKey } from '@/src/features/garmin/garminAuth';
+import {
+  clearGarminApiKey,
+  getGarminApiKey,
+  setGarminApiKey,
+} from '@/src/features/garmin/secureKeyStore';
+import { runGarminSync } from '@/src/features/garmin/garminSyncService';
+import { useData } from '@/src/state/DataContext';
+import { confirmAction } from '@/src/utils/confirmAction';
+
+const KEY_HELP_URL = 'https://connect.garmin.com/app/settings/personalApiToken';
+
+function formatSyncAt(iso: string | null): string {
+  if (!iso) return 'ещё не было';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export default function GarminConnectScreen() {
+  const router = useRouter();
+  const { repo, refresh, revision, showFlash } = useData();
+  void revision;
+
+  const [keyRaw, setKeyRaw] = useState('');
+  const [hasKey, setHasKey] = useState(false);
+  const [keyHint, setKeyHint] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [statusNote, setStatusNote] = useState<string | null>(null);
+  const sync = repo.getGarminSyncState();
+  const imported = useMemo(
+    () => ({
+      weights: repo.listIntegratedWeights('garmin', 2000).length,
+      workouts: repo.listIntegratedWorkouts('garmin', 2000).length,
+      days: repo.listIntegratedDailyActivityStats('garmin', 2000).length,
+    }),
+    [repo, revision],
+  );
+
+  const reloadKeyStatus = useCallback(async () => {
+    const k = await getGarminApiKey();
+    setHasKey(!!k);
+    setKeyHint(k ? `Сохранён на устройстве · ${k.length} символов · …${k.slice(-4)}` : null);
+  }, []);
+
+  useEffect(() => {
+    void reloadKeyStatus();
+  }, [reloadKeyStatus, revision]);
+
+  const onSaveKey = async () => {
+    if (busy) return;
+    setBusy(true);
+    setStatusNote(null);
+    try {
+      await setGarminApiKey(keyRaw);
+      setStatusNote('Ключ записан. Проверяю у Garmin…');
+      await verifyGarminApiKey(keyRaw);
+      setKeyRaw('');
+      await reloadKeyStatus();
+      setStatusNote('Ключ сохранён и принят Garmin. Можно синхронизировать.');
+      showFlash('Ключ Garmin сохранён и проверен');
+      refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Не удалось сохранить ключ';
+      setStatusNote(msg);
+      showFlash(msg);
+      // Keep key if store succeeded but verify failed — user can retry sync.
+      await reloadKeyStatus();
+      refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onSync = async (mode: 'full' | 'incremental' = 'incremental') => {
+    if (busy) return;
+    setBusy(true);
+    setStatusNote(null);
+    try {
+      const result = await runGarminSync(repo, { mode });
+      refresh();
+      if (!result.ok) {
+        const msg = result.error ?? 'Синхронизация не удалась';
+        setStatusNote(msg);
+        showFlash(msg);
+        return;
+      }
+      const base = `Готово: вес ${result.weightsUpserted}, тренировки ${result.workoutsUpserted}, дни шагов ${result.stepsUpserted}, сон ${result.sleepUpserted}`;
+      const warn =
+        result.warnings.length > 0
+          ? result.warnings.length <= 3
+            ? result.warnings.join(' · ')
+            : `${result.warnings.slice(0, 3).join(' · ')} · ещё ${result.warnings.length - 3}`
+          : null;
+      const note = warn ? `${base}. Частично: ${warn}` : base;
+      setStatusNote(note);
+      showFlash(
+        mode === 'full'
+          ? `Полная выгрузка: ${result.workoutsUpserted} тр. / ${result.stepsUpserted} дн.`
+          : note,
+      );
+    } finally {
+      setBusy(false);
+      await reloadKeyStatus();
+    }
+  };
+
+  const onDisconnect = () => {
+    confirmAction('Отключить Garmin?', 'Ключ удалится с устройства. Уже импортированные записи останутся.', {
+      destructive: true,
+      confirmLabel: 'Отключить',
+      onConfirm: () => {
+        void (async () => {
+          await clearGarminApiKey();
+          await reloadKeyStatus();
+          setStatusNote('Garmin отключён, ключ удалён');
+          showFlash('Garmin отключён');
+          refresh();
+        })();
+      },
+    });
+  };
+
+  const statusLabel = !hasKey
+    ? 'Не подключено'
+    : busy
+      ? 'Идёт запрос…'
+      : sync.lastError && !sync.lastSuccessfulSyncAt
+        ? 'Ошибка'
+        : sync.lastSuccessfulSyncAt
+          ? 'Подключено'
+          : 'Ключ на устройстве';
+
+  return (
+    <View style={styles.root}>
+      <FormScrollView contentContainerStyle={styles.content}>
+        <AppCard style={styles.card}>
+          <AppText variant="label" tone="secondary">
+            СТАТУС
+          </AppText>
+          <AppText variant="title" style={styles.status}>
+            {statusLabel}
+          </AppText>
+          {keyHint ? (
+            <AppText variant="caption" tone="secondary" style={styles.line}>
+              {keyHint}
+            </AppText>
+          ) : (
+            <AppText variant="caption" tone="muted" style={styles.line}>
+              Ключ ещё не сохранён на телефоне
+            </AppText>
+          )}
+          <AppText variant="caption" tone="secondary" style={styles.line}>
+            Последняя успешная: {formatSyncAt(sync.lastSuccessfulSyncAt)}
+          </AppText>
+          {sync.lastSyncedFrom && sync.lastSyncedTo ? (
+            <AppText variant="caption" tone="muted" style={styles.line}>
+              Окно: {sync.lastSyncedFrom} → {sync.lastSyncedTo}
+            </AppText>
+          ) : null}
+          {statusNote ? (
+            <AppText
+              variant="caption"
+              tone={statusNote.toLowerCase().includes('ошиб') || statusNote.includes('HTTP') ? 'danger' : 'secondary'}
+              style={styles.note}
+            >
+              {statusNote}
+            </AppText>
+          ) : null}
+          {sync.lastError && !statusNote ? (
+            <AppText variant="caption" tone="danger" style={styles.note}>
+              {sync.lastError}
+            </AppText>
+          ) : null}
+          <AppText variant="caption" tone="secondary" style={styles.line}>
+            В базе: вес {imported.weights} · тренировки {imported.workouts} · дни шагов{' '}
+            {imported.days}
+          </AppText>
+          <AppButton
+            label="Открыть все данные Garmin"
+            variant="secondary"
+            onPress={() => router.push('/garmin/data' as Href)}
+            disabled={busy}
+          />
+        </AppCard>
+
+        <AppCard style={styles.card}>
+          <AppText variant="subtitle">Personal API Key</AppText>
+          <AppText variant="caption" tone="secondary" style={styles.hint}>
+            Garmin Connect (веб) → Settings → Personal API Key → Create Key. Вставь только сам ключ,
+            без слова ApiKey и без кавычек. При сохранении приложение сразу проверит ключ у Garmin.
+          </AppText>
+          <TextInput
+            value={keyRaw}
+            onChangeText={setKeyRaw}
+            placeholder={hasKey ? 'Новый ключ (чтобы заменить)' : 'Вставь API key'}
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            textContentType="none"
+            secureTextEntry
+            style={styles.input}
+            accessibilityLabel="Garmin Personal API Key"
+          />
+          <AppButton
+            label={busy ? 'Проверка…' : 'Сохранить и проверить ключ'}
+            onPress={() => void onSaveKey()}
+            disabled={!keyRaw.trim() || busy}
+          />
+          <View style={{ height: space.sm }} />
+          <AppButton
+            label="Открыть страницу ключа в Garmin"
+            variant="secondary"
+            onPress={() => void Linking.openURL(KEY_HELP_URL)}
+            disabled={busy}
+          />
+        </AppCard>
+
+        <AppCard style={styles.card}>
+          <AppText variant="subtitle">Синхронизация</AppText>
+          <AppText variant="caption" tone="secondary" style={styles.hint}>
+            «Полная выгрузка» тянет до 3 лет: шаги кусками по 28 дней, все activity без даты + детали
+            (пульс, зоны, мощность, ккал). Обычная кнопка — только с последней даты. Вес появится
+            только если он есть в Garmin Connect.
+          </AppText>
+          <AppButton
+            label={busy ? 'Синхронизация…' : 'Полная выгрузка из Garmin'}
+            onPress={() => void onSync('full')}
+            disabled={!hasKey || busy}
+          />
+          <View style={{ height: space.sm }} />
+          <AppButton
+            label={busy ? 'Синхронизация…' : 'Обновить с последней даты'}
+            variant="secondary"
+            onPress={() => void onSync('incremental')}
+            disabled={!hasKey || busy}
+          />
+          <View style={{ height: space.sm }} />
+          <AppButton
+            label="Отключить Garmin"
+            variant="secondary"
+            onPress={onDisconnect}
+            disabled={!hasKey || busy}
+          />
+        </AppCard>
+
+        <AppText variant="caption" tone="muted" style={styles.footnote}>
+          Если снова HTTP 400 на ключе — создай новый Personal API Key в Garmin Connect и сохрани
+          заново. Не присылай ключ в чат.
+        </AppText>
+      </FormScrollView>
+      <FlashBar />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  content: { padding: space.lg, paddingBottom: 48, gap: space.md },
+  card: { gap: space.sm },
+  status: { marginTop: 4 },
+  line: { marginTop: 2 },
+  note: { marginTop: space.sm, lineHeight: 18 },
+  hint: { lineHeight: 18 },
+  input: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    minHeight: 48,
+    fontSize: type.body,
+    color: colors.text,
+    backgroundColor: colors.background,
+  },
+  footnote: { lineHeight: 18 },
+});
