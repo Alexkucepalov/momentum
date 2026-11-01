@@ -1,9 +1,8 @@
 # Momentum — Design System Proposal  
 ## Premium Minimal Utility (Этап 0 — согласование)
 
-**Статус:** предложение для approve.  
-**Не внедрять в код** до явного согласия основателя.  
-**Текущий runtime** остаётся Minimal Soft Utility (`src/design-system/tokens.ts`) до этапа B.
+**Статус:** **принят как Stage 2 runtime** (ветка `feat/overhaul-stage2-design-system`).  
+**Runtime SoT:** `src/design-system/tokens.ts` · docs mirror `docs/04-DESIGN-SYSTEM.md`.
 
 Вдохновение (не копировать целиком): Nothing OS (геометрия, монохром, типографика цифр), качественные fitness/wellness apps (ясные метрики, спокойный progress), минималистичные utility apps (один CTA, честные empty).
 

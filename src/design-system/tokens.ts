@@ -1,34 +1,44 @@
 /**
- * nf-fit Minimal Soft Utility — pure token contract (testable, shared).
+ * nf-fit / Momentum — Premium Minimal Utility token contract.
  * Runtime RN re-exports via apps/mobile/src/design-system/tokens.ts.
+ * Do not introduce screen-local hex colors; extend this file instead.
  */
 
 export const colors = {
-  canvas: '#F3F4F6',
-  background: '#F3F4F6',
+  canvas: '#F2F3F5',
+  background: '#F2F3F5',
   surface: '#FFFFFF',
-  ink: '#000000',
-  text: '#000000',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  /** Neutral ink accent — avoid coral/red product chrome. */
-  accent: '#111827',
-  accentSoft: '#E5E7EB',
-  primaryButton: '#000000',
+  surfaceMuted: '#EBEDF0',
+  ink: '#0A0A0A',
+  text: '#0A0A0A',
+  textSecondary: '#5C6370',
+  textMuted: '#8B929E',
+  /** Selected / active chrome — mono ink (no coral product chrome). */
+  accent: '#0A0A0A',
+  accentSoft: '#EBEDF0',
+  /** @deprecated Prefer `primary` — kept for gradual migration. */
+  primaryButton: '#0A0A0A',
+  /** @deprecated Prefer `onPrimary`. */
   primaryButtonText: '#FFFFFF',
-  border: '#E5E7EB',
+  primary: '#0A0A0A',
+  onPrimary: '#FFFFFF',
+  border: '#E2E5EA',
+  borderStrong: '#C9CED6',
   danger: '#B42318',
-  preview: '#F3F4F6',
-  protein: '#22C55E',
-  fat: '#F59E0B',
-  carbs: '#3B82F6',
+  preview: '#F2F3F5',
+  protein: '#16A34A',
+  fat: '#D97706',
+  carbs: '#2563EB',
   ringTrack: '#E8EAED',
-  ringFill: '#000000',
-  success: '#16A34A',
-  successSoft: '#D4EDDA',
+  ringFill: '#0A0A0A',
+  success: '#15803D',
+  successSoft: '#DCF5E4',
   textOnInverse: '#FFFFFF',
-  shadow: '#000000',
-  warning: '#FBBF24',
+  shadow: '#0A0A0A',
+  warning: '#D97706',
+  chartTrack: '#E8EAED',
+  chartFill: '#0A0A0A',
+  overlay: 'rgba(10,10,10,0.4)',
 } as const;
 
 export const space = {
@@ -38,14 +48,16 @@ export const space = {
   lg: 16,
   xl: 24,
   xxl: 32,
+  /** Screen-level section break */
+  section: 48,
 } as const;
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  card: 24,
-  xl: 28,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  card: 16,
+  xl: 24,
   pill: 999,
 } as const;
 
@@ -64,10 +76,13 @@ export const type = {
 
 export const elevation = {
   none: 0,
-  card: 1,
+  card: 2,
 } as const;
 
-/** Tab shell routes required by nf-fit blueprint. */
-export const TAB_SHELL = ['today', 'food', 'activity', 'progress', 'profile'] as const;
+/**
+ * Target root tab shell after Overhaul Stage 3 (Movement = Activity|Sleep).
+ * Temporary dogfood may still expose Sleep as a 6th tab until C1/C2 land.
+ */
+export const TAB_SHELL = ['today', 'food', 'movement', 'progress', 'profile'] as const;
 
 export type TabShellId = (typeof TAB_SHELL)[number];

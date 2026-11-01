@@ -8,8 +8,8 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 
 | Этап | Статус | Notes |
 |------|--------|-------|
-| **1 Stabilization (A1–A11)** | **Done (code/docs)** | 5 logical commits; PR; v18 roundtrip test; A9 TAB_SHELL → Stage 3; A10 device wipe still manual |
-| 2 Design system (B) | Pending | After Stage 1 PR; approve Premium Minimal Utility |
+| **1 Stabilization (A1–A11)** | **Done (code/docs)** | PR #168; v18 roundtrip test; A9 TAB_SHELL → Stage 3; A10 device wipe still manual |
+| **2 Design system (B)** | **In progress** | Tokens + AppButton/Field/Chip/Segment/ChartFrame/Error/Loading; PrimaryButton deprecated wrapper |
 | 3 Navigation (C) | Pending | 5 tabs · Движение = Activity\|Sleep |
 | 4–11 Screens…QA | Pending | Sequential; one issue/PR at a time |
 
