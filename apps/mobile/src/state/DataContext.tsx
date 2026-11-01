@@ -4,6 +4,7 @@ import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
 import type { FoodRepository } from '../../../../src/storage/foodRepository';
 import { localDateKey } from '../../../../src/storage/validation';
 import type { MealSlot } from '../../../../src/storage/types';
+import { feedbackDayChange } from '@/src/utils/dayChangeFeedback';
 
 type UndoState = { entryId: string; message: string } | null;
 
@@ -44,6 +45,13 @@ export function DataProvider({
   const showFlash = useCallback((message: string) => setFlash(message), []);
   const clearFlash = useCallback(() => setFlash(null), []);
 
+  const setDateLocalWithFeedback = useCallback((d: string) => {
+    setDateLocal((prev) => {
+      if (prev !== d) void feedbackDayChange();
+      return d;
+    });
+  }, []);
+
   const performUndo = useCallback(() => {
     if (!undo) return;
     repo.undoDeleteEntry(undo.entryId);
@@ -55,7 +63,7 @@ export function DataProvider({
     () => ({
       repo,
       dateLocal,
-      setDateLocal,
+      setDateLocal: setDateLocalWithFeedback,
       meal,
       setMeal,
       revision,
@@ -67,7 +75,19 @@ export function DataProvider({
       showFlash,
       clearFlash,
     }),
-    [repo, dateLocal, meal, revision, refresh, undo, performUndo, flash, showFlash, clearFlash],
+    [
+      repo,
+      dateLocal,
+      setDateLocalWithFeedback,
+      meal,
+      revision,
+      refresh,
+      undo,
+      performUndo,
+      flash,
+      showFlash,
+      clearFlash,
+    ],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

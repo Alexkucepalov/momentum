@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { bmiBand, computeBmi, formatBmi } from '../../../../src/domain/bmi';
@@ -8,10 +8,15 @@ import { collectWeeklyInsightStats } from '../../../../src/domain/weeklyInsight'
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { SectionHeader } from '@/src/components/SectionHeader';
+import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
 import { WeightSparkline } from '@/src/components/WeightSparkline';
+import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
+import { formatWeekRangeRu } from '@/src/components/weekFormat';
+import { localDateKey } from '../../../../src/storage/validation';
 import { ChallengesPanel } from '@/src/features/challenges/ChallengesPanel';
 import { FlexibleHabitsPanel } from '@/src/features/habits/FlexibleHabitsPanel';
+import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
 import { useData } from '@/src/state/DataContext';
@@ -20,6 +25,7 @@ import {
   AppCard,
   AppText,
   MetricCard,
+  SegmentedControl,
   colors,
   radius,
   space,
@@ -27,20 +33,20 @@ import {
   type,
 } from '@/src/design-system';
 
-type ProgressTab = 'body' | 'food' | 'sport' | 'habits' | 'summary';
+/** Stage 4.4: ≤4 top segments (food+sport folded into overview). */
+type ProgressTab = 'overview' | 'body' | 'habits' | 'reports';
 
 const TABS: { id: ProgressTab; label: string }[] = [
+  { id: 'overview', label: 'Неделя' },
   { id: 'body', label: 'Тело' },
-  { id: 'food', label: 'Питание' },
-  { id: 'sport', label: 'Спорт' },
   { id: 'habits', label: 'Привычки' },
-  { id: 'summary', label: 'Итоги' },
+  { id: 'reports', label: 'Отчёты' },
 ];
 
 export default function ProgressScreen() {
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
-  const [tab, setTab] = useState<ProgressTab>('summary');
+  const [tab, setTab] = useState<ProgressTab>('overview');
   const [lastExport, setLastExport] = useState<string | null>(null);
   const [kgRaw, setKgRaw] = useState('');
   const profile = repo.getProfile();
@@ -86,6 +92,28 @@ export default function ProgressScreen() {
     return { mins, count };
   }, [repo, weekDays, revision]);
 
+  const stepsWeek = useMemo(() => {
+    const start = weekStartMonday(dateLocal);
+    const days = datesInWeekFromStart(start).map((d, weekdayIndex) => {
+      const steps = repo.getDailyActivityStats(d)?.steps ?? null;
+      return {
+        date: d,
+        weekdayIndex,
+        steps,
+        value: steps ?? 0,
+        valueLabel: steps == null ? '·' : steps >= 1000 ? `${Math.round(steps / 1000)}k` : String(steps),
+      };
+    });
+    return {
+      start,
+      end: days[6]?.date ?? start,
+      days,
+      knownDays: days.filter((d) => d.steps != null).length,
+    };
+  }, [repo, dateLocal, revision]);
+
+  const todayKey = localDateKey(new Date(), profile.timezone);
+
   const bmiInfo = useMemo(() => {
     if (!latest || profile.heightCm == null) return null;
     try {
@@ -107,6 +135,34 @@ export default function ProgressScreen() {
     }
   };
 
+  const onCopyDayReport = async () => {
+    try {
+      const text = collectDayReportText(repo, dateLocal);
+      await Clipboard.setStringAsync(text);
+      showFlash('Отчёт за день скопирован — вставь в ChatGPT');
+    } catch (e) {
+      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
+    }
+  };
+
+  const sleepWeek = useMemo(() => {
+    const start = weekStartMonday(dateLocal);
+    const days = datesInWeekFromStart(start);
+    let known = 0;
+    let sumSec = 0;
+    for (const d of days) {
+      const n = repo.getSleepForDate(d);
+      if (n?.sleepSec != null) {
+        known += 1;
+        sumSec += n.sleepSec;
+      }
+    }
+    return {
+      known,
+      avgHours: known === 0 ? null : sumSec / known / 3600,
+    };
+  }, [repo, dateLocal, revision]);
+
   const onSaveWeight = () => {
     const kg = Number(kgRaw.replace(',', '.'));
     if (!Number.isFinite(kg) || kg <= 0) {
@@ -126,32 +182,109 @@ export default function ProgressScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <View style={styles.tabs} accessibilityRole="tablist">
-          {TABS.map((t) => {
-            const on = tab === t.id;
-            return (
-              <Pressable
-                key={t.id}
-                style={({ pressed }) => [styles.tab, on && styles.tabOn, pressed && styles.pressed]}
-                onPress={() => setTab(t.id)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={t.label}
-              >
-                <AppText
-                  variant="label"
-                  tone={on ? 'inverse' : 'secondary'}
-                  style={[styles.tabText, on && styles.tabTextOn]}
-                  numberOfLines={1}
-                >
-                  {t.label}
-                </AppText>
-              </Pressable>
-            );
-          })}
+        <View style={styles.tabs}>
+          <SegmentedControl<ProgressTab>
+            accessibilityLabel="Раздел прогресса"
+            value={tab}
+            onChange={setTab}
+            options={TABS.map((t) => ({ id: t.id, label: t.label }))}
+          />
         </View>
 
-        {tab === 'summary' ? <WeeklyInsightCard insight={weekInsight} /> : null}
+        {tab === 'overview' ? (
+          <>
+            <WeeklyInsightCard insight={weekInsight} />
+            <View style={styles.kpiGrid}>
+              <AppCard style={styles.kpiCard}>
+                <AppText variant="label" tone="muted">
+                  Питание
+                </AppText>
+                <AppText variant="subtitle" style={styles.kpiValue}>
+                  {weekDays.filter((d) => d.entryCount > 0).length}/7
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  дней с записями
+                </AppText>
+              </AppCard>
+              <AppCard style={styles.kpiCard}>
+                <AppText variant="label" tone="muted">
+                  Спорт
+                </AppText>
+                <AppText variant="subtitle" style={styles.kpiValue}>
+                  {sportWeekMinutes.mins > 0 ? sportWeekMinutes.mins : '—'}
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  мин · {sportWeekMinutes.count} тр.
+                </AppText>
+              </AppCard>
+              <AppCard style={styles.kpiCard}>
+                <AppText variant="label" tone="muted">
+                  Сон
+                </AppText>
+                <AppText variant="subtitle" style={styles.kpiValue}>
+                  {sleepWeek.avgHours == null ? '—' : sleepWeek.avgHours.toFixed(1)}
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  ср. ч · {sleepWeek.known} ноч.
+                </AppText>
+              </AppCard>
+              <AppCard style={styles.kpiCard}>
+                <AppText variant="label" tone="muted">
+                  Вес
+                </AppText>
+                <AppText variant="subtitle" style={styles.kpiValue}>
+                  {latest ? `${latest.kg}` : '—'}
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  кг · последнее
+                </AppText>
+              </AppCard>
+            </View>
+
+            <AppText variant="caption" tone="muted" style={styles.backupHint}>
+              Питание и шаги за неделю. Неизвестные ккал не считаем нулём.
+            </AppText>
+            <WeekNutritionStrip
+              days={weekDays}
+              selectedDate={dateLocal}
+              targetKcal={profile.dailyEnergyKcal}
+              onSelectDate={setDateLocal}
+              timeZone={profile.timezone}
+            />
+
+            <WeekBarChart
+              title="Шаги за неделю"
+              subtitle={`${formatWeekRangeRu(stepsWeek.start, stepsWeek.end)} · ${stepsWeek.knownDays} дн. с данными`}
+              selectedDate={dateLocal}
+              todayDate={todayKey}
+              onSelectDate={setDateLocal}
+              footnote="Пустой день — нет импорта Garmin, не ноль шагов."
+              days={stepsWeek.days.map((d) => ({
+                dateLocal: d.date,
+                weekdayIndex: d.weekdayIndex,
+                value: d.value,
+                valueLabel: d.valueLabel,
+              }))}
+            />
+
+            <AppCard style={styles.card} testID="progress-sport-card">
+              <MetricCard
+                label="Тренировки"
+                value={sportWeekMinutes.count}
+                unit="шт"
+                meta={`${sportWeekMinutes.mins} мин · MET не вычитается из еды`}
+              />
+            </AppCard>
+
+            <AppButton
+              label="Копировать отчёт за день → ChatGPT"
+              onPress={() => void onCopyDayReport()}
+            />
+            <AppText variant="caption" tone="muted" style={styles.backupHint}>
+              Прямого коннекта к ChatGPT нет. PDF и период — во вкладке «Отчёты».
+            </AppText>
+          </>
+        ) : null}
 
         {tab === 'habits' ? (
           <>
@@ -242,7 +375,9 @@ export default function ProgressScreen() {
                 <SectionHeader title="История веса" />
                 {weights.map((w) => (
                   <View key={w.id} style={styles.weightRow}>
-                    <Text style={styles.weightKg}>{w.kg} кг</Text>
+                    <Text style={styles.weightKg}>
+                      {w.kg} кг{w.source === 'garmin' ? ' · Garmin' : ''}
+                    </Text>
                     <Text style={styles.weightDate}>
                       {new Date(w.weighedAt).toLocaleDateString('ru-RU')}
                     </Text>
@@ -253,60 +388,16 @@ export default function ProgressScreen() {
           </>
         ) : null}
 
-        {tab === 'food' ? (
+        {tab === 'reports' ? (
           <>
-            <WeekNutritionStrip
-              days={weekDays}
-              selectedDate={dateLocal}
-              targetKcal={profile.dailyEnergyKcal}
-              onSelectDate={setDateLocal}
-              timeZone={profile.timezone}
+            <AppButton
+              label="Копировать отчёт за выбранный день"
+              variant="secondary"
+              onPress={() => void onCopyDayReport()}
             />
-            <AppCard style={styles.card}>
-              <AppText variant="label" tone="muted">
-                Питание за неделю
-              </AppText>
-              <AppText variant="metric">
-                {weekDays.filter((d) => d.entryCount > 0).length} / 7
-              </AppText>
-              <AppText variant="caption" tone="secondary">
-                График — только здесь. Неизвестные ккал не считаем нулём.
-              </AppText>
-              {weekDays.map((d) => (
-                <View key={d.dateLocal} style={styles.foodRow}>
-                  <AppText variant="body" style={styles.foodDay}>
-                    {d.dateLocal.slice(5)}
-                  </AppText>
-                  <AppText variant="caption" tone="secondary">
-                    {d.entryCount > 0
-                      ? d.energyKcal != null
-                        ? `${Math.round(d.energyKcal)} ккал · ${d.entryCount}`
-                        : `ккал неизв. · ${d.entryCount}`
-                      : '—'}
-                  </AppText>
-                </View>
-              ))}
-            </AppCard>
-          </>
-        ) : null}
-
-        {tab === 'sport' ? (
-          <AppCard style={styles.card} testID="progress-sport-card">
-            <MetricCard
-              label="Тренировки"
-              value={sportWeekMinutes.count}
-              unit="шт"
-              meta={`${sportWeekMinutes.mins} мин · MET не вычитается из еды`}
-            />
-            <AppText variant="caption" tone="secondary">
-              Оценка энергии — ориентир по MET, не вычитается из дневника еды. Детали — во вкладке
-              Активность.
+            <AppText variant="caption" tone="muted" style={styles.backupHint}>
+              День берётся из общего календаря приложения (Сегодня / свайп).
             </AppText>
-          </AppCard>
-        ) : null}
-
-        {tab === 'summary' ? (
-          <>
             <FlexibleReportPanel />
             <SectionHeader title="Бэкап" />
             <AppText variant="caption" tone="muted" style={styles.backupHint}>
@@ -338,31 +429,25 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: space.lg },
   tabs: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
     marginBottom: space.lg,
   },
-  tab: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  tabOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
-  },
-  tabText: { fontWeight: '700' },
-  tabTextOn: { color: colors.primaryButtonText },
   habitsLead: {
     lineHeight: 18,
     marginBottom: space.md,
   },
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginBottom: space.lg,
+  },
+  kpiCard: {
+    width: '47%',
+    flexGrow: 1,
+    gap: 4,
+    minHeight: 96,
+  },
+  kpiValue: { fontWeight: '800' },
   card: {
     marginBottom: space.xl,
     gap: space.sm,
@@ -401,17 +486,8 @@ const styles = StyleSheet.create({
   },
   weightKg: { fontWeight: '700', color: colors.ink },
   weightDate: { color: colors.textSecondary },
-  foodRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: space.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  foodDay: { fontWeight: '700' },
   preview: {
     marginTop: space.lg,
   },
   previewBody: { fontSize: 12, color: colors.ink, fontFamily: 'monospace' },
-  pressed: { opacity: 0.88 },
 });

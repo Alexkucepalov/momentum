@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -9,9 +9,11 @@ import { FormScrollView } from '../../components/FormScrollView';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
-import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppText, ErrorBanner, colors, radius, space, touchMin, type } from '@/src/design-system';
 import { BarcodeLookupSheet } from './BarcodeLookupSheet';
 import { ConfirmPortionSheet, type PortionTarget } from './ConfirmPortionSheet';
+import { AddFoodEmptyHint } from './addFood/AddFoodEmptyHint';
+import { AddFoodSheetChrome } from './addFood/AddFoodSheetChrome';
 import { AddFoodTabs } from './addFood/AddFoodTabs';
 import { FoodPickRow } from './addFood/FoodPickRow';
 import { ManualProductForm } from './addFood/ManualProductForm';
@@ -27,8 +29,6 @@ const MEAL_LABELS: Record<MealSlot, string> = {
   dinner: 'Ужин',
   snack: 'Перекус',
 };
-
-const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'recipes'];
 
@@ -90,8 +90,6 @@ export function AddFoodSheet({
   }, [visible]);
 
   const searching = query.trim().length > 0;
-  const showSearch = true;
-
   const searchHits = useMemo(
     () =>
       searching
@@ -220,137 +218,47 @@ export function AddFoodSheet({
     <>
       <SwipeToDismissSheet visible={visible && !confirm} onClose={onClose} maxHeightRatio={0.94}>
         <View style={styles.sheet}>
-          <View style={styles.header}>
-            <View style={styles.headerText}>
-              <Text style={styles.title} accessibilityRole="header">
-                Добавить еду
-              </Text>
-              <Pressable
-                style={styles.mealContext}
-                onPress={() => setMealPickerOpen((v) => !v)}
-                accessibilityRole="button"
-                accessibilityLabel={`Приём: ${MEAL_LABELS[meal]}. Нажмите, чтобы сменить`}
-              >
-                <Text style={styles.mealContextText}>в {MEAL_LABELS[meal].toLowerCase()}</Text>
-                <Ionicons
-                  name={mealPickerOpen ? 'chevron-up' : 'chevron-down'}
-                  size={14}
-                  color={colors.textMuted}
-                />
-              </Pressable>
-            </View>
-            <Pressable
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Закрыть"
-              style={styles.closeBtn}
-            >
-              <Ionicons name="close" size={22} color={colors.text} />
-            </Pressable>
-          </View>
-
-          {mealPickerOpen ? (
-            <View style={styles.mealPicker} accessibilityRole="menu">
-              {MEALS.map((m) => {
-                const on = meal === m;
-                return (
-                  <Pressable
-                    key={m}
-                    style={[styles.mealOpt, on && styles.mealOptOn]}
-                    onPress={() => {
-                      setMeal(m);
-                      setMealPickerOpen(false);
-                    }}
-                    accessibilityRole="menuitem"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={MEAL_LABELS[m]}
-                  >
-                    <Text style={[styles.mealOptText, on && styles.mealOptTextOn]}>
-                      {MEAL_LABELS[m]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {/* Search first on catalog tabs — one box for products + recipes */}
-          {showSearch ? (
-            <View style={styles.searchBox}>
-              <Ionicons name="search" size={18} color={colors.textMuted} />
-              <TextInput
-                value={query}
-                onChangeText={(t) => {
-                  setQuery(t);
-                  if (t.trim() && !CATALOG_TABS.includes(tab)) setTab('recent');
-                }}
-                placeholder="Поиск по продуктам и рецептам"
-                placeholderTextColor={colors.textMuted}
-                style={styles.searchInput}
-                accessibilityLabel="Поиск по продуктам и рецептам"
-                returnKeyType="search"
-              />
-              {query.length > 0 ? (
-                <Pressable
-                  onPress={() => setQuery('')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Очистить поиск"
-                  hitSlop={8}
-                >
-                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+          <AddFoodSheetChrome
+            meal={meal}
+            onChangeMeal={(m) => {
+              setMeal(m);
+              setMealPickerOpen(false);
+            }}
+            mealPickerOpen={mealPickerOpen}
+            onToggleMealPicker={() => setMealPickerOpen((v) => !v)}
+            onClose={onClose}
+            query={query}
+            onChangeQuery={(t) => {
+              setQuery(t);
+              if (t.trim() && !CATALOG_TABS.includes(tab)) setTab('recent');
+            }}
+            searching={searching}
+            tab={tab}
+            onSelectTab={(next) => {
+              setQuery('');
+              setTab(next);
+            }}
+            onOpenScan={() => setScanOpen(true)}
+          />
 
           {!searching && CATALOG_TABS.includes(tab) ? (
             <AddFoodTabs value={tab} onChange={selectCatalogTab} />
           ) : null}
 
-          {/* Hide secondary modes while searching — one job: pick a hit */}
-          {!searching ? (
-            <View style={styles.actions} accessibilityRole="toolbar">
-              <ActionChip icon="barcode-outline" label="Сканер" onPress={() => setScanOpen(true)} />
-              <ActionChip
-                icon="create-outline"
-                label="Вручную"
-                onPress={() => {
-                  setQuery('');
-                  setTab('manual');
-                }}
-                active={tab === 'manual'}
-              />
-              <ActionChip
-                icon="flash-outline"
-                label="Быстро"
-                onPress={() => {
-                  setQuery('');
-                  setTab('quick');
-                }}
-                active={tab === 'quick'}
-              />
-              <ActionChip
-                icon="bookmark-outline"
-                label="Приёмы"
-                onPress={() => {
-                  setQuery('');
-                  setTab('meals');
-                }}
-                active={tab === 'meals'}
+          {error ? (
+            <View style={styles.errorWrap}>
+              <ErrorBanner
+                message={error}
+                actionLabel="Скрыть"
+                onAction={() => setError(null)}
               />
             </View>
-          ) : null}
-
-          {error ? (
-            <Text style={styles.error} accessibilityLiveRegion="assertive">
-              {error}
-            </Text>
           ) : null}
 
           <FormScrollView variant="sheet" style={styles.scroll} contentContainerStyle={styles.body}>
             {searching ? (
               searchHits.length === 0 ? (
-                <EmptyHint
+                <AddFoodEmptyHint
                   title="Ничего не найдено"
                   body="Попробуй другое название или добавь продукт вручную / быстро."
                 />
@@ -412,7 +320,7 @@ export function AddFoodSheet({
 
             {!searching && tab === 'recent' ? (
               recent.length === 0 ? (
-                <EmptyHint
+                <AddFoodEmptyHint
                   title="Пока нет недавних"
                   body="Ищи по названию (есть справочник обычных продуктов), сканер или быстрый ввод — повтор потом в один тап «+»."
                 />
@@ -440,7 +348,7 @@ export function AddFoodSheet({
 
             {!searching && tab === 'favorites' ? (
               favorites.length === 0 ? (
-                <EmptyHint
+                <AddFoodEmptyHint
                   title="Нет избранного"
                   body="На вкладке Питание нажми ★ у продукта — он появится здесь."
                 />
@@ -674,40 +582,6 @@ export function AddFoodSheet({
   );
 }
 
-function EmptyHint({ title, body }: { title: string; body: string }) {
-  return (
-    <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyBody}>{body}</Text>
-    </View>
-  );
-}
-
-function ActionChip({
-  icon,
-  label,
-  onPress,
-  active,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  active?: boolean;
-}) {
-  return (
-    <Pressable
-      style={[styles.actionChip, active && styles.actionChipOn]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: !!active }}
-      accessibilityLabel={label}
-    >
-      <Ionicons name={icon} size={16} color={active ? colors.primaryButtonText : colors.text} />
-      <Text style={[styles.actionLabel, active && styles.actionLabelOn]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   sheet: {
     minHeight: 420,
@@ -715,107 +589,12 @@ const styles = StyleSheet.create({
   scroll: {
     maxHeight: 560,
   },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-    paddingHorizontal: space.lg,
-    marginBottom: space.sm,
-  },
-  actionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 36,
-  },
-  actionChipOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
-  },
-  actionLabel: { fontSize: type.micro, fontWeight: '700', color: colors.text },
-  actionLabelOn: { color: colors.primaryButtonText },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    marginHorizontal: space.lg,
-    marginBottom: space.sm,
-    paddingHorizontal: space.md,
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  searchInput: { flex: 1, fontSize: type.body, color: colors.text },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: space.lg,
-    marginBottom: space.md,
-  },
-  headerText: { flex: 1, paddingRight: space.md },
-  title: {
-    fontSize: type.title,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  mealContext: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-    minHeight: 28,
-  },
-  mealContextText: {
-    fontSize: type.caption,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  closeBtn: {
-    width: touchMin,
-    height: touchMin,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mealPicker: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-    paddingHorizontal: space.lg,
-    marginBottom: space.md,
-  },
-  mealOpt: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    minHeight: 40,
-    justifyContent: 'center',
-  },
-  mealOptOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
-  },
-  mealOptText: { fontWeight: '600', color: colors.text, fontSize: type.caption },
-  mealOptTextOn: { color: colors.primaryButtonText },
   body: {
     paddingHorizontal: space.lg,
     paddingBottom: 48,
+  },
+  errorWrap: {
+    paddingHorizontal: space.lg,
   },
   tip: {
     fontSize: type.caption,
@@ -829,35 +608,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.sm,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: space.md,
     minHeight: touchMin,
     marginBottom: space.md,
   },
-  recipesLinkText: { flex: 1, fontWeight: '700', color: colors.text, fontSize: type.body },
-  error: {
-    color: colors.danger,
-    paddingHorizontal: space.lg,
-    marginBottom: space.sm,
-  },
-  empty: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-  },
-  emptyTitle: {
-    fontSize: type.subtitle,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: space.sm,
-  },
-  emptyBody: {
-    fontSize: type.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
+  recipesLinkText: { flex: 1, fontWeight: '700', color: colors.ink, fontSize: type.body },
 });

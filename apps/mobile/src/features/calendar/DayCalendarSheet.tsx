@@ -97,6 +97,7 @@ export function DayCalendarSheet({
 
   const dayEntries = repo.listEntriesForDate(preview);
   const dayWorkouts = repo.listWorkoutsForDate(preview);
+  const daySteps = repo.getDailyActivityStats(preview)?.steps ?? null;
   const dayWeight = weightKgForDateLocal(weights, preview, (instant) =>
     localDateKey(new Date(instant), profile.timezone),
   );
@@ -219,6 +220,7 @@ export function DayCalendarSheet({
             totals={dayTotals}
             mealGroups={mealGroups}
             workouts={dayWorkouts}
+            steps={daySteps}
             weightKg={dayWeight}
           />
         </ScrollView>
@@ -260,6 +262,7 @@ function DayDetail({
   totals,
   mealGroups,
   workouts,
+  steps,
   weightKg,
 }: {
   dateLocal: string;
@@ -267,6 +270,7 @@ function DayDetail({
   totals: { energyKcal: number | null; entryCount: number; hasUnknownFields: boolean };
   mealGroups: Record<MealSlot, FoodEntry[]>;
   workouts: Workout[];
+  steps: number | null;
   weightKg: number | null;
 }) {
   const [y, m, d] = dateLocal.split('-').map(Number);
@@ -317,13 +321,20 @@ function DayDetail({
       )}
 
       <Text style={styles.blockTitle}>Активность</Text>
+      <Text style={styles.mealLine}>
+        Шаги:{' '}
+        {steps == null ? 'нет данных Garmin' : `${steps.toLocaleString('ru-RU')}`}
+      </Text>
       {workouts.length === 0 ? (
         <Text style={styles.emptyLine}>Тренировок нет</Text>
       ) : (
         workouts.map((w) => (
           <Text key={w.id} style={styles.mealLine}>
-            {WORKOUT_LABEL[w.type]} · {Math.round(w.durationSec / 60)} мин
+            {WORKOUT_LABEL[w.type]}
+            {w.source === 'garmin' ? ' · Garmin' : ''} · {Math.round(w.durationSec / 60)} мин
             {w.distanceM != null ? ` · ${(w.distanceM / 1000).toFixed(1)} км` : ''}
+            {w.calories != null ? ` · ${Math.round(w.calories)} ккал` : ''}
+            {w.notes?.trim() ? ` · ${w.notes.trim()}` : ''}
           </Text>
         ))
       )}

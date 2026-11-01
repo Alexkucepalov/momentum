@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 import { colors, radius, touchMin } from '../tokens';
 import { AppText } from './AppText';
 
-type Variant = 'primary' | 'secondary' | 'accent';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 type AppButtonProps = {
   label: string;
@@ -15,6 +15,7 @@ type AppButtonProps = {
   testID?: string;
 };
 
+/** Single CTA primitive — Premium Minimal Utility. Prefer this over PrimaryButton. */
 export function AppButton({
   label,
   onPress,
@@ -24,6 +25,7 @@ export function AppButton({
   style,
   testID,
 }: AppButtonProps) {
+  const onDark = variant === 'primary' || variant === 'danger';
   return (
     <Pressable
       onPress={onPress}
@@ -33,7 +35,8 @@ export function AppButton({
         styles.btn,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
-        variant === 'accent' && styles.accent,
+        variant === 'ghost' && styles.ghost,
+        variant === 'danger' && styles.danger,
         pressed && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -43,11 +46,7 @@ export function AppButton({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}
     >
-      <AppText
-        variant="body"
-        tone={variant === 'secondary' ? 'ink' : 'inverse'}
-        style={styles.label}
-      >
+      <AppText variant="body" tone={onDark ? 'inverse' : 'ink'} style={styles.label}>
         {label}
       </AppText>
     </Pressable>
@@ -57,21 +56,24 @@ export function AppButton({
 const styles = StyleSheet.create({
   btn: {
     minHeight: touchMin,
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
   primary: {
-    backgroundColor: colors.primaryButton,
+    backgroundColor: colors.primary,
   },
   secondary: {
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
-  accent: {
-    backgroundColor: colors.accent,
+  ghost: {
+    backgroundColor: 'transparent',
+  },
+  danger: {
+    backgroundColor: colors.danger,
   },
   pressed: {
     opacity: 0.85,

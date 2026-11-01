@@ -33,7 +33,7 @@ test('forecast needs enough elapsed days', () => {
 
 test('budget snapshot + repo expenses', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
-  assert.equal(repo.toSnapshot().version, 14);
+  assert.equal(repo.toSnapshot().version, 18);
   repo.setFoodBudget('2026-10', 30000);
   repo.addFoodExpense({
     amountRub: 1200,

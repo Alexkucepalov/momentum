@@ -167,7 +167,7 @@ test('Phase 1 UI files use nf-fit design system', () => {
     assert.ok(existsSync(join(root, rel)), `missing ${rel}`);
   }
   const food = readFileSync(join(root, 'apps/mobile/app/(tabs)/food.tsx'), 'utf8');
-  assert.ok(food.includes('DiaryDaySummary'));
+  assert.ok(food.includes('KcalRing'));
   assert.ok(food.includes('@/src/design-system'));
   assert.ok(food.includes('AppButton'));
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(food));

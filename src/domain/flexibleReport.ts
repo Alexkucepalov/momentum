@@ -34,6 +34,13 @@ export type ReportWorkoutRow = {
   notes: string | null;
 };
 
+/** Daily steps from Garmin (or other integration). null = unknown ≠ 0. */
+export type ReportStepsDay = {
+  dateLocal: string;
+  steps: number | null;
+  distanceM: number | null;
+};
+
 export type ReportWeightRow = {
   dateLocal: string;
   kg: number;
@@ -63,6 +70,8 @@ export type FlexibleReportInput = {
   latestWeightKg: number | null;
   nutritionDays: ReportDayNutrition[];
   workouts: ReportWorkoutRow[];
+  /** Present when activity category selected; days without import omitted or steps null. */
+  stepsDays: ReportStepsDay[];
   weights: ReportWeightRow[];
   habits: ReportHabitRow[];
 };
@@ -251,6 +260,23 @@ function buildKpis(input: FlexibleReportInput, cats: ReportCategory[]): ReportKp
         hint: `${fmtNum(mins / dayCount, 1)} мин/день периода`,
       });
     }
+    const knownSteps = (input.stepsDays ?? [])
+      .map((d) => d.steps)
+      .filter((s): s is number => s != null && Number.isFinite(s));
+    if (knownSteps.length > 0) {
+      const sum = knownSteps.reduce((a, b) => a + b, 0);
+      kpis.push({
+        label: 'Шаги',
+        value: String(Math.round(sum)),
+        hint: `сумма · ${knownSteps.length} дн. с данными · ср. ${fmtNum(mean(knownSteps))}`,
+      });
+    } else {
+      kpis.push({
+        label: 'Шаги',
+        value: '—',
+        hint: 'Нет импорта Garmin за период',
+      });
+    }
   }
 
   if (cats.includes('habits') && input.habits.length > 0) {
@@ -344,8 +370,27 @@ export function buildFlexibleReport(input: FlexibleReportInput): FlexibleReport 
   if (cats.includes('activity')) {
     const w = input.workouts;
     const mins = w.reduce((s, x) => s + x.durationMin, 0);
-    const summary = [`Тренировок: ${w.length}`, `Минут суммарно: ${mins}`];
+    const stepsDays = input.stepsDays ?? [];
+    const knownSteps = stepsDays.filter((d) => d.steps != null);
+    const stepsSum = knownSteps.reduce((s, d) => s + (d.steps as number), 0);
+    const summary = [
+      `Тренировок: ${w.length}`,
+      `Минут суммарно: ${mins}`,
+      knownSteps.length === 0
+        ? 'Шаги: нет данных Garmin'
+        : `Шаги: ${fmtNum(stepsSum)} суммарно · ${knownSteps.length} дн. · ср. ${fmtNum(mean(knownSteps.map((d) => d.steps as number)))}`,
+    ];
     const details: string[] = [];
+    if (knownSteps.length > 0) {
+      details.push('— Шаги по дням —');
+      for (const d of knownSteps.slice(0, 60)) {
+        const dist =
+          d.distanceM == null ? '' : ` · ${(d.distanceM / 1000).toFixed(2)} км`;
+        details.push(`${formatDateRu(d.dateLocal)}: ${fmtNum(d.steps)} шаг${dist}`);
+      }
+      if (knownSteps.length > 60) details.push(`… и ещё ${knownSteps.length - 60} дней с шагами`);
+    }
+    details.push('— Тренировки —');
     for (const row of w.slice(0, 80)) {
       const dist =
         row.distanceM == null ? '' : ` · ${(row.distanceM / 1000).toFixed(2)} км`;
@@ -422,6 +467,41 @@ export function buildFlexibleReport(input: FlexibleReportInput): FlexibleReport 
     disclaimer:
       'Наблюдательный отчёт по данным на устройстве. Не медицинская рекомендация. Неизвестные нутриенты не подменяются нулями.',
   };
+}
+
+/** Plain text for paste into ChatGPT / notes. Same facts as PDF, no invented values. */
+export function flexibleReportToPlainText(
+  report: FlexibleReport,
+  generatedAtIso: string,
+): string {
+  const lines: string[] = [];
+  lines.push(`# ${report.title}`);
+  lines.push(`Период: ${report.periodLabel}`);
+  lines.push(`Сформирован: ${generatedAtIso}`);
+  lines.push('');
+  lines.push(
+    'Контекст: локальные факты с устройства. «—» = неизвестно (не ноль). Без медицинских заключений и без оценочных ярлыков.',
+  );
+  lines.push('');
+  if (report.kpis.length > 0) {
+    lines.push('## Сводка');
+    for (const k of report.kpis) {
+      lines.push(`- ${k.label}: ${k.value}${k.hint ? ` (${k.hint})` : ''}`);
+    }
+    lines.push('');
+  }
+  for (const s of report.sections) {
+    lines.push(`## ${s.title}`);
+    for (const row of s.summary) lines.push(`- ${row}`);
+    if (s.details.length > 0) {
+      lines.push('Подробности:');
+      for (const d of s.details) lines.push(`  · ${d}`);
+    }
+    lines.push('');
+  }
+  lines.push('---');
+  lines.push(report.disclaimer);
+  return lines.join('\n');
 }
 
 /** HTML suitable for expo-print. Synthetic / local data only. */

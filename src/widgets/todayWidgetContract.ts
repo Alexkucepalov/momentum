@@ -11,6 +11,8 @@ export type TodayWidgetPayload = {
   /** Food diary energy for the day; null if empty or has unknown macros. */
   energyKcal: number | null;
   waterMl: number | null;
+  /** Daily steps from Garmin; null = unknown ≠ 0. */
+  steps?: number | null;
   /** Consecutive logging days; null if not computed. */
   streakDays: number | null;
   /** Optional next meal hint — never invents nutrition. */
@@ -21,6 +23,7 @@ export type TodayWidgetDisplay = {
   dateLocal: string;
   energyLabel: string;
   waterLabel: string;
+  stepsLabel: string;
   streakLabel: string;
   nextMealHint: string | null;
 };
@@ -31,6 +34,8 @@ export function formatTodayWidgetDisplay(payload: TodayWidgetPayload): TodayWidg
     dateLocal: payload.dateLocal,
     energyLabel: `${formatMetricValue(payload.energyKcal)} ккал`,
     waterLabel: `${formatMetricValue(payload.waterMl)} мл`,
+    stepsLabel:
+      payload.steps == null ? '— шаг' : `${Math.round(payload.steps).toLocaleString('ru-RU')} шаг`,
     streakLabel: `${formatMetricValue(payload.streakDays)} дн.`,
     nextMealHint: payload.nextMealHint,
   };

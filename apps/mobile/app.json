@@ -59,7 +59,8 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-sharing",
-      "./plugins/withNfFitWidgets.js"
+      "./plugins/withNfFitWidgets.js",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

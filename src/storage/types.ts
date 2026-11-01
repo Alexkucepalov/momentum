@@ -6,6 +6,14 @@ export type HabitKey = 'walk' | 'stretch' | 'read';
 
 export type WorkoutType = 'cycling' | 'strength' | 'walking' | 'football' | 'other';
 
+/** Origin of a workout or weight row — user never overwritten by integration upsert. */
+export type IntegrationSource = 'user' | 'garmin' | 'zepp';
+
+export type WorkoutHrZone = {
+  zone: number;
+  secs: number;
+};
+
 export type Workout = {
   id: string;
   dateLocal: string;
@@ -13,7 +21,27 @@ export type Workout = {
   durationSec: number;
   distanceM: number | null;
   notes: string | null;
-  source: 'user';
+  source: IntegrationSource;
+  /** Stable id from external system (e.g. Garmin activityId). Null for manual. */
+  externalId: string | null;
+  calories: number | null;
+  avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  avgPowerW: number | null;
+  maxPowerW: number | null;
+  normalizedPowerW: number | null;
+  avgCadence: number | null;
+  elevationGainM: number | null;
+  avgSpeedMps: number | null;
+  maxSpeedMps: number | null;
+  movingDurationSec: number | null;
+  hrZones: WorkoutHrZone[] | null;
+  /** Flattened Garmin fields for detail UI (JSON object). */
+  detailJson: string | null;
+  /** GPS track JSON ({points,start,end,bbox}) from Garmin details. */
+  polylineJson: string | null;
+  /** Chart series JSON (HR/speed/power samples) from Garmin details. */
+  chartJson: string | null;
   createdAt: string;
   deletedAt: string | null;
 };
@@ -133,7 +161,55 @@ export type WeightEntry = {
   /** ISO instant */
   weighedAt: string;
   kg: number;
+  source: IntegrationSource;
+  /** Stable id from external system (e.g. Garmin samplePk). Null for manual. */
+  externalId: string | null;
   createdAt: string;
+};
+
+/** Daily movement metrics from an integration (not food kcal). */
+export type DailyActivityStats = {
+  id: string;
+  dateLocal: string;
+  steps: number | null;
+  distanceM: number | null;
+  activeKcal: number | null;
+  source: IntegrationSource;
+  externalId: string | null;
+  updatedAt: string;
+};
+
+/**
+ * One sleep night from an integration (Garmin).
+ * Seconds fields: null = unknown (≠ 0). dateLocal = calendar date of the night.
+ */
+export type SleepNight = {
+  id: string;
+  dateLocal: string;
+  sleepSec: number | null;
+  deepSec: number | null;
+  lightSec: number | null;
+  remSec: number | null;
+  awakeSec: number | null;
+  startAt: string | null;
+  endAt: string | null;
+  avgSpo2: number | null;
+  avgRespiration: number | null;
+  sleepScore: number | null;
+  source: IntegrationSource;
+  externalId: string | null;
+  updatedAt: string;
+};
+
+/** Non-secret Garmin sync bookkeeping (API key lives in SecureStore). */
+export type GarminSyncState = {
+  lastSuccessfulSyncAt: string | null;
+  lastAttemptAt: string | null;
+  lastError: string | null;
+  /** Inclusive start of last successful window (YYYY-MM-DD). */
+  lastSyncedFrom: string | null;
+  /** Inclusive end of last successful window (YYYY-MM-DD). */
+  lastSyncedTo: string | null;
 };
 
 export type HabitCheck = {
@@ -442,7 +518,7 @@ export type StorePreference = {
 };
 
 export type StoreSnapshot = {
-  version: 14;
+  version: 18;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -468,6 +544,9 @@ export type StoreSnapshot = {
   storePreferences: StorePreference[];
   purchases: Purchase[];
   purchaseLines: PurchaseLine[];
+  dailyActivityStats: DailyActivityStats[];
+  sleepNights: SleepNight[];
+  garminSync: GarminSyncState;
 };
 
 type LegacyRecipe = Omit<
@@ -505,9 +584,53 @@ type LegacyFlexibleHabitEvent = Omit<FlexibleHabitEvent, 'value' | 'source'> & {
   source?: 'manual' | 'auto';
 };
 
+type LegacyWeightEntry = Omit<WeightEntry, 'source' | 'externalId'> & {
+  source?: IntegrationSource;
+  externalId?: string | null;
+};
+
+type LegacyWorkout = Omit<
+  Workout,
+  | 'source'
+  | 'externalId'
+  | 'calories'
+  | 'avgHeartRate'
+  | 'maxHeartRate'
+  | 'avgPowerW'
+  | 'maxPowerW'
+  | 'normalizedPowerW'
+  | 'avgCadence'
+  | 'elevationGainM'
+  | 'avgSpeedMps'
+  | 'maxSpeedMps'
+  | 'movingDurationSec'
+  | 'hrZones'
+  | 'detailJson'
+  | 'polylineJson'
+  | 'chartJson'
+> & {
+  source?: IntegrationSource;
+  externalId?: string | null;
+  calories?: number | null;
+  avgHeartRate?: number | null;
+  maxHeartRate?: number | null;
+  avgPowerW?: number | null;
+  maxPowerW?: number | null;
+  normalizedPowerW?: number | null;
+  avgCadence?: number | null;
+  elevationGainM?: number | null;
+  avgSpeedMps?: number | null;
+  maxSpeedMps?: number | null;
+  movingDurationSec?: number | null;
+  hrZones?: WorkoutHrZone[] | null;
+  detailJson?: string | null;
+  polylineJson?: string | null;
+  chartJson?: string | null;
+};
+
 /** Accept older snapshots from prior installs. */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -531,9 +654,9 @@ export type StoreSnapshotAny = {
   ingredients: RecipeIngredient[];
   entries: FoodEntry[];
   waterEntries?: WaterEntry[];
-  weightEntries?: WeightEntry[];
+  weightEntries?: LegacyWeightEntry[];
   habitChecks?: HabitCheck[];
-  workouts?: Workout[];
+  workouts?: LegacyWorkout[];
   flexibleHabits?: LegacyFlexibleHabit[];
   flexibleHabitEvents?: LegacyFlexibleHabitEvent[];
   savedMeals?: SavedMeal[];
@@ -550,4 +673,7 @@ export type StoreSnapshotAny = {
   storePreferences?: StorePreference[];
   purchases?: Purchase[];
   purchaseLines?: PurchaseLine[];
+  dailyActivityStats?: DailyActivityStats[];
+  sleepNights?: SleepNight[];
+  garminSync?: Partial<GarminSyncState> | null;
 };

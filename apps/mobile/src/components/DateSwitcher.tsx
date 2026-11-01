@@ -31,62 +31,87 @@ export function DateSwitcher({
   timeZone,
   onSelect,
   onOpenCalendar,
+  showSwipeHint = false,
 }: {
   selected: string;
   timeZone: string;
   onSelect: (dateLocal: string) => void;
   /** Opens full month calendar with day overview. */
   onOpenCalendar?: () => void;
+  /** Subtle caption under the switcher (day swipe support). */
+  showSwipeHint?: boolean;
 }) {
   const today = localDateKey(new Date(), timeZone);
   const title = formatTitle(selected, today);
+  const notToday = selected !== today;
 
   return (
-    <View style={styles.wrap} accessibilityRole="adjustable" accessibilityLabel={title}>
-      <Pressable
-        onPress={() => onSelect(addDays(selected, -1))}
-        style={({ pressed }) => [styles.arrow, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Предыдущий день"
-      >
-        <Ionicons name="chevron-back" size={22} color={colors.text} />
-      </Pressable>
-      <Pressable
-        onPress={() => (onOpenCalendar ? onOpenCalendar() : onSelect(today))}
-        onLongPress={() => onSelect(today)}
-        style={({ pressed }) => [styles.center, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={
-          onOpenCalendar
-            ? `${title}. Открыть календарь. Долгое нажатие — к сегодня`
-            : `${title}. Нажмите, чтобы вернуться к сегодня`
-        }
-      >
-        <Text style={styles.title}>{title}</Text>
-        {onOpenCalendar ? (
-          <Text style={styles.jump}>календарь</Text>
-        ) : selected !== today ? (
-          <Text style={styles.jump}>к сегодня</Text>
-        ) : null}
-      </Pressable>
-      <Pressable
-        onPress={() => onSelect(addDays(selected, 1))}
-        style={({ pressed }) => [styles.arrow, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Следующий день"
-      >
-        <Ionicons name="chevron-forward" size={22} color={colors.text} />
-      </Pressable>
-      {onOpenCalendar ? (
+    <View>
+      <View style={styles.wrap} accessibilityRole="adjustable" accessibilityLabel={title}>
         <Pressable
-          onPress={onOpenCalendar}
-          style={({ pressed }) => [styles.calBtn, pressed && styles.pressed]}
+          onPress={() => onSelect(addDays(selected, -1))}
+          style={({ pressed }) => [styles.arrow, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Открыть календарь"
+          accessibilityLabel="Предыдущий день"
         >
-          <Ionicons name="calendar-outline" size={20} color={colors.text} />
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
         </Pressable>
-      ) : null}
+        <Pressable
+          onPress={() => (onOpenCalendar ? onOpenCalendar() : onSelect(today))}
+          onLongPress={() => onSelect(today)}
+          style={({ pressed }) => [styles.center, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            onOpenCalendar
+              ? `${title}. Открыть календарь. Долгое нажатие — к сегодня`
+              : `${title}. Нажмите, чтобы вернуться к сегодня`
+          }
+        >
+          <Text style={styles.title}>{title}</Text>
+          {onOpenCalendar ? (
+            <Text style={styles.jump}>календарь · долго — сегодня</Text>
+          ) : notToday ? (
+            <Text style={styles.jump}>к сегодня</Text>
+          ) : null}
+        </Pressable>
+        <Pressable
+          onPress={() => onSelect(addDays(selected, 1))}
+          style={({ pressed }) => [styles.arrow, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Следующий день"
+        >
+          <Ionicons name="chevron-forward" size={22} color={colors.text} />
+        </Pressable>
+        {onOpenCalendar ? (
+          <Pressable
+            onPress={onOpenCalendar}
+            style={({ pressed }) => [styles.calBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Открыть календарь"
+          >
+            <Ionicons name="calendar-outline" size={20} color={colors.text} />
+          </Pressable>
+        ) : null}
+      </View>
+      {(showSwipeHint || notToday) && (
+        <View style={styles.below}>
+          {showSwipeHint ? (
+            <Text style={styles.hint}>Свайп влево / вправо — другой день</Text>
+          ) : (
+            <View />
+          )}
+          {notToday ? (
+            <Pressable
+              onPress={() => onSelect(today)}
+              accessibilityRole="button"
+              accessibilityLabel="Вернуться к сегодня"
+              hitSlop={8}
+            >
+              <Text style={styles.todayLink}>Сегодня</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }
@@ -99,7 +124,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: space.lg,
     minHeight: touchMin + 8,
   },
   arrow: {
@@ -133,4 +157,23 @@ const styles = StyleSheet.create({
     marginRight: space.xs,
   },
   pressed: { opacity: 0.75 },
+  below: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: space.xs,
+    marginBottom: space.md,
+    minHeight: 18,
+    paddingHorizontal: 2,
+  },
+  hint: {
+    fontSize: type.micro,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+  todayLink: {
+    fontSize: type.caption,
+    color: colors.text,
+    fontWeight: '700',
+  },
 });

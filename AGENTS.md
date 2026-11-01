@@ -13,6 +13,8 @@ Ship delightful, reliable low-friction offline-first nutrition/habits/fitness An
 8. Ask for human approval for dangerous migrations, new permissions, health data sharing, purchases, external side effects or production release.
 9. Run `npm run verify` before PR (typecheck + test + security + mobile tsc); if unavailable document blocker, never pretend success.
 10. Report changed files, commands/results, screenshots (UI), risk, rollback, scope deviations.
+11. **Design system (Premium Minimal Utility):** tokens only in `src/design-system/tokens.ts`; no new local hex; prefer `AppButton`/`AppCard`/`AppText`/`Field`/`Chip`/`SegmentedControl`/`ChartFrame`; one visual language for all tabs. See `docs/04-DESIGN-SYSTEM.md`.
+12. Overhaul stages sequential (`docs/PRODUCT-ROADMAP.md` / `docs/17-DEV-PLAN.md`) — do not skip Stage gates without human approval.
 ## GitHub PR checklist
 - [ ] Issue/acceptance tests linked
 - [ ] Tests and typecheck actually run

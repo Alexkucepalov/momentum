@@ -51,6 +51,7 @@ export function collectFlexibleReportInput(
     : [];
 
   const workouts: ReportWorkoutRow[] = [];
+  const stepsDays: FlexibleReportInput['stepsDays'] = [];
   if (cats.has('activity')) {
     for (const dateLocal of days) {
       for (const w of repo.listWorkoutsForDate(dateLocal)) {
@@ -60,6 +61,14 @@ export function collectFlexibleReportInput(
           durationMin: Math.max(1, Math.round(w.durationSec / 60)),
           distanceM: w.distanceM,
           notes: w.notes,
+        });
+      }
+      const stats = repo.getDailyActivityStats(dateLocal);
+      if (stats && (stats.steps != null || stats.distanceM != null)) {
+        stepsDays.push({
+          dateLocal,
+          steps: stats.steps,
+          distanceM: stats.distanceM,
         });
       }
     }
@@ -109,6 +118,7 @@ export function collectFlexibleReportInput(
     latestWeightKg: repo.latestWeight()?.kg ?? null,
     nutritionDays,
     workouts,
+    stepsDays,
     weights,
     habits,
   };

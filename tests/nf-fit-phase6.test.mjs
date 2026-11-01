@@ -83,6 +83,7 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
   });
   assert.equal(display.energyLabel, '— ккал');
   assert.equal(display.waterLabel, '— мл');
+  assert.equal(display.stepsLabel, '— шаг');
   assert.equal(display.streakLabel, '— дн.');
   assert.ok(!display.energyLabel.includes('0 ккал'));
 
@@ -90,11 +91,13 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
     dateLocal: '2026-10-31',
     energyKcal: 500,
     waterMl: 250,
+    steps: 8123,
     streakDays: 3,
     nextMealHint: 'Обед',
   });
   assert.equal(known.energyLabel, '500 ккал');
   assert.equal(known.waterLabel, '250 мл');
+  assert.match(known.stepsLabel, /8.?123/);
   assert.equal(known.streakLabel, '3 дн.');
   assert.equal(known.nextMealHint, 'Обед');
 });

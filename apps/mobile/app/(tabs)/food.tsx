@@ -6,10 +6,14 @@ import { useNavigation, useRouter } from 'expo-router';
 import { portion } from '../../../../src/domain/nutrition';
 import { repeatableFromEntries } from '../../../../src/domain/repeatMeal';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../src/storage/types';
+import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
-import { DateSwitcher } from '@/src/components/DateSwitcher';
+import { DayStrip } from '@/src/components/DayStrip';
+import { DaySwipeArea } from '@/src/components/DaySwipeArea';
+import { EmptyState } from '@/src/components/EmptyState';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
+import { KcalRing } from '@/src/components/KcalRing';
 import { PortionEditModal } from '@/src/components/PortionEditModal';
 import { SaveMealModal } from '@/src/components/SaveMealModal';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
@@ -21,19 +25,16 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
-import { DiaryDaySummary } from '@/src/features/diary/DiaryDaySummary';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
 import {
   FoodSegmentTabs,
   type FoodSegment,
 } from '@/src/features/diary/FoodSegmentTabs';
 import { MealSection } from '@/src/features/diary/MealSection';
-import { TodayPlanStrip } from '@/src/features/plan/TodayPlanStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
   AppButton,
-  AppText,
   colors,
   radius,
   space,
@@ -49,6 +50,10 @@ const MEAL_LABELS: Record<MealSlot, string> = {
   snack: 'Перекус',
 };
 
+/**
+ * Food diary + catalog (Stage 4.2 / E1–E9).
+ * Shared DayStrip; SegmentedControl; catalog FlatList virtualizes above threshold.
+ */
 export default function FoodScreen() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -70,6 +75,7 @@ export default function FoodScreen() {
   const [barcodeOpen, setBarcodeOpen] = useState(false);
 
   const profile = repo.getProfile();
+  const today = localDateKey(new Date(), profile.timezone);
   const entries = repo.listEntriesForDate(dateLocal);
   const totals = repo.dailyTotals(dateLocal);
   const products = repo.listProducts();
@@ -101,6 +107,8 @@ export default function FoodScreen() {
     return map;
   }, [entries]);
 
+  const diaryEmpty = entries.length === 0;
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -112,7 +120,7 @@ export default function FoodScreen() {
             style={styles.headerBtn}
             hitSlop={8}
           >
-            <Ionicons name="compass-outline" size={22} color={colors.text} />
+            <Ionicons name="compass-outline" size={22} color={colors.ink} />
           </Pressable>
           <Pressable
             onPress={() => router.push('/recipes')}
@@ -121,7 +129,7 @@ export default function FoodScreen() {
             style={styles.headerBtn}
             hitSlop={8}
           >
-            <Ionicons name="book-outline" size={22} color={colors.text} />
+            <Ionicons name="book-outline" size={22} color={colors.ink} />
           </Pressable>
         </View>
       ),
@@ -202,78 +210,89 @@ export default function FoodScreen() {
     });
   };
 
+  const chrome = (
+    <>
+      <DayStrip
+        selected={dateLocal}
+        today={today}
+        onSelect={setDateLocal}
+        onOpenCalendar={() => setCalendarOpen(true)}
+      />
+      <FoodSegmentTabs value={segment} onChange={selectSegment} />
+    </>
+  );
+
   return (
-    <View style={styles.root}>
-      <FormScrollView contentContainerStyle={styles.content}>
-        <DateSwitcher
-          selected={dateLocal}
-          timeZone={profile.timezone}
-          onSelect={setDateLocal}
-          onOpenCalendar={() => setCalendarOpen(true)}
-        />
-
-        <FoodSegmentTabs value={segment} onChange={selectSegment} />
-
+    <View style={styles.root} testID="food-screen">
+      <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
         {segment === 'diary' ? (
-          <>
-            <DiaryDaySummary
-              totals={totals}
-              energyTargetKcal={dailyTargets.energyKcal}
-            />
+          <FormScrollView contentContainerStyle={styles.content}>
+            {chrome}
 
-            <TodayPlanStrip />
+            <KcalRing
+              variant="compact"
+              totals={totals}
+              targets={dailyTargets}
+              activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
+              activityMinutes={repo.activityMinutesForDate(dateLocal)}
+              onSetTarget={() => router.push('/profile')}
+            />
 
             <CopyYesterdayButton />
 
-            {MEALS.map((slot) => (
-              <MealSection
-                key={slot}
-                meal={slot}
-                entries={mealEntries[slot]}
-                onDelete={onDelete}
-                onEditGrams={setEditing}
-                onAdd={() => openForMeal(slot)}
-                onRepeatMeal={() => repeatMealSlot(slot)}
-                onSaveMeal={() => setSaveMealSlot(slot)}
+            {diaryEmpty ? (
+              <EmptyState
+                compact
+                icon="restaurant-outline"
+                title="Дневник пуст"
+                body="Повтори вчерашний приём или добавь первую запись."
+                actionLabel="Добавить еду"
+                onAction={() => setOpen(true)}
+                secondaryActionLabel="Открыть каталог"
+                onSecondaryAction={() => selectSegment('catalog')}
               />
-            ))}
-
-            <Pressable
-              onPress={() => router.push('/plan/eat-now')}
-              style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-              accessibilityRole="link"
-              accessibilityLabel="Что съесть сейчас"
-            >
-              <AppText variant="caption" tone="secondary" style={styles.secondaryLinkText}>
-                Что съесть сейчас →
-              </AppText>
-            </Pressable>
-          </>
+            ) : (
+              MEALS.map((slot) => (
+                <MealSection
+                  key={slot}
+                  meal={slot}
+                  entries={mealEntries[slot]}
+                  onDelete={onDelete}
+                  onEditGrams={setEditing}
+                  onAdd={() => openForMeal(slot)}
+                  onRepeatMeal={() => repeatMealSlot(slot)}
+                  onSaveMeal={() => setSaveMealSlot(slot)}
+                />
+              ))
+            )}
+          </FormScrollView>
         ) : (
-          <>
-            <View style={styles.searchBox}>
-              <Ionicons name="search" size={18} color={colors.textMuted} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Яйцо, овсянка, рецепт…"
-                placeholderTextColor={colors.textMuted}
-                style={styles.searchInput}
-                accessibilityLabel="Поиск продукта или рецепта"
-                returnKeyType="search"
-              />
-              {query.length > 0 ? (
-                <Pressable
-                  onPress={() => setQuery('')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Очистить поиск"
-                  hitSlop={8}
-                >
-                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                </Pressable>
-              ) : null}
+          <View style={styles.catalogRoot}>
+            <View style={styles.catalogChrome}>
+              {chrome}
+              <View style={styles.searchBox}>
+                <Ionicons name="search" size={18} color={colors.textMuted} />
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Яйцо, овсянка, рецепт…"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.searchInput}
+                  accessibilityLabel="Поиск продукта или рецепта"
+                  returnKeyType="search"
+                />
+                {query.length > 0 ? (
+                  <Pressable
+                    onPress={() => setQuery('')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Очистить поиск"
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
-
             <FoodCatalogList
               filter={catalogFilter}
               onFilterChange={setCatalogFilter}
@@ -293,9 +312,9 @@ export default function FoodScreen() {
               }}
               onRepeatEntry={repeatEntry}
             />
-          </>
+          </View>
         )}
-      </FormScrollView>
+      </DaySwipeArea>
 
       <ScreenFooter>
         <Pressable
@@ -397,23 +416,15 @@ export default function FoodScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  content: { padding: space.lg, paddingBottom: 140 },
+  content: { padding: space.lg, paddingBottom: 140, gap: space.sm },
+  catalogRoot: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.lg },
+  catalogChrome: { gap: space.sm, marginBottom: space.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerBtn: {
     minWidth: touchMin,
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  secondaryLink: {
-    paddingVertical: space.sm,
-    minHeight: touchMin,
-    justifyContent: 'center',
-    marginTop: space.sm,
-    marginBottom: space.md,
-  },
-  secondaryLinkText: {
-    fontWeight: '700',
   },
   footerIcon: {
     width: touchMin,
@@ -426,7 +437,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchBox: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
@@ -436,7 +446,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     paddingHorizontal: space.md,
     minHeight: touchMin,
-    marginBottom: space.md,
   },
   searchInput: {
     flex: 1,

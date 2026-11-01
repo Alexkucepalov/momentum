@@ -270,9 +270,9 @@ function RecipeCard({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  top: { paddingHorizontal: space.lg, paddingTop: space.md },
+  top: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.md },
   hubCard: {
-    marginBottom: space.md,
+    marginBottom: 0,
   },
   headerBtn: {
     minWidth: touchMin,
@@ -290,7 +290,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    marginBottom: space.md,
   },
   searchInput: { flex: 1, fontSize: 15, color: colors.ink },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.sm },

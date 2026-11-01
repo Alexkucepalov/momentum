@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, type } from '@/src/design-system';
+import { GarminAutoSyncHost } from '@/src/features/garmin/GarminAutoSyncHost';
+import { useWidgetSync } from '@/src/widgets/useWidgetSync';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -17,15 +19,18 @@ function tint(color: unknown): string {
 }
 
 /**
- * nf-fit tab shell: Today / Food / Activity / Progress / Profile.
- * RU labels for dogfood; English names in a11y for blueprint parity.
+ * nf-fit tab shell: Today / Food / Movement / Progress / Profile (TAB_SHELL).
+ * Sleep lives inside Movement (Activity | Sleep). Route `sleep` hidden + redirects.
  */
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
   const tabBarHeight = 52 + bottomInset;
+  useWidgetSync();
 
   return (
+    <View style={{ flex: 1 }}>
+      <GarminAutoSyncHost />
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.ink,
@@ -74,12 +79,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="activity"
         options={{
-          title: 'Активность',
-          tabBarLabel: 'Активность',
-          tabBarAccessibilityLabel: 'Activity tab, Активность',
+          title: 'Движение',
+          tabBarLabel: 'Движение',
+          tabBarAccessibilityLabel: 'Movement tab, Движение',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'walk' : 'walk-outline'} color={tint(color)} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="sleep"
+        options={{
+          href: null,
+          title: 'Сон',
         }}
       />
       <Tabs.Screen
@@ -105,5 +117,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }

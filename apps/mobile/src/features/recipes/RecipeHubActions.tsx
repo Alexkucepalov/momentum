@@ -58,19 +58,27 @@ export function RecipeHubActions({
         <Pressable
           key={a.key}
           onPress={() => router.push(a.href)}
-          style={({ pressed }) => [styles.press, compact && styles.pressCompact, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.press,
+            compact && styles.pressCompact,
+            pressed && styles.pressed,
+          ]}
           accessibilityRole="button"
           accessibilityLabel={`${a.title}. ${a.subtitle}`}
         >
           <AppCard style={[styles.card, compact && styles.cardCompact]}>
             <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
-              <Ionicons name={a.icon} size={compact ? 16 : 22} color={colors.ink} />
+              <Ionicons name={a.icon} size={compact ? 16 : 20} color={colors.ink} />
             </View>
-            <AppText variant={compact ? 'label' : 'body'} style={styles.title} numberOfLines={1}>
+            <AppText
+              variant={compact ? 'label' : 'caption'}
+              style={styles.title}
+              numberOfLines={1}
+            >
               {a.title}
             </AppText>
             {!compact ? (
-              <AppText variant="caption" tone="secondary" numberOfLines={1}>
+              <AppText variant="label" tone="secondary" numberOfLines={1} style={styles.sub}>
                 {a.subtitle}
               </AppText>
             ) : null}
@@ -84,12 +92,13 @@ export function RecipeHubActions({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: space.md,
+    alignItems: 'stretch',
+    gap: space.sm,
   },
   rowCompact: { gap: space.sm },
   press: {
     flex: 1,
-    minHeight: touchMin + 24,
+    minWidth: 0,
   },
   pressCompact: {
     minHeight: touchMin,
@@ -98,30 +107,33 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: space.lg,
-    paddingHorizontal: space.md,
-    gap: space.sm,
+    paddingVertical: space.md,
+    paddingHorizontal: space.sm,
+    gap: 6,
+    minHeight: 96,
   },
   cardCompact: {
-    paddingVertical: space.md,
+    paddingVertical: space.sm,
+    minHeight: touchMin,
     gap: 4,
   },
   iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
   },
   iconWrapCompact: {
-    width: 32,
-    height: 32,
-    marginBottom: 0,
+    width: 28,
+    height: 28,
   },
   title: {
     fontWeight: '800',
+    textAlign: 'center',
+  },
+  sub: {
     textAlign: 'center',
   },
   pressed: { opacity: 0.75 },

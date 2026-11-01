@@ -7,18 +7,20 @@ import { loadSrcModules } from './loadTsModules.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-test('nf-fit tokens: Minimal Soft Utility contract', () => {
+test('nf-fit tokens: Premium Minimal Utility contract', () => {
   const { colors, radius, type, TAB_SHELL, touchMin } = loadSrcModules()['design-system/tokens'];
-  assert.equal(colors.canvas, '#F3F4F6');
+  assert.equal(colors.canvas, '#F2F3F5');
   assert.equal(colors.surface, '#FFFFFF');
-  assert.equal(colors.ink, '#000000');
-  assert.equal(colors.accent, '#E4574D');
-  assert.equal(colors.primaryButton, '#000000');
-  assert.ok(radius.card >= 20 && radius.card <= 28);
+  assert.equal(colors.ink, '#0A0A0A');
+  assert.equal(colors.primary, '#0A0A0A');
+  assert.equal(colors.primaryButton, '#0A0A0A');
+  assert.equal(colors.surfaceMuted, '#EBEDF0');
+  assert.ok(radius.card >= 12 && radius.card <= 24);
   assert.equal(radius.pill, 999);
   assert.equal(type.metric, 36);
   assert.equal(touchMin, 48);
-  assert.deepEqual([...TAB_SHELL], ['today', 'food', 'activity', 'progress', 'profile']);
+  // Target shell after Stage 3 (Movement). Temporary 6th Sleep tab may still exist in UI.
+  assert.deepEqual([...TAB_SHELL], ['today', 'food', 'movement', 'progress', 'profile']);
 });
 
 test('formatMetricValue: unknown ≠ 0', () => {
@@ -111,7 +113,8 @@ test('Phase 0 docs and design references exist', () => {
   assert.equal(appJson.expo.name, 'nf-fit');
   assert.equal(appJson.expo.slug, 'nf-fit');
   const layout = readFileSync(join(root, 'apps/mobile/app/(tabs)/_layout.tsx'), 'utf8');
-  for (const label of ['Today tab', 'Food tab', 'Activity tab', 'Progress tab', 'Profile tab']) {
+  for (const label of ['Today tab', 'Food tab', 'Movement tab', 'Progress tab', 'Profile tab']) {
     assert.ok(layout.includes(label), `tab shell missing a11y ${label}`);
   }
+  assert.ok(layout.includes('href: null'), 'sleep tab should be hidden from tab bar');
 });

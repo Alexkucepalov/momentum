@@ -1,7 +1,9 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { AppButton } from '@/src/design-system';
 
-import { colors, radius, touchMin, type } from '../theme/tokens';
-
+/**
+ * @deprecated Use `AppButton` from `@/src/design-system`.
+ * Thin compatibility wrapper — same primary CTA contract.
+ */
 export function PrimaryButton({
   label,
   onPress,
@@ -14,38 +16,12 @@ export function PrimaryButton({
   accessibilityHint?: string;
 }) {
   return (
-    <Pressable
+    <AppButton
+      label={label}
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.btn, pressed && styles.pressed, disabled && styles.disabled]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: !!disabled }}
-    >
-      <Text style={styles.text}>{label}</Text>
-    </Pressable>
+      variant="primary"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  btn: {
-    backgroundColor: colors.primaryButton,
-    minHeight: touchMin,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.4,
-  },
-  text: {
-    color: colors.primaryButtonText,
-    fontSize: type.body,
-    fontWeight: '700',
-  },
-});

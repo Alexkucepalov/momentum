@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
 import { localDateKey } from '../../../../src/storage/validation';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { getDemo2WeeksExportJson } from '@/src/fixtures/demo2Weeks';
+import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
+import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { useData } from '@/src/state/DataContext';
 import {
   AppButton,
@@ -45,7 +46,7 @@ function profileToFields(profile: {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash, setDateLocal } = useData();
+  const { repo, refresh, revision, showFlash, setDateLocal, dateLocal } = useData();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
   const fields = profileToFields(profile);
@@ -210,24 +211,23 @@ export default function ProfileScreen() {
       if (!json) {
         alertMessage(
           'Буфер пуст',
-          'Буфер Mac и телефона — разные. На Mac в браузере нажми «Загрузить демо 2 недели» или «Вставить JSON».',
+          'Буфер Mac и телефона — разные. На телефоне: «Вставить JSON» или скопируй экспорт в буфер устройства.',
         );
         return;
       }
       confirmAndImport(json, 'Из буфера обмена');
     } catch {
-      alertMessage(
-        'Импорт',
-        'Не удалось прочитать буфер — используй «Загрузить демо» / «Вставить JSON».',
-      );
+      alertMessage('Импорт', 'Не удалось прочитать буфер — используй «Вставить JSON».');
     }
   };
 
-  const onImportDemo = () => {
+  const onCopyDayReport = async () => {
     try {
-      confirmAndImport(getDemo2WeeksExportJson(), 'Демо-фикстура (синтетика, 2 недели)');
+      const text = collectDayReportText(repo, dateLocal);
+      await Clipboard.setStringAsync(text);
+      showFlash('Отчёт за день скопирован — вставь в ChatGPT');
     } catch (e) {
-      alertMessage('Импорт', e instanceof Error ? e.message : 'Демо недоступно в этой сборке');
+      alertMessage('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
     }
   };
 
@@ -277,33 +277,6 @@ export default function ProfileScreen() {
               Цели пока не заданы — всё опционально
             </AppText>
           )}
-        </View>
-
-        <View style={styles.secondaryLinks} accessibilityRole="summary">
-          <Pressable
-            onPress={() => router.push('/(tabs)/food')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Питание"
-          >
-            <Text style={styles.secondaryLinkText}>Питание →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/recipes')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Рецепты"
-          >
-            <Text style={styles.secondaryLinkText}>Рецепты →</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(tabs)/progress')}
-            style={({ pressed }) => [styles.secondaryLink, pressed && styles.pressed]}
-            accessibilityRole="link"
-            accessibilityLabel="Прогресс"
-          >
-            <Text style={styles.secondaryLinkText}>Прогресс →</Text>
-          </Pressable>
         </View>
 
         <SettingsCard
@@ -431,33 +404,43 @@ export default function ProfileScreen() {
           />
         </SettingsCard>
 
-        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
-          <PrivacyRow
-            icon="phone-portrait-outline"
-            text="Дневник, вес и привычки хранятся локально на устройстве."
+        {/* H2 order: goals → body → integrations → reports → data → privacy */}
+        <SettingsCard
+          title="Garmin"
+          hint="Personal API: вес, тренировки, шаги и сон. Ключ только в SecureStore. Автосинк при открытии."
+          icon="watch-outline"
+        >
+          <AppButton label="Настроить Garmin" onPress={() => router.push('/garmin' as Href)} />
+          <View style={{ height: space.sm }} />
+          <AppButton
+            label="Данные Garmin"
+            variant="secondary"
+            onPress={() => router.push('/garmin/data' as Href)}
           />
-          <PrivacyRow
-            icon="barcode-outline"
-            text="Штрихкод: в сеть уходит только код (Open Food Facts). Фото этикетки не загружаем."
+        </SettingsCard>
+
+        <ZeppCsvImportCard />
+
+        <SettingsCard
+          title="Отчёт для ChatGPT"
+          hint="Прямого коннекта нет — данные не уходят сами. Копируешь текст за выбранный день и вставляешь вручную."
+          icon="chatbubble-ellipses-outline"
+        >
+          <AppButton
+            label="Копировать отчёт за день"
+            onPress={() => void onCopyDayReport()}
           />
-          <PrivacyRow
-            icon="person-outline"
-            text="Нет аккаунта, нет обязательного AI, нет рассылки данных."
-          />
-          <PrivacyRow
-            icon="download-outline"
-            text="Экспорт и полное удаление — только по твоей команде."
-          />
+          <AppText variant="caption" tone="muted" style={styles.reportHint}>
+            День = текущая дата в приложении. Период и PDF — во вкладке Прогресс · Отчёты.
+          </AppText>
         </SettingsCard>
 
         <SettingsCard
           title="Данные"
-          hint="Экспорт в буфер телефона. Импорт заменяет все локальные данные. Буфер компьютера сюда не попадает."
+          hint="Экспорт в буфер. Импорт заменяет все локальные данные. Сделай бэкап перед очисткой."
           icon="folder-outline"
         >
           <AppButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
-          <View style={{ height: space.sm }} />
-          <AppButton label="Загрузить демо 2 недели" variant="secondary" onPress={onImportDemo} />
           <View style={{ height: space.sm }} />
           <AppButton
             label="Импорт из буфера телефона"
@@ -484,6 +467,29 @@ export default function ProfileScreen() {
               Удалить все локальные данные
             </AppText>
           </Pressable>
+        </SettingsCard>
+
+        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
+          <PrivacyRow
+            icon="phone-portrait-outline"
+            text="Дневник, вес и привычки хранятся локально на устройстве."
+          />
+          <PrivacyRow
+            icon="barcode-outline"
+            text="Штрихкод: в сеть уходит только код (Open Food Facts). Фото этикетки не загружаем."
+          />
+          <PrivacyRow
+            icon="watch-outline"
+            text="Garmin Personal API: запросы в Garmin по твоему ключу; ключ в SecureStore, не в экспорте."
+          />
+          <PrivacyRow
+            icon="person-outline"
+            text="Нет аккаунта, нет обязательного AI, нет рассылки данных."
+          />
+          <PrivacyRow
+            icon="download-outline"
+            text="Экспорт и полное удаление — только по твоей команде."
+          />
         </SettingsCard>
 
         <AppText variant="caption" tone="muted" style={styles.version}>
@@ -631,20 +637,6 @@ function PrivacyRow({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg },
-  secondaryLinks: {
-    marginBottom: space.lg,
-    gap: space.xs,
-  },
-  secondaryLink: {
-    paddingVertical: space.sm,
-    minHeight: touchMin,
-    justifyContent: 'center',
-  },
-  secondaryLinkText: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
   hero: { alignItems: 'center', marginBottom: space.xl },
   avatar: {
     width: 72,
@@ -769,6 +761,10 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.88 },
   dangerText: { color: colors.danger, fontWeight: '700', fontSize: type.body },
+  reportHint: {
+    marginTop: space.sm,
+    lineHeight: 18,
+  },
   version: {
     marginTop: space.sm,
     marginBottom: space.lg,

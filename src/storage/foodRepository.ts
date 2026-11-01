@@ -92,6 +92,10 @@ import type {
   WeightEntry,
   Workout,
   WorkoutType,
+  DailyActivityStats,
+  SleepNight,
+  GarminSyncState,
+  IntegrationSource,
 } from './types';
 import { barcodeLookupCandidates } from '../integrations/barcodeNormalize';
 import type { OffLookupResult } from '../integrations/openFoodFacts';
@@ -245,7 +249,19 @@ export type FoodRepository = {
   listWaterForDate(dateLocal: string): WaterEntry[];
   addWeight(kg: number, weighedAt?: string): WeightEntry;
   listWeights(limit?: number): WeightEntry[];
+  /** Weights from an integration (e.g. Garmin), newest first. */
+  listIntegratedWeights(source: IntegrationSource, limit?: number): WeightEntry[];
   latestWeight(): WeightEntry | null;
+  /**
+   * Upsert Garmin (or other integration) weight by externalId.
+   * Never overwrites source:'user' rows. Idempotent for same externalId.
+   */
+  upsertIntegratedWeight(input: {
+    kg: number;
+    weighedAt: string;
+    source: IntegrationSource;
+    externalId: string;
+  }): WeightEntry | null;
   toggleHabit(dateLocal: string, habitKey: HabitKey): HabitCheck;
   isHabitDone(dateLocal: string, habitKey: HabitKey): boolean;
   addWorkout(input: {
@@ -255,8 +271,69 @@ export type FoodRepository = {
     distanceM?: number | null;
     notes?: string | null;
   }): Workout;
+  /**
+   * Upsert Garmin workout by externalId. Never overwrites source:'user'.
+   * Returns null when skipped (invalid / conflict with user).
+   */
+  upsertIntegratedWorkout(input: {
+    dateLocal: string;
+    type: WorkoutType;
+    durationSec: number;
+    distanceM?: number | null;
+    notes?: string | null;
+    source: IntegrationSource;
+    externalId: string;
+    calories?: number | null;
+    avgHeartRate?: number | null;
+    maxHeartRate?: number | null;
+    avgPowerW?: number | null;
+    maxPowerW?: number | null;
+    normalizedPowerW?: number | null;
+    avgCadence?: number | null;
+    elevationGainM?: number | null;
+    avgSpeedMps?: number | null;
+    maxSpeedMps?: number | null;
+    movingDurationSec?: number | null;
+    hrZones?: Array<{ zone: number; secs: number }> | null;
+    detailJson?: string | null;
+    polylineJson?: string | null;
+    chartJson?: string | null;
+  }): Workout | null;
+  getWorkoutById(workoutId: string): Workout | null;
   listWorkoutsForDate(dateLocal: string): Workout[];
+  /** Workouts from an integration across dates, newest first. */
+  listIntegratedWorkouts(source: IntegrationSource, limit?: number): Workout[];
   softDeleteWorkout(workoutId: string): Workout;
+  upsertDailyActivityStats(input: {
+    dateLocal: string;
+    steps?: number | null;
+    distanceM?: number | null;
+    activeKcal?: number | null;
+    source: IntegrationSource;
+    externalId?: string | null;
+  }): DailyActivityStats;
+  getDailyActivityStats(dateLocal: string): DailyActivityStats | null;
+  /** Daily steps/distance rows for an integration, newest date first. */
+  listIntegratedDailyActivityStats(source: IntegrationSource, limit?: number): DailyActivityStats[];
+  upsertSleepNight(input: {
+    dateLocal: string;
+    sleepSec?: number | null;
+    deepSec?: number | null;
+    lightSec?: number | null;
+    remSec?: number | null;
+    awakeSec?: number | null;
+    startAt?: string | null;
+    endAt?: string | null;
+    avgSpo2?: number | null;
+    avgRespiration?: number | null;
+    sleepScore?: number | null;
+    source: IntegrationSource;
+    externalId?: string | null;
+  }): SleepNight;
+  getSleepForDate(dateLocal: string): SleepNight | null;
+  listSleepNights(limit?: number): SleepNight[];
+  getGarminSyncState(): GarminSyncState;
+  setGarminSyncState(patch: Partial<GarminSyncState>): GarminSyncState;
   activityMinutesForDate(dateLocal: string): number;
   /** MET×weight estimate for the day; null if body weight unknown. Does not change food totals. */
   activityEnergyKcalForDate(dateLocal: string): number | null;
@@ -821,21 +898,131 @@ function normalizeStorePreference(raw: StorePreference): StorePreference {
   };
 }
 
+function normalizeIntegrationSource(raw: unknown): IntegrationSource {
+  if (raw === 'garmin') return 'garmin';
+  if (raw === 'zepp') return 'zepp';
+  return 'user';
+}
+
+function normalizeWeightEntry(raw: NonNullable<StoreSnapshotAny['weightEntries']>[number]): WeightEntry {
+  return {
+    id: raw.id,
+    weighedAt: raw.weighedAt,
+    kg: raw.kg,
+    source: normalizeIntegrationSource(raw.source),
+    externalId: raw.externalId ?? null,
+    createdAt: raw.createdAt,
+  };
+}
+
+function normalizeWorkout(raw: NonNullable<StoreSnapshotAny['workouts']>[number]): Workout {
+  const hrZones = Array.isArray(raw.hrZones)
+    ? raw.hrZones
+        .map((z) => ({
+          zone: typeof z?.zone === 'number' ? z.zone : 0,
+          secs: typeof z?.secs === 'number' ? z.secs : 0,
+        }))
+        .filter((z) => z.zone > 0 && z.secs >= 0)
+    : null;
+  return {
+    id: raw.id,
+    dateLocal: raw.dateLocal,
+    type: raw.type,
+    durationSec: raw.durationSec,
+    distanceM: raw.distanceM ?? null,
+    notes: raw.notes ?? null,
+    source: normalizeIntegrationSource(raw.source),
+    externalId: raw.externalId ?? null,
+    calories: raw.calories ?? null,
+    avgHeartRate: raw.avgHeartRate ?? null,
+    maxHeartRate: raw.maxHeartRate ?? null,
+    avgPowerW: raw.avgPowerW ?? null,
+    maxPowerW: raw.maxPowerW ?? null,
+    normalizedPowerW: raw.normalizedPowerW ?? null,
+    avgCadence: raw.avgCadence ?? null,
+    elevationGainM: raw.elevationGainM ?? null,
+    avgSpeedMps: raw.avgSpeedMps ?? null,
+    maxSpeedMps: raw.maxSpeedMps ?? null,
+    movingDurationSec: raw.movingDurationSec ?? null,
+    hrZones: hrZones && hrZones.length > 0 ? hrZones : null,
+    detailJson: raw.detailJson ?? null,
+    polylineJson: raw.polylineJson ?? null,
+    chartJson: raw.chartJson ?? null,
+    createdAt: raw.createdAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeSleepNight(raw: SleepNight): SleepNight {
+  return {
+    id: raw.id,
+    dateLocal: raw.dateLocal,
+    sleepSec: raw.sleepSec ?? null,
+    deepSec: raw.deepSec ?? null,
+    lightSec: raw.lightSec ?? null,
+    remSec: raw.remSec ?? null,
+    awakeSec: raw.awakeSec ?? null,
+    startAt: raw.startAt ?? null,
+    endAt: raw.endAt ?? null,
+    avgSpo2: raw.avgSpo2 ?? null,
+    avgRespiration: raw.avgRespiration ?? null,
+    sleepScore: raw.sleepScore ?? null,
+    source: normalizeIntegrationSource(raw.source),
+    externalId: raw.externalId ?? null,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+function normalizeDailyActivityStats(raw: DailyActivityStats): DailyActivityStats {
+  return {
+    id: raw.id,
+    dateLocal: raw.dateLocal,
+    steps: raw.steps ?? null,
+    distanceM: raw.distanceM ?? null,
+    activeKcal: raw.activeKcal ?? null,
+    source: normalizeIntegrationSource(raw.source),
+    externalId: raw.externalId ?? null,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+function emptyGarminSync(): GarminSyncState {
+  return {
+    lastSuccessfulSyncAt: null,
+    lastAttemptAt: null,
+    lastError: null,
+    lastSyncedFrom: null,
+    lastSyncedTo: null,
+  };
+}
+
+function normalizeGarminSync(raw?: Partial<GarminSyncState> | null): GarminSyncState {
+  const base = emptyGarminSync();
+  if (!raw) return base;
+  return {
+    lastSuccessfulSyncAt: raw.lastSuccessfulSyncAt ?? null,
+    lastAttemptAt: raw.lastAttemptAt ?? null,
+    lastError: raw.lastError ?? null,
+    lastSyncedFrom: raw.lastSyncedFrom ?? null,
+    lastSyncedTo: raw.lastSyncedTo ?? null,
+  };
+}
+
 function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   if (!raw) return undefined;
   const ts = nowIso();
   const prefs = (raw.storePreferences ?? []).map(normalizeStorePreference);
   return {
-    version: 14,
+    version: 18,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
     ingredients: raw.ingredients ?? [],
     entries: raw.entries ?? [],
     waterEntries: raw.waterEntries ?? [],
-    weightEntries: raw.weightEntries ?? [],
+    weightEntries: (raw.weightEntries ?? []).map(normalizeWeightEntry),
     habitChecks: raw.habitChecks ?? [],
-    workouts: raw.workouts ?? [],
+    workouts: (raw.workouts ?? []).map(normalizeWorkout),
     flexibleHabits: (raw.flexibleHabits ?? []).map(normalizeFlexibleHabit),
     flexibleHabitEvents: (raw.flexibleHabitEvents ?? []).map(normalizeFlexibleHabitEvent),
     savedMeals: (raw.savedMeals ?? []).map((m) => ({
@@ -855,6 +1042,9 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     storePreferences: prefs.length > 0 ? prefs : defaultStorePreferences(ts),
     purchases: (raw.purchases ?? []).map(normalizePurchase),
     purchaseLines: (raw.purchaseLines ?? []).map(normalizePurchaseLine),
+    dailyActivityStats: (raw.dailyActivityStats ?? []).map(normalizeDailyActivityStats),
+    sleepNights: (raw.sleepNights ?? []).map(normalizeSleepNight),
+    garminSync: normalizeGarminSync(raw.garminSync),
   };
 }
 
@@ -971,6 +1161,13 @@ export function createMemoryFoodRepository(seed?: {
   const purchaseLines = new Map<string, PurchaseLine>(
     (snap?.purchaseLines ?? []).map((l) => [l.id, { ...l }]),
   );
+  const dailyActivityStats = new Map<string, DailyActivityStats>(
+    (snap?.dailyActivityStats ?? []).map((s) => [s.id, { ...s }]),
+  );
+  const sleepNights = new Map<string, SleepNight>(
+    (snap?.sleepNights ?? []).map((s) => [s.id, { ...s }]),
+  );
+  let garminSync: GarminSyncState = normalizeGarminSync(snap?.garminSync);
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
 
@@ -1050,7 +1247,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 14,
+        version: 18,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -1079,6 +1276,9 @@ export function createMemoryFoodRepository(seed?: {
         storePreferences: [...storePreferences.values()].map((s) => ({ ...s })),
         purchases: [...purchases.values()].map((p) => ({ ...p })),
         purchaseLines: [...purchaseLines.values()].map((l) => ({ ...l })),
+        dailyActivityStats: [...dailyActivityStats.values()].map((s) => ({ ...s })),
+        sleepNights: [...sleepNights.values()].map((s) => ({ ...s })),
+        garminSync: { ...garminSync },
       };
     },
     getProfile: () => ({ ...profile }),
@@ -1734,6 +1934,8 @@ export function createMemoryFoodRepository(seed?: {
         id: newId(),
         weighedAt: ts,
         kg,
+        source: 'user',
+        externalId: null,
         createdAt: nowIso(),
       };
       weightEntries.set(entry.id, entry);
@@ -1745,9 +1947,43 @@ export function createMemoryFoodRepository(seed?: {
         .sort((a, b) => b.weighedAt.localeCompare(a.weighedAt))
         .slice(0, limit);
     },
+    listIntegratedWeights(source, limit = 200) {
+      return [...weightEntries.values()]
+        .filter((w) => w.source === source)
+        .sort((a, b) => b.weighedAt.localeCompare(a.weighedAt))
+        .slice(0, limit)
+        .map((w) => ({ ...w }));
+    },
     latestWeight() {
       const list = api.listWeights(1);
       return list[0] ?? null;
+    },
+    upsertIntegratedWeight(input) {
+      const externalId = input.externalId.trim();
+      if (!externalId) return null;
+      if (input.source === 'user') return null;
+      assertPositiveFinite(input.kg, 'kg');
+      if (!input.weighedAt) return null;
+      const existing = [...weightEntries.values()].find(
+        (w) => w.source === input.source && w.externalId === externalId,
+      );
+      if (existing) {
+        existing.kg = input.kg;
+        existing.weighedAt = input.weighedAt;
+        notify();
+        return { ...existing };
+      }
+      const entry: WeightEntry = {
+        id: newId(),
+        weighedAt: input.weighedAt,
+        kg: input.kg,
+        source: input.source,
+        externalId,
+        createdAt: nowIso(),
+      };
+      weightEntries.set(entry.id, entry);
+      notify();
+      return { ...entry };
     },
     toggleHabit(dateLocal, habitKey) {
       const id = habitId(dateLocal, habitKey);
@@ -1792,6 +2028,22 @@ export function createMemoryFoodRepository(seed?: {
         distanceM: input.distanceM ?? null,
         notes: input.notes?.trim() ? input.notes.trim() : null,
         source: 'user',
+        externalId: null,
+        calories: null,
+        avgHeartRate: null,
+        maxHeartRate: null,
+        avgPowerW: null,
+        maxPowerW: null,
+        normalizedPowerW: null,
+        avgCadence: null,
+        elevationGainM: null,
+        avgSpeedMps: null,
+        maxSpeedMps: null,
+        movingDurationSec: null,
+        hrZones: null,
+        detailJson: null,
+        polylineJson: null,
+        chartJson: null,
         createdAt: ts,
         deletedAt: null,
       };
@@ -1804,10 +2056,81 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...workout };
     },
+    upsertIntegratedWorkout(input) {
+      const externalId = input.externalId.trim();
+      if (!externalId) return null;
+      if (input.source === 'user') return null;
+      assertPositiveFinite(input.durationSec, 'durationSec');
+      if (input.distanceM != null && input.distanceM !== undefined) {
+        assertNonNegativeFinite(input.distanceM, 'distanceM');
+      }
+      const patch = {
+        dateLocal: input.dateLocal,
+        type: input.type,
+        durationSec: input.durationSec,
+        distanceM: input.distanceM ?? null,
+        notes: input.notes?.trim() ? input.notes.trim() : null,
+        calories: input.calories ?? null,
+        avgHeartRate: input.avgHeartRate ?? null,
+        maxHeartRate: input.maxHeartRate ?? null,
+        avgPowerW: input.avgPowerW ?? null,
+        maxPowerW: input.maxPowerW ?? null,
+        normalizedPowerW: input.normalizedPowerW ?? null,
+        avgCadence: input.avgCadence ?? null,
+        elevationGainM: input.elevationGainM ?? null,
+        avgSpeedMps: input.avgSpeedMps ?? null,
+        maxSpeedMps: input.maxSpeedMps ?? null,
+        movingDurationSec: input.movingDurationSec ?? null,
+        hrZones: input.hrZones ?? null,
+        detailJson: input.detailJson ?? null,
+        polylineJson: input.polylineJson ?? null,
+        chartJson: input.chartJson ?? null,
+      };
+      const existing = [...workouts.values()].find(
+        (w) => w.source === input.source && w.externalId === externalId && w.deletedAt == null,
+      );
+      if (existing) {
+        Object.assign(existing, patch);
+        notify();
+        return { ...existing };
+      }
+      const ts = nowIso();
+      const workout: Workout = {
+        id: newId(),
+        source: input.source,
+        externalId,
+        createdAt: ts,
+        deletedAt: null,
+        ...patch,
+      };
+      workouts.set(workout.id, workout);
+      api.applyWorkoutHabitAutoCredit({
+        dateLocal: workout.dateLocal,
+        workoutType: workout.type,
+        durationSec: workout.durationSec,
+      });
+      notify();
+      return { ...workout };
+    },
+    getWorkoutById(workoutId) {
+      const w = workouts.get(workoutId);
+      return w && !w.deletedAt ? { ...w } : null;
+    },
     listWorkoutsForDate(dateLocal) {
       return [...workouts.values()]
         .filter((w) => w.dateLocal === dateLocal && w.deletedAt == null)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    },
+    listIntegratedWorkouts(source, limit = 200) {
+      return [...workouts.values()]
+        .filter((w) => w.source === source && w.deletedAt == null)
+        .sort((a, b) => {
+          const byDate = b.dateLocal.localeCompare(a.dateLocal);
+          if (byDate !== 0) return byDate;
+          return b.createdAt.localeCompare(a.createdAt);
+        })
+        .slice(0, limit)
+        .map((w) => ({ ...w }));
     },
     softDeleteWorkout(workoutId) {
       const w = workouts.get(workoutId);
@@ -1815,6 +2138,143 @@ export function createMemoryFoodRepository(seed?: {
       w.deletedAt = nowIso();
       notify();
       return { ...w };
+    },
+    upsertDailyActivityStats(input) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
+        throw new Error('dateLocal must be YYYY-MM-DD');
+      }
+      const steps =
+        input.steps === undefined || input.steps === null
+          ? null
+          : (assertNonNegativeFinite(input.steps, 'steps'), input.steps);
+      const distanceM =
+        input.distanceM === undefined || input.distanceM === null
+          ? null
+          : (assertNonNegativeFinite(input.distanceM, 'distanceM'), input.distanceM);
+      const activeKcal =
+        input.activeKcal === undefined || input.activeKcal === null
+          ? null
+          : (assertNonNegativeFinite(input.activeKcal, 'activeKcal'), input.activeKcal);
+      const existing = [...dailyActivityStats.values()].find(
+        (s) => s.dateLocal === input.dateLocal && s.source === input.source,
+      );
+      const ts = nowIso();
+      if (existing) {
+        if (steps !== null) existing.steps = steps;
+        if (distanceM !== null) existing.distanceM = distanceM;
+        if (activeKcal !== null) existing.activeKcal = activeKcal;
+        if (input.externalId !== undefined) existing.externalId = input.externalId;
+        existing.updatedAt = ts;
+        notify();
+        return { ...existing };
+      }
+      const row: DailyActivityStats = {
+        id: newId(),
+        dateLocal: input.dateLocal,
+        steps,
+        distanceM,
+        activeKcal,
+        source: input.source,
+        externalId: input.externalId ?? null,
+        updatedAt: ts,
+      };
+      dailyActivityStats.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    getDailyActivityStats(dateLocal) {
+      const rows = [...dailyActivityStats.values()].filter((s) => s.dateLocal === dateLocal);
+      if (rows.length === 0) return null;
+      // Prefer garmin over empty; single source per day for MVP.
+      const garmin = rows.find((r) => r.source === 'garmin');
+      return { ...(garmin ?? rows[0]!) };
+    },
+    listIntegratedDailyActivityStats(source, limit = 200) {
+      return [...dailyActivityStats.values()]
+        .filter((s) => s.source === source)
+        .sort((a, b) => b.dateLocal.localeCompare(a.dateLocal))
+        .slice(0, limit)
+        .map((s) => ({ ...s }));
+    },
+    upsertSleepNight(input) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
+        throw new Error('dateLocal must be YYYY-MM-DD');
+      }
+      const optSec = (v: number | null | undefined, label: string): number | null => {
+        if (v === undefined || v === null) return null;
+        assertNonNegativeFinite(v, label);
+        return v;
+      };
+      const sleepSec = optSec(input.sleepSec, 'sleepSec');
+      const deepSec = optSec(input.deepSec, 'deepSec');
+      const lightSec = optSec(input.lightSec, 'lightSec');
+      const remSec = optSec(input.remSec, 'remSec');
+      const awakeSec = optSec(input.awakeSec, 'awakeSec');
+      const avgSpo2 = optSec(input.avgSpo2, 'avgSpo2');
+      const avgRespiration = optSec(input.avgRespiration, 'avgRespiration');
+      const sleepScore = optSec(input.sleepScore, 'sleepScore');
+      const existing = [...sleepNights.values()].find(
+        (s) =>
+          (input.externalId && s.externalId === input.externalId) ||
+          (s.dateLocal === input.dateLocal && s.source === input.source),
+      );
+      const ts = nowIso();
+      if (existing) {
+        if (sleepSec !== null) existing.sleepSec = sleepSec;
+        if (deepSec !== null) existing.deepSec = deepSec;
+        if (lightSec !== null) existing.lightSec = lightSec;
+        if (remSec !== null) existing.remSec = remSec;
+        if (awakeSec !== null) existing.awakeSec = awakeSec;
+        if (input.startAt !== undefined) existing.startAt = input.startAt;
+        if (input.endAt !== undefined) existing.endAt = input.endAt;
+        if (avgSpo2 !== null) existing.avgSpo2 = avgSpo2;
+        if (avgRespiration !== null) existing.avgRespiration = avgRespiration;
+        if (sleepScore !== null) existing.sleepScore = sleepScore;
+        if (input.externalId !== undefined) existing.externalId = input.externalId;
+        existing.updatedAt = ts;
+        notify();
+        return { ...existing };
+      }
+      const row: SleepNight = {
+        id: newId(),
+        dateLocal: input.dateLocal,
+        sleepSec,
+        deepSec,
+        lightSec,
+        remSec,
+        awakeSec,
+        startAt: input.startAt ?? null,
+        endAt: input.endAt ?? null,
+        avgSpo2,
+        avgRespiration,
+        sleepScore,
+        source: input.source,
+        externalId: input.externalId ?? null,
+        updatedAt: ts,
+      };
+      sleepNights.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    getSleepForDate(dateLocal) {
+      const rows = [...sleepNights.values()].filter((s) => s.dateLocal === dateLocal);
+      if (rows.length === 0) return null;
+      const garmin = rows.find((r) => r.source === 'garmin');
+      return { ...(garmin ?? rows[0]!) };
+    },
+    listSleepNights(limit = 60) {
+      return [...sleepNights.values()]
+        .sort((a, b) => b.dateLocal.localeCompare(a.dateLocal))
+        .slice(0, limit)
+        .map((s) => ({ ...s }));
+    },
+    getGarminSyncState() {
+      return { ...garminSync };
+    },
+    setGarminSyncState(patch) {
+      garminSync = normalizeGarminSync({ ...garminSync, ...patch });
+      notify();
+      return { ...garminSync };
     },
     activityMinutesForDate(dateLocal) {
       const sec = api
@@ -3233,8 +3693,11 @@ export function createMemoryFoodRepository(seed?: {
       storePreferences.clear();
       purchases.clear();
       purchaseLines.clear();
+      dailyActivityStats.clear();
+      sleepNights.clear();
 
       Object.assign(profile, next.profile);
+      garminSync = normalizeGarminSync(next.garminSync);
       for (const p of next.products) products.set(p.id, { ...p });
       mergeCommonFoodCatalog(products);
       for (const r of next.recipes) recipes.set(r.id, { ...r });
@@ -3266,6 +3729,8 @@ export function createMemoryFoodRepository(seed?: {
       for (const s of next.storePreferences) storePreferences.set(s.id, { ...s });
       for (const p of next.purchases) purchases.set(p.id, { ...p });
       for (const l of next.purchaseLines) purchaseLines.set(l.id, { ...l });
+      for (const s of next.dailyActivityStats) dailyActivityStats.set(s.id, { ...s });
+      for (const s of next.sleepNights) sleepNights.set(s.id, { ...s });
 
       notify();
       return summarizeSnapshot(next);
@@ -3295,6 +3760,9 @@ export function createMemoryFoodRepository(seed?: {
       storePreferences.clear();
       purchases.clear();
       purchaseLines.clear();
+      dailyActivityStats.clear();
+      sleepNights.clear();
+      garminSync = emptyGarminSync();
       for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;
