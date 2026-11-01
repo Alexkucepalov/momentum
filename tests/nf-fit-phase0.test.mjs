@@ -12,7 +12,7 @@ test('nf-fit tokens: Minimal Soft Utility contract', () => {
   assert.equal(colors.canvas, '#F3F4F6');
   assert.equal(colors.surface, '#FFFFFF');
   assert.equal(colors.ink, '#000000');
-  assert.equal(colors.accent, '#E4574D');
+  assert.equal(colors.accent, '#111827');
   assert.equal(colors.primaryButton, '#000000');
   assert.ok(radius.card >= 20 && radius.card <= 28);
   assert.equal(radius.pill, 999);

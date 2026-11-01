@@ -54,6 +54,7 @@ test('buildFlexibleReport keeps unknown kcal unknown', () => {
       },
     ],
     workouts: [],
+    stepsDays: [],
     weights: [],
     habits: [],
   });
@@ -123,12 +124,23 @@ test('dashboard KPIs: weight delta and avg kcal over known days', () => {
       { dateLocal: '2026-10-01', type: 'walk', durationMin: 40, distanceM: 3000, notes: null },
       { dateLocal: '2026-10-03', type: 'strength', durationMin: 50, distanceM: null, notes: null },
     ],
+    stepsDays: [
+      { dateLocal: '2026-10-01', steps: 8000, distanceM: 6000 },
+      { dateLocal: '2026-10-02', steps: 10000, distanceM: null },
+    ],
     weights: [
       { dateLocal: '2026-10-01', kg: 76.0 },
       { dateLocal: '2026-10-05', kg: 75.2 },
     ],
     habits: [],
   });
+
+  const stepsKpi = report.kpis.find((k) => k.label === 'Шаги');
+  assert.ok(stepsKpi);
+  assert.equal(stepsKpi.value, '18000');
+  const activity = report.sections.find((s) => s.id === 'activity');
+  assert.ok(activity.summary.some((l) => /Шаги: 18000/.test(l)));
+  assert.ok(activity.details.some((l) => /8000 шаг/.test(l)));
 
   const weightKpi = report.kpis.find((k) => k.label === 'Вес за период');
   assert.ok(weightKpi);
@@ -169,6 +181,7 @@ test('empty categories rejected', () => {
         latestWeightKg: null,
         nutritionDays: [],
         workouts: [],
+        stepsDays: [],
         weights: [],
         habits: [],
       }),
