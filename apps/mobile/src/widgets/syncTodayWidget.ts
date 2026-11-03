@@ -12,9 +12,8 @@ import { localDateKey } from '../../../../src/storage/validation';
 const FILE_NAME = 'nf_fit_today_widget.json';
 
 /**
- * Persist today metrics for Android AppWidgets (same app UID).
- * Shared JSON feeds Today / Compact / Movement providers.
- * Unknown kcal/steps/sleep stay null → widget shows «—».
+ * Persist today metrics for Android Nothing-light AppWidgets.
+ * Shared JSON feeds day / kcal / steps / water / sleep providers.
  */
 export async function syncTodayWidgetPayload(repo: FoodRepository): Promise<void> {
   if (Platform.OS !== 'android') return;
@@ -33,11 +32,14 @@ export async function syncTodayWidgetPayload(repo: FoodRepository): Promise<void
       nextMealHint: null,
       steps,
       sleepSec,
+      energyTargetKcal: profile.dailyEnergyKcal,
+      waterTargetMl: profile.waterTargetMl,
     };
     const display = formatTodayWidgetDisplay(payload);
     const body = JSON.stringify({
       ...payload,
       ...display,
+      waterUnit: payload.waterMl != null && payload.waterMl >= 1000 ? 'L' : 'ml',
       updatedAt: new Date().toISOString(),
     });
     const base = FileSystem.documentDirectory;

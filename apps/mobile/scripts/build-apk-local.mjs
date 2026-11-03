@@ -98,7 +98,15 @@ if (!existsSync(gradlew)) {
 }
 
 // Release embeds index.android.bundle — debug APK expects Metro and fails on device.
-run(gradlew, ['assembleRelease', '--no-daemon'], { cwd: androidDir });
+// Dogfood speed: DOGFOOD_ABI=arm64-v8a (default) skips x86/armeabi native builds.
+const abi = process.env.DOGFOOD_ABI ?? 'arm64-v8a';
+const gradleArgs = ['assembleRelease'];
+if (process.env.GRADLE_NO_DAEMON !== '0') gradleArgs.push('--no-daemon');
+if (abi && abi !== 'all') {
+  gradleArgs.push(`-PreactNativeArchitectures=${abi}`);
+  console.log(`ABI filter: ${abi} (set DOGFOOD_ABI=all for universal)`);
+}
+run(gradlew, gradleArgs, { cwd: androidDir });
 
 const apkDir = join(androidDir, 'app', 'build', 'outputs', 'apk', 'release');
 const apkName = readdirSync(apkDir).find((name) => name.endsWith('.apk'));
