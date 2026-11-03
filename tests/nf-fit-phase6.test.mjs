@@ -86,6 +86,8 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
   assert.equal(display.stepsLabel, '— шаг');
   assert.equal(display.sleepLabel, '— ч');
   assert.equal(display.streakLabel, '— дн.');
+  assert.equal(display.energyValue, '—');
+  assert.equal(display.stepsValue, '—');
   assert.ok(!display.energyLabel.includes('0 ккал'));
 
   const known = formatTodayWidgetDisplay({
@@ -96,6 +98,8 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
     sleepSec: 7.5 * 3600,
     streakDays: 3,
     nextMealHint: 'Обед',
+    energyTargetKcal: 2000,
+    waterTargetMl: 2000,
   });
   assert.equal(known.energyLabel, '500 ккал');
   assert.equal(known.waterLabel, '250 мл');
@@ -103,6 +107,11 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
   assert.equal(known.sleepLabel, '7.5 ч');
   assert.equal(known.streakLabel, '3 дн.');
   assert.equal(known.nextMealHint, 'Обед');
+  assert.equal(known.energyValue, '500');
+  assert.equal(known.stepsValue, '8123');
+  assert.equal(known.sleepValue, '7.5');
+  assert.equal(known.dayLabel, '31.10');
+  assert.match(known.energyDots, /●/);
 });
 
 test('Phase 6 quality docs and widget plugin scaffold exist', () => {
@@ -127,7 +136,10 @@ test('Phase 6 quality docs and widget plugin scaffold exist', () => {
   assert.ok(plugin.includes('nfFitWidgets'));
   assert.ok(plugin.includes('scaffold') || plugin.includes('variants'));
   assert.ok(plugin.includes('CompactKcalWidgetProvider'));
-  assert.ok(plugin.includes('MovementWidgetProvider'));
+  assert.ok(plugin.includes('StepsWidgetProvider'));
+  assert.ok(plugin.includes('WaterWidgetProvider'));
+  assert.ok(plugin.includes('SleepWidgetProvider'));
+  assert.ok(plugin.includes('nothing-light-pixel') || plugin.includes('Press Start'));
 
   const checklist = readFileSync(join(root, 'docs/PHASE6-QUALITY-BETA.md'), 'utf8');
   assert.ok(checklist.includes('human-gated') || checklist.includes('human'));
