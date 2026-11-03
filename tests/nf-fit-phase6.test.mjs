@@ -84,6 +84,7 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
   assert.equal(display.energyLabel, '— ккал');
   assert.equal(display.waterLabel, '— мл');
   assert.equal(display.stepsLabel, '— шаг');
+  assert.equal(display.sleepLabel, '— ч');
   assert.equal(display.streakLabel, '— дн.');
   assert.ok(!display.energyLabel.includes('0 ккал'));
 
@@ -92,12 +93,14 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
     energyKcal: 500,
     waterMl: 250,
     steps: 8123,
+    sleepSec: 7.5 * 3600,
     streakDays: 3,
     nextMealHint: 'Обед',
   });
   assert.equal(known.energyLabel, '500 ккал');
   assert.equal(known.waterLabel, '250 мл');
   assert.match(known.stepsLabel, /8.?123/);
+  assert.equal(known.sleepLabel, '7.5 ч');
   assert.equal(known.streakLabel, '3 дн.');
   assert.equal(known.nextMealHint, 'Обед');
 });
@@ -122,7 +125,9 @@ test('Phase 6 quality docs and widget plugin scaffold exist', () => {
   );
   const plugin = readFileSync(join(root, 'apps/mobile/plugins/withNfFitWidgets.js'), 'utf8');
   assert.ok(plugin.includes('nfFitWidgets'));
-  assert.ok(plugin.includes('scaffold'));
+  assert.ok(plugin.includes('scaffold') || plugin.includes('variants'));
+  assert.ok(plugin.includes('CompactKcalWidgetProvider'));
+  assert.ok(plugin.includes('MovementWidgetProvider'));
 
   const checklist = readFileSync(join(root, 'docs/PHASE6-QUALITY-BETA.md'), 'utf8');
   assert.ok(checklist.includes('human-gated') || checklist.includes('human'));

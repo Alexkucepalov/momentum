@@ -1,7 +1,7 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
 import type { WorkoutType } from '../../../../src/storage/types';
@@ -43,12 +43,20 @@ const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Io
 export default function MovementScreen() {
   const navigation = useNavigation();
   const router = useRouter();
+  const params = useLocalSearchParams<{ segment?: string }>();
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
-  const [segment, setSegment] = useState<MovementTab>('activity');
+  const [segment, setSegment] = useState<MovementTab>(
+    params.segment === 'sleep' ? 'sleep' : 'activity',
+  );
   const [formOpen, setFormOpen] = useState(false);
   const [formType, setFormType] = useState<WorkoutType>('walking');
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  useEffect(() => {
+    if (params.segment === 'sleep') setSegment('sleep');
+    if (params.segment === 'activity') setSegment('activity');
+  }, [params.segment]);
 
   const openForm = (type: WorkoutType = 'walking') => {
     setFormType(type);

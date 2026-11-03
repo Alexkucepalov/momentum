@@ -19,7 +19,8 @@ const MEAL_LABELS: Record<MealSlot, string> = {
   snack: 'Перекус',
 };
 
-const SWIPE_THRESHOLD = -72;
+const REVEAL_X = -88;
+const COMMIT_DX = -72;
 
 function fmtKcal(n: number | null): string {
   if (n === null) return '— ккал';
@@ -146,6 +147,8 @@ function SwipeEntryRow({
   onEdit: () => void;
 }) {
   const tx = useRef(new Animated.Value(0)).current;
+  const open = useRef(false);
+  const dragging = useRef(false);
   const incomplete =
     entry.energyKcal === null ||
     entry.proteinG === null ||
@@ -158,32 +161,70 @@ function SwipeEntryRow({
     carbG: entry.carbG,
   });
 
+  const snapShut = () => {
+    open.current = false;
+    Animated.spring(tx, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 20 }).start();
+  };
+
+  const snapOpen = () => {
+    open.current = true;
+    Animated.spring(tx, {
+      toValue: REVEAL_X,
+      useNativeDriver: true,
+      bounciness: 0,
+      speed: 20,
+    }).start();
+  };
+
+  const commitDelete = () => {
+    Animated.timing(tx, { toValue: -420, duration: 160, useNativeDriver: true }).start(() => {
+      onDelete();
+    });
+  };
+
   const pan = useRef(
     PanResponder.create({
+      // Capture leftward horizontal moves so DaySwipeArea does not steal delete.
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        g.dx < -12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.15,
       onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy),
+        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderTerminationRequest: () => !dragging.current && !open.current,
+      onPanResponderGrant: () => {
+        dragging.current = true;
+      },
       onPanResponderMove: (_, g) => {
-        if (g.dx < 0) tx.setValue(Math.max(g.dx, -112));
+        if (g.dx <= 0) tx.setValue(Math.max(g.dx, -120));
+        else if (open.current) tx.setValue(Math.min(0, REVEAL_X + g.dx));
       },
       onPanResponderRelease: (_, g) => {
-        if (g.dx < SWIPE_THRESHOLD || g.vx < -0.6) {
-          Animated.timing(tx, { toValue: -96, duration: 120, useNativeDriver: true }).start();
-        } else {
-          Animated.spring(tx, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+        dragging.current = false;
+        const shouldCommit = g.dx < COMMIT_DX || g.vx < -0.85;
+        if (shouldCommit) {
+          commitDelete();
+          return;
         }
+        if (g.dx < -36 || (open.current && g.dx < 24)) snapOpen();
+        else snapShut();
+      },
+      onPanResponderTerminate: () => {
+        dragging.current = false;
+        if (open.current) snapOpen();
+        else snapShut();
       },
     }),
   ).current;
 
   return (
-    <View style={styles.swipeWrap}>
+    <View style={styles.swipeWrap} testID="diary-swipe-row">
       <View style={styles.deleteBehind}>
         <Pressable
-          onPress={onDelete}
+          onPress={commitDelete}
           style={styles.deleteAction}
           accessibilityRole="button"
           accessibilityLabel={`Удалить ${entry.displayName}`}
         >
+          <Ionicons name="trash-outline" size={20} color={colors.primaryButtonText} />
           <AppText variant="caption" tone="inverse" style={styles.deleteActionText}>
             Удалить
           </AppText>
@@ -195,7 +236,13 @@ function SwipeEntryRow({
       >
         <Pressable
           style={({ pressed }) => [styles.main, pressed && styles.pressed]}
-          onPress={onEdit}
+          onPress={() => {
+            if (open.current) {
+              snapShut();
+              return;
+            }
+            onEdit();
+          }}
           accessibilityRole="button"
           accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы. Свайп влево — удалить`}
           accessibilityHint="Свайп влево, чтобы удалить"
@@ -209,6 +256,15 @@ function SwipeEntryRow({
             {incomplete ? ' · неполно' : ''}
             {diverge ? ' · ккал≠БЖУ' : ''}
           </AppText>
+        </Pressable>
+        <Pressable
+          onPress={commitDelete}
+          style={({ pressed }) => [styles.trashHit, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`Удалить ${entry.displayName}`}
+          hitSlop={6}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
         </Pressable>
         <AppText variant="caption" style={styles.kcal}>
           {fmtKcal(entry.energyKcal)}
@@ -270,6 +326,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     overflow: 'hidden',
+    borderRadius: radius.sm,
   },
   deleteBehind: {
     position: 'absolute',
@@ -280,13 +337,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     backgroundColor: colors.danger,
-    paddingRight: space.md,
+    paddingRight: space.sm,
   },
   deleteAction: {
-    minWidth: 80,
+    minWidth: 76,
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 2,
   },
   deleteActionText: {
     fontWeight: '800',
@@ -297,6 +355,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     minHeight: touchMin,
     paddingTop: space.sm,
+    paddingBottom: space.xs,
+    gap: space.xs,
   },
   main: {
     flex: 1,
@@ -306,9 +366,18 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: '600',
   },
+  trashHit: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+  },
   kcal: {
     fontWeight: '700',
     marginRight: space.xs,
+    minWidth: 64,
+    textAlign: 'right',
   },
   pressed: { opacity: 0.75 },
 });

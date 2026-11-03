@@ -325,20 +325,21 @@ export default function FoodScreen() {
       </DaySwipeArea>
 
       <ScreenFooter>
+        <AppButton
+          label="Добавить еду"
+          onPress={() => setOpen(true)}
+          style={styles.footerAdd}
+          testID="food-add-cta"
+        />
         <Pressable
           style={({ pressed }) => [styles.footerIcon, pressed && styles.pressed]}
           onPress={() => setBarcodeOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
+          testID="food-scan-cta"
         >
           <Ionicons name="barcode-outline" size={22} color={colors.ink} />
         </Pressable>
-        <AppButton
-          label="Добавить еду"
-          onPress={() => setOpen(true)}
-          style={styles.footerScan}
-          testID="food-add-cta"
-        />
       </ScreenFooter>
 
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
@@ -469,7 +470,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     paddingVertical: space.sm,
   },
-  footerScan: {
+  footerAdd: {
     flex: 1,
   },
   pressed: { opacity: 0.88 },

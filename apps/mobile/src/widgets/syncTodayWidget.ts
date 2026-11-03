@@ -12,8 +12,9 @@ import { localDateKey } from '../../../../src/storage/validation';
 const FILE_NAME = 'nf_fit_today_widget.json';
 
 /**
- * Persist today metrics for the Android AppWidget (same app UID).
- * Unknown kcal stays null → widget shows «—».
+ * Persist today metrics for Android AppWidgets (same app UID).
+ * Shared JSON feeds Today / Compact / Movement providers.
+ * Unknown kcal/steps/sleep stay null → widget shows «—».
  */
 export async function syncTodayWidgetPayload(repo: FoodRepository): Promise<void> {
   if (Platform.OS !== 'android') return;
@@ -23,19 +24,20 @@ export async function syncTodayWidgetPayload(repo: FoodRepository): Promise<void
     const totals = repo.dailyTotals(dateLocal);
     const waterMl = repo.waterMlForDate(dateLocal);
     const steps = repo.getDailyActivityStats(dateLocal)?.steps ?? null;
-    const payload: TodayWidgetPayload & { steps: number | null } = {
+    const sleepSec = repo.getSleepForDate(dateLocal)?.sleepSec ?? null;
+    const payload: TodayWidgetPayload = {
       dateLocal,
       energyKcal: widgetEnergyFromTotals(totals),
       waterMl: waterMl > 0 ? waterMl : null,
       streakDays: null,
       nextMealHint: null,
       steps,
+      sleepSec,
     };
     const display = formatTodayWidgetDisplay(payload);
     const body = JSON.stringify({
       ...payload,
       ...display,
-      stepsLabel: steps == null ? '— шаг' : `${steps.toLocaleString('ru-RU')} шаг`,
       updatedAt: new Date().toISOString(),
     });
     const base = FileSystem.documentDirectory;

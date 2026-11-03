@@ -94,6 +94,8 @@ export default function TodayScreen() {
   const today = localDateKey(new Date(), profile.timezone);
   const activityMinutes = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
+  const daySteps = repo.getDailyActivityStats(dateLocal)?.steps ?? null;
+  const sleepSec = repo.getSleepForDate(dateLocal)?.sleepSec ?? null;
   const dateLine = formatDateLine(dateLocal, today);
 
   const flexibleRows = useMemo(() => {
@@ -185,6 +187,8 @@ export default function TodayScreen() {
             waterMl={waterMl}
             waterTargetMl={profile.waterTargetMl}
             activityMinutes={activityMinutes}
+            steps={daySteps}
+            sleepSec={sleepSec}
             onAddWater={(ml) => {
               repo.addWater(dateLocal, ml);
               refresh();
@@ -258,17 +262,18 @@ export default function TodayScreen() {
       </DaySwipeArea>
 
       <ScreenFooter>
+        <View style={styles.footerBtn}>
+          <AppButton label="Добавить еду" onPress={() => setOpen(true)} />
+        </View>
         <Pressable
           style={({ pressed }) => [styles.footerScan, pressed && styles.pressed]}
           onPress={() => setBarcodeOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Сканировать штрихкод"
+          testID="today-scan-cta"
         >
           <Ionicons name="barcode-outline" size={22} color={colors.ink} />
         </Pressable>
-        <View style={styles.footerBtn}>
-          <AppButton label="Добавить еду" onPress={() => setOpen(true)} />
-        </View>
       </ScreenFooter>
 
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />

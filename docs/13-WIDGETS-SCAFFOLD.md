@@ -1,12 +1,12 @@
 # Android home-screen widgets — scaffold plan (nf-fit)
 
-**Status:** Phase 6 scaffold landed — TypeScript contract + Expo config plugin metadata. **No production widget binary yet.**  
+**Status:** Config plugin ships **3** AppWidgetProviders (Today / Compact kcal / Movement). Device visual Pass still human.  
 **ADR:** ADR-010 in `docs/14-DECISIONS.md`.  
 **Contract:** `src/widgets/todayWidgetContract.ts`
 
 ## Product requirement
 
-Home-screen widgets: calories (when known), water, next meal hint, logging streak. Geometry/contrast from Nothing OS reference (`design/references/519af874-…png`). **Never** render unknown nutrients as `0`.
+Home-screen widgets: calories (when known), water, steps, sleep. Geometry/contrast from Nothing OS reference. **Never** render unknown nutrients as `0`.
 
 ## Expo / Android approach (2026)
 
