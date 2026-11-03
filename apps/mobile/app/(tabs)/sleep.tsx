@@ -5,5 +5,5 @@ import { Redirect } from 'expo-router';
  * Keep file so deep links / old hrefs do not 404.
  */
 export default function SleepRedirect() {
-  return <Redirect href="/(tabs)/activity" />;
+  return <Redirect href={{ pathname: '/(tabs)/activity', params: { segment: 'sleep' } }} />;
 }
