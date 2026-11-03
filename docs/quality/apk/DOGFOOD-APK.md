@@ -1,8 +1,8 @@
-build_date: 2026-11-01T19:56:37Z
+build_date: 2026-11-03T06:27:25Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 216671729
-sha256: 8fe3b3fd9ea72bed823224363dc260f5a7da1961e36e882d8e4a9ad1cd9bf0fb
-git: f8787f812030f687474706ce92966b21a16ca247
-includes: Product Overhaul Stages 1–11 (5 tabs, DS, Garmin/sleep, planner, FlatList catalog); JS tip at Stage 10–11 (#180); docs #181 not in bundle
+bytes: 216680813
+sha256: f862de7138f35a924f1a19edbb5b9362439742a079b128a029873fba55f986e9
+git: f935f04307daa826b230a6c257c7177b298d80f7
+includes: #183 swipe-delete · scanner right · Today steps/sleep · 3 home widgets (FORCE_PREBUILD)
 package: app.nffit.dogfood
 dogfood_gate: pending
