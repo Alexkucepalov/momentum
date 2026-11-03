@@ -66,10 +66,10 @@ Code / `npm run verify` ≠ Android Pass.
 |-------|--------|
 | Artifact | `apps/mobile/dist/momentum-dogfood.apk` (gitignored) |
 | Meta | `docs/quality/apk/DOGFOOD-APK.md` |
-| bytes | 216671729 |
-| sha256 | `8fe3b3fd9ea72bed823224363dc260f5a7da1961e36e882d8e4a9ad1cd9bf0fb` |
-| git (JS in APK) | `f8787f8` (#180) |
-| build_date | 2026-11-01T19:56:37Z |
+| bytes | 216680813 |
+| sha256 | `f862de7138f35a924f1a19edbb5b9362439742a079b128a029873fba55f986e9` |
+| git (JS in APK) | `f935f04` (#183) |
+| build_date | 2026-11-03T06:27:25Z |
 | Build | `cd apps/mobile && npm run build:apk:local` |
 | dogfood_gate | **pending** until human Pass |
 
