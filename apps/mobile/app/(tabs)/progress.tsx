@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 
 import { bmiBand, computeBmi, formatBmi } from '../../../../src/domain/bmi';
@@ -12,7 +13,6 @@ import { buildWeekNutrition } from '../../../../src/domain/weekNutrition';
 import { collectWeeklyInsightStats } from '../../../../src/domain/weeklyInsight';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
 import { WeightSparkline } from '@/src/components/WeightSparkline';
@@ -29,16 +29,16 @@ import {
   AppButton,
   AppCard,
   AppText,
+  Field,
   MetricCard,
   SegmentedControl,
   colors,
   radius,
   space,
   touchMin,
-  type,
 } from '@/src/design-system';
 
-/** Stage 4.4: ≤4 top segments (food+sport folded into overview). */
+/** Stage 4.4: ≤4 top segments. */
 type ProgressTab = 'overview' | 'body' | 'habits' | 'reports';
 
 const TABS: { id: ProgressTab; label: string }[] = [
@@ -48,15 +48,28 @@ const TABS: { id: ProgressTab; label: string }[] = [
   { id: 'reports', label: 'Отчёты' },
 ];
 
+function fmtSleepHours(sec: number | null): string {
+  if (sec == null || !Number.isFinite(sec) || sec < 0) return '—';
+  const h = Math.floor(sec / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
+
 export default function ProgressScreen() {
   const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
   const [tab, setTab] = useState<ProgressTab>('overview');
   const [lastExport, setLastExport] = useState<string | null>(null);
   const [kgRaw, setKgRaw] = useState('');
+  const [weekExtraOpen, setWeekExtraOpen] = useState(false);
+  const [bmiNoteOpen, setBmiNoteOpen] = useState(false);
+  const [challengesOpen, setChallengesOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   const profile = repo.getProfile();
   const latest = repo.latestWeight();
   const weights = repo.listWeights(30);
+
   const weekDays = useMemo(
     () =>
       buildWeekNutrition({
@@ -129,44 +142,42 @@ export default function ProgressScreen() {
     }
   }, [latest, profile.heightCm]);
 
-  const onExport = async () => {
-    const json = repo.exportAll();
-    setLastExport(json);
-    try {
-      await Clipboard.setStringAsync(json);
-      Alert.alert('Экспорт', 'JSON скопирован в буфер. Сохрани его офлайн.');
-    } catch {
-      Alert.alert('Экспорт', 'JSON готов ниже. Скопируй вручную, если буфер недоступен.');
-    }
-  };
-
-  const onCopyDayReport = async () => {
-    try {
-      const text = collectDayReportText(repo, dateLocal);
-      await Clipboard.setStringAsync(text);
-      showFlash('Отчёт за день скопирован — вставь в ChatGPT');
-    } catch (e) {
-      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
-    }
-  };
-
   const sleepWeek = useMemo(() => {
     const start = weekStartMonday(dateLocal);
-    const days = datesInWeekFromStart(start);
-    let known = 0;
-    let sumSec = 0;
-    for (const d of days) {
+    const days = datesInWeekFromStart(start).map((d, weekdayIndex) => {
       const n = repo.getSleepForDate(d);
-      if (n?.sleepSec != null) {
-        known += 1;
-        sumSec += n.sleepSec;
-      }
-    }
+      const hours = n?.sleepSec != null ? n.sleepSec / 3600 : 0;
+      return {
+        date: d,
+        weekdayIndex,
+        hours,
+        value: hours,
+        valueLabel: n?.sleepSec == null ? '—' : fmtSleepHours(n.sleepSec),
+        hasData: n?.sleepSec != null,
+        score: n?.sleepScore ?? null,
+      };
+    });
+    const known = days.filter((d) => d.hasData);
+    const sumSec = known.reduce((s, d) => s + d.hours * 3600, 0);
+    const scored = known.filter((d) => d.score != null);
+    const avgScore =
+      scored.length === 0
+        ? null
+        : scored.reduce((s, d) => s + (d.score as number), 0) / scored.length;
     return {
-      known,
-      avgHours: known === 0 ? null : sumSec / known / 3600,
+      start,
+      end: days[6]?.date ?? start,
+      days,
+      known: known.length,
+      avgHours: known.length === 0 ? null : sumSec / known.length / 3600,
+      avgScore,
     };
   }, [repo, dateLocal, revision]);
+
+  const foodDaysLogged = useMemo(
+    () => weekDays.filter((d) => d.entryCount > 0).length,
+    [weekDays],
+  );
 
   const monthOverview = useMemo(() => {
     const dates = datesEndingOn(dateLocal, 30);
@@ -193,6 +204,27 @@ export default function ProgressScreen() {
       weightNewestKg: newest,
     });
   }, [repo, dateLocal, profile.timezone, revision]);
+
+  const onExport = async () => {
+    const json = repo.exportAll();
+    setLastExport(json);
+    try {
+      await Clipboard.setStringAsync(json);
+      showFlash('Экспорт скопирован в буфер');
+    } catch {
+      Alert.alert('Экспорт', 'JSON готов ниже. Скопируй вручную, если буфер недоступен.');
+    }
+  };
+
+  const onCopyDayReport = async () => {
+    try {
+      const text = collectDayReportText(repo, dateLocal);
+      await Clipboard.setStringAsync(text);
+      showFlash('Отчёт за день скопирован — вставь в ChatGPT');
+    } catch (e) {
+      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
+    }
+  };
 
   const onSaveWeight = () => {
     const kg = Number(kgRaw.replace(',', '.'));
@@ -224,67 +256,34 @@ export default function ProgressScreen() {
 
         {tab === 'overview' ? (
           <>
-            <AppButton
-              label="Скопировать день для ChatGPT"
-              onPress={() => void onCopyDayReport()}
-              testID="progress-copy-day-chatgpt"
-            />
-            <AppText variant="caption" tone="muted" style={styles.backupHint}>
-              Без прямой отправки в облако — только буфер. PDF и период — во вкладке «Отчёты».
-            </AppText>
+            <AppCard style={styles.weekHero} testID="progress-week-hero">
+              <View style={styles.glanceRow} accessibilityLabel="Сводка недели">
+                <GlanceCell label="еда" value={`${foodDaysLogged}/7`} />
+                <View style={styles.glanceRule} />
+                <GlanceCell
+                  label="спорт"
+                  value={sportWeekMinutes.mins > 0 ? String(sportWeekMinutes.mins) : '—'}
+                  unit={sportWeekMinutes.mins > 0 ? 'мин' : undefined}
+                />
+                <View style={styles.glanceRule} />
+                <GlanceCell
+                  label="сон"
+                  value={sleepWeek.avgHours == null ? '—' : sleepWeek.avgHours.toFixed(1)}
+                  unit={sleepWeek.avgHours == null ? undefined : 'ч'}
+                />
+                <View style={styles.glanceRule} />
+                <GlanceCell
+                  label="вес"
+                  value={latest ? String(latest.kg) : '—'}
+                  unit={latest ? 'кг' : undefined}
+                />
+              </View>
+              <AppText variant="caption" tone="muted" style={styles.weekHint}>
+                С понедельника · неизвестные значения — «—», не считаем нулём
+              </AppText>
+            </AppCard>
 
-            <WeeklyInsightCard insight={weekInsight} />
-            <MonthOverviewCard overview={monthOverview} />
-            <View style={styles.kpiGrid}>
-              <AppCard style={styles.kpiCard}>
-                <AppText variant="label" tone="muted">
-                  Питание
-                </AppText>
-                <AppText variant="subtitle" style={styles.kpiValue}>
-                  {weekDays.filter((d) => d.entryCount > 0).length}/7
-                </AppText>
-                <AppText variant="caption" tone="secondary">
-                  дней с записями
-                </AppText>
-              </AppCard>
-              <AppCard style={styles.kpiCard}>
-                <AppText variant="label" tone="muted">
-                  Спорт
-                </AppText>
-                <AppText variant="subtitle" style={styles.kpiValue}>
-                  {sportWeekMinutes.mins > 0 ? sportWeekMinutes.mins : '—'}
-                </AppText>
-                <AppText variant="caption" tone="secondary">
-                  мин · {sportWeekMinutes.count} тр.
-                </AppText>
-              </AppCard>
-              <AppCard style={styles.kpiCard}>
-                <AppText variant="label" tone="muted">
-                  Сон
-                </AppText>
-                <AppText variant="subtitle" style={styles.kpiValue}>
-                  {sleepWeek.avgHours == null ? '—' : sleepWeek.avgHours.toFixed(1)}
-                </AppText>
-                <AppText variant="caption" tone="secondary">
-                  ср. ч · {sleepWeek.known} ноч.
-                </AppText>
-              </AppCard>
-              <AppCard style={styles.kpiCard}>
-                <AppText variant="label" tone="muted">
-                  Вес
-                </AppText>
-                <AppText variant="subtitle" style={styles.kpiValue}>
-                  {latest ? `${latest.kg}` : '—'}
-                </AppText>
-                <AppText variant="caption" tone="secondary">
-                  кг · последнее
-                </AppText>
-              </AppCard>
-            </View>
-
-            <AppText variant="caption" tone="muted" style={styles.backupHint}>
-              Питание и шаги за неделю. Неизвестные ккал не считаем нулём.
-            </AppText>
+            <GroupLabel>Питание</GroupLabel>
             <WeekNutritionStrip
               days={weekDays}
               selectedDate={dateLocal}
@@ -293,9 +292,10 @@ export default function ProgressScreen() {
               timeZone={profile.timezone}
             />
 
+            <GroupLabel>Движение и сон</GroupLabel>
             <WeekBarChart
-              title="Шаги за неделю"
-              subtitle={`${formatWeekRangeRu(stepsWeek.start, stepsWeek.end)} · ${stepsWeek.knownDays} дн. с данными`}
+              title="Шаги"
+              subtitle={`${formatWeekRangeRu(stepsWeek.start, stepsWeek.end)} · ${stepsWeek.knownDays} дн.`}
               selectedDate={dateLocal}
               todayDate={todayKey}
               onSelectDate={setDateLocal}
@@ -308,7 +308,24 @@ export default function ProgressScreen() {
               }))}
             />
 
-            <AppCard style={styles.card} testID="progress-sport-card">
+            <WeekBarChart
+              title="Сон"
+              subtitle={`${formatWeekRangeRu(sleepWeek.start, sleepWeek.end)} · ${sleepWeek.known} ноч. · ср. ${
+                sleepWeek.avgHours == null ? '—' : `${sleepWeek.avgHours.toFixed(1)} ч`
+              }`}
+              selectedDate={dateLocal}
+              todayDate={todayKey}
+              onSelectDate={setDateLocal}
+              footnote="Пустой столбик — нет импорта Garmin, не «ноль часов»."
+              days={sleepWeek.days.map((d) => ({
+                dateLocal: d.date,
+                weekdayIndex: d.weekdayIndex,
+                value: d.value,
+                valueLabel: d.valueLabel,
+              }))}
+            />
+
+            <AppCard style={styles.sportCard} testID="progress-sport-card">
               <MetricCard
                 label="Тренировки"
                 value={sportWeekMinutes.count}
@@ -317,128 +334,228 @@ export default function ProgressScreen() {
               />
             </AppCard>
 
-          </>
-        ) : null}
-
-        {tab === 'habits' ? (
-          <>
-            <AppText variant="caption" tone="secondary" style={styles.habitsLead}>
-              Гибкие цели на неделю — без штрафов за пропуск. Отметки дня — на «Сегодня»; здесь
-              настройка и личные челленджи.
-            </AppText>
-            <FlexibleHabitsPanel />
-            <ChallengesPanel />
-          </>
-        ) : null}
-
-        {tab === 'body' ? (
-          <>
-            <AppCard style={styles.card} testID="progress-weight-card">
-              <MetricCard
-                label="Вес"
-                value={latest ? latest.kg : null}
-                unit="кг"
-                meta={
-                  latest
-                    ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'наблюдение, не цель'
-                }
-              />
-
-              <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
-
-              <TextInput
-                value={kgRaw}
-                onChangeText={setKgRaw}
-                keyboardType="decimal-pad"
-                placeholder="кг"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                accessibilityLabel="Вес в килограммах"
-              />
-              <AppButton label="Сохранить вес" onPress={onSaveWeight} />
-            </AppCard>
-
-            <AppCard style={styles.card}>
-              <AppText variant="label" tone="muted">
-                ИМТ и здоровье
+            <Pressable
+              onPress={() => setWeekExtraOpen((v) => !v)}
+              style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: weekExtraOpen }}
+              accessibilityLabel="Сводка и 30 дней"
+            >
+              <AppText variant="body" style={styles.moreTitle}>
+                Сводка
               </AppText>
-              {bmiInfo ? (
-                <>
-                  <AppText variant="metric">{formatBmi(bmiInfo.value)}</AppText>
-                  <AppText variant="subtitle">{bmiInfo.band.labelRu}</AppText>
-                  <AppText variant="caption" tone="secondary">
-                    {bmiInfo.band.rangeRu}
-                  </AppText>
-                  <AppText variant="caption" tone="secondary">
-                    {bmiInfo.band.hintRu}
-                  </AppText>
-                </>
-              ) : (
-                <>
-                  <AppText variant="metric">—</AppText>
-                  <AppText variant="caption" tone="secondary">
-                    {profile.heightCm == null
-                      ? 'Укажи рост в Профиле и вес выше — появится ИМТ'
-                      : 'Добавь вес — ИМТ посчитается автоматически'}
-                  </AppText>
-                </>
-              )}
-              <View style={styles.healthBox}>
-                <AppText variant="label" tone="muted">
-                  Кратко
-                </AppText>
-                <AppText variant="caption" tone="secondary">
-                  ИМТ = вес (кг) ÷ рост² (м). Это справочный ориентир ВОЗ для взрослых, не диагноз и
-                  не план питания. При вопросах о здоровье — к врачу.
-                </AppText>
-                {profile.heightCm != null ? (
-                  <AppText variant="label" tone="muted">
-                    Рост в профиле: {profile.heightCm} см
-                  </AppText>
-                ) : null}
-              </View>
-            </AppCard>
-
-            {weights.length > 0 ? (
-              <View style={styles.list}>
-                <SectionHeader title="История веса" />
-                {weights.map((w) => (
-                  <View key={w.id} style={styles.weightRow}>
-                    <Text style={styles.weightKg}>
-                      {w.kg} кг{w.source === 'garmin' ? ' · Garmin' : ''}
-                    </Text>
-                    <Text style={styles.weightDate}>
-                      {new Date(w.weighedAt).toLocaleDateString('ru-RU')}
-                    </Text>
-                  </View>
-                ))}
+              <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                неделя · 30 дней
+              </AppText>
+              <Ionicons
+                name={weekExtraOpen ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.textMuted}
+              />
+            </Pressable>
+            {weekExtraOpen ? (
+              <View style={styles.moreBody}>
+                <WeeklyInsightCard insight={weekInsight} />
+                <MonthOverviewCard overview={monthOverview} />
               </View>
             ) : null}
           </>
         ) : null}
 
+        {tab === 'body' ? (
+          <>
+            <AppCard style={styles.bodyCard} testID="progress-weight-card">
+              <View style={styles.bodyTop}>
+                <View style={styles.bodyMetric}>
+                  <MetricCard
+                    label="Вес"
+                    value={latest ? latest.kg : null}
+                    unit="кг"
+                    meta={
+                      latest
+                        ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'наблюдение, не цель'
+                    }
+                  />
+                </View>
+                <View style={styles.bodyBmi}>
+                  <AppText variant="label" tone="muted">
+                    ИМТ
+                  </AppText>
+                  <AppText variant="metric" style={styles.bmiValue}>
+                    {bmiInfo ? formatBmi(bmiInfo.value) : '—'}
+                  </AppText>
+                  <AppText variant="caption" tone="secondary">
+                    {bmiInfo
+                      ? bmiInfo.band.labelRu
+                      : profile.heightCm == null
+                        ? 'рост в Профиле'
+                        : 'добавь вес'}
+                  </AppText>
+                </View>
+              </View>
+
+              <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
+
+              <View style={styles.weightForm}>
+                <View style={styles.weightField}>
+                  <Field
+                    label="Новый замер, кг"
+                    value={kgRaw}
+                    onChangeText={setKgRaw}
+                    keyboardType="decimal-pad"
+                    placeholder="например 72.5"
+                    returnKeyType="done"
+                    blurOnSubmit
+                    accessibilityLabel="Вес в килограммах"
+                  />
+                </View>
+                <AppButton label="Сохранить" onPress={onSaveWeight} />
+              </View>
+
+              <Pressable
+                onPress={() => setBmiNoteOpen((v) => !v)}
+                style={({ pressed }) => [styles.noteToggle, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: bmiNoteOpen }}
+              >
+                <AppText variant="caption" tone="muted">
+                  {bmiNoteOpen ? 'Скрыть справку ИМТ' : 'Что значит ИМТ'}
+                </AppText>
+                <Ionicons
+                  name={bmiNoteOpen ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+              {bmiNoteOpen ? (
+                <AppText variant="caption" tone="secondary" style={styles.bmiNote}>
+                  ИМТ = вес (кг) ÷ рост² (м). Ориентир ВОЗ для взрослых, не диагноз и не план
+                  питания.
+                  {profile.heightCm != null ? ` Рост в профиле: ${profile.heightCm} см.` : ''}
+                  {bmiInfo ? ` ${bmiInfo.band.rangeRu}. ${bmiInfo.band.hintRu}` : ''}
+                </AppText>
+              ) : null}
+            </AppCard>
+
+            {weights.length > 0 ? (
+              <>
+                <Pressable
+                  onPress={() => setHistoryOpen((v) => !v)}
+                  style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: historyOpen }}
+                >
+                  <AppText variant="body" style={styles.moreTitle}>
+                    История
+                  </AppText>
+                  <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                    {weights.length} зам.
+                  </AppText>
+                  <Ionicons
+                    name={historyOpen ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.textMuted}
+                  />
+                </Pressable>
+                {historyOpen ? (
+                  <View style={styles.sheet}>
+                    {weights.map((w, i) => (
+                      <View
+                        key={w.id}
+                        style={[styles.weightRow, i < weights.length - 1 && styles.weightRowBorder]}
+                      >
+                        <AppText variant="body" style={styles.weightKg}>
+                          {w.kg} кг{w.source === 'garmin' ? ' · Garmin' : ''}
+                        </AppText>
+                        <AppText variant="caption" tone="secondary">
+                          {new Date(w.weighedAt).toLocaleDateString('ru-RU')}
+                        </AppText>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+          </>
+        ) : null}
+
+        {tab === 'habits' ? (
+          <>
+            <AppText variant="caption" tone="muted" style={styles.habitsLead}>
+              Гибкие цели на неделю · без штрафов. Отметки дня — на «Сегодня».
+            </AppText>
+            <FlexibleHabitsPanel />
+            <Pressable
+              onPress={() => setChallengesOpen((v) => !v)}
+              style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: challengesOpen }}
+              accessibilityLabel="Челленджи"
+            >
+              <AppText variant="body" style={styles.moreTitle}>
+                Челленджи
+              </AppText>
+              <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                по желанию
+              </AppText>
+              <Ionicons
+                name={challengesOpen ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.textMuted}
+              />
+            </Pressable>
+            {challengesOpen ? <ChallengesPanel /> : null}
+          </>
+        ) : null}
+
         {tab === 'reports' ? (
           <>
-            <AppButton
-              label="Копировать отчёт за выбранный день"
-              variant="secondary"
-              onPress={() => void onCopyDayReport()}
-            />
-            <AppText variant="caption" tone="muted" style={styles.backupHint}>
-              День берётся из общего календаря приложения (Сегодня / свайп).
-            </AppText>
+            <GroupLabel tight>День</GroupLabel>
+            <AppCard style={styles.reportDayCard}>
+              <AppText variant="caption" tone="muted" style={styles.reportDayHint}>
+                Дата из общего календаря приложения
+              </AppText>
+              <AppButton
+                label="Скопировать день для ChatGPT"
+                onPress={() => void onCopyDayReport()}
+                testID="progress-copy-day-chatgpt"
+              />
+              <AppText variant="caption" tone="muted">
+                Только буфер · без облака
+              </AppText>
+            </AppCard>
+
+            <GroupLabel>Период</GroupLabel>
             <FlexibleReportPanel />
-            <SectionHeader title="Бэкап" />
-            <AppText variant="caption" tone="muted" style={styles.backupHint}>
-              Полное удаление и настройки приватности — также во вкладке Профиль.
-            </AppText>
-            <AppButton label="Экспорт JSON" onPress={() => void onExport()} />
+
+            <GroupLabel>Бэкап</GroupLabel>
+            <View style={styles.sheet}>
+              <Pressable
+                onPress={() => void onExport()}
+                style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Экспорт JSON"
+              >
+                <View style={styles.linkIcon}>
+                  <Ionicons name="share-outline" size={18} color={colors.ink} />
+                </View>
+                <View style={styles.linkText}>
+                  <AppText variant="body" style={styles.linkTitle}>
+                    Экспорт JSON
+                  </AppText>
+                  <AppText variant="caption" tone="muted">
+                    Копия в буфер · удаление в Профиле
+                  </AppText>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            </View>
 
             {lastExport ? (
               <AppCard style={styles.preview}>
@@ -459,70 +576,169 @@ export default function ProgressScreen() {
   );
 }
 
+function GroupLabel({ children, tight }: { children: ReactNode; tight?: boolean }) {
+  return (
+    <AppText
+      variant="label"
+      tone="muted"
+      style={[styles.groupLabel, tight && styles.groupLabelTight]}
+    >
+      {children}
+    </AppText>
+  );
+}
+
+function GlanceCell({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+}) {
+  return (
+    <View style={styles.glanceCell}>
+      <AppText variant="label" tone="muted" style={styles.glanceLabel}>
+        {label}
+      </AppText>
+      <AppText variant="subtitle" style={styles.glanceValue}>
+        {value}
+        {unit ? (
+          <AppText variant="caption" tone="muted">
+            {' '}
+            {unit}
+          </AppText>
+        ) : null}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   scroll: { flex: 1 },
-  content: { padding: space.lg },
-  tabs: {
-    marginBottom: space.lg,
+  content: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    paddingBottom: space.xxl,
+    gap: space.sm,
   },
-  habitsLead: {
-    lineHeight: 18,
-    marginBottom: space.md,
+  tabs: { marginBottom: space.sm },
+  weekHero: {
+    padding: space.md,
+    gap: space.sm,
   },
-  kpiGrid: {
+  glanceRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-    marginBottom: space.lg,
-  },
-  kpiCard: {
-    width: '47%',
-    flexGrow: 1,
-    gap: 4,
-    minHeight: 96,
-  },
-  kpiValue: { fontWeight: '800' },
-  card: {
-    marginBottom: space.xl,
-    gap: space.sm,
-  },
-  healthBox: {
-    marginTop: space.md,
-    paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    gap: space.xs,
-  },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    alignItems: 'stretch',
+    backgroundColor: colors.canvas,
     borderRadius: radius.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.xs,
+  },
+  glanceCell: { flex: 1, alignItems: 'center', gap: 2 },
+  glanceLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    fontWeight: '700',
+  },
+  glanceValue: { fontWeight: '800' },
+  glanceRule: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: 4,
+  },
+  weekHint: { lineHeight: 17, paddingHorizontal: space.xs },
+  groupLabel: {
+    marginTop: space.md,
+    marginBottom: space.xs,
+    paddingHorizontal: space.xs,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  groupLabelTight: { marginTop: space.xs },
+  sportCard: { marginTop: space.xs },
+  moreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    marginBottom: space.md,
-    fontSize: type.body,
-    color: colors.ink,
+    paddingVertical: space.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    marginTop: space.sm,
   },
-  list: { marginBottom: space.xl },
-  backupHint: {
-    marginBottom: space.sm,
-    lineHeight: 18,
+  moreTitle: { fontWeight: '700' },
+  moreMeta: { flex: 1 },
+  moreBody: { gap: space.sm, marginTop: space.xs },
+  bodyCard: { gap: space.md, padding: space.lg },
+  bodyTop: { flexDirection: 'row', gap: space.md },
+  bodyMetric: { flex: 1.2 },
+  bodyBmi: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 2,
+    paddingLeft: space.md,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: colors.border,
+  },
+  bmiValue: { fontSize: 28 },
+  weightForm: { gap: space.sm },
+  weightField: {},
+  noteToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 36,
+  },
+  bmiNote: { lineHeight: 18 },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
   weightRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    padding: space.md,
-    marginBottom: space.sm,
+    alignItems: 'center',
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    minHeight: touchMin,
   },
-  weightKg: { fontWeight: '700', color: colors.ink },
-  weightDate: { color: colors.textSecondary },
-  preview: {
-    marginTop: space.lg,
+  weightRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
+  weightKg: { fontWeight: '700' },
+  habitsLead: { lineHeight: 18, marginBottom: space.xs },
+  reportDayCard: { gap: space.sm, padding: space.lg },
+  reportDayHint: { lineHeight: 17 },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: touchMin + 4,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
+  linkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkText: { flex: 1, gap: 2, minWidth: 0 },
+  linkTitle: { fontWeight: '600' },
+  preview: { marginTop: space.sm, gap: space.xs },
   previewBody: { fontSize: 12, color: colors.ink, fontFamily: 'monospace' },
+  pressed: { opacity: 0.88 },
 });

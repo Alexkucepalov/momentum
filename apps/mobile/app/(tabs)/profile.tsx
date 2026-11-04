@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter, type Href } from 'expo-router';
@@ -16,6 +16,7 @@ import {
   AppButton,
   AppCard,
   AppText,
+  Field,
   colors,
   radius,
   space,
@@ -58,6 +59,8 @@ export default function ProfileScreen() {
   const [carbRaw, setCarbRaw] = useState(fields.carbRaw);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteRaw, setPasteRaw] = useState('');
+  const [zeppOpen, setZeppOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   useEffect(() => {
     const next = profileToFields(repo.getProfile());
@@ -69,15 +72,12 @@ export default function ProfileScreen() {
     setCarbRaw(next.carbRaw);
   }, [repo, revision]);
 
-  const summary = useMemo(() => {
-    const chips: string[] = [];
-    if (profile.dailyEnergyKcal != null) chips.push(`${Math.round(profile.dailyEnergyKcal)} ккал`);
-    if (profile.dailyProteinG != null) chips.push(`Б ${Math.round(profile.dailyProteinG)}`);
-    if (profile.dailyFatG != null) chips.push(`Ж ${Math.round(profile.dailyFatG)}`);
-    if (profile.dailyCarbG != null) chips.push(`У ${Math.round(profile.dailyCarbG)}`);
-    if (profile.heightCm != null) chips.push(`${profile.heightCm} см`);
-    if (profile.waterTargetMl != null) chips.push(`${profile.waterTargetMl} мл воды`);
-    return chips;
+  const glance = useMemo(() => {
+    return {
+      kcal: profile.dailyEnergyKcal == null ? '—' : String(Math.round(profile.dailyEnergyKcal)),
+      water: profile.waterTargetMl == null ? '—' : String(profile.waterTargetMl),
+      height: profile.heightCm == null ? '—' : String(profile.heightCm),
+    };
   }, [profile]);
 
   const parseOptionalPositive = (raw: string, label: string): number | null => {
@@ -88,7 +88,6 @@ export default function ProfileScreen() {
     return n;
   };
 
-  /** Auto-save on blur / preset — no separate «Сохранить» buttons. */
   const commitWater = (raw: string = waterRaw) => {
     try {
       const t = raw.trim();
@@ -253,119 +252,106 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <FormScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero} testID="profile-hero">
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={28} color={colors.ink} />
+      <FormScrollView contentContainerStyle={styles.content} testID="profile-screen">
+        <GroupLabel tight>Цели</GroupLabel>
+        <AppCard style={styles.goalsCard} testID="profile-goals">
+          <View
+            style={styles.glanceRow}
+            testID="profile-hero"
+            accessibilityRole="header"
+            accessibilityLabel="Кратко по целям"
+          >
+            <GlanceCell label="ккал" value={glance.kcal} />
+            <View style={styles.glanceRule} />
+            <GlanceCell
+              label="вода"
+              value={glance.water}
+              unit={glance.water === '—' ? undefined : 'мл'}
+            />
+            <View style={styles.glanceRule} />
+            <GlanceCell
+              label="рост"
+              value={glance.height}
+              unit={glance.height === '—' ? undefined : 'см'}
+            />
           </View>
-          <AppText variant="title" style={styles.name} accessibilityRole="header">
-            Профиль
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            nf-fit · только на устройстве · {profile.timezone}
-          </AppText>
-          {summary.length > 0 ? (
-            <View style={styles.summaryRow} accessibilityLabel={`Активные цели: ${summary.join(', ')}`}>
-              {summary.map((chip) => (
-                <View key={chip} style={styles.summaryChip}>
-                  <AppText variant="label">{chip}</AppText>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <AppText variant="caption" tone="muted" style={styles.summaryEmpty}>
-              Цели пока не заданы — всё опционально
-            </AppText>
-          )}
-        </View>
 
-        <SettingsCard
-          title="КБЖУ на день"
-          hint="Твои числа, без автонорм. Сохраняется, когда уходишь с поля. Пусто = без цели."
-          icon="flame-outline"
-        >
-          <LabeledField
-            label="ккал"
+          <Field
+            label="Килокалории в день"
             value={kcalRaw}
             onChangeText={setKcalRaw}
-            onCommit={(t) => {
+            onEndEditing={(e) => {
+              const t = e.nativeEvent.text;
               setKcalRaw(t);
               commitDailyTargets({ kcal: t });
             }}
             keyboardType="decimal-pad"
             placeholder="например 2200"
+            returnKeyType="done"
+            blurOnSubmit
+            helper="Пусто = без цели. Сохраняется при уходе с поля."
             accessibilityLabel="Цель килокалорий на день"
           />
+
           <View style={styles.macroRow}>
             <View style={styles.macroCol}>
-              <LabeledField
+              <Field
                 label="Белки, г"
                 value={proteinRaw}
                 onChangeText={setProteinRaw}
-                onCommit={(t) => {
+                onEndEditing={(e) => {
+                  const t = e.nativeEvent.text;
                   setProteinRaw(t);
                   commitDailyTargets({ protein: t });
                 }}
                 keyboardType="decimal-pad"
-                placeholder="Б"
+                placeholder="—"
+                returnKeyType="done"
+                blurOnSubmit
                 accessibilityLabel="Цель белков в граммах"
               />
             </View>
             <View style={styles.macroCol}>
-              <LabeledField
+              <Field
                 label="Жиры, г"
                 value={fatRaw}
                 onChangeText={setFatRaw}
-                onCommit={(t) => {
+                onEndEditing={(e) => {
+                  const t = e.nativeEvent.text;
                   setFatRaw(t);
                   commitDailyTargets({ fat: t });
                 }}
                 keyboardType="decimal-pad"
-                placeholder="Ж"
+                placeholder="—"
+                returnKeyType="done"
+                blurOnSubmit
                 accessibilityLabel="Цель жиров в граммах"
               />
             </View>
             <View style={styles.macroCol}>
-              <LabeledField
+              <Field
                 label="Углеводы, г"
                 value={carbRaw}
                 onChangeText={setCarbRaw}
-                onCommit={(t) => {
+                onEndEditing={(e) => {
+                  const t = e.nativeEvent.text;
                   setCarbRaw(t);
                   commitDailyTargets({ carb: t });
                 }}
                 keyboardType="decimal-pad"
-                placeholder="У"
+                placeholder="—"
+                returnKeyType="done"
+                blurOnSubmit
                 accessibilityLabel="Цель углеводов в граммах"
               />
             </View>
           </View>
-        </SettingsCard>
 
-        <SettingsCard
-          title="Рост"
-          hint="Для ИМТ в Прогрессе. Сохраняется при уходе с поля. Справочно, не диагноз."
-          icon="resize-outline"
-        >
-          <LabeledField
-            label="Сантиметры"
-            value={heightRaw}
-            onChangeText={setHeightRaw}
-            onCommit={(t) => {
-              setHeightRaw(t);
-              commitHeight(t);
-            }}
-            keyboardType="decimal-pad"
-            placeholder="например 175"
-            accessibilityLabel="Рост в сантиметрах"
-          />
-        </SettingsCard>
+          <View style={styles.softSplit} />
 
-        <SettingsCard
-          title="Вода"
-          hint="Мягкая подсказка на Сегодня. Пресет или своё число — сохраняется сразу."
-          icon="water-outline"
-        >
+          <AppText variant="label" tone="muted" style={styles.inlineLabel}>
+            Вода, мл
+          </AppText>
           <View style={styles.presets}>
             {WATER_PRESETS.map((ml) => {
               const on = profile.waterTargetMl === ml;
@@ -385,115 +371,147 @@ export default function ProfileScreen() {
                   accessibilityState={{ selected: on }}
                   accessibilityLabel={`${ml} миллилитров`}
                 >
-                  <Text style={[styles.presetText, on && styles.presetTextOn]}>{ml}</Text>
+                  <AppText variant="caption" style={[styles.presetText, on && styles.presetTextOn]}>
+                    {ml}
+                  </AppText>
                 </Pressable>
               );
             })}
           </View>
-          <LabeledField
-            label="мл в день"
-            value={waterRaw}
-            onChangeText={setWaterRaw}
-            onCommit={(t) => {
-              setWaterRaw(t);
-              commitWater(t);
-            }}
-            keyboardType="number-pad"
-            placeholder="или своё число / пусто"
-            accessibilityLabel="Цель воды в миллилитрах"
-          />
-        </SettingsCard>
+          <View style={styles.twoCol}>
+            <View style={styles.twoColItem}>
+              <Field
+                label="Своё значение"
+                value={waterRaw}
+                onChangeText={setWaterRaw}
+                onEndEditing={(e) => {
+                  const t = e.nativeEvent.text;
+                  setWaterRaw(t);
+                  commitWater(t);
+                }}
+                keyboardType="number-pad"
+                placeholder="пусто = без цели"
+                returnKeyType="done"
+                blurOnSubmit
+                accessibilityLabel="Цель воды в миллилитрах"
+              />
+            </View>
+            <View style={styles.twoColItem}>
+              <Field
+                label="Рост, см"
+                value={heightRaw}
+                onChangeText={setHeightRaw}
+                onEndEditing={(e) => {
+                  const t = e.nativeEvent.text;
+                  setHeightRaw(t);
+                  commitHeight(t);
+                }}
+                keyboardType="decimal-pad"
+                placeholder="для ИМТ"
+                helper="Справочно"
+                returnKeyType="done"
+                blurOnSubmit
+                accessibilityLabel="Рост в сантиметрах"
+              />
+            </View>
+          </View>
+        </AppCard>
 
-        {/* H2 order: goals → body → integrations → reports → data → privacy */}
-        <SettingsCard
-          title="Garmin"
-          hint="Personal API: вес, тренировки, шаги и сон. Ключ только в SecureStore. Автосинк при открытии."
-          icon="watch-outline"
-        >
-          <AppButton label="Настроить Garmin" onPress={() => router.push('/garmin' as Href)} />
-          <View style={{ height: space.sm }} />
-          <AppButton
-            label="Данные Garmin"
-            variant="secondary"
+        <GroupLabel>Связки</GroupLabel>
+        <View style={styles.sheet} testID="profile-links">
+          <LinkRow
+            icon="watch-outline"
+            title="Garmin"
+            meta="Вес, тренировки, шаги, сон"
+            onPress={() => router.push('/garmin' as Href)}
+          />
+          <LinkRow
+            icon="list-outline"
+            title="Данные Garmin"
+            meta="История синхронизации"
             onPress={() => router.push('/garmin/data' as Href)}
           />
-        </SettingsCard>
-
-        <ZeppCsvImportCard />
-
-        <SettingsCard
-          title="Отчёт для ChatGPT"
-          hint="Прямого коннекта нет — данные не уходят сами. Копируешь текст за выбранный день и вставляешь вручную."
-          icon="chatbubble-ellipses-outline"
-        >
-          <AppButton
-            label="Копировать отчёт за день"
-            onPress={() => void onCopyDayReport()}
+          <LinkRow
+            icon="scale-outline"
+            title="Вес Xiaomi / Zepp"
+            meta="Импорт BODY CSV"
+            onPress={() => setZeppOpen((v) => !v)}
+            last={!zeppOpen}
+            chevron={zeppOpen ? 'chevron-up' : 'chevron-down'}
           />
-          <AppText variant="caption" tone="muted" style={styles.reportHint}>
-            День = текущая дата в приложении. Период и PDF — во вкладке Прогресс · Отчёты.
-          </AppText>
-        </SettingsCard>
+          {zeppOpen ? (
+            <View style={styles.nested}>
+              <ZeppCsvImportCard />
+            </View>
+          ) : null}
+        </View>
 
-        <SettingsCard
-          title="Данные"
-          hint="Экспорт в буфер. Импорт заменяет все локальные данные. Сделай бэкап перед очисткой."
-          icon="folder-outline"
-        >
-          <AppButton label="Экспорт JSON в буфер" onPress={() => void onExport()} />
-          <View style={{ height: space.sm }} />
-          <AppButton
-            label="Импорт из буфера телефона"
-            variant="secondary"
+        <GroupLabel>Данные</GroupLabel>
+        <View style={styles.sheet} testID="profile-data">
+          <LinkRow
+            icon="share-outline"
+            title="Экспорт JSON"
+            meta="Копия в буфер"
+            onPress={() => void onExport()}
+          />
+          <LinkRow
+            icon="download-outline"
+            title="Импорт из буфера"
+            meta="Заменит локальные данные"
             onPress={() => void onImportClipboard()}
           />
-          <View style={{ height: space.sm }} />
-          <AppButton
-            label="Вставить JSON"
-            variant="secondary"
+          <LinkRow
+            icon="code-slash-outline"
+            title="Вставить JSON"
+            meta="С другого устройства"
             onPress={() => {
               setPasteRaw('');
               setPasteOpen(true);
             }}
           />
-          <Pressable
-            style={({ pressed }) => [styles.danger, pressed && styles.pressed]}
-            onPress={onDelete}
-            accessibilityRole="button"
-            accessibilityLabel="Удалить все локальные данные"
-          >
-            <Ionicons name="trash-outline" size={18} color={colors.danger} />
-            <AppText variant="caption" tone="danger">
-              Удалить все локальные данные
-            </AppText>
-          </Pressable>
-        </SettingsCard>
+          <LinkRow
+            icon="chatbubble-ellipses-outline"
+            title="Отчёт за день"
+            meta="Текст для ChatGPT"
+            onPress={() => void onCopyDayReport()}
+            last
+          />
+        </View>
 
-        <SettingsCard title="Приватность" hint="Коротко о том, куда уходят данные." icon="shield-outline">
-          <PrivacyRow
-            icon="phone-portrait-outline"
-            text="Дневник, вес и привычки хранятся локально на устройстве."
+        <Pressable
+          style={({ pressed }) => [styles.dangerQuiet, pressed && styles.pressed]}
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel="Удалить все локальные данные"
+        >
+          <AppText variant="caption" tone="danger" style={styles.dangerQuietText}>
+            Удалить все локальные данные
+          </AppText>
+        </Pressable>
+
+        <GroupLabel>Приватность</GroupLabel>
+        <View style={styles.sheet} testID="profile-privacy">
+          <LinkRow
+            icon="shield-checkmark-outline"
+            title="Как хранятся данные"
+            meta={privacyOpen ? 'Свернуть' : 'Коротко и по делу'}
+            onPress={() => setPrivacyOpen((v) => !v)}
+            last={!privacyOpen}
+            chevron={privacyOpen ? 'chevron-up' : 'chevron-down'}
           />
-          <PrivacyRow
-            icon="barcode-outline"
-            text="Штрихкод: в сеть уходит только код (Open Food Facts). Фото этикетки не загружаем."
-          />
-          <PrivacyRow
-            icon="watch-outline"
-            text="Garmin Personal API: запросы в Garmin по твоему ключу; ключ в SecureStore, не в экспорте."
-          />
-          <PrivacyRow
-            icon="person-outline"
-            text="Нет аккаунта, нет обязательного AI, нет рассылки данных."
-          />
-          <PrivacyRow
-            icon="download-outline"
-            text="Экспорт и полное удаление — только по твоей команде."
-          />
-        </SettingsCard>
+          {privacyOpen ? (
+            <View style={styles.privacyBody}>
+              <PrivacyLine text="Дневник, вес и привычки — только на этом устройстве." />
+              <PrivacyLine text="Штрихкод: в сеть уходит только код (Open Food Facts)." />
+              <PrivacyLine text="Garmin-ключ в SecureStore, не попадает в экспорт." />
+              <PrivacyLine text="Нет аккаунта, нет обязательного AI, нет рассылки." />
+              <PrivacyLine text="Экспорт и удаление — только по твоей команде." last />
+            </View>
+          ) : null}
+        </View>
 
         <AppText variant="caption" tone="muted" style={styles.version}>
-          nf-fit · v0.1.0 · offline
+          nf-fit · v0.1.0
         </AppText>
       </FormScrollView>
 
@@ -522,8 +540,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
           <AppText variant="caption" tone="secondary" style={styles.pasteHint}>
-            Вставь сюда содержимое экспорта nf-fit (Ctrl/Cmd+V или «Вставить» из меню). Не из
-            буфера другого компьютера — только то, что уже на этом устройстве.
+            Вставь экспорт nf-fit с этого устройства. Буфер Mac и телефона — разные.
           </AppText>
           <TextInput
             value={pasteRaw}
@@ -546,87 +563,91 @@ export default function ProfileScreen() {
   );
 }
 
-function SettingsCard({
-  title,
-  hint,
-  icon,
-  children,
-}: {
-  title: string;
-  hint: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  children: ReactNode;
-}) {
+function GroupLabel({ children, tight }: { children: ReactNode; tight?: boolean }) {
   return (
-    <AppCard style={styles.card}>
-      <View style={styles.cardHead}>
-        <View style={styles.cardIcon}>
-          <Ionicons name={icon} size={18} color={colors.ink} />
-        </View>
-        <View style={styles.cardHeadText}>
-          <AppText variant="subtitle" style={styles.cardTitle} accessibilityRole="header">
-            {title}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            {hint}
-          </AppText>
-        </View>
-      </View>
+    <AppText
+      variant="label"
+      tone="muted"
+      style={[styles.groupLabel, tight && styles.groupLabelTight]}
+    >
       {children}
-    </AppCard>
+    </AppText>
   );
 }
 
-function LabeledField({
+function GlanceCell({
   label,
   value,
-  onChangeText,
-  onCommit,
-  keyboardType,
-  placeholder,
-  accessibilityLabel,
+  unit,
 }: {
   label: string;
   value: string;
-  onChangeText: (t: string) => void;
-  onCommit?: (text: string) => void;
-  keyboardType?: 'default' | 'decimal-pad' | 'number-pad';
-  placeholder?: string;
-  accessibilityLabel: string;
+  unit?: string;
 }) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        onEndEditing={(e) => onCommit?.(e.nativeEvent.text)}
-        onSubmitEditing={(e) => onCommit?.(e.nativeEvent.text)}
-        returnKeyType="done"
-        blurOnSubmit
-        keyboardType={keyboardType}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        style={styles.input}
-        accessibilityLabel={accessibilityLabel}
-        accessibilityHint={onCommit ? 'Сохраняется при уходе с поля' : undefined}
-      />
+    <View style={styles.glanceCell}>
+      <AppText variant="label" tone="muted" style={styles.glanceLabel}>
+        {label}
+      </AppText>
+      <AppText variant="subtitle" style={styles.glanceValue}>
+        {value}
+        {unit ? (
+          <AppText variant="caption" tone="muted">
+            {' '}
+            {unit}
+          </AppText>
+        ) : null}
+      </AppText>
     </View>
   );
 }
 
-function PrivacyRow({
+function LinkRow({
   icon,
-  text,
+  title,
+  meta,
+  onPress,
+  last,
+  chevron = 'chevron-forward',
 }: {
   icon: keyof typeof Ionicons.glyphMap;
-  text: string;
+  title: string;
+  meta: string;
+  onPress: () => void;
+  last?: boolean;
+  chevron?: keyof typeof Ionicons.glyphMap;
 }) {
   return (
-    <View style={styles.privacyRow}>
-      <View style={styles.privacyIcon}>
-        <Ionicons name={icon} size={16} color={colors.ink} />
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.linkRow,
+        !last && styles.linkRowBorder,
+        pressed && styles.pressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${meta}`}
+    >
+      <View style={styles.linkIcon}>
+        <Ionicons name={icon} size={18} color={colors.ink} />
       </View>
+      <View style={styles.linkText}>
+        <AppText variant="body" style={styles.linkTitle}>
+          {title}
+        </AppText>
+        <AppText variant="caption" tone="muted">
+          {meta}
+        </AppText>
+      </View>
+      <Ionicons name={chevron} size={18} color={colors.textMuted} />
+    </Pressable>
+  );
+}
+
+function PrivacyLine({ text, last }: { text: string; last?: boolean }) {
+  return (
+    <View style={[styles.privacyLine, !last && styles.privacyLineBorder]}>
+      <View style={styles.privacyDot} />
       <AppText variant="caption" tone="secondary" style={styles.privacyText}>
         {text}
       </AppText>
@@ -636,145 +657,166 @@ function PrivacyRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  content: { padding: space.lg },
-  hero: { alignItems: 'center', marginBottom: space.xl },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.md,
-  },
-  name: { fontWeight: '800' },
-  summaryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: space.xs,
-    marginTop: space.md,
-  },
-  summaryChip: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-  },
-  summaryText: { fontSize: type.micro, fontWeight: '700', color: colors.text },
-  summaryEmpty: {
-    marginTop: space.md,
-    fontSize: type.caption,
-    color: colors.textMuted,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    marginBottom: space.lg,
+  content: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    paddingBottom: space.xxl,
     gap: space.sm,
   },
-  cardHead: { flexDirection: 'row', gap: space.md, marginBottom: space.sm },
-  cardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardHeadText: { flex: 1 },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  cardHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  field: { marginBottom: space.xs },
-  fieldLabel: {
-    fontSize: type.micro,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
+  glanceRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: colors.canvas,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
-    minHeight: touchMin,
-    paddingHorizontal: space.md,
-    fontSize: type.body,
-    color: colors.text,
+    paddingVertical: space.md,
+    paddingHorizontal: space.xs,
+    marginBottom: space.md,
+  },
+  glanceCell: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  glanceLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    fontWeight: '700',
+  },
+  glanceValue: {
+    fontWeight: '800',
+  },
+  glanceRule: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: 4,
+  },
+  groupLabel: {
+    marginTop: space.md,
+    marginBottom: space.xs,
+    paddingHorizontal: space.xs,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  groupLabelTight: {
+    marginTop: 0,
+  },
+  goalsCard: {
+    padding: space.lg,
+    gap: 0,
   },
   macroRow: { flexDirection: 'row', gap: space.sm },
   macroCol: { flex: 1 },
-  presets: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.xs },
+  softSplit: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginBottom: space.md,
+    marginTop: space.xs,
+  },
+  inlineLabel: {
+    fontWeight: '700',
+    marginBottom: space.sm,
+  },
+  presets: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginBottom: space.md,
+  },
   preset: {
     paddingHorizontal: space.md,
-    paddingVertical: space.sm,
+    paddingVertical: 10,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.canvas,
     minHeight: 36,
     justifyContent: 'center',
   },
   presetOn: {
-    backgroundColor: colors.primaryButton,
-    borderColor: colors.primaryButton,
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
   },
-  presetText: { fontWeight: '700', fontSize: type.caption, color: colors.text },
-  presetTextOn: { color: colors.primaryButtonText },
-  privacyRow: {
+  presetText: { fontWeight: '700' },
+  presetTextOn: { color: colors.onAccent },
+  twoCol: { flexDirection: 'row', gap: space.sm },
+  twoColItem: { flex: 1 },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  linkRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: space.md,
-    alignItems: 'flex-start',
-    marginBottom: space.sm,
+    minHeight: touchMin + 4,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
-  privacyIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  linkRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  linkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
   },
-  privacyText: { flex: 1, fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
-  danger: {
-    marginTop: space.xs,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    minHeight: touchMin,
+  linkText: { flex: 1, gap: 2, minWidth: 0 },
+  linkTitle: { fontWeight: '600' },
+  nested: {
+    padding: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.canvas,
+  },
+  privacyBody: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.md,
+    paddingTop: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  privacyLine: {
+    flexDirection: 'row',
+    gap: space.md,
+    alignItems: 'flex-start',
+    paddingVertical: space.sm,
+  },
+  privacyLineBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  privacyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.borderStrong,
+    marginTop: 6,
+  },
+  privacyText: { flex: 1, lineHeight: 18 },
+  dangerQuiet: {
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: space.sm,
+    minHeight: touchMin,
+    marginTop: space.xs,
   },
+  dangerQuietText: { fontWeight: '600' },
   pressed: { opacity: 0.88 },
-  dangerText: { color: colors.danger, fontWeight: '700', fontSize: type.body },
-  reportHint: {
-    marginTop: space.sm,
-    lineHeight: 18,
-  },
   version: {
-    marginTop: space.sm,
-    marginBottom: space.lg,
+    marginTop: space.xl,
     textAlign: 'center',
-    color: colors.textMuted,
-    fontSize: type.caption,
   },
   pasteSheet: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.canvas,
     paddingHorizontal: space.lg,
   },
   pasteHead: {
@@ -783,24 +825,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: space.md,
   },
-  pasteTitle: { fontSize: type.title, fontWeight: '800', color: colors.text },
-  pasteClose: { fontWeight: '700', color: colors.text, minHeight: touchMin, textAlignVertical: 'center' },
   pasteHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: space.md,
   },
   pasteInput: {
     flex: 1,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     padding: space.md,
     fontSize: 12,
     fontFamily: 'monospace',
-    color: colors.text,
+    color: colors.ink,
     marginBottom: space.md,
   },
 });

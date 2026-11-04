@@ -10,7 +10,11 @@ export {
   mapGarminStepsResponse,
   mapGarminDailySummariesForSteps,
 } from './mapSteps';
-export { mapGarminSleepItem, mapGarminSleepResponse } from './mapSleep';
+export {
+  mapGarminSleepItem,
+  mapGarminSleepResponse,
+  flattenGarminSleepPayload,
+} from './mapSleep';
 export {
   mapGarminPolyline,
   downsamplePolyline,

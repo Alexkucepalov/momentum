@@ -123,14 +123,16 @@ export async function fetchWeightRangeChunked(
   return { payloads, warnings };
 }
 
-/** Fallback for steps when stats endpoint is empty/unavailable. Soft-fail per chunk. */
-/** Sleep summaries — soft-fail per chunk (same 28d window as steps). */
+/**
+ * Sleep summaries — soft-fail per chunk.
+ * Use 14-day windows: Personal API often 500s on large JSON (>~256KB).
+ */
 export async function fetchDailySleepSummariesChunked(
   accessToken: string,
   startDate: string,
   endDate: string,
 ): Promise<ChunkedFetchResult> {
-  const chunks = chunkInclusiveDateRange(startDate, endDate, 28);
+  const chunks = chunkInclusiveDateRange(startDate, endDate, 14);
   const payloads: unknown[] = [];
   const warnings: string[] = [];
   for (const c of chunks) {

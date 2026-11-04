@@ -47,3 +47,12 @@ test('weightLinePoints flat series mid y', () => {
   assert.equal(pts[0].x, 0);
   assert.equal(pts[2].x, 1);
 });
+
+test('weightLinePoints pads tiny span so noise stays calm', () => {
+  const pts = weightLinePoints([70.0, 70.1, 70.05]);
+  const ys = pts.map((p) => p.y);
+  const spread = Math.max(...ys) - Math.min(...ys);
+  // With 2 kg floor, 0.1 kg change is a small vertical fraction.
+  assert.ok(spread < 0.2);
+  assert.ok(ys.every((y) => y > 0.1 && y < 0.9));
+});

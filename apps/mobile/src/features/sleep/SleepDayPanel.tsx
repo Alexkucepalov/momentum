@@ -3,6 +3,14 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../../src/domain/habitWeek';
+import {
+  buildSleepStageRows,
+  formatSleepClock,
+  formatSleepDuration,
+  sleepEfficiencyPercent,
+  sleepHoursValue,
+  type SleepStageKey,
+} from '../../../../../src/domain/sleepStats';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
 import { useData } from '@/src/state/DataContext';
@@ -10,29 +18,24 @@ import {
   AppButton,
   AppCard,
   AppText,
-  MetricCard,
   colors,
   radius,
   space,
 } from '@/src/design-system';
 
-function fmtHours(sec: number | null): string {
-  if (sec == null || !Number.isFinite(sec) || sec < 0) return '—';
-  const h = Math.floor(sec / 3600);
-  const m = Math.round((sec % 3600) / 60);
-  return `${h}:${String(m).padStart(2, '0')}`;
-}
+const STAGE_COLOR: Record<SleepStageKey, string> = {
+  deep: colors.ink,
+  light: colors.textSecondary,
+  rem: colors.textMuted,
+  awake: colors.borderStrong,
+};
 
-function stageRatio(part: number | null, total: number | null): number {
-  if (part == null || total == null || total <= 0 || part < 0) return 0;
-  return Math.min(1, part / total);
-}
-
-/** Sleep metrics for the shared day — used inside Movement tab. */
+/** Full night stats from stored Garmin sleep — unknown stays «—». */
 export function SleepDayPanel({ todayKey }: { todayKey: string }) {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, revision } = useData();
   void revision;
+  const profile = repo.getProfile();
   const night = repo.getSleepForDate(dateLocal);
 
   const week = useMemo(() => {
@@ -45,102 +48,49 @@ export function SleepDayPanel({ todayKey }: { todayKey: string }) {
         weekdayIndex,
         hours,
         value: hours,
-        valueLabel: n?.sleepSec == null ? '—' : fmtHours(n.sleepSec),
+        valueLabel: formatSleepDuration(n?.sleepSec ?? null) ?? '—',
         hasData: n?.sleepSec != null,
+        score: n?.sleepScore ?? null,
       };
     });
     const known = days.filter((d) => d.hasData);
     const avgHours =
       known.length === 0 ? null : known.reduce((s, d) => s + d.hours, 0) / known.length;
-    return { start, end: days[6]?.date ?? start, days, knownCount: known.length, avgHours };
+    const scored = known.filter((d) => d.score != null);
+    const avgScore =
+      scored.length === 0
+        ? null
+        : scored.reduce((s, d) => s + (d.score as number), 0) / scored.length;
+    return {
+      start,
+      end: days[6]?.date ?? start,
+      days,
+      knownCount: known.length,
+      avgHours,
+      avgScore,
+    };
   }, [repo, dateLocal, revision]);
 
-  const deepR = stageRatio(night?.deepSec ?? null, night?.sleepSec ?? null);
-  const lightR = stageRatio(night?.lightSec ?? null, night?.sleepSec ?? null);
-  const remR = stageRatio(night?.remSec ?? null, night?.sleepSec ?? null);
-  const awakeR = stageRatio(night?.awakeSec ?? null, night?.sleepSec ?? null);
+  const stages = night ? buildSleepStageRows(night) : [];
+  const hasAnyStage = stages.some((s) => s.sec != null);
+  const efficiency = night
+    ? sleepEfficiencyPercent(night.sleepSec, night.awakeSec)
+    : null;
+  const startClock = formatSleepClock(night?.startAt ?? null, profile.timezone);
+  const endClock = formatSleepClock(night?.endAt ?? null, profile.timezone);
+  const hours = sleepHoursValue(night?.sleepSec ?? null);
+  const durationLabel = formatSleepDuration(night?.sleepSec ?? null);
 
   return (
-    <View testID="sleep-day-panel">
-      <AppText variant="caption" tone="muted" style={styles.hint}>
-        Данные из Garmin Connect после синхронизации. Нет записи ≠ 0 часов.
-      </AppText>
-
-      <AppCard style={styles.card}>
-        <MetricCard
-          label="Сон"
-          value={night?.sleepSec == null ? null : Math.round((night.sleepSec / 3600) * 10) / 10}
-          unit="ч"
-          meta={
-            night?.sleepScore != null
-              ? `оценка Garmin ${Math.round(night.sleepScore)}`
-              : night
-                ? 'без оценки'
-                : 'нет данных'
-          }
-        />
-        <View style={styles.metaRow}>
-          <AppText variant="caption" tone="secondary">
-            Глубокий {fmtHours(night?.deepSec ?? null)}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            Лёгкий {fmtHours(night?.lightSec ?? null)}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            REM {fmtHours(night?.remSec ?? null)}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            Бодр. {fmtHours(night?.awakeSec ?? null)}
-          </AppText>
-        </View>
-
-        {night?.sleepSec != null ? (
-          <View style={styles.stages} accessibilityLabel="Фазы сна">
-            <View style={[styles.stage, styles.deep, { flex: Math.max(deepR, 0.02) }]} />
-            <View style={[styles.stage, styles.light, { flex: Math.max(lightR, 0.02) }]} />
-            <View style={[styles.stage, styles.rem, { flex: Math.max(remR, 0.02) }]} />
-            <View style={[styles.stage, styles.awake, { flex: Math.max(awakeR, 0.02) }]} />
-          </View>
-        ) : null}
-
-        <View style={styles.legend}>
-          <LegendSwatch color={colors.ink} label="глубокий" />
-          <LegendSwatch color={colors.textSecondary} label="лёгкий" />
-          <LegendSwatch color={colors.textMuted} label="REM" />
-          <LegendSwatch color={colors.borderStrong} label="бодр." />
-        </View>
-
-        <AppText variant="caption" tone="muted">
-          SpO₂ ср. {night?.avgSpo2 == null ? '—' : `${night.avgSpo2.toFixed(1)}%`}
-          {' · '}
-          дыхание {night?.avgRespiration == null ? '—' : night.avgRespiration.toFixed(1)}
-        </AppText>
-      </AppCard>
-
-      <WeekBarChart
-        title="Неделя сна"
-        subtitle={`${formatWeekRangeRu(week.start, week.end)} · ${week.knownCount} ночей · ср. ${
-          week.avgHours == null ? '—' : `${week.avgHours.toFixed(1)} ч`
-        }`}
-        selectedDate={dateLocal}
-        todayDate={todayKey}
-        onSelectDate={setDateLocal}
-        footnote="Пустой столбик — нет импорта Garmin, не «ноль часов»."
-        days={week.days.map((d) => ({
-          dateLocal: d.date,
-          weekdayIndex: d.weekdayIndex,
-          value: d.value,
-          valueLabel: d.valueLabel,
-        }))}
-      />
-
+    <View style={styles.root} testID="sleep-day-panel">
       {!night ? (
-        <AppCard style={styles.empty}>
+        <AppCard style={styles.card}>
           <AppText variant="subtitle" style={styles.emptyTitle}>
-            Пока нет сна за день
+            Нет данных за ночь
           </AppText>
           <AppText variant="caption" tone="secondary" style={styles.emptyBody}>
-            Подключи Garmin Personal API и синхронизируй — ночные summaries появятся здесь.
+            Нет записи ≠ 0 часов. После синхронизации Garmin здесь появятся длительность, фазы,
+            оценка, SpO₂ и дыхание.
           </AppText>
           <AppButton
             label="Открыть Garmin"
@@ -148,48 +98,246 @@ export function SleepDayPanel({ todayKey }: { todayKey: string }) {
             onPress={() => router.push('/garmin' as Href)}
           />
         </AppCard>
-      ) : null}
+      ) : (
+        <>
+          <AppCard style={styles.card}>
+            <View style={styles.heroRow}>
+              <View style={styles.heroMain}>
+                <AppText variant="label" tone="muted">
+                  Длительность
+                </AppText>
+                <AppText variant="metric" style={styles.heroValue}>
+                  {hours == null ? '—' : hours}
+                  {hours != null ? (
+                    <AppText variant="caption" tone="muted">
+                      {' '}
+                      ч
+                    </AppText>
+                  ) : null}
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  {durationLabel ? `${durationLabel}` : 'время неизвестно'}
+                </AppText>
+              </View>
+              <View style={styles.heroScore}>
+                <AppText variant="label" tone="muted">
+                  Оценка
+                </AppText>
+                <AppText variant="metric" style={styles.heroValue}>
+                  {night.sleepScore == null ? '—' : Math.round(night.sleepScore)}
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  Garmin
+                </AppText>
+              </View>
+            </View>
+
+            <View style={styles.window}>
+              <View style={styles.windowCell}>
+                <AppText variant="label" tone="muted">
+                  Заснул
+                </AppText>
+                <AppText variant="subtitle" style={styles.windowValue}>
+                  {startClock ?? '—'}
+                </AppText>
+              </View>
+              <AppText variant="caption" tone="muted">
+                →
+              </AppText>
+              <View style={styles.windowCell}>
+                <AppText variant="label" tone="muted">
+                  Проснулся
+                </AppText>
+                <AppText variant="subtitle" style={styles.windowValue}>
+                  {endClock ?? '—'}
+                </AppText>
+              </View>
+              <View style={styles.windowCell}>
+                <AppText variant="label" tone="muted">
+                  Эффект.
+                </AppText>
+                <AppText variant="subtitle" style={styles.windowValue}>
+                  {efficiency == null ? '—' : `${efficiency}%`}
+                </AppText>
+              </View>
+            </View>
+
+            {hasAnyStage ? (
+              <View style={styles.stagesBlock} accessibilityLabel="Фазы сна">
+                <AppText variant="label" tone="muted" style={styles.blockLabel}>
+                  Фазы
+                </AppText>
+                <View style={styles.stagesBar}>
+                  {stages.map((s) =>
+                    s.barShare > 0 ? (
+                      <View
+                        key={s.key}
+                        style={[
+                          styles.stageSeg,
+                          {
+                            flex: Math.max(s.barShare, 0.02),
+                            backgroundColor: STAGE_COLOR[s.key],
+                          },
+                        ]}
+                      />
+                    ) : null,
+                  )}
+                </View>
+                {stages.map((s) => (
+                  <View key={s.key} style={styles.stageRow}>
+                    <View
+                      style={[styles.stageDot, { backgroundColor: STAGE_COLOR[s.key] }]}
+                    />
+                    <AppText variant="body" style={styles.stageName}>
+                      {s.labelRu}
+                    </AppText>
+                    <AppText variant="caption" tone="secondary" style={styles.stagePct}>
+                      {s.percent == null ? '—' : `${s.percent}%`}
+                    </AppText>
+                    <AppText variant="body" style={styles.stageDur}>
+                      {s.durationLabel ?? '—'}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <AppText variant="caption" tone="muted">
+                Фазы за эту ночь не пришли из Garmin
+              </AppText>
+            )}
+          </AppCard>
+
+          <AppCard style={styles.vitalsCard}>
+            <AppText variant="label" tone="muted" style={styles.blockLabel}>
+              Показатели
+            </AppText>
+            <View style={styles.vitalsRow}>
+              <Vital
+                label="SpO₂ ср."
+                value={night.avgSpo2 == null ? '—' : `${night.avgSpo2.toFixed(1)}%`}
+              />
+              <View style={styles.vitalRule} />
+              <Vital
+                label="Дыхание"
+                value={
+                  night.avgRespiration == null ? '—' : `${night.avgRespiration.toFixed(1)}`
+                }
+                unit={night.avgRespiration == null ? undefined : '/мин'}
+              />
+              <View style={styles.vitalRule} />
+              <Vital
+                label="Источник"
+                value={night.source === 'garmin' ? 'Garmin' : night.source}
+              />
+            </View>
+          </AppCard>
+        </>
+      )}
+
+      <WeekBarChart
+        title="Неделя сна"
+        subtitle={`${formatWeekRangeRu(week.start, week.end)} · ${week.knownCount} ноч.${
+          week.avgHours == null ? '' : ` · ср. ${week.avgHours.toFixed(1)} ч`
+        }${week.avgScore == null ? '' : ` · оценка ${Math.round(week.avgScore)}`}`}
+        selectedDate={dateLocal}
+        todayDate={todayKey}
+        onSelectDate={setDateLocal}
+        footnote="Пустой столбик — нет импорта, не «ноль часов»."
+        days={week.days.map((d) => ({
+          dateLocal: d.date,
+          weekdayIndex: d.weekdayIndex,
+          value: d.value,
+          valueLabel: d.valueLabel,
+        }))}
+      />
     </View>
   );
 }
 
-function LegendSwatch({ color, label }: { color: string; label: string }) {
+function Vital({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+}) {
   return (
-    <View style={styles.legendItem}>
-      <View style={[styles.swatch, { backgroundColor: color }]} />
-      <AppText variant="caption" tone="muted">
+    <View style={styles.vital}>
+      <AppText variant="label" tone="muted">
         {label}
+      </AppText>
+      <AppText variant="subtitle" style={styles.vitalValue}>
+        {value}
+        {unit ? (
+          <AppText variant="caption" tone="muted">
+            {' '}
+            {unit}
+          </AppText>
+        ) : null}
       </AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hint: { marginBottom: space.sm },
-  card: { gap: space.sm, marginBottom: space.md },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  stages: {
+  root: { gap: space.sm },
+  card: { gap: space.md, padding: space.lg },
+  emptyTitle: { fontWeight: '800' },
+  emptyBody: { lineHeight: 18 },
+  heroRow: { flexDirection: 'row', gap: space.md },
+  heroMain: { flex: 1.2, gap: 2 },
+  heroScore: {
+    flex: 1,
+    gap: 2,
+    paddingLeft: space.md,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: colors.border,
+  },
+  heroValue: { fontWeight: '800' },
+  window: {
     flexDirection: 'row',
-    height: 10,
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.canvas,
+    borderRadius: radius.md,
+    padding: space.md,
+  },
+  windowCell: { flex: 1, gap: 2 },
+  windowValue: { fontWeight: '700' },
+  blockLabel: {
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  stagesBlock: { gap: space.sm },
+  stagesBar: {
+    flexDirection: 'row',
+    height: 12,
     borderRadius: radius.sm,
     overflow: 'hidden',
     backgroundColor: colors.border,
-    marginTop: space.sm,
   },
-  stage: { height: '100%' },
-  deep: { backgroundColor: colors.ink },
-  light: { backgroundColor: colors.textSecondary },
-  rem: { backgroundColor: colors.textMuted },
-  awake: { backgroundColor: colors.borderStrong },
-  legend: {
+  stageSeg: { height: '100%' },
+  stageRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.md,
-    marginTop: space.xs,
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: 32,
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  swatch: { width: 10, height: 10, borderRadius: 2 },
-  empty: { gap: space.sm, marginTop: space.md },
-  emptyTitle: { fontWeight: '800' },
-  emptyBody: { lineHeight: 18 },
+  stageDot: { width: 8, height: 8, borderRadius: 2 },
+  stageName: { flex: 1, fontWeight: '600' },
+  stagePct: { width: 48, textAlign: 'right' },
+  stageDur: { width: 48, textAlign: 'right', fontWeight: '700' },
+  vitalsCard: { gap: space.sm, padding: space.lg },
+  vitalsRow: { flexDirection: 'row', alignItems: 'stretch' },
+  vital: { flex: 1, alignItems: 'center', gap: 2 },
+  vitalValue: { fontWeight: '800' },
+  vitalRule: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: 4,
+  },
 });

@@ -18,7 +18,7 @@ const NOW: LinkItem[] = [
 ];
 
 const LATER: LinkItem[] = [
-  { key: 'week', title: 'Меню на неделю', icon: 'calendar-outline', href: '/plan/week' },
+  { key: 'week', title: 'Доска недели', icon: 'calendar-outline', href: '/plan/week' },
   { key: 'shop', title: 'Покупки', icon: 'cart-outline', href: '/plan/shop' },
   { key: 'budget', title: 'Бюджет', icon: 'wallet-outline', href: '/plan/budget' },
   { key: 'receipt', title: 'Импорт покупки', icon: 'receipt-outline', href: '/plan/receipt' },

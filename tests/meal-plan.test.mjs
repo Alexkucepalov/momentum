@@ -93,6 +93,24 @@ test('logPlannedMealToDiary is explicit; move and portion work', () => {
   assert.equal(repo.listPlannedMeals(plan.id).find((m) => m.id === meal.id).status, 'logged');
 });
 
+test('ensureWeekDraftPlan covers Mon–Sun and expands existing', () => {
+  const repo = createMemoryFoodRepository({ timezone: 'UTC' });
+  const plan = repo.ensureWeekDraftPlan('2026-11-02'); // Monday
+  assert.equal(plan.startDate, '2026-11-02');
+  assert.equal(plan.endDate, '2026-11-08');
+  assert.equal(plan.status, 'draft');
+  const again = repo.ensureWeekDraftPlan('2026-11-02');
+  assert.equal(again.id, plan.id);
+  const short = repo.addPlannedMeal({
+    dateLocal: '2026-11-03',
+    meal: 'lunch',
+    displayName: 'Суп',
+    grams: 300,
+  });
+  assert.equal(short.planId, plan.id);
+  assert.equal(repo.dailyTotals('2026-11-03').entryCount, 0);
+});
+
 test('addPlannedMeal creates empty draft and never logs diary', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
   const product = repo.createProduct({

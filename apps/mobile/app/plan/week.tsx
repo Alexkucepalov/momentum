@@ -1,493 +1,256 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { formatDateRu } from '../../../../src/domain/dateFormatRu';
-import type { MealPlanPeriodDays, MealPlanDiversity } from '../../../../src/domain/mealPlanDraft';
-import { shiftDateLocal } from '../../../../src/domain/repeatMeal';
-import { nutritionForRecipePortion } from '../../../../src/domain/recipeNutrition';
+import {
+  datesInWeekFromStart,
+  HABIT_WEEKDAY_LABELS_RU,
+  weekStartMonday,
+} from '../../../../src/domain/habitWeek';
+import {
+  buildPlannedDayNutrition,
+  nutritionForPlannedMeal,
+} from '../../../../src/domain/plannedDayNutrition';
 import type { MealSlot, PlannedMeal } from '../../../../src/storage/types';
-import { EmptyState } from '@/src/components/EmptyState';
+import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { useAddGuard } from '@/src/hooks/useAddGuard';
+import { AddPlannedMealSheet, type AddPick } from '@/src/features/plan/AddPlannedMealSheet';
+import { EditPlannedGramsSheet } from '@/src/features/plan/EditPlannedGramsSheet';
+import { MEAL_SLOTS } from '@/src/features/plan/mealBoardLabels';
+import { MovePlannedMealSheet } from '@/src/features/plan/MovePlannedMealSheet';
+import { WeekBoard, type WeekBoardDay } from '@/src/features/plan/WeekBoard';
 import { useData } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
-import { AppButton } from '@/src/design-system';
+import { confirmAction } from '@/src/utils/confirmAction';
+import { AppButton, AppText, colors, space } from '@/src/design-system';
 
-const PERIODS: MealPlanPeriodDays[] = [3, 5, 7];
-const PORTION_STEPS = [100, 150, 200, 250, 300];
-const MEAL_LABELS: Record<MealSlot, string> = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
-};
-
-function groupByDate(meals: PlannedMeal[]): Array<{ date: string; items: PlannedMeal[] }> {
-  const map = new Map<string, PlannedMeal[]>();
-  for (const m of meals) {
-    const list = map.get(m.dateLocal) ?? [];
-    list.push(m);
-    map.set(m.dateLocal, list);
-  }
-  return [...map.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, items]) => ({ date, items }));
-}
-
-function fmtMacroLine(kcal: number | null, p: number | null, f: number | null, c: number | null): string {
-  const parts: string[] = [];
-  if (kcal !== null) parts.push(`${Math.round(kcal)} ккал`);
-  if (p !== null) parts.push(`Б ${Math.round(p)}`);
-  if (f !== null) parts.push(`Ж ${Math.round(f)}`);
-  if (c !== null) parts.push(`У ${Math.round(c)}`);
-  return parts.length ? parts.join(' · ') : 'КБЖУ неизвестны';
+function emptySlots(): Record<MealSlot, PlannedMeal[]> {
+  return { breakfast: [], lunch: [], dinner: [], snack: [] };
 }
 
 export default function WeekPlanScreen() {
   const router = useRouter();
   const { repo, dateLocal, refresh, revision, showFlash } = useData();
-  const allowAdd = useAddGuard();
   void revision;
 
-  const [days, setDays] = useState<MealPlanPeriodDays>(7);
-  const [budget, setBudget] = useState('3500');
-  const [cookSessions, setCookSessions] = useState('2');
-  const [diversity, setDiversity] = useState<MealPlanDiversity>('balanced');
+  const profile = repo.getProfile();
+  const weekStart = weekStartMonday(dateLocal);
+  const weekDates = useMemo(() => datesInWeekFromStart(weekStart), [weekStart]);
+
   const [planId, setPlanId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [composerOpen, setComposerOpen] = useState(false);
-  /** View mode by default — secondary actions only for the meal being edited. */
-  const [editingMealId, setEditingMealId] = useState<string | null>(null);
 
-  const plans = repo.listMealPlans().filter((p) => p.status !== 'archived');
-  const activeId =
-    planId ?? plans.find((p) => p.status === 'draft' || p.status === 'active')?.id ?? null;
-  const plan = activeId ? repo.getMealPlan(activeId) : null;
-  const meals = activeId ? repo.listPlannedMeals(activeId) : [];
-  const daysGrouped = useMemo(() => groupByDate(meals), [meals]);
-
-  /** Week surface first: composer only when user opens it (or after empty CTA). */
-  const showComposer = composerOpen;
-
-  const createDraft = () => {
-    setError(null);
+  useEffect(() => {
     try {
-      if (repo.listRecipes().length === 0) {
-        setError('Нужен хотя бы один рецепт — иначе план будет пустым.');
-        return;
-      }
-      const budgetRub = budget.trim() === '' ? null : Number(budget.replace(',', '.'));
-      if (budgetRub !== null && (!Number.isFinite(budgetRub) || budgetRub < 0)) {
-        throw new Error('Бюджет: число ≥ 0 или пусто');
-      }
-      const sessions = Number(cookSessions);
-      if (!Number.isInteger(sessions) || sessions < 1) throw new Error('Готовок: целое ≥ 1');
-      const created = repo.createMealPlanDraft({
-        startDateLocal: dateLocal,
-        days,
-        budgetRub,
-        cookSessions: sessions,
-        diversity,
-      });
-      setPlanId(created.id);
-      setComposerOpen(false);
-      refresh();
-      showFlash('Черновик меню готов — ещё не съедено');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось создать план');
+      if (typeof repo.ensureWeekDraftPlan !== 'function') return;
+      const plan = repo.ensureWeekDraftPlan(weekStart);
+      setPlanId(plan.id);
+    } catch {
+      setPlanId(null);
     }
-  };
+  }, [repo, weekStart, revision]);
 
-  const macrosFor = (m: PlannedMeal): string => {
-    if (!m.recipeId) return 'КБЖУ неизвестны';
-    const recipe = repo.getRecipe(m.recipeId);
-    if (!recipe) return 'КБЖУ неизвестны';
-    const n = nutritionForRecipePortion(recipe, repo.getRecipeIngredients(recipe.id), m.grams);
-    return fmtMacroLine(n.kcal, n.protein, n.fat, n.carbs);
-  };
-
-  return (
-    <FormScrollView contentContainerStyle={styles.content}>
-      <View style={styles.banner} accessibilityRole="summary">
-        <Text style={styles.bannerText}>Запланированное не считается съеденным.</Text>
-        <Text style={styles.bannerSub}>
-          Меню — черновик быта: переставь, поменяй порцию, а в дневник только когда реально съел.
-        </Text>
-      </View>
-
-      {plan ? (
-        <View style={styles.planHeader}>
-          <Text style={styles.planTitle}>
-            {formatDateRu(plan.startDate)} — {formatDateRu(plan.endDate)}
-          </Text>
-          <Text style={styles.planMeta}>
-            {plan.status === 'draft' ? 'черновик' : plan.status === 'active' ? 'активный' : plan.status}
-            {plan.cookSessions != null ? ` · ${plan.cookSessions} готовок` : ''}
-            {plan.budgetRub != null ? ` · ориентир ${Math.round(plan.budgetRub)} ₽` : ''}
-          </Text>
-          <View style={styles.row}>
-            {plan.status === 'draft' ? (
-              <Pressable
-                onPress={() => {
-                  repo.activateMealPlan(plan.id);
-                  refresh();
-                  showFlash('План активирован');
-                }}
-                style={styles.chip}
-                accessibilityRole="button"
-                accessibilityLabel="Активировать план"
-              >
-                <Text style={styles.chipText}>Активировать</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              onPress={() => router.push('/plan/shop')}
-              style={styles.chip}
-              accessibilityRole="button"
-              accessibilityLabel="Собрать покупки"
-            >
-              <Text style={styles.chipText}>Покупки</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setComposerOpen((v) => !v)}
-              style={styles.chip}
-              accessibilityRole="button"
-              accessibilityLabel="Новый черновик"
-            >
-              <Text style={styles.chipText}>{composerOpen ? 'Скрыть форму' : 'Новый черновик'}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                repo.softDeleteMealPlan(plan.id);
-                setPlanId(null);
-                setComposerOpen(true);
-                refresh();
-                showFlash('План удалён');
-              }}
-              style={styles.chip}
-              accessibilityRole="button"
-              accessibilityLabel="Удалить план"
-            >
-              <Text style={[styles.chipText, styles.danger]}>Удалить</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
-
-      {showComposer ? (
-        <View style={styles.composer}>
-          <Text style={styles.section}>Собрать меню из твоих рецептов</Text>
-          <Text style={styles.label}>Период</Text>
-          <View style={styles.row}>
-            {PERIODS.map((p) => (
-              <Pressable
-                key={p}
-                onPress={() => setDays(p)}
-                style={[styles.chip, days === p && styles.chipOn]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: days === p }}
-                accessibilityLabel={`${p} дней`}
-              >
-                <Text style={[styles.chipText, days === p && styles.chipTextOn]}>{p} дн.</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={styles.label}>Ориентир бюджета (₽, не списывается)</Text>
-          <TextInput
-            value={budget}
-            onChangeText={setBudget}
-            keyboardType="number-pad"
-            placeholder="3500"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            accessibilityLabel="Бюджет на продукты"
-          />
-
-          <Text style={styles.label}>Готовок (сколько раз готовишь за период)</Text>
-          <TextInput
-            value={cookSessions}
-            onChangeText={setCookSessions}
-            keyboardType="number-pad"
-            style={styles.input}
-            accessibilityLabel="Число готовок"
-          />
-
-          <Text style={styles.label}>Разнообразие</Text>
-          <View style={styles.row}>
-            {(
-              [
-                ['balanced', 'Сбалансированное'],
-                ['fewer', 'Меньше блюд'],
-              ] as const
-            ).map(([id, label]) => (
-              <Pressable
-                key={id}
-                onPress={() => setDiversity(id)}
-                style={[styles.chip, diversity === id && styles.chipOn]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: diversity === id }}
-                accessibilityLabel={label}
-              >
-                <Text style={[styles.chipText, diversity === id && styles.chipTextOn]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <AppButton label="Спроектировать план" onPress={createDraft} />
-          {repo.listRecipes().length === 0 ? (
-            <EmptyState
-              compact
-              icon="book-outline"
-              title="Нет рецептов"
-              body="Добавь рецепты — черновик меню собирается из личной базы."
-              actionLabel="К рецептам"
-              onAction={() => router.push('/recipes')}
-            />
-          ) : null}
-        </View>
-      ) : null}
-
-      {plan && daysGrouped.length === 0 ? (
-        <Text style={styles.hint}>Пустой черновик — добавь рецепты и создай снова.</Text>
-      ) : null}
-
-      {daysGrouped.map(({ date, items }) => {
-        const isToday = date === dateLocal;
-        return (
-          <View key={date} style={[styles.dayBlock, isToday && styles.dayToday]}>
-            <Text style={styles.dayTitle}>
-              {formatDateRu(date)}
-              {isToday ? ' · сегодня' : ''}
-            </Text>
-            {items.map((m) => (
-              <PlannedMealRow
-                key={m.id}
-                meal={m}
-                macros={macrosFor(m)}
-                editing={editingMealId === m.id}
-                onToggleEdit={() =>
-                  setEditingMealId((cur) => (cur === m.id ? null : m.id))
-                }
-                onPortion={() => {
-                  const idx = PORTION_STEPS.findIndex((g) => g >= m.grams);
-                  const next =
-                    idx < 0 || idx === PORTION_STEPS.length - 1
-                      ? PORTION_STEPS[0]!
-                      : PORTION_STEPS[idx + 1]!;
-                  repo.updatePlannedMealGrams(m.id, next);
-                  refresh();
-                  showFlash(`Порция ${next} г`);
-                }}
-                onMoveDay={(delta) => {
-                  const nextDate = shiftDateLocal(m.dateLocal, delta);
-                  if (plan && (nextDate < plan.startDate || nextDate > plan.endDate)) {
-                    showFlash('Вне периода плана');
-                    return;
-                  }
-                  repo.movePlannedMeal(m.id, { dateLocal: nextDate, meal: m.meal });
-                  refresh();
-                  showFlash(`→ ${formatDateRu(nextDate)}`);
-                }}
-                onMoveSlot={() => {
-                  const nextMeal: MealSlot =
-                    m.meal === 'breakfast' ? 'lunch' : m.meal === 'lunch' ? 'dinner' : 'breakfast';
-                  repo.movePlannedMeal(m.id, { dateLocal: m.dateLocal, meal: nextMeal });
-                  refresh();
-                  showFlash(`→ ${MEAL_LABELS[nextMeal]}`);
-                }}
-                onReplace={() => {
-                  const recipes = repo.listRecipes();
-                  if (recipes.length < 2) {
-                    showFlash('Нужно ≥2 рецепта для замены');
-                    return;
-                  }
-                  const ids = recipes.map((r) => r.id);
-                  const cur = m.recipeId ? ids.indexOf(m.recipeId) : -1;
-                  const other = recipes[(cur + 1) % recipes.length]!;
-                  repo.replacePlannedMeal(m.id, {
-                    recipeId: other.id,
-                    displayName: other.name,
-                    grams: Math.min(200, Math.max(100, Math.round(other.cookedYieldG / 4))),
-                  });
-                  refresh();
-                  showFlash(`Замена: ${other.name}`);
-                }}
-                onLog={() => {
-                  if (!allowAdd()) return;
-                  repo.logPlannedMealToDiary(m.id);
-                  refresh();
-                  showFlash(`В дневник: ${m.displayName}`);
-                  setEditingMealId(null);
-                }}
-              />
-            ))}
-          </View>
-        );
-      })}
-
-      {!plan && !showComposer ? (
-        <EmptyState
-          compact
-          icon="calendar-outline"
-          title="Нет меню на неделю"
-          body="Собери черновик из своих рецептов. Запланированное не считается съеденным."
-          actionLabel="Собрать меню"
-          onAction={() => setComposerOpen(true)}
-        />
-      ) : null}
-    </FormScrollView>
+  const plan = planId ? repo.getMealPlan(planId) : null;
+  const allMeals = useMemo(
+    () => (planId ? repo.listPlannedMeals(planId) : []),
+    [repo, planId, revision],
   );
-}
 
-function PlannedMealRow({
-  meal: m,
-  macros,
-  editing,
-  onToggleEdit,
-  onPortion,
-  onMoveDay,
-  onMoveSlot,
-  onReplace,
-  onLog,
-}: {
-  meal: PlannedMeal;
-  macros: string;
-  editing: boolean;
-  onToggleEdit: () => void;
-  onPortion: () => void;
-  onMoveDay: (delta: number) => void;
-  onMoveSlot: () => void;
-  onReplace: () => void;
-  onLog: () => void;
-}) {
+  const productById = useMemo(() => {
+    const map = new Map(repo.listProducts().map((p) => [p.id, p]));
+    return map;
+  }, [repo, revision]);
+
+  const lookup = useMemo(
+    () => ({
+      getRecipe: (id: string) => repo.getRecipe(id),
+      getRecipeIngredients: (id: string) => repo.getRecipeIngredients(id),
+      getProduct: (id: string) => productById.get(id) ?? null,
+    }),
+    [repo, productById, revision],
+  );
+
+  const targets = useMemo(
+    () => ({
+      energyKcal: profile.dailyEnergyKcal,
+      proteinG: profile.dailyProteinG,
+      fatG: profile.dailyFatG,
+      carbG: profile.dailyCarbG,
+    }),
+    [profile],
+  );
+
+  const boardDays: WeekBoardDay[] = useMemo(() => {
+    return weekDates.map((dateLocalDay, weekdayIndex) => {
+      const dayMeals = allMeals.filter((m) => m.dateLocal === dateLocalDay);
+      const bySlot = emptySlots();
+      for (const m of dayMeals) {
+        bySlot[m.meal].push(m);
+      }
+      const nutrition = buildPlannedDayNutrition({
+        meals: dayMeals,
+        targets,
+        lookup,
+      });
+      const dayNumber = Number(dateLocalDay.slice(8, 10));
+      return {
+        dateLocal: dateLocalDay,
+        weekdayIndex,
+        dayNumber,
+        nutrition,
+        mealsBySlot: bySlot,
+      };
+    });
+  }, [weekDates, allMeals, targets, lookup]);
+
+  const kcalForMeal = (m: PlannedMeal) => nutritionForPlannedMeal(m, lookup).energyKcal;
+
+  const [addTarget, setAddTarget] = useState<{ dateLocal: string; slot: MealSlot } | null>(null);
+  const [moveMeal, setMoveMeal] = useState<PlannedMeal | null>(null);
+  const [editMeal, setEditMeal] = useState<PlannedMeal | null>(null);
+
+  const recipes = useMemo(
+    () =>
+      repo
+        .listRecipes()
+        .map((r) => ({ id: r.id, name: r.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+    [repo, revision],
+  );
+  const products = useMemo(
+    () =>
+      repo
+        .listProducts()
+        .map((p) => ({ id: p.id, name: p.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+    [repo, revision],
+  );
+
+  const moveDays = weekDates.map((d, i) => ({
+    dateLocal: d,
+    label: `${HABIT_WEEKDAY_LABELS_RU[i]} ${Number(d.slice(8, 10))}`,
+  }));
+
+  const onAddConfirm = (pick: AddPick, grams: number) => {
+    if (!addTarget) return;
+    repo.ensureWeekDraftPlan(weekStart);
+    repo.addPlannedMeal({
+      dateLocal: addTarget.dateLocal,
+      meal: addTarget.slot,
+      displayName: pick.name,
+      grams,
+      recipeId: pick.kind === 'recipe' ? pick.id : null,
+      productId: pick.kind === 'product' ? pick.id : null,
+    });
+    refresh();
+    showFlash(`В план: ${pick.name}`);
+    setAddTarget(null);
+  };
+
+  const onDelete = (m: PlannedMeal) => {
+    confirmAction('Убрать из плана?', `«${m.displayName}» исчезнет с доски. Дневник не трогаем.`, {
+      confirmLabel: 'Убрать',
+      destructive: true,
+      onConfirm: () => {
+        repo.softDeletePlannedMeal(m.id);
+        refresh();
+        showFlash('Убрано с доски');
+      },
+    });
+  };
+
+  const rangeLabel = `${HABIT_WEEKDAY_LABELS_RU[0]} ${Number(weekDates[0]!.slice(8, 10))} — ${HABIT_WEEKDAY_LABELS_RU[6]} ${Number(weekDates[6]!.slice(8, 10))}`;
+
   return (
-    <View style={styles.mealCard} accessibilityRole="summary">
-      <Text style={styles.mealSlot}>{MEAL_LABELS[m.meal]}</Text>
-      <Text style={styles.mealTitle}>{m.displayName}</Text>
-      <Text style={styles.mealMeta}>
-        {Math.round(m.grams)} г · {macros}
-        {m.status === 'logged' ? ' · в дневнике' : ''}
-      </Text>
-      {m.status !== 'logged' ? (
-        editing ? (
-          <View style={styles.actions}>
-            <Action label="Порция" onPress={onPortion} />
-            <Action label="← день" onPress={() => onMoveDay(-1)} />
-            <Action label="день →" onPress={() => onMoveDay(1)} />
-            <Action label="Слот" onPress={onMoveSlot} />
-            <Action label="Замена" onPress={onReplace} />
-            <Action label="В дневник" onPress={onLog} primary />
-            <Action label="Готово" onPress={onToggleEdit} />
-          </View>
-        ) : (
-          <View style={styles.actions}>
-            <Action label="В дневник" onPress={onLog} primary />
-            <Action label="Изменить" onPress={onToggleEdit} />
-          </View>
-        )
-      ) : null}
+    <View style={styles.root}>
+      <FormScrollView contentContainerStyle={styles.content} testID="week-board-screen">
+        <AppText variant="caption" tone="muted" style={styles.banner} testID="plan-neq-diary">
+          План не пишет в дневник сам — только явная порция. Доска: {rangeLabel}
+          {plan ? ` · ${plan.status === 'draft' ? 'черновик' : 'активный'}` : ''}
+        </AppText>
+
+        <WeekBoard
+          days={boardDays}
+          hasEnergyTarget={profile.dailyEnergyKcal != null}
+          kcalForMeal={kcalForMeal}
+          onAdd={(dateLocalDay, slot) => setAddTarget({ dateLocal: dateLocalDay, slot })}
+          onPressMeal={setEditMeal}
+          onLongPressMeal={setMoveMeal}
+          onDeleteMeal={onDelete}
+        />
+
+        <AppText variant="caption" tone="muted" style={styles.hint}>
+          Долгое нажатие на карточку — перенести на другой день или слот ({MEAL_SLOTS.length} слота).
+        </AppText>
+
+        <View style={styles.footer}>
+          <AppButton
+            label="Собрать покупки"
+            variant="secondary"
+            onPress={() => router.push('/plan/shop')}
+          />
+        </View>
+      </FormScrollView>
+
+      <AddPlannedMealSheet
+        visible={addTarget != null}
+        slot={addTarget?.slot ?? 'lunch'}
+        dayLabel={
+          addTarget
+            ? moveDays.find((d) => d.dateLocal === addTarget.dateLocal)?.label ?? addTarget.dateLocal
+            : ''
+        }
+        recipes={recipes}
+        products={products}
+        onClose={() => setAddTarget(null)}
+        onConfirm={onAddConfirm}
+      />
+
+      <MovePlannedMealSheet
+        visible={moveMeal != null}
+        mealName={moveMeal?.displayName ?? ''}
+        days={moveDays}
+        onClose={() => setMoveMeal(null)}
+        onPick={(dateLocalDay, slot) => {
+          if (!moveMeal) return;
+          repo.movePlannedMeal(moveMeal.id, { dateLocal: dateLocalDay, meal: slot });
+          refresh();
+          showFlash('Перенесено');
+          setMoveMeal(null);
+        }}
+      />
+
+      <EditPlannedGramsSheet
+        visible={editMeal != null}
+        mealName={editMeal?.displayName ?? ''}
+        grams={editMeal?.grams ?? 100}
+        onClose={() => setEditMeal(null)}
+        onSave={(grams) => {
+          if (!editMeal) return;
+          repo.updatePlannedMealGrams(editMeal.id, grams);
+          refresh();
+          showFlash(`Порция: ${grams} г`);
+        }}
+      />
+      <FlashBar />
     </View>
   );
 }
 
-function Action({
-  label,
-  onPress,
-  primary,
-}: {
-  label: string;
-  onPress: () => void;
-  primary?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.actionBtn, primary && styles.actionPrimary]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Text style={[styles.actionText, primary && styles.actionTextPrimary]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  content: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
+  root: { flex: 1, backgroundColor: colors.canvas },
+  content: {
+    paddingTop: space.md,
+    paddingBottom: space.xxl,
+    gap: space.md,
+  },
   banner: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: 4,
+    paddingHorizontal: space.lg,
+    lineHeight: 18,
   },
-  bannerText: { fontSize: type.caption, fontWeight: '800', color: colors.text },
-  bannerSub: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
-  planHeader: { gap: space.sm },
-  planTitle: { fontSize: type.title, fontWeight: '800', color: colors.text },
-  planMeta: { fontSize: type.caption, color: colors.textSecondary },
-  composer: { gap: space.md },
-  section: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
+  hint: {
+    paddingHorizontal: space.lg,
+    lineHeight: 18,
   },
-  label: { fontSize: type.caption, color: colors.textMuted },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: {
-    minHeight: 36,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+  footer: {
+    paddingHorizontal: space.lg,
   },
-  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  chipTextOn: { color: colors.primaryButtonText },
-  input: {
-    minHeight: touchMin,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    backgroundColor: colors.surface,
-    fontSize: type.body,
-    color: colors.text,
-  },
-  error: { color: colors.danger, fontSize: type.caption },
-  danger: { color: colors.danger },
-  hint: { fontSize: type.caption, color: colors.textMuted, lineHeight: 18 },
-  dayBlock: { gap: space.sm, marginTop: space.sm },
-  dayToday: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.accent,
-    paddingLeft: space.md,
-  },
-  dayTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  mealCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space.lg,
-    gap: 4,
-  },
-  mealSlot: { fontSize: type.micro, fontWeight: '700', color: colors.textSecondary },
-  mealTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  mealMeta: { fontSize: type.caption, color: colors.textSecondary },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
-  actionBtn: {
-    minHeight: 36,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionPrimary: { backgroundColor: colors.accent, borderColor: colors.accent },
-  actionText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
-  actionTextPrimary: { color: colors.primaryButtonText },
 });

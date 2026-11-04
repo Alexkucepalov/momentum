@@ -466,6 +466,11 @@ export type FoodRepository = {
     cookSessions?: number;
     diversity?: MealPlanDiversity;
   }): MealPlan;
+  /**
+   * Ensure one draft/active plan covers Mon–Sun starting at weekStartMonday.
+   * Expands an overlapping plan or creates an empty week draft. Never logs diary.
+   */
+  ensureWeekDraftPlan(weekStartMonday: string): MealPlan;
   activateMealPlan(planId: string): MealPlan;
   archiveMealPlan(planId: string): MealPlan;
   softDeleteMealPlan(planId: string): MealPlan;
@@ -2993,6 +2998,61 @@ export function createMemoryFoodRepository(seed?: {
         };
         plannedMeals.set(meal.id, meal);
       }
+      notify();
+      return { ...plan };
+    },
+    ensureWeekDraftPlan(weekStartMondayDate) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartMondayDate)) {
+        throw new Error('weekStartMonday must be YYYY-MM-DD');
+      }
+      const weekEnd = (() => {
+        const [y, m, d] = weekStartMondayDate.split('-').map(Number);
+        const dt = new Date(Date.UTC(y!, m! - 1, d! + 6));
+        return dt.toISOString().slice(0, 10);
+      })();
+      const ts = nowIso();
+      const candidates = [...mealPlans.values()]
+        .filter(
+          (p) =>
+            !p.deletedAt &&
+            (p.status === 'draft' || p.status === 'active') &&
+            p.startDate <= weekEnd &&
+            p.endDate >= weekStartMondayDate,
+        )
+        .sort((a, b) => {
+          if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+          return b.createdAt.localeCompare(a.createdAt);
+        });
+      const existing = candidates[0] ?? null;
+      if (existing) {
+        let changed = false;
+        if (existing.startDate > weekStartMondayDate) {
+          existing.startDate = weekStartMondayDate;
+          changed = true;
+        }
+        if (existing.endDate < weekEnd) {
+          existing.endDate = weekEnd;
+          changed = true;
+        }
+        if (changed) {
+          existing.updatedAt = ts;
+          notify();
+        }
+        return { ...existing };
+      }
+      const plan: MealPlan = {
+        id: newId(),
+        startDate: weekStartMondayDate,
+        endDate: weekEnd,
+        status: 'draft',
+        budgetRub: null,
+        cookSessions: null,
+        diversity: null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      mealPlans.set(plan.id, plan);
       notify();
       return { ...plan };
     },

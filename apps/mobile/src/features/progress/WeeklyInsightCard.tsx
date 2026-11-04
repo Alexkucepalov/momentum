@@ -1,30 +1,30 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { formatDateRu } from '../../../../../src/domain/dateFormatRu';
 import type { WeeklyInsight } from '../../../../../src/domain/weeklyInsight';
-import { colors, radius, space, type } from '../../theme/tokens';
+import { AppText, colors, radius, space } from '@/src/design-system';
 
 export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
   return (
     <View style={styles.card}>
       <View style={styles.head}>
         <View style={styles.icon}>
-          <Ionicons name="calendar-outline" size={18} color={colors.text} />
+          <Ionicons name="calendar-outline" size={18} color={colors.ink} />
         </View>
         <View style={styles.flex}>
-          <Text style={styles.title} accessibilityRole="header">
+          <AppText variant="subtitle" style={styles.title} accessibilityRole="header">
             Неделя
-          </Text>
-          <Text style={styles.range}>
+          </AppText>
+          <AppText variant="caption" tone="muted">
             {formatDateRu(insight.weekStart)} → {formatDateRu(insight.weekEnd)}
-          </Text>
+          </AppText>
         </View>
       </View>
       {insight.lines.map((line) => (
-        <Text key={line} style={styles.line}>
+        <AppText key={line} variant="caption" tone="secondary" style={styles.line}>
           {line}
-        </Text>
+        </AppText>
       ))}
     </View>
   );
@@ -33,13 +33,18 @@ export function WeeklyInsightCard({ insight }: { insight: WeeklyInsight }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: space.lg,
-    marginBottom: space.xl,
+    gap: space.xs,
   },
-  head: { flexDirection: 'row', gap: space.md, marginBottom: space.md, alignItems: 'center' },
+  head: {
+    flexDirection: 'row',
+    gap: space.md,
+    marginBottom: space.sm,
+    alignItems: 'center',
+  },
   icon: {
     width: 36,
     height: 36,
@@ -48,13 +53,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flex: { flex: 1 },
-  title: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
-  range: { fontSize: type.micro, color: colors.textMuted, marginTop: 2 },
-  line: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: space.xs,
-  },
+  flex: { flex: 1, gap: 2 },
+  title: { fontWeight: '800' },
+  line: { lineHeight: 20 },
 });

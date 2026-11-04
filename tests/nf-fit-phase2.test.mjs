@@ -216,10 +216,12 @@ test('Phase 2 UI uses nf-fit design system; no shame copy', () => {
     'utf8',
   );
   assert.ok(hub.includes('@/src/design-system'));
-  assert.ok(hub.includes('AppCard'));
+  assert.ok(hub.includes('AppText'));
+  assert.ok(hub.includes('recipe-hub-actions'));
 
   const index = readFileSync(join(root, 'apps/mobile/app/recipes/index.tsx'), 'utf8');
-  assert.ok(index.includes('AppCard'));
+  assert.ok(index.includes('AppText'));
+  assert.ok(index.includes('Chip'));
   assert.ok(index.includes('@/src/design-system'));
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(index));
 

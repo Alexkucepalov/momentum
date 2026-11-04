@@ -110,8 +110,12 @@ test('Phase 5 Plan hub uses design system; plan ≠ diary copy', () => {
   assert.ok(existsSync(join(root, path)));
   const src = readFileSync(join(root, path), 'utf8');
   assert.ok(src.includes('@/src/design-system'));
-  assert.ok(src.includes('AppCard'));
-  assert.ok(src.includes('Plan ≠ diary') || src.includes('не дневник'));
+  assert.ok(src.includes('AppText'));
+  assert.ok(
+    src.includes('Plan ≠ diary') ||
+      src.includes('не дневник') ||
+      src.includes('не пишет в дневник'),
+  );
   assert.ok(src.includes('eat-now'));
   assert.ok(src.includes('week'));
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(src));

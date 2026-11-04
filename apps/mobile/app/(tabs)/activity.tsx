@@ -10,7 +10,6 @@ import { localDateKey } from '../../../../src/storage/validation';
 import { DayStrip } from '@/src/components/DayStrip';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
 import { EmptyState } from '@/src/components/EmptyState';
-import { SectionHeader } from '@/src/components/SectionHeader';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
 import { ActivityDaySummary } from '@/src/features/activity/ActivityDaySummary';
@@ -20,8 +19,6 @@ import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { SleepDayPanel } from '@/src/features/sleep/SleepDayPanel';
 import { useData } from '@/src/state/DataContext';
 import {
-  AppButton,
-  AppCard,
   AppText,
   SegmentedControl,
   colors,
@@ -37,7 +34,7 @@ const TYPE_META: Array<{ type: WorkoutType; label: string; icon: keyof typeof Io
   { type: 'cycling', label: 'Вело', icon: 'bicycle-outline' },
   { type: 'strength', label: 'Сила', icon: 'barbell-outline' },
   { type: 'football', label: 'Футбол', icon: 'football-outline' },
-  { type: 'other', label: 'Другое', icon: 'fitness-outline' },
+  { type: 'other', label: 'Ещё', icon: 'fitness-outline' },
 ];
 
 /** Movement hub: Activity | Sleep share dateLocal (Stage 3 / C1–C3). */
@@ -53,6 +50,7 @@ export default function MovementScreen() {
   const [formOpen, setFormOpen] = useState(false);
   const [formType, setFormType] = useState<WorkoutType>('walking');
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [weekOpen, setWeekOpen] = useState(false);
 
   useEffect(() => {
     if (params.segment === 'sleep') setSegment('sleep');
@@ -68,7 +66,10 @@ export default function MovementScreen() {
   const workouts = repo.listWorkoutsForDate(dateLocal);
   const totalMin = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
-  const daySteps = repo.getDailyActivityStats(dateLocal)?.steps ?? null;
+  const dayStats = repo.getDailyActivityStats(dateLocal);
+  const daySteps = dayStats?.steps ?? null;
+  const dayDistanceM = dayStats?.distanceM ?? null;
+  const dayActiveKcal = dayStats?.activeKcal ?? null;
   const workoutCalories = (() => {
     let sum = 0;
     let any = false;
@@ -116,6 +117,28 @@ export default function MovementScreen() {
   const todayKey = localDateKey(new Date(), profile.timezone);
   const isEmptyWeek = workouts.length === 0 && weekMinutes.sum === 0;
 
+  const repeatYesterday = () => {
+    const yesterday = shiftDateLocal(dateLocal, -1);
+    const prev = repo
+      .listWorkoutsForDate(yesterday)
+      .filter((w) => w.source === 'user' && w.deletedAt == null);
+    if (prev.length === 0) {
+      showFlash('Вчера нет своих тренировок для повтора');
+      return;
+    }
+    for (const w of prev) {
+      repo.addWorkout({
+        dateLocal,
+        type: w.type,
+        durationSec: w.durationSec,
+        distanceM: w.distanceM,
+        notes: w.notes,
+      });
+    }
+    refresh();
+    showFlash(`Повторено тренировок: ${prev.length}`);
+  };
+
   return (
     <View style={styles.root} testID="movement-screen">
       <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
@@ -130,9 +153,6 @@ export default function MovementScreen() {
             onSelect={setDateLocal}
             onOpenCalendar={() => setCalendarOpen(true)}
           />
-          <AppText variant="caption" tone="muted" style={styles.swipeHint}>
-            Свайп влево / вправо — другой день
-          </AppText>
 
           <SegmentedControl<MovementTab>
             accessibilityLabel="Раздел движения"
@@ -152,18 +172,93 @@ export default function MovementScreen() {
                 totalMinutes={totalMin}
                 activityKcal={activityKcal}
                 steps={daySteps}
+                distanceM={dayDistanceM}
+                activeKcal={dayActiveKcal}
                 workoutCount={workouts.length}
                 workoutCalories={workoutCalories}
               />
 
-              {!isEmptyWeek ? (
+              <View style={styles.quickRow}>
+                {TYPE_META.map((t) => (
+                  <Pressable
+                    key={t.type}
+                    style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                    onPress={() => openForm(t.type)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Добавить ${t.label}`}
+                  >
+                    <Ionicons name={t.icon} size={16} color={colors.ink} />
+                    <AppText variant="caption" style={styles.quickChipText}>
+                      {t.label}
+                    </AppText>
+                  </Pressable>
+                ))}
+              </View>
+
+              <AppText variant="label" tone="muted" style={styles.listLabel}>
+                Тренировки дня
+              </AppText>
+              {workouts.length === 0 ? (
+                <EmptyState
+                  compact
+                  icon="fitness-outline"
+                  title={isEmptyWeek ? 'Пока пусто' : 'В этот день пусто'}
+                  body={
+                    isEmptyWeek
+                      ? 'Добавь тренировку или синхронизируй Garmin в Профиле.'
+                      : 'Свайпни день или выбери дату выше.'
+                  }
+                  actionLabel="+ Тренировка"
+                  onAction={() => openForm('walking')}
+                />
+              ) : (
+                <View style={styles.list}>
+                  {workouts.map((w) => (
+                    <WorkoutRow
+                      key={w.id}
+                      workout={w}
+                      onPress={
+                        w.source === 'garmin'
+                          ? () => router.push(`/garmin/workout/${w.id}` as Href)
+                          : undefined
+                      }
+                      onDelete={() => {
+                        repo.softDeleteWorkout(w.id);
+                        refresh();
+                        showFlash('Тренировка удалена');
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
+
+              <Pressable
+                onPress={() => setWeekOpen((v) => !v)}
+                style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: weekOpen }}
+                accessibilityLabel="Неделя активности"
+              >
+                <AppText variant="body" style={styles.moreTitle}>
+                  Неделя
+                </AppText>
+                <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                  {weekMinutes.sum > 0 ? `${weekMinutes.sum} мин` : 'нет минут'}
+                </AppText>
+                <Ionicons
+                  name={weekOpen ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+              {weekOpen ? (
                 <WeekBarChart
-                  title="Неделя"
-                  subtitle={`${formatWeekRangeRu(weekMinutes.start, weekMinutes.end)} · ${weekMinutes.sum} мин`}
+                  title="Минуты по дням"
+                  subtitle={formatWeekRangeRu(weekMinutes.start, weekMinutes.end)}
                   selectedDate={dateLocal}
                   todayDate={todayKey}
                   onSelectDate={setDateLocal}
-                  footnote="Столбик — минуты. Пустой день — нет записей, не «ноль»."
+                  footnote="Пустой день — нет записей, не «ноль»."
                   days={weekMinutes.days.map((d) => ({
                     dateLocal: d.date,
                     weekdayIndex: d.weekdayIndex,
@@ -173,88 +268,21 @@ export default function MovementScreen() {
                 />
               ) : null}
 
-              <AppButton label="+ Тренировка" onPress={() => openForm('walking')} />
-              <AppButton
-                label="Повторить вчерашние тренировки"
-                variant="secondary"
-                onPress={() => {
-                  const yesterday = shiftDateLocal(dateLocal, -1);
-                  const prev = repo
-                    .listWorkoutsForDate(yesterday)
-                    .filter((w) => w.source === 'user' && w.deletedAt == null);
-                  if (prev.length === 0) {
-                    showFlash('Вчера нет своих тренировок для повтора');
-                    return;
-                  }
-                  for (const w of prev) {
-                    repo.addWorkout({
-                      dateLocal,
-                      type: w.type,
-                      durationSec: w.durationSec,
-                      distanceM: w.distanceM,
-                      notes: w.notes,
-                    });
-                  }
-                  refresh();
-                  showFlash(`Повторено тренировок: ${prev.length}`);
-                }}
+              <Pressable
+                onPress={repeatYesterday}
+                style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Повторить вчерашние тренировки"
                 testID="activity-repeat-yesterday"
-              />
-
-              <SectionHeader title="Записи дня" />
-              {workouts.length === 0 ? (
-                <EmptyState
-                  compact
-                  icon="fitness-outline"
-                  title={isEmptyWeek ? 'Пока пусто' : 'В этот день пусто'}
-                  body={
-                    isEmptyWeek
-                      ? 'Добавь тренировку или синхронизируй Garmin в Профиле.'
-                      : 'Свайпни день или выбери дату на неделе.'
-                  }
-                  actionLabel="+ Тренировка"
-                  onAction={() => openForm('walking')}
-                />
-              ) : (
-                workouts.map((w) => (
-                  <WorkoutRow
-                    key={w.id}
-                    workout={w}
-                    onPress={
-                      w.source === 'garmin'
-                        ? () => router.push(`/garmin/workout/${w.id}` as Href)
-                        : undefined
-                    }
-                    onDelete={() => {
-                      repo.softDeleteWorkout(w.id);
-                      refresh();
-                      showFlash('Тренировка удалена');
-                    }}
-                  />
-                ))
-              )}
-
-              <AppText variant="label" tone="secondary" style={styles.quickLabel}>
-                Быстрый тип
-              </AppText>
-              <View style={styles.quickRow}>
-                {TYPE_META.map((t) => (
-                  <Pressable
-                    key={t.type}
-                    style={({ pressed }) => [pressed && styles.pressed]}
-                    onPress={() => openForm(t.type)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Добавить ${t.label}`}
-                  >
-                    <AppCard style={styles.quickChip}>
-                      <Ionicons name={t.icon} size={18} color={colors.ink} />
-                      <AppText variant="caption" style={styles.quickChipText}>
-                        {t.label}
-                      </AppText>
-                    </AppCard>
-                  </Pressable>
-                ))}
-              </View>
+              >
+                <AppText variant="body" style={styles.moreTitle}>
+                  Повторить вчера
+                </AppText>
+                <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                  свои тренировки
+                </AppText>
+                <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
+              </Pressable>
             </>
           )}
         </ScrollView>
@@ -283,8 +311,12 @@ export default function MovementScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  content: { padding: space.lg, paddingBottom: 48, gap: space.sm },
-  swipeHint: { marginBottom: space.xs },
+  content: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    paddingBottom: 48,
+    gap: space.sm,
+  },
   headerBtn: {
     minWidth: touchMin,
     minHeight: touchMin,
@@ -293,10 +325,6 @@ const styles = StyleSheet.create({
     marginRight: space.sm,
   },
   pressed: { opacity: 0.88 },
-  quickLabel: {
-    marginBottom: space.sm,
-    marginTop: space.md,
-  },
   quickRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -306,12 +334,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    minHeight: 40,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  quickChipText: { fontWeight: '600' },
+  listLabel: {
+    marginTop: space.sm,
+    marginBottom: space.xs,
+    paddingHorizontal: space.xs,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  list: { gap: space.sm },
+  moreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
     minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
+    backgroundColor: colors.surface,
     borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
-  quickChipText: {
-    fontWeight: '700',
-  },
+  moreTitle: { fontWeight: '700' },
+  moreMeta: { flex: 1 },
 });

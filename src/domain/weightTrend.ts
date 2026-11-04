@@ -50,9 +50,13 @@ export function weightSparkline(kgs: number[]): WeightSparkPoint[] {
   }));
 }
 
+/** Floor for vertical scale so ±0.1 kg noise does not fill the whole chart. */
+export const WEIGHT_CHART_MIN_SPAN_KG = 2;
+
 /**
  * Line-chart points in unit square. Expect chronological (oldest → newest) input.
  * Single point → center. Empty → []. Never invents kg values.
+ * Tiny ranges are padded to WEIGHT_CHART_MIN_SPAN_KG around the series mid.
  */
 export function weightLinePoints(kgs: number[]): WeightLinePoint[] {
   const finite = finitePositiveKg(kgs);
@@ -61,11 +65,16 @@ export function weightLinePoints(kgs: number[]): WeightLinePoint[] {
 
   const { min, max } = minMax(finite);
   const span = max - min;
+  const mid = (min + max) / 2;
+  const scaleSpan = Math.max(span, WEIGHT_CHART_MIN_SPAN_KG);
+  const yMin = mid - scaleSpan / 2;
   const last = finite.length - 1;
 
   return finite.map((kg, i) => {
     const x = i / last;
-    const y = span === 0 ? 0.5 : 0.08 + ((kg - min) / span) * 0.84;
+    const yNorm = (kg - yMin) / scaleSpan;
+    // Keep a quiet vertical margin inside the plot.
+    const y = 0.12 + yNorm * 0.76;
     return { kg, x, y };
   });
 }

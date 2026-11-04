@@ -124,6 +124,49 @@ describe('garmin mappers', () => {
     assert.equal(rows[0].externalId, 'garmin-sleep:2026-08-11');
   });
 
+  it('maps Personal API sleepScores.overall.value and wrappers', () => {
+    const fromScores = mapGarminSleepResponse([
+      {
+        calendarDate: '2026-11-02',
+        sleepTimeSeconds: 28260,
+        deepSleepSeconds: 3840,
+        lightSleepSeconds: 22980,
+        remSleepSeconds: 5280,
+        awakeSleepSeconds: 3060,
+        sleepScores: { overall: { value: 80 } },
+        avgSleepRespiration: 14.2,
+      },
+    ]);
+    assert.equal(fromScores.length, 1);
+    assert.equal(fromScores[0].sleepScore, 80);
+    assert.equal(fromScores[0].avgRespiration, 14.2);
+
+    const wrapped = mapGarminSleepResponse({
+      dailySleepDTOList: [
+        {
+          calendarDate: '2026-11-03',
+          sleepTimeSeconds: 25000,
+          sleepScores: { overallScore: 72 },
+        },
+      ],
+    });
+    assert.equal(wrapped.length, 1);
+    assert.equal(wrapped[0].dateLocal, '2026-11-03');
+    assert.equal(wrapped[0].sleepScore, 72);
+
+    const dated = mapGarminSleepResponse({
+      '2026-11-04': {
+        sleepTimeSeconds: 26000,
+        deepSleepSeconds: 4000,
+        lightSleepSeconds: 15000,
+        remSleepSeconds: 7000,
+      },
+    });
+    assert.equal(dated.length, 1);
+    assert.equal(dated[0].dateLocal, '2026-11-04');
+    assert.equal(dated[0].deepSec, 4000);
+  });
+
   it('maps cycling power, hr zones and merges detail payload', () => {
     const mapped = mapGarminActivitiesResponse([
       {

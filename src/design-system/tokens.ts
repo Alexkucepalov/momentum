@@ -13,12 +13,9 @@ export const colors = {
   text: '#0A0A0A',
   textSecondary: '#5C6370',
   textMuted: '#8B929E',
-  /**
-   * Product chrome stays ink (Premium Minimal Utility).
-   * Warmth comes from soft canvas / amber meal hints — not green or blue brand chrome.
-   */
+  /** Selected / active chrome — mono ink (no coloured brand chrome). */
   accent: '#0A0A0A',
-  accentSoft: '#F3EFE8',
+  accentSoft: '#EBEDF0',
   onAccent: '#FFFFFF',
   /** @deprecated Prefer `primary` — kept for gradual migration. */
   primaryButton: '#0A0A0A',
@@ -33,11 +30,11 @@ export const colors = {
   protein: '#16A34A',
   fat: '#D97706',
   carbs: '#2563EB',
-  /** Meal section accent bars — warm neutrals + amber (macros stay labeled B/Ж/У). */
-  mealBreakfast: '#D97706',
-  mealLunch: '#78716C',
-  mealDinner: '#44403C',
-  mealSnack: '#A8A29E',
+  /** Meal section accent bars — cool gray scale only. */
+  mealBreakfast: '#8B929E',
+  mealLunch: '#5C6370',
+  mealDinner: '#0A0A0A',
+  mealSnack: '#C9CED6',
   ringTrack: '#E8EAED',
   ringFill: '#0A0A0A',
   success: '#15803D',
