@@ -15,7 +15,7 @@ import { ConfirmPortionSheet } from '@/src/features/diary/ConfirmPortionSheet';
 import { RecipeNutritionSummary } from '@/src/features/recipes/RecipeNutritionSummary';
 import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { FlashBar } from '@/src/components/FlashBar';
 import { UndoBar } from '@/src/components/UndoBar';
 import {
@@ -38,7 +38,8 @@ const MEAL_LABELS = {
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { repo, dateLocal, meal, refresh, revision, showFlash, setUndo } = useData();
+  const { repo, dateLocal, meal, refresh, showFlash, setUndo } = useData();
+  const revision = useAnyRevision();
   const allowAdd = useAddGuard();
   void revision;
   const [confirmOpen, setConfirmOpen] = useState(false);

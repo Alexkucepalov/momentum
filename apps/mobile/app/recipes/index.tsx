@@ -18,7 +18,7 @@ import { recipeHasManualPer100g } from '../../../../src/domain/recipeNutrition';
 import type { Recipe } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { RecipeHubActions } from '@/src/features/recipes/RecipeHubActions';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { AppText, Chip, colors, radius, space, touchMin } from '@/src/design-system';
 
 type Filter = 'all' | 'mine' | 'archive';
@@ -30,7 +30,8 @@ function isArchiveRecipe(r: Recipe): boolean {
 export default function RecipesIndexScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { repo, revision } = useData();
+  const { repo } = useData();
+  const revision = useAnyRevision();
   void revision;
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');

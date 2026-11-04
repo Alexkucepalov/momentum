@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 
 import type { PlannedMeal } from '../../../../../src/storage/types';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const MEAL: Record<string, string> = {
@@ -16,7 +16,8 @@ const MEAL: Record<string, string> = {
 /** Compact «план на сегодня» on Today/Food — log without opening week board. */
 export function TodayPlanStrip() {
   const router = useRouter();
-  const { repo, dateLocal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   const allowAdd = useAddGuard();
   void revision;
 

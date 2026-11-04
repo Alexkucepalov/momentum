@@ -23,7 +23,7 @@ import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
-import { useData } from '@/src/state/DataContext';
+import { useData, useDiaryRevision } from '@/src/state/DataContext';
 import {
   AppButton,
   AppText,
@@ -56,8 +56,9 @@ function formatDateLine(iso: string, today: string): string {
 export default function TodayScreen() {
   const navigation = useNavigation();
   const router = useRouter();
-  const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
-  void revision;
+  const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
+  const diaryRevision = useDiaryRevision();
+  void diaryRevision;
   const [open, setOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -77,7 +78,7 @@ export default function TodayScreen() {
         endDateLocal: dateLocal,
         hasLog: (d) => repo.dailyTotals(d).entryCount > 0,
       }),
-    [repo, dateLocal, revision],
+    [repo, dateLocal],
   );
 
   const flexibleRows = useMemo(() => {
@@ -103,7 +104,7 @@ export default function TodayScreen() {
           }),
         };
       });
-  }, [repo, dateLocal, revision]);
+  }, [repo, dateLocal]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -176,7 +177,7 @@ export default function TodayScreen() {
             sleepSec={sleepSec}
             onAddWater={(ml) => {
               repo.addWater(dateLocal, ml);
-              refresh();
+              refresh('diary');
               showFlash(`+${ml} мл воды`);
             }}
           />
@@ -190,11 +191,11 @@ export default function TodayScreen() {
               const habit = repo.listFlexibleHabits().find((h) => h.id === habitId);
               if (repo.isFlexibleHabitLogged(habitId, dateLocal)) {
                 repo.unlogFlexibleHabit(habitId, dateLocal);
-                refresh();
+                refresh('diary');
                 showFlash(habit ? `Снято: ${habit.name}` : 'Отметка снята');
               } else {
                 repo.logFlexibleHabit(habitId, dateLocal);
-                refresh();
+                refresh('diary');
                 showFlash(habit ? `Отмечено: ${habit.name}` : 'Отмечено');
               }
             }}

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
+import { PlanNotDiaryNote } from '@/src/features/plan/PlanNotDiaryNote';
 import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 type LinkItem = {
@@ -72,9 +73,7 @@ export default function PlanHubScreen() {
         <Ionicons name="arrow-forward" size={20} color={colors.onAccent} />
       </Pressable>
 
-      <AppText variant="caption" tone="muted" style={styles.disclaimer} testID="plan-neq-diary">
-        План не пишет в дневник сам — только явная порция.
-      </AppText>
+      <PlanNotDiaryNote style={styles.disclaimer} />
 
       <View style={styles.group}>
         <AppText variant="label" tone="muted" style={styles.groupLabel}>

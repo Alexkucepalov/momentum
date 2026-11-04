@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { filterMissingShoppingItems } from '../../../../src/domain/aggregateShopping';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppButton } from '@/src/design-system';
 
@@ -19,7 +19,8 @@ function fmtQty(q: number, unit: string): string {
 
 export default function ShopScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash } = useData();
+  const { repo, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const plans = repo.listMealPlans();

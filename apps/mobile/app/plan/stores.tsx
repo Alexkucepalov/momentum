@@ -3,14 +3,15 @@ import { useRouter } from 'expo-router';
 
 import { createStoreCatalogAdapter } from '../../../../src/domain/storeCatalogAdapter';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const catalog = createStoreCatalogAdapter();
 
 export default function StoresScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash } = useData();
+  const { repo, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
   const stores = repo.listStorePreferences();
 

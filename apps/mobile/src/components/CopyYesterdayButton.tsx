@@ -6,7 +6,7 @@ import {
   shiftDateLocal,
 } from '../../../../src/domain/repeatMeal';
 import { useAddGuard } from '../hooks/useAddGuard';
-import { useData } from '../state/DataContext';
+import { useData, useDiaryRevision } from '../state/DataContext';
 import { AppText, colors, radius, space, touchMin } from '../design-system';
 
 /**
@@ -14,7 +14,8 @@ import { AppText, colors, radius, space, touchMin } from '../design-system';
  * Sets Undo to soft-delete the newly created entries (J6).
  */
 export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: string }) {
-  const { repo, dateLocal, refresh, showFlash, setUndo, revision } = useData();
+  const { repo, dateLocal, refresh, showFlash, setUndo } = useData();
+  const revision = useDiaryRevision();
   const allowAdd = useAddGuard();
   void revision;
   const yesterday = shiftDateLocal(dateLocal, -1);
@@ -48,7 +49,7 @@ export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: st
         createdIds.push(e.id);
       }
     }
-    refresh();
+    refresh('diary');
     showFlash(`Повторили вчера · ${createdIds.length}`);
     setUndo({
       entryIds: createdIds,

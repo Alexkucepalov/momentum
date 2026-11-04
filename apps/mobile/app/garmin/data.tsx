@@ -10,19 +10,20 @@ import {
   GarminWeightSection,
   GarminWorkoutSection,
 } from '@/src/features/garmin/GarminDataLists';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 
 export default function GarminDataScreen() {
   const router = useRouter();
-  const { repo, revision } = useData();
+  const { repo } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const sync = repo.getGarminSyncState();
-  const weights = useMemo(() => repo.listIntegratedWeights('garmin', 2000), [repo, revision]);
-  const workouts = useMemo(() => repo.listIntegratedWorkouts('garmin', 2000), [repo, revision]);
+  const weights = useMemo(() => repo.listIntegratedWeights('garmin', 2000), [repo]);
+  const workouts = useMemo(() => repo.listIntegratedWorkouts('garmin', 2000), [repo]);
   const days = useMemo(
     () => repo.listIntegratedDailyActivityStats('garmin', 2000),
-    [repo, revision],
+    [repo],
   );
 
   const empty = weights.length === 0 && workouts.length === 0 && days.length === 0;

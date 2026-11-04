@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { ChallengeMetric } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
-import { useData } from '../../state/DataContext';
+import { useData, useAnyRevision } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { AppButton } from '@/src/design-system';
 
@@ -28,7 +28,8 @@ function shiftDays(dateLocal: string, days: number): string {
 }
 
 export function ChallengesPanel() {
-  const { repo, dateLocal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -48,7 +49,7 @@ export function ChallengesPanel() {
         const progress = repo.challengeProgress(c.id);
         return { challenge: c, progress };
       }),
-    [challenges, repo, revision],
+    [challenges, repo],
   );
 
   const create = () => {

@@ -24,7 +24,7 @@ import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { MonthOverviewCard } from '@/src/features/progress/MonthOverviewCard';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import {
   AppButton,
   AppCard,
@@ -56,7 +56,8 @@ function fmtSleepHours(sec: number | null): string {
 }
 
 export default function ProgressScreen() {
-  const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
   const [tab, setTab] = useState<ProgressTab>('overview');
   const [lastExport, setLastExport] = useState<string | null>(null);
@@ -80,7 +81,7 @@ export default function ProgressScreen() {
           return { energyKcal: t.energyKcal, entryCount: t.entryCount };
         },
       }),
-    [repo, dateLocal, profile.dailyEnergyKcal, revision],
+    [repo, dateLocal, profile.dailyEnergyKcal],
   );
 
   const weekInsight = useMemo(
@@ -97,7 +98,7 @@ export default function ProgressScreen() {
           }),
         challenges: () => repo.listChallenges().map((c) => ({ status: c.status })),
       }),
-    [repo, dateLocal, revision],
+    [repo, dateLocal],
   );
 
   const sportWeekMinutes = useMemo(() => {
@@ -108,7 +109,7 @@ export default function ProgressScreen() {
       count += repo.listWorkoutsForDate(day.dateLocal).length;
     }
     return { mins, count };
-  }, [repo, weekDays, revision]);
+  }, [repo, weekDays]);
 
   const stepsWeek = useMemo(() => {
     const start = weekStartMonday(dateLocal);
@@ -128,7 +129,7 @@ export default function ProgressScreen() {
       days,
       knownDays: days.filter((d) => d.steps != null).length,
     };
-  }, [repo, dateLocal, revision]);
+  }, [repo, dateLocal]);
 
   const todayKey = localDateKey(new Date(), profile.timezone);
 
@@ -172,7 +173,7 @@ export default function ProgressScreen() {
       avgHours: known.length === 0 ? null : sumSec / known.length / 3600,
       avgScore,
     };
-  }, [repo, dateLocal, revision]);
+  }, [repo, dateLocal]);
 
   const foodDaysLogged = useMemo(
     () => weekDays.filter((d) => d.entryCount > 0).length,
@@ -203,7 +204,7 @@ export default function ProgressScreen() {
       weightOldestKg: oldest,
       weightNewestKg: newest,
     });
-  }, [repo, dateLocal, profile.timezone, revision]);
+  }, [repo, dateLocal, profile.timezone]);
 
   const onExport = async () => {
     const json = repo.exportAll();
@@ -280,6 +281,15 @@ export default function ProgressScreen() {
               </View>
               <AppText variant="caption" tone="muted" style={styles.weekHint}>
                 С понедельника · неизвестные значения — «—», не считаем нулём
+              </AppText>
+              <AppButton
+                label="Скопировать день для ChatGPT"
+                onPress={() => void onCopyDayReport()}
+                testID="progress-copy-day-chatgpt"
+                style={styles.weekPrimary}
+              />
+              <AppText variant="caption" tone="muted">
+                Дата из общего календаря · только буфер
               </AppText>
             </AppCard>
 
@@ -516,22 +526,7 @@ export default function ProgressScreen() {
 
         {tab === 'reports' ? (
           <>
-            <GroupLabel tight>День</GroupLabel>
-            <AppCard style={styles.reportDayCard}>
-              <AppText variant="caption" tone="muted" style={styles.reportDayHint}>
-                Дата из общего календаря приложения
-              </AppText>
-              <AppButton
-                label="Скопировать день для ChatGPT"
-                onPress={() => void onCopyDayReport()}
-                testID="progress-copy-day-chatgpt"
-              />
-              <AppText variant="caption" tone="muted">
-                Только буфер · без облака
-              </AppText>
-            </AppCard>
-
-            <GroupLabel>Период</GroupLabel>
+            <GroupLabel tight>Период</GroupLabel>
             <FlexibleReportPanel />
 
             <GroupLabel>Бэкап</GroupLabel>
@@ -650,6 +645,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   weekHint: { lineHeight: 17, paddingHorizontal: space.xs },
+  weekPrimary: { marginTop: space.sm },
   groupLabel: {
     marginTop: space.md,
     marginBottom: space.xs,

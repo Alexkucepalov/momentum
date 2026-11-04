@@ -29,7 +29,8 @@ import {
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
-import { useData } from '@/src/state/DataContext';
+import { PlanNotDiaryNote } from '@/src/features/plan/PlanNotDiaryNote';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const FILTERS: { id: EatNowFilterId; label: string }[] = [
@@ -97,7 +98,8 @@ function RemainingStrip({
 
 export default function EatNowScreen() {
   const router = useRouter();
-  const { repo, dateLocal, meal, setMeal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, meal, setMeal, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
   const allowAdd = useAddGuard();
   const [filter, setFilter] = useState<EatNowFilterId>('all');
@@ -201,7 +203,7 @@ export default function EatNowScreen() {
     });
 
     return scoreEatNow(deduped, remaining, [filter]).slice(0, 20);
-  }, [repo, remaining, filter, revision]);
+  }, [repo, remaining, filter]);
 
   const openCandidate = (c: EatNowCandidate) => {
     if (c.kind === 'cooked_batch') {
@@ -251,6 +253,7 @@ export default function EatNowScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content}>
+        <PlanNotDiaryNote style={styles.planNote} />
         <RemainingStrip {...remaining} />
 
         <Text style={styles.sectionLabel}>Приём пищи</Text>
@@ -450,6 +453,7 @@ const styles = StyleSheet.create({
     paddingBottom: space.xxl,
     gap: space.md,
   },
+  planNote: { paddingHorizontal: 0 },
   remaining: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

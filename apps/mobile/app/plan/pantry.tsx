@@ -6,7 +6,7 @@ import { normalizeShoppingName } from '../../../../src/domain/aggregateShopping'
 import type { FoodProduct, PantryLocation, PantryUnit } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { AppButton } from '@/src/design-system';
 
@@ -36,7 +36,8 @@ function locLabel(id: PantryLocation): string {
 
 export default function PantryScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash } = useData();
+  const { repo, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const [name, setName] = useState('');
@@ -52,7 +53,7 @@ export default function PantryScreen() {
 
   const items = repo.listPantryItems();
   const batches = repo.listCookedBatches({ onlyRemaining: true });
-  const recipes = useMemo(() => repo.listRecipes(), [repo, revision]);
+  const recipes = useMemo(() => repo.listRecipes(), [repo]);
 
   const productSuggestions = useMemo(() => {
     const q = normalizeShoppingName(name);
@@ -61,7 +62,7 @@ export default function PantryScreen() {
       .listProducts()
       .filter((p) => !p.deletedAt && normalizeShoppingName(p.name).includes(q))
       .slice(0, 6);
-  }, [name, repo, revision]);
+  }, [name, repo]);
 
   const grouped = useMemo(() => {
     const map: Record<PantryLocation, typeof items> = { fridge: [], freezer: [], pantry: [] };

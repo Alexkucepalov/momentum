@@ -4,14 +4,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { RecipeEditorForm } from '@/src/features/recipes/RecipeEditorForm';
 import { persistRecipePhoto } from '@/src/media/recipePhoto';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { emptyIngredient } from '@/src/features/diary/addFood/types';
 import { AppText, colors, space } from '@/src/design-system';
 
 export default function EditRecipeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { repo, refresh, showFlash, revision } = useData();
+  const { repo, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const recipe = id ? repo.getRecipe(id) : null;

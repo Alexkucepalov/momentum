@@ -11,7 +11,7 @@ import {
   flexibleReportToPlainText,
   type ReportCategory,
 } from '../../../../../src/domain/flexibleReport';
-import { useData } from '../../state/DataContext';
+import { useData, useAnyRevision } from '../../state/DataContext';
 import {
   AppButton,
   AppCard,
@@ -43,7 +43,8 @@ function shiftDaysIso(dateLocal: string, delta: number): string {
 
 /** User-initiated PDF / ChatGPT text only — no silent upload (M9). */
 export function FlexibleReportPanel() {
-  const { repo, dateLocal, revision, showFlash } = useData();
+  const { repo, dateLocal, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
   const [start, setStart] = useState(() => formatDateRu(shiftDaysIso(dateLocal, -6)));
   const [end, setEnd] = useState(() => formatDateRu(dateLocal));

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { buildHabitWeekMarks } from '../../../../../src/domain/habitWeek';
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
-import { useData } from '../../state/DataContext';
+import { useData, useAnyRevision } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { HabitCard } from './HabitCard';
 import { HabitFormFields } from './HabitFormFields';
@@ -21,7 +21,8 @@ const emptyForm = {
 };
 
 export function FlexibleHabitsPanel() {
-  const { repo, dateLocal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
   const [form, setForm] = useState(emptyForm);
   const [composerOpen, setComposerOpen] = useState(false);

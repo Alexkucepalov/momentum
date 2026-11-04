@@ -4,7 +4,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { monthKeyFromDateLocal } from '../../../../src/domain/foodBudget';
 import type { FoodExpenseCategory } from '../../../../src/storage/types';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import {
   AppButton,
   AppCard,
@@ -28,7 +28,8 @@ const CATS: { id: FoodExpenseCategory; label: string }[] = [
  * Budget: plan / fact / cart estimate / eaten estimate — never live store prices (N8/N9/N12).
  */
 export default function BudgetScreen() {
-  const { repo, dateLocal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const month = monthKeyFromDateLocal(dateLocal);

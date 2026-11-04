@@ -10,7 +10,7 @@ import {
   importSelectedPersonalRecipes,
   listPersonalRecipePreviews,
 } from '@/src/features/recipes/personalRecipesPack';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
 import { AppButton } from '@/src/design-system';
@@ -38,7 +38,8 @@ function statusIcon(
 export default function ImportPersonalRecipesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { repo, refresh, showFlash, revision } = useData();
+  const { repo, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   const previews = useMemo(() => listPersonalRecipePreviews(), []);
   const [scope, setScope] = useState<Scope>('suggested');
 
@@ -47,7 +48,7 @@ export default function ImportPersonalRecipesScreen() {
     return new Set(
       repo.listRecipes().filter((r) => r.id.startsWith('import:')).map((r) => r.id),
     );
-  }, [repo, revision]);
+  }, [repo]);
 
   const [selected, setSelected] = useState<Set<string>>(() => {
     const next = new Set<string>();

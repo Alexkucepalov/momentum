@@ -14,7 +14,7 @@ import type { FoodProduct } from '../../../../../src/storage/types';
 import { fetchOpenFoodFacts } from '../../integrations/fetchOpenFoodFacts';
 import { FormScrollView } from '../../components/FormScrollView';
 import { useAddGuard } from '../../hooks/useAddGuard';
-import { useData } from '../../state/DataContext';
+import { useData, useDiaryRevision } from '../../state/DataContext';
 import { AppButton } from '@/src/design-system';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeCameraPanel, type ScanStatus } from './BarcodeCameraPanel';
@@ -48,7 +48,8 @@ export function BarcodeLookupSheet({
   visible: boolean;
   onClose: () => void;
 }) {
-  const { repo, dateLocal, meal, refresh, showFlash, revision, setUndo } = useData();
+  const { repo, dateLocal, meal, refresh, showFlash, setUndo } = useData();
+  const revision = useDiaryRevision();
   const allowAdd = useAddGuard();
   void revision;
   const insets = useSafeAreaInsets();
@@ -201,7 +202,7 @@ export function BarcodeLookupSheet({
         }
 
         const saved = repo.upsertFromOffResult(result);
-        refresh();
+        refresh('diary');
 
         const hasAnyMacro =
           result.energyKcal !== null ||
@@ -237,7 +238,7 @@ export function BarcodeLookupSheet({
       carbG: draft.carbG,
       source: draft.source,
     });
-    refresh();
+    refresh('diary');
     setPhase('scan');
     offerProductForPortion(saved, 'С этикетки / вручную');
   };
@@ -368,7 +369,7 @@ export function BarcodeLookupSheet({
                       onPress={() => {
                         try {
                           const linked = repo.linkBarcodeToProduct(p.id, code);
-                          refresh();
+                          refresh('diary');
                           setPhase('scan');
                           offerProductForPortion(linked, 'Локальный индекс');
                         } catch (err) {
@@ -528,7 +529,7 @@ export function BarcodeLookupSheet({
             meal,
             grams: result.grams,
           });
-          refresh();
+          refresh('diary');
           const kcal =
             result.per100g.energyKcal === null
               ? '—'

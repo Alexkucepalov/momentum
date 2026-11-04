@@ -18,8 +18,9 @@ import { AddPlannedMealSheet, type AddPick } from '@/src/features/plan/AddPlanne
 import { EditPlannedGramsSheet } from '@/src/features/plan/EditPlannedGramsSheet';
 import { MEAL_SLOTS } from '@/src/features/plan/mealBoardLabels';
 import { MovePlannedMealSheet } from '@/src/features/plan/MovePlannedMealSheet';
+import { PlanNotDiaryNote } from '@/src/features/plan/PlanNotDiaryNote';
 import { WeekBoard, type WeekBoardDay } from '@/src/features/plan/WeekBoard';
-import { useData } from '@/src/state/DataContext';
+import { useData, usePlanRevision } from '@/src/state/DataContext';
 import { confirmAction } from '@/src/utils/confirmAction';
 import { AppButton, AppText, colors, space } from '@/src/design-system';
 
@@ -29,8 +30,9 @@ function emptySlots(): Record<MealSlot, PlannedMeal[]> {
 
 export default function WeekPlanScreen() {
   const router = useRouter();
-  const { repo, dateLocal, refresh, revision, showFlash } = useData();
-  void revision;
+  const { repo, dateLocal, refresh, showFlash } = useData();
+  const planRevision = usePlanRevision();
+  void planRevision;
 
   const profile = repo.getProfile();
   const weekStart = weekStartMonday(dateLocal);
@@ -46,18 +48,18 @@ export default function WeekPlanScreen() {
     } catch {
       setPlanId(null);
     }
-  }, [repo, weekStart, revision]);
+  }, [repo, weekStart]);
 
   const plan = planId ? repo.getMealPlan(planId) : null;
   const allMeals = useMemo(
     () => (planId ? repo.listPlannedMeals(planId) : []),
-    [repo, planId, revision],
+    [repo, planId],
   );
 
   const productById = useMemo(() => {
     const map = new Map(repo.listProducts().map((p) => [p.id, p]));
     return map;
-  }, [repo, revision]);
+  }, [repo]);
 
   const lookup = useMemo(
     () => ({
@@ -65,7 +67,7 @@ export default function WeekPlanScreen() {
       getRecipeIngredients: (id: string) => repo.getRecipeIngredients(id),
       getProduct: (id: string) => productById.get(id) ?? null,
     }),
-    [repo, productById, revision],
+    [repo, productById],
   );
 
   const targets = useMemo(
@@ -113,7 +115,7 @@ export default function WeekPlanScreen() {
         .listRecipes()
         .map((r) => ({ id: r.id, name: r.name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
-    [repo, revision],
+    [repo],
   );
   const products = useMemo(
     () =>
@@ -121,7 +123,7 @@ export default function WeekPlanScreen() {
         .listProducts()
         .map((p) => ({ id: p.id, name: p.name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
-    [repo, revision],
+    [repo],
   );
 
   const moveDays = weekDates.map((d, i) => ({
@@ -140,7 +142,7 @@ export default function WeekPlanScreen() {
       recipeId: pick.kind === 'recipe' ? pick.id : null,
       productId: pick.kind === 'product' ? pick.id : null,
     });
-    refresh();
+    refresh('plan');
     showFlash(`В план: ${pick.name}`);
     setAddTarget(null);
   };
@@ -151,7 +153,7 @@ export default function WeekPlanScreen() {
       destructive: true,
       onConfirm: () => {
         repo.softDeletePlannedMeal(m.id);
-        refresh();
+        refresh('plan');
         showFlash('Убрано с доски');
       },
     });
@@ -162,10 +164,10 @@ export default function WeekPlanScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content} testID="week-board-screen">
-        <AppText variant="caption" tone="muted" style={styles.banner} testID="plan-neq-diary">
-          План не пишет в дневник сам — только явная порция. Доска: {rangeLabel}
-          {plan ? ` · ${plan.status === 'draft' ? 'черновик' : 'активный'}` : ''}
-        </AppText>
+        <PlanNotDiaryNote
+          style={styles.banner}
+          extra={` · доска ${rangeLabel}${plan ? ` · ${plan.status === 'draft' ? 'черновик' : 'активный'}` : ''}`}
+        />
 
         <WeekBoard
           days={boardDays}
@@ -212,7 +214,7 @@ export default function WeekPlanScreen() {
         onPick={(dateLocalDay, slot) => {
           if (!moveMeal) return;
           repo.movePlannedMeal(moveMeal.id, { dateLocal: dateLocalDay, meal: slot });
-          refresh();
+          refresh('plan');
           showFlash('Перенесено');
           setMoveMeal(null);
         }}
@@ -226,7 +228,7 @@ export default function WeekPlanScreen() {
         onSave={(grams) => {
           if (!editMeal) return;
           repo.updatePlannedMealGrams(editMeal.id, grams);
-          refresh();
+          refresh('plan');
           showFlash(`Порция: ${grams} г`);
         }}
       />

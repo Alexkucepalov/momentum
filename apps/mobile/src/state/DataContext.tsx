@@ -1,4 +1,11 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { mealSlotForNow } from '../../../../src/domain/mealSlotForNow';
 import type { FoodRepository } from '../../../../src/storage/foodRepository';
@@ -17,14 +24,26 @@ export type UndoState = {
   entryIds?: string[];
 } | null;
 
+/** Narrow re-render fan-out: screens subscribe via use*Revision hooks. */
+export type DataRefreshScope = 'diary' | 'activity' | 'profile' | 'plan';
+
+type AreaRevisions = Record<DataRefreshScope, number>;
+
+const EMPTY_AREAS: AreaRevisions = {
+  diary: 0,
+  activity: 0,
+  profile: 0,
+  plan: 0,
+};
+
 type DataContextValue = {
   repo: FoodRepository;
   dateLocal: string;
   setDateLocal: (d: string) => void;
   meal: MealSlot;
   setMeal: (m: MealSlot) => void;
-  revision: number;
-  refresh: () => void;
+  /** Default `all` keeps old call sites safe; pass a scope to limit fan-out. */
+  refresh: (scope?: DataRefreshScope | 'all') => void;
   undo: UndoState;
   setUndo: (u: UndoState) => void;
   performUndo: () => void;
@@ -34,23 +53,40 @@ type DataContextValue = {
 };
 
 const DataContext = createContext<DataContextValue | null>(null);
+const DiaryRevisionContext = createContext(0);
+const ActivityRevisionContext = createContext(0);
+const ProfileRevisionContext = createContext(0);
+const PlanRevisionContext = createContext(0);
 
 export function DataProvider({
   repo,
   children,
 }: {
   repo: FoodRepository;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
   const [dateLocal, setDateLocal] = useState(today);
   const [meal, setMeal] = useState<MealSlot>(() => mealSlotForNow());
-  const [revision, setRevision] = useState(0);
+  const [areas, setAreas] = useState<AreaRevisions>(EMPTY_AREAS);
   const [undo, setUndo] = useState<UndoState>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
-  const refresh = useCallback(() => setRevision((n) => n + 1), []);
+  const refresh = useCallback((scope: DataRefreshScope | 'all' = 'all') => {
+    setAreas((prev) => {
+      if (scope === 'all') {
+        return {
+          diary: prev.diary + 1,
+          activity: prev.activity + 1,
+          profile: prev.profile + 1,
+          plan: prev.plan + 1,
+        };
+      }
+      return { ...prev, [scope]: prev[scope] + 1 };
+    });
+  }, []);
+
   const showFlash = useCallback((message: string) => setFlash(message), []);
   const clearFlash = useCallback(() => setFlash(null), []);
 
@@ -75,7 +111,7 @@ export function DataProvider({
       repo.undoDeleteEntry(undo.entryId);
     }
     setUndo(null);
-    refresh();
+    refresh('diary');
   }, [undo, repo, refresh]);
 
   const value = useMemo(
@@ -85,7 +121,6 @@ export function DataProvider({
       setDateLocal: setDateLocalWithFeedback,
       meal,
       setMeal,
-      revision,
       refresh,
       undo,
       setUndo,
@@ -99,7 +134,6 @@ export function DataProvider({
       dateLocal,
       setDateLocalWithFeedback,
       meal,
-      revision,
       refresh,
       undo,
       performUndo,
@@ -109,11 +143,45 @@ export function DataProvider({
     ],
   );
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+      <DiaryRevisionContext.Provider value={areas.diary}>
+        <ActivityRevisionContext.Provider value={areas.activity}>
+          <ProfileRevisionContext.Provider value={areas.profile}>
+            <PlanRevisionContext.Provider value={areas.plan}>{children}</PlanRevisionContext.Provider>
+          </ProfileRevisionContext.Provider>
+        </ActivityRevisionContext.Provider>
+      </DiaryRevisionContext.Provider>
+    </DataContext.Provider>
+  );
 }
 
 export function useData(): DataContextValue {
   const ctx = useContext(DataContext);
   if (!ctx) throw new Error('useData requires DataProvider');
   return ctx;
+}
+
+/** Subscribe only to diary mutations (Food / Today / AddFood). */
+export function useDiaryRevision(): number {
+  return useContext(DiaryRevisionContext);
+}
+
+export function useActivityRevision(): number {
+  return useContext(ActivityRevisionContext);
+}
+
+export function useProfileRevision(): number {
+  return useContext(ProfileRevisionContext);
+}
+
+export function usePlanRevision(): number {
+  return useContext(PlanRevisionContext);
+}
+
+/** Subscribe to every area — Progress / cross-cutting surfaces. */
+export function useAnyRevision(): number {
+  return (
+    useDiaryRevision() + useActivityRevision() + useProfileRevision() + usePlanRevision()
+  );
 }

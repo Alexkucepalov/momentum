@@ -13,7 +13,7 @@ import {
 } from '../../../../../src/domain/sleepStats';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import {
   AppButton,
   AppCard,
@@ -33,7 +33,8 @@ const STAGE_COLOR: Record<SleepStageKey, string> = {
 /** Full night stats from stored Garmin sleep — unknown stays «—». */
 export function SleepDayPanel({ todayKey }: { todayKey: string }) {
   const router = useRouter();
-  const { repo, dateLocal, setDateLocal, revision } = useData();
+  const { repo, dateLocal, setDateLocal } = useData();
+  const revision = useAnyRevision();
   void revision;
   const profile = repo.getProfile();
   const night = repo.getSleepForDate(dateLocal);
@@ -69,7 +70,7 @@ export function SleepDayPanel({ todayKey }: { todayKey: string }) {
       avgHours,
       avgScore,
     };
-  }, [repo, dateLocal, revision]);
+  }, [repo, dateLocal]);
 
   const stages = night ? buildSleepStageRows(night) : [];
   const hasAnyStage = stages.some((s) => s.sec != null);

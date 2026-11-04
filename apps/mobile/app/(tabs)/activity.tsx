@@ -17,7 +17,7 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { SleepDayPanel } from '@/src/features/sleep/SleepDayPanel';
-import { useData } from '@/src/state/DataContext';
+import { useData, useActivityRevision } from '@/src/state/DataContext';
 import {
   AppText,
   SegmentedControl,
@@ -42,8 +42,9 @@ export default function MovementScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const params = useLocalSearchParams<{ segment?: string }>();
-  const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
-  void revision;
+  const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
+  const activityRevision = useActivityRevision();
+  void activityRevision;
   const [segment, setSegment] = useState<MovementTab>(
     params.segment === 'sleep' ? 'sleep' : 'activity',
   );
@@ -113,7 +114,7 @@ export default function MovementScreen() {
       return { date: d, min, weekdayIndex };
     });
     return { start, end: dates[6] ?? start, sum, days };
-  }, [repo, dateLocal, revision]);
+  }, [repo, dateLocal]);
   const todayKey = localDateKey(new Date(), profile.timezone);
   const isEmptyWeek = workouts.length === 0 && weekMinutes.sum === 0;
 
@@ -135,7 +136,7 @@ export default function MovementScreen() {
         notes: w.notes,
       });
     }
-    refresh();
+    refresh('activity');
     showFlash(`Повторено тренировок: ${prev.length}`);
   };
 
@@ -224,7 +225,7 @@ export default function MovementScreen() {
                       }
                       onDelete={() => {
                         repo.softDeleteWorkout(w.id);
-                        refresh();
+                        refresh('activity');
                         showFlash('Тренировка удалена');
                       }}
                     />
@@ -300,7 +301,7 @@ export default function MovementScreen() {
             distanceM: input.distanceM,
             notes: input.notes,
           });
-          refresh();
+          refresh('activity');
           showFlash('Тренировка сохранена');
         }}
       />

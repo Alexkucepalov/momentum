@@ -8,7 +8,7 @@ import { GarminRawFields } from '@/src/features/garmin/GarminRawFields';
 import { HrZonesBar } from '@/src/features/garmin/HrZonesBar';
 import { TrackMapCard } from '@/src/features/garmin/TrackMapCard';
 import { WorkoutChartCard } from '@/src/features/garmin/WorkoutChartCard';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 
 const TYPE_RU: Record<WorkoutType, string> = {
   walking: 'Ходьба / бег',
@@ -36,7 +36,8 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 export default function GarminWorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { repo, revision } = useData();
+  const { repo } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const workout = id ? repo.getWorkoutById(String(id)) : null;

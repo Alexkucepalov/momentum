@@ -112,9 +112,11 @@ test('Phase 5 Plan hub uses design system; plan ≠ diary copy', () => {
   assert.ok(src.includes('@/src/design-system'));
   assert.ok(src.includes('AppText'));
   assert.ok(
-    src.includes('Plan ≠ diary') ||
+    src.includes('PlanNotDiaryNote') ||
+      src.includes('Plan ≠ diary') ||
       src.includes('не дневник') ||
       src.includes('не пишет в дневник'),
+    'plan ≠ diary caption (shared note or inline copy)',
   );
   assert.ok(src.includes('eat-now'));
   assert.ok(src.includes('week'));

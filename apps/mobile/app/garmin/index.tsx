@@ -21,7 +21,7 @@ import {
   setGarminApiKey,
 } from '@/src/features/garmin/secureKeyStore';
 import { runGarminSync } from '@/src/features/garmin/garminSyncService';
-import { useData } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { confirmAction } from '@/src/utils/confirmAction';
 
 const KEY_HELP_URL = 'https://connect.garmin.com/app/settings/personalApiToken';
@@ -40,7 +40,8 @@ function formatSyncAt(iso: string | null): string {
 
 export default function GarminConnectScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash } = useData();
+  const { repo, refresh, showFlash } = useData();
+  const revision = useAnyRevision();
   void revision;
 
   const [keyRaw, setKeyRaw] = useState('');
@@ -57,7 +58,7 @@ export default function GarminConnectScreen() {
       days: repo.listIntegratedDailyActivityStats('garmin', 2000).length,
       sleep: repo.listSleepNights(2000).filter((n) => n.source === 'garmin').length,
     }),
-    [repo, revision],
+    [repo],
   );
 
   const reloadKeyStatus = useCallback(async () => {
@@ -68,7 +69,7 @@ export default function GarminConnectScreen() {
 
   useEffect(() => {
     void reloadKeyStatus();
-  }, [reloadKeyStatus, revision]);
+  }, [reloadKeyStatus]);
 
   const onSaveKey = async () => {
     if (busy) return;

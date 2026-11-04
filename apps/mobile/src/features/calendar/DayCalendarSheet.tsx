@@ -19,7 +19,7 @@ import {
 } from '../../../../../src/domain/calendarMonth';
 import { localDateKey } from '../../../../../src/storage/validation';
 import type { FoodEntry, MealSlot, Workout, WorkoutType } from '../../../../../src/storage/types';
-import { useData } from '../../state/DataContext';
+import { useData, useAnyRevision } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { AppButton } from '@/src/design-system';
 
@@ -55,7 +55,8 @@ export function DayCalendarSheet({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { repo, dateLocal, setDateLocal, revision } = useData();
+  const { repo, dateLocal, setDateLocal } = useData();
+  const revision = useAnyRevision();
   void revision;
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
@@ -72,7 +73,7 @@ export function DayCalendarSheet({
   const { y, m0 } = parseDateLocal(cursor);
   const cells = useMemo(() => buildMonthCells(y, m0), [y, m0]);
 
-  const weights = useMemo(() => repo.listWeights(200), [repo, revision]);
+  const weights = useMemo(() => repo.listWeights(200), [repo]);
 
   const markers = useMemo(() => {
     const map = new Map<
@@ -93,7 +94,7 @@ export function DayCalendarSheet({
       });
     }
     return map;
-  }, [cells, repo, weights, profile.timezone, revision]);
+  }, [cells, repo, weights, profile.timezone]);
 
   const dayEntries = repo.listEntriesForDate(preview);
   const dayWorkouts = repo.listWorkoutsForDate(preview);

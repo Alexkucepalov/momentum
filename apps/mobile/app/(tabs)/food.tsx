@@ -32,11 +32,12 @@ import {
 } from '@/src/features/diary/FoodSegmentTabs';
 import { MealSection } from '@/src/features/diary/MealSection';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
-import { useData } from '@/src/state/DataContext';
+import { useData, useDiaryRevision } from '@/src/state/DataContext';
 import type { SavedMeal } from '../../../../src/storage/types';
 import type { AddFoodTab } from '@/src/features/diary/addFood/types';
 import {
   AppButton,
+  AppText,
   colors,
   radius,
   space,
@@ -59,9 +60,10 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 export default function FoodScreen() {
   const navigation = useNavigation();
   const router = useRouter();
-  const { repo, dateLocal, setDateLocal, meal, setMeal, refresh, revision, setUndo, showFlash } =
+  const { repo, dateLocal, setDateLocal, meal, setMeal, refresh, setUndo, showFlash } =
     useData();
-  void revision;
+  const diaryRevision = useDiaryRevision();
+  void diaryRevision;
   const allowAdd = useAddGuard();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<FoodEntry | null>(null);
@@ -92,7 +94,7 @@ export default function FoodScreen() {
       map[r.id] = repo.getRecipeIngredients(r.id).length;
     }
     return map;
-  }, [recipes, repo, revision]);
+  }, [recipes, repo]);
   const dailyTargets = {
     energyKcal: profile.dailyEnergyKcal,
     proteinG: profile.dailyProteinG,
@@ -146,7 +148,7 @@ export default function FoodScreen() {
   const onDelete = (entry: FoodEntry) => {
     repo.softDeleteEntry(entry.id);
     setUndo({ entryId: entry.id, message: `Удалено: ${entry.displayName}` });
-    refresh();
+    refresh('diary');
   };
 
   const openForMeal = (slot: MealSlot, tab: AddFoodTab = 'recent') => {
@@ -165,7 +167,7 @@ export default function FoodScreen() {
         meal: slot,
       });
       const label = `Приём «${m.name}»: +${created.length}`;
-      refresh();
+      refresh('diary');
       showFlash(label);
       setUndo({ entryIds: created.map((e) => e.id), message: label });
     } catch (e) {
@@ -192,7 +194,7 @@ export default function FoodScreen() {
       });
     }
     if (!created) return;
-    refresh();
+    refresh('diary');
     showFlash(`Добавлено: ${e.displayName}`);
     setUndo({ entryIds: [created.id], message: `Добавлено: ${e.displayName}` });
   };
@@ -222,7 +224,7 @@ export default function FoodScreen() {
         createdIds.push(e.id);
       }
     }
-    refresh();
+    refresh('diary');
     showFlash(`Повторён ${MEAL_LABELS[slot].toLowerCase()} · ${createdIds.length}`);
     setUndo({
       entryIds: createdIds,
@@ -249,7 +251,7 @@ export default function FoodScreen() {
       });
     }
     if (!created) return;
-    refresh();
+    refresh('diary');
     showFlash(`Скопировано: ${e.displayName}`);
     setUndo({ entryIds: [created.id], message: `Скопировано: ${e.displayName}` });
   };
@@ -284,6 +286,10 @@ export default function FoodScreen() {
         {segment === 'diary' ? (
           <FormScrollView contentContainerStyle={styles.content}>
             {chrome}
+
+            <AppText variant="caption" tone="muted" style={styles.diaryCaption}>
+              Дневник — факт за день. Каталог — база. План (компас) — черновик.
+            </AppText>
 
             <KcalRing
               variant="compact"
@@ -385,7 +391,7 @@ export default function FoodScreen() {
               onBrowseRecipes={() => router.push('/recipes')}
               onToggleFavorite={(p) => {
                 repo.setFavorite(p.id, !p.isFavorite);
-                refresh();
+                refresh('diary');
               }}
               onRepeatEntry={repeatEntry}
             />
@@ -426,7 +432,7 @@ export default function FoodScreen() {
           if (!saveMealSlot) return;
           try {
             repo.createSavedMealFromEntries(name, mealEntries[saveMealSlot], saveMealSlot);
-            refresh();
+            refresh('diary');
             showFlash(`Сохранён приём «${name}»`);
           } catch (e) {
             showFlash(e instanceof Error ? e.message : 'Не сохранено');
@@ -480,7 +486,7 @@ export default function FoodScreen() {
             createdId = e.id;
             label = portionTarget.target.recipe.name;
           }
-          refresh();
+          refresh('diary');
           setPortionTarget(null);
           showFlash(`Добавлено: ${label}`);
           setUndo({ entryIds: [createdId], message: `Добавлено: ${label}` });
@@ -494,7 +500,7 @@ export default function FoodScreen() {
         onSave={(grams) => {
           if (!editing) return;
           repo.updateEntryGrams(editing.id, grams);
-          refresh();
+          refresh('diary');
           setEditing(null);
         }}
       />
@@ -507,6 +513,7 @@ export default function FoodScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140, gap: space.sm },
+  diaryCaption: { lineHeight: 18 },
   catalogRoot: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.lg },
   catalogChrome: { gap: space.sm, marginBottom: space.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center' },

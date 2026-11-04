@@ -8,7 +8,7 @@ import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../../sr
 import { FormScrollView } from '../../components/FormScrollView';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { useAddGuard } from '../../hooks/useAddGuard';
-import { useData } from '../../state/DataContext';
+import { useData, useDiaryRevision } from '../../state/DataContext';
 import { AppText, ErrorBanner, colors, radius, space, touchMin, type } from '@/src/design-system';
 import { BarcodeLookupSheet } from './BarcodeLookupSheet';
 import { ConfirmPortionSheet, type PortionTarget } from './ConfirmPortionSheet';
@@ -43,7 +43,8 @@ export function AddFoodSheet({
   initialTab?: AddFoodTab;
 }) {
   const router = useRouter();
-  const { repo, dateLocal, meal, setMeal, refresh, revision, showFlash, setUndo } = useData();
+  const { repo, dateLocal, meal, setMeal, refresh, showFlash, setUndo } = useData();
+  const revision = useDiaryRevision();
   void revision;
   const allowAdd = useAddGuard();
   const [tab, setTab] = useState<AddFoodTab>(initialTab);
@@ -112,7 +113,7 @@ export function AddFoodSheet({
   };
 
   const finishQuick = (label: string, entryIds: string[]) => {
-    refresh();
+    refresh('diary');
     showFlash(label);
     if (entryIds.length > 0) setUndo({ entryIds, message: label });
     onClose();
@@ -405,7 +406,7 @@ export function AddFoodSheet({
                       meal,
                     });
                     const label = `Приём «${m.name}»: +${created.length}`;
-                    refresh();
+                    refresh('diary');
                     showFlash(label);
                     setUndo({
                       entryIds: created.map((e) => e.id),
@@ -418,7 +419,7 @@ export function AddFoodSheet({
                 }}
                 onDelete={(m) => {
                   repo.softDeleteSavedMeal(m.id);
-                  refresh();
+                  refresh('diary');
                   showFlash(`Удалён шаблон «${m.name}»`);
                 }}
               />
@@ -438,7 +439,7 @@ export function AddFoodSheet({
                     carbG: values.carbG,
                   });
                   const label = `Быстрый ввод: ${values.displayName}`;
-                  refresh();
+                  refresh('diary');
                   showFlash(label);
                   setUndo({ entryIds: [created.id], message: label });
                   onClose();
@@ -514,7 +515,7 @@ export function AddFoodSheet({
                   onQuickAddRecipe={quickAddRecipe}
                   onCreateRecipe={(input) => {
                     const recipe = repo.createRecipe(input);
-                    refresh();
+                    refresh('diary');
                     openRecipeConfirm(recipe);
                   }}
                 />
@@ -603,7 +604,7 @@ export function AddFoodSheet({
           }
           showFlash(label);
           if (createdId) setUndo({ entryIds: [createdId], message: label });
-          refresh();
+          refresh('diary');
           setConfirm(null);
           onClose();
         }}

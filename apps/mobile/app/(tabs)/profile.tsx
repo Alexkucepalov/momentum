@@ -11,7 +11,7 @@ import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
 import { collectDayReportText } from '@/src/features/progress/collectDayReport';
-import { useData } from '@/src/state/DataContext';
+import { useData, useProfileRevision } from '@/src/state/DataContext';
 import {
   AppButton,
   AppCard,
@@ -47,7 +47,8 @@ function profileToFields(profile: {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { repo, refresh, revision, showFlash, setDateLocal, dateLocal } = useData();
+  const { repo, refresh, showFlash, setDateLocal, dateLocal } = useData();
+  const profileRevision = useProfileRevision();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
   const fields = profileToFields(profile);
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
     setProteinRaw(next.proteinRaw);
     setFatRaw(next.fatRaw);
     setCarbRaw(next.carbRaw);
-  }, [repo, revision]);
+  }, [repo, profileRevision]);
 
   const glance = useMemo(() => {
     return {
@@ -104,7 +105,7 @@ export default function ProfileScreen() {
       }
       if (next === profile.waterTargetMl) return;
       repo.setWaterTargetMl(next);
-      refresh();
+      refresh('profile');
       showFlash(next == null ? 'Цель воды снята' : `Сохранено: вода ${Math.round(next)} мл`);
     } catch (e) {
       showFlash(e instanceof Error ? e.message : 'Вода не сохранена');
@@ -117,7 +118,7 @@ export default function ProfileScreen() {
       if (cm !== null && cm <= 0) throw new Error('Рост должен быть > 0');
       if (cm === profile.heightCm) return;
       repo.setHeightCm(cm);
-      refresh();
+      refresh('profile');
       showFlash(cm == null ? 'Рост очищен' : `Сохранено: рост ${cm} см`);
     } catch (e) {
       showFlash(e instanceof Error ? e.message : 'Рост не сохранён');
@@ -144,7 +145,7 @@ export default function ProfileScreen() {
         next.carbG === profile.dailyCarbG;
       if (same) return;
       repo.setDailyNutritionTargets(next);
-      refresh();
+      refresh('profile');
       const parts: string[] = [];
       if (next.energyKcal != null) parts.push(`${Math.round(next.energyKcal)} ккал`);
       if (next.proteinG != null) parts.push(`Б ${Math.round(next.proteinG)}`);
@@ -170,7 +171,7 @@ export default function ProfileScreen() {
     const result = repo.importAll(json);
     const tz = repo.getProfile().timezone;
     setDateLocal(localDateKey(new Date(), tz));
-    refresh();
+    refresh('profile');
     setPasteOpen(false);
     setPasteRaw('');
     showFlash(`Восстановлено · v${result.version} · ${result.entries} записей`);
@@ -243,7 +244,7 @@ export default function ProfileScreen() {
         destructive: true,
         onConfirm: () => {
           repo.deleteAllUserData();
-          refresh();
+          refresh('profile');
           showFlash('Локальные данные очищены');
         },
       },
