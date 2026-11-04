@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
 
 const PRESETS = [50, 100, 150, 200, 250] as const;
+const STEP = 10;
 
 function formatGrams(n: number): string {
   const rounded = Math.round(n * 10) / 10;
@@ -22,11 +23,9 @@ export function PortionStepper({
 }) {
   const [raw, setRaw] = useState(() => formatGrams(grams));
 
-  // Sync when ±10 / presets change grams from outside (not while draft is empty/partial).
   useEffect(() => {
     setRaw((prev) => {
       const t = prev.trim().replace(',', '.');
-      // Keep in-progress edits: empty field or trailing decimal.
       if (t === '' || t === '.' || t.endsWith('.')) return prev;
       const asNum = Number(t);
       if (Number.isFinite(asNum) && Math.round(asNum * 10) / 10 === Math.round(grams * 10) / 10) {
@@ -67,18 +66,17 @@ export function PortionStepper({
       <Text style={styles.label}>Порция, г</Text>
       <View style={styles.row}>
         <Pressable
-          style={styles.btn}
-          onPress={() => setSafe(Math.max(0, grams - 10))}
+          style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}
+          onPress={() => setSafe(Math.max(0, grams - STEP))}
           accessibilityRole="button"
-          accessibilityLabel="Минус 10 грамм"
+          accessibilityLabel={`Минус ${STEP} грамм`}
         >
-          <Text style={styles.btnText}>−10</Text>
+          <Text style={styles.stepBtnText}>−</Text>
         </Pressable>
         <TextInput
           value={raw}
           onChangeText={(t) => {
             const normalized = t.replace(',', '.');
-            // Allow full clear and intermediate decimals ("12.").
             if (normalized !== '' && !/^\d*\.?\d*$/.test(normalized)) return;
             setRaw(normalized);
             if (normalized === '' || normalized === '.' || normalized.endsWith('.')) return;
@@ -96,14 +94,15 @@ export function PortionStepper({
           accessibilityHint="Можно полностью стереть и ввести заново"
         />
         <Pressable
-          style={styles.btn}
-          onPress={() => setSafe(grams + 10)}
+          style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}
+          onPress={() => setSafe(grams + STEP)}
           accessibilityRole="button"
-          accessibilityLabel="Плюс 10 грамм"
+          accessibilityLabel={`Плюс ${STEP} грамм`}
         >
-          <Text style={styles.btnText}>+10</Text>
+          <Text style={styles.stepBtnText}>+</Text>
         </Pressable>
       </View>
+      <Text style={styles.stepHint}>Шаг ±{STEP} г</Text>
       <View style={styles.presets}>
         {last != null ? (
           <Pressable
@@ -112,8 +111,8 @@ export function PortionStepper({
             accessibilityRole="button"
             accessibilityLabel={`Последняя порция ${last} грамм`}
           >
-            <Text style={[styles.presetText, grams === last && styles.presetTextOn]}>
-              Последняя · {last} г
+            <Text style={[styles.presetText, grams === last && styles.presetTextOn]} numberOfLines={1}>
+              Было {last} г
             </Text>
           </Pressable>
         ) : null}
@@ -125,7 +124,7 @@ export function PortionStepper({
             accessibilityRole="button"
             accessibilityLabel={`${s} грамм`}
           >
-            <Text style={[styles.presetText, grams === s && styles.presetTextOn]}>{s} г</Text>
+            <Text style={[styles.presetText, grams === s && styles.presetTextOn]}>{s}</Text>
           </Pressable>
         ))}
       </View>
@@ -134,7 +133,11 @@ export function PortionStepper({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: space.lg },
+  wrap: {
+    marginBottom: space.md,
+    width: '100%',
+    maxWidth: '100%',
+  },
   label: {
     fontSize: type.caption,
     color: colors.textSecondary,
@@ -145,22 +148,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
+    width: '100%',
   },
-  btn: {
-    minHeight: touchMin,
-    minWidth: 64,
+  stepBtn: {
+    width: touchMin,
+    height: touchMin,
+    flexShrink: 0,
     borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnText: {
-    fontSize: type.body,
-    fontWeight: '700',
+  stepBtnText: {
+    fontSize: 28,
+    fontWeight: '600',
     color: colors.text,
+    lineHeight: 32,
   },
   input: {
     flex: 1,
+    minWidth: 0,
     minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
@@ -170,12 +177,20 @@ const styles = StyleSheet.create({
     fontSize: type.title,
     fontWeight: '700',
     color: colors.text,
+    paddingHorizontal: space.sm,
+  },
+  stepHint: {
+    marginTop: space.xs,
+    fontSize: type.micro,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
   presets: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space.sm,
     marginTop: space.sm,
+    width: '100%',
   },
   preset: {
     paddingHorizontal: space.md,
@@ -185,6 +200,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
     minHeight: 36,
+    maxWidth: '100%',
     justifyContent: 'center',
   },
   presetLast: {
@@ -202,4 +218,5 @@ const styles = StyleSheet.create({
   presetTextOn: {
     color: colors.primaryButtonText,
   },
+  pressed: { opacity: 0.88 },
 });
