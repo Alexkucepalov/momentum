@@ -8,7 +8,8 @@ import {
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
 import { localDateKey } from '../../../../src/storage/validation';
-import type { FoodProduct } from '../../../../src/storage/types';
+import { portion } from '../../../../src/domain/nutrition';
+import type { FoodEntry, FoodProduct } from '../../../../src/storage/types';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DayStrip } from '@/src/components/DayStrip';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
@@ -27,6 +28,7 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
+import { TodayRecentStrip } from '@/src/features/today/TodayRecentStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
@@ -88,6 +90,7 @@ export default function TodayScreen() {
   } | null>(null);
 
   const totals = repo.dailyTotals(dateLocal);
+  const recent = repo.listRecentEntries(6);
   const favorites = repo.listFavorites().slice(0, 3);
   const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
@@ -129,7 +132,7 @@ export default function TodayScreen() {
         <Pressable
           onPress={() => router.push('/plan')}
           accessibilityRole="button"
-          accessibilityLabel="План питания"
+          accessibilityLabel="План питания, черновик, не дневник"
           style={styles.headerBtn}
           hitSlop={8}
         >
@@ -138,6 +141,64 @@ export default function TodayScreen() {
       ),
     });
   }, [navigation, router]);
+
+  const openRecentConfirm = (e: FoodEntry) => {
+    if (e.productId) {
+      const product = repo.listProducts().find((p) => p.id === e.productId);
+      if (!product) return;
+      setPortionTarget({ target: { kind: 'product', product }, initialGrams: e.grams });
+      return;
+    }
+    if (e.recipeId) {
+      const recipe = repo.getRecipe(e.recipeId);
+      if (!recipe) return;
+      setPortionTarget({
+        target: {
+          kind: 'recipe',
+          recipe,
+          ingredients: repo.getRecipeIngredients(recipe.id),
+        },
+        initialGrams: e.grams,
+      });
+    }
+  };
+
+  const quickAddRecent = (e: FoodEntry) => {
+    if (!allowAdd()) return;
+    let created: FoodEntry | null = null;
+    if (e.productId) {
+      created = repo.addEntryFromProduct({
+        productId: e.productId,
+        dateLocal,
+        meal,
+        grams: e.grams,
+      });
+    } else if (e.recipeId) {
+      created = repo.addEntryFromRecipe({
+        recipeId: e.recipeId,
+        dateLocal,
+        meal,
+        grams: e.grams,
+      });
+    }
+    if (!created) return;
+    refresh();
+    showFlash(`Добавлено: ${e.displayName}`);
+    setUndo({ entryIds: [created.id], message: `Добавлено: ${e.displayName}` });
+  };
+
+  const quickAddFavorite = (p: FoodProduct, grams: number) => {
+    if (!allowAdd()) return;
+    const created = repo.addEntryFromProduct({
+      productId: p.id,
+      dateLocal,
+      meal,
+      grams,
+    });
+    refresh();
+    showFlash(`Добавлено: ${p.name}`);
+    setUndo({ entryIds: [created.id], message: `Добавлено: ${p.name}` });
+  };
 
   return (
     <View style={styles.root} testID="today-screen">
@@ -171,6 +232,7 @@ export default function TodayScreen() {
 
           <KcalRing
             variant="compact"
+            pulseKey={totals.entryCount}
             totals={totals}
             targets={{
               energyKcal: profile.dailyEnergyKcal,
@@ -183,43 +245,19 @@ export default function TodayScreen() {
             onSetTarget={() => router.push('/profile')}
           />
 
-          <StatCards
-            waterMl={waterMl}
-            waterTargetMl={profile.waterTargetMl}
-            activityMinutes={activityMinutes}
-            steps={daySteps}
-            sleepSec={sleepSec}
-            onAddWater={(ml) => {
-              repo.addWater(dateLocal, ml);
-              refresh();
-              showFlash(`+${ml} мл воды`);
-            }}
-          />
-
           <CopyYesterdayButton testID="today-copy-yesterday" />
 
-          <TodayChecklist
-            flexibleHabits={flexibleRows}
-            onManageHabits={() => router.push('/progress')}
-            onToggleFlexible={(habitId) => {
-              const habit = repo.listFlexibleHabits().find((h) => h.id === habitId);
-              if (repo.isFlexibleHabitLogged(habitId, dateLocal)) {
-                repo.unlogFlexibleHabit(habitId, dateLocal);
-                refresh();
-                showFlash(habit ? `Снято: ${habit.name}` : 'Отметка снята');
-              } else {
-                repo.logFlexibleHabit(habitId, dateLocal);
-                refresh();
-                showFlash(habit ? `Отмечено: ${habit.name}` : 'Отмечено');
-              }
-            }}
+          <TodayRecentStrip
+            recent={recent}
+            onConfirm={openRecentConfirm}
+            onQuickAdd={quickAddRecent}
           />
 
           {favorites.length > 0 ? (
             <View style={styles.favBlock}>
               <SectionHeader title="Избранное" />
               <AppText variant="caption" tone="muted" style={styles.favHint}>
-                Порция подтверждается перед записью в дневник
+                «+» — сразу · строка — подтвердить порцию
               </AppText>
               {favorites.map((p) => {
                 const lastG = repo.lastGramsForProduct(p.id) ?? 100;
@@ -251,13 +289,54 @@ export default function TodayScreen() {
                             : ` · ~${Math.round((p.energyKcal * lastG) / 100)} ккал`}
                         </AppText>
                       </View>
-                      <AppText variant="title">+</AppText>
+                      <Pressable
+                        onPress={(ev) => {
+                          ev.stopPropagation?.();
+                          quickAddFavorite(p, lastG);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Быстро добавить ${p.name}, ${lastG} грамм`}
+                        hitSlop={6}
+                        style={styles.favPlus}
+                      >
+                        <AppText variant="title">+</AppText>
+                      </Pressable>
                     </AppCard>
                   </Pressable>
                 );
               })}
             </View>
           ) : null}
+
+          <StatCards
+            waterMl={waterMl}
+            waterTargetMl={profile.waterTargetMl}
+            activityMinutes={activityMinutes}
+            steps={daySteps}
+            sleepSec={sleepSec}
+            onAddWater={(ml) => {
+              repo.addWater(dateLocal, ml);
+              refresh();
+              showFlash(`+${ml} мл воды`);
+            }}
+          />
+
+          <TodayChecklist
+            flexibleHabits={flexibleRows}
+            onManageHabits={() => router.push('/progress')}
+            onToggleFlexible={(habitId) => {
+              const habit = repo.listFlexibleHabits().find((h) => h.id === habitId);
+              if (repo.isFlexibleHabitLogged(habitId, dateLocal)) {
+                repo.unlogFlexibleHabit(habitId, dateLocal);
+                refresh();
+                showFlash(habit ? `Снято: ${habit.name}` : 'Отметка снята');
+              } else {
+                repo.logFlexibleHabit(habitId, dateLocal);
+                refresh();
+                showFlash(habit ? `Отмечено: ${habit.name}` : 'Отмечено');
+              }
+            }}
+          />
         </FormScrollView>
       </DaySwipeArea>
 
@@ -287,20 +366,50 @@ export default function TodayScreen() {
         initialGrams={portionTarget?.initialGrams}
         onClose={() => setPortionTarget(null)}
         onConfirm={(result) => {
-          if (!portionTarget || portionTarget.target.kind !== 'product') return;
+          if (!portionTarget) return;
           if (!allowAdd()) return;
-          const product = portionTarget.target.product as FoodProduct;
-          repo.updateProductNutrition(product.id, result.per100g);
-          const created = repo.addEntryFromProduct({
-            productId: product.id,
-            dateLocal,
-            meal,
-            grams: result.grams,
-          });
+          let createdId: string;
+          let label: string;
+          if (portionTarget.target.kind === 'product') {
+            const product = portionTarget.target.product as FoodProduct;
+            repo.updateProductNutrition(product.id, result.per100g);
+            const created = repo.addEntryFromProduct({
+              productId: product.id,
+              dateLocal,
+              meal,
+              grams: result.grams,
+            });
+            createdId = created.id;
+            label = product.name;
+          } else {
+            const snap = portion(
+              {
+                kcal: result.per100g.energyKcal,
+                protein: result.per100g.proteinG,
+                fat: result.per100g.fatG,
+                carbs: result.per100g.carbG,
+              },
+              result.grams,
+            );
+            const created = repo.addEntryFromRecipe({
+              recipeId: portionTarget.target.recipe.id,
+              dateLocal,
+              meal,
+              grams: result.grams,
+              nutritionSnapshot: {
+                energyKcal: snap.kcal,
+                proteinG: snap.protein,
+                fatG: snap.fat,
+                carbG: snap.carbs,
+              },
+            });
+            createdId = created.id;
+            label = portionTarget.target.recipe.name;
+          }
           refresh();
           setPortionTarget(null);
-          showFlash(`Добавлено: ${product.name}`);
-          setUndo({ entryIds: [created.id], message: `Добавлено: ${product.name}` });
+          showFlash(`Добавлено: ${label}`);
+          setUndo({ entryIds: [createdId], message: `Добавлено: ${label}` });
         }}
       />
       <FlashBar />
@@ -334,13 +443,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.ink,
   },
-  favBlock: { marginTop: space.md, gap: space.xs },
-  favHint: { marginBottom: space.sm },
+  favBlock: { gap: space.xs },
+  favHint: { marginBottom: space.xs },
   quick: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: space.md,
-    marginBottom: space.sm,
+    marginBottom: space.xs,
     minHeight: touchMin,
     gap: space.sm,
   },
@@ -355,6 +464,12 @@ const styles = StyleSheet.create({
   },
   quickBody: { flex: 1 },
   quickTitle: { fontWeight: '600' },
+  favPlus: {
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   footerScan: {
     width: touchMin,
     height: touchMin,

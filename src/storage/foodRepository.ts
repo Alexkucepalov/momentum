@@ -1170,9 +1170,24 @@ export function createMemoryFoodRepository(seed?: {
   let garminSync: GarminSyncState = normalizeGarminSync(snap?.garminSync);
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
+  /** Coalesce burst writes (e.g. copy-yesterday) into one snapshot persist. */
+  let persistQueued = false;
+
+  const flushPersist = () => {
+    persistQueued = false;
+    if (persistHook) persistHook(api.toSnapshot());
+  };
 
   const notify = () => {
-    if (persistHook) persistHook(api.toSnapshot());
+    if (!persistHook) return;
+    if (persistQueued) return;
+    persistQueued = true;
+    // Promise microtask — available in RN + Node without DOM lib queueMicrotask.
+    Promise.resolve().then(() => {
+      // Skip if flushPersist() already drained this generation.
+      if (!persistQueued) return;
+      flushPersist();
+    });
   };
 
   const habitId = (dateLocal: string, habitKey: HabitKey) => `${dateLocal}:${habitKey}`;
@@ -1241,9 +1256,15 @@ export function createMemoryFoodRepository(seed?: {
     return { recipe: { ...recipe }, created: true };
   };
 
-  const api: FoodRepository & { setPersistHook(fn: (snap: StoreSnapshot) => void): void } = {
+  const api: FoodRepository & {
+    setPersistHook(fn: (snap: StoreSnapshot) => void): void;
+    flushPersist(): void;
+  } = {
     setPersistHook(fn) {
       persistHook = fn;
+    },
+    flushPersist() {
+      flushPersist();
     },
     toSnapshot(): StoreSnapshot {
       return {

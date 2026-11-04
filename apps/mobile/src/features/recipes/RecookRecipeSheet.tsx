@@ -4,9 +4,9 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { nutritionForRecipePortion } from '../../../../../src/domain/recipeNutrition';
 import type { Recipe, RecipeIngredient } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 function fmt(n: number | null): string {
   if (n === null) return '—';
@@ -167,7 +167,7 @@ export function RecookRecipeSheet({
           </Text>
         ) : null}
 
-        <PrimaryButton label="Создать партию" onPress={submit} />
+        <AppButton label="Создать партию" onPress={submit} />
       </FormScrollView>
     </SwipeToDismissSheet>
   );

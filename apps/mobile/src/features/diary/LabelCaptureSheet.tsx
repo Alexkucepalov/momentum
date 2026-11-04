@@ -15,8 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { parseNutritionLabelText } from '../../../../../src/domain/parseNutritionLabel';
 import type { NutritionSource } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 export type LabelDraft = {
   name: string;
@@ -145,14 +145,14 @@ export function LabelCaptureSheet({
           {Platform.OS !== 'web' && permission?.granted && !photoUri ? (
             <View style={styles.camWrap}>
               <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-              <PrimaryButton label="Сфотографировать" onPress={() => void takePhoto()} />
+              <AppButton label="Сфотографировать" onPress={() => void takePhoto()} />
             </View>
           ) : null}
 
           {Platform.OS !== 'web' && permission && !permission.granted ? (
             <View style={styles.block}>
               <Text style={styles.hint}>Без камеры можно вставить текст этикетки вручную.</Text>
-              <PrimaryButton label="Разрешить камеру" onPress={() => void requestPermission()} />
+              <AppButton label="Разрешить камеру" onPress={() => void requestPermission()} />
             </View>
           ) : null}
 
@@ -226,7 +226,7 @@ export function LabelCaptureSheet({
             style={styles.textArea}
             accessibilityLabel="Текст этикетки для разбора КБЖУ"
           />
-          <PrimaryButton label="Разобрать КБЖУ из текста" onPress={applyParse} />
+          <AppButton label="Разобрать КБЖУ из текста" onPress={applyParse} />
 
           {hint ? (
             <Text style={styles.message} accessibilityLiveRegion="polite">
@@ -235,7 +235,7 @@ export function LabelCaptureSheet({
           ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label="Сохранить продукт" onPress={save} />
+          <AppButton label="Сохранить продукт" onPress={save} />
         </FormScrollView>
       </View>
     </Modal>

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
 
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
+import { shiftDateLocal } from '../../../../src/domain/repeatMeal';
 import type { WorkoutType } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
 import { DayStrip } from '@/src/components/DayStrip';
@@ -173,6 +174,32 @@ export default function MovementScreen() {
               ) : null}
 
               <AppButton label="+ Тренировка" onPress={() => openForm('walking')} />
+              <AppButton
+                label="Повторить вчерашние тренировки"
+                variant="secondary"
+                onPress={() => {
+                  const yesterday = shiftDateLocal(dateLocal, -1);
+                  const prev = repo
+                    .listWorkoutsForDate(yesterday)
+                    .filter((w) => w.source === 'user' && w.deletedAt == null);
+                  if (prev.length === 0) {
+                    showFlash('Вчера нет своих тренировок для повтора');
+                    return;
+                  }
+                  for (const w of prev) {
+                    repo.addWorkout({
+                      dateLocal,
+                      type: w.type,
+                      durationSec: w.durationSec,
+                      distanceM: w.distanceM,
+                      notes: w.notes,
+                    });
+                  }
+                  refresh();
+                  showFlash(`Повторено тренировок: ${prev.length}`);
+                }}
+                testID="activity-repeat-yesterday"
+              />
 
               <SectionHeader title="Записи дня" />
               {workouts.length === 0 ? (

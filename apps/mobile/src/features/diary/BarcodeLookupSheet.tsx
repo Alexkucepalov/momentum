@@ -13,9 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FoodProduct } from '../../../../../src/storage/types';
 import { fetchOpenFoodFacts } from '../../integrations/fetchOpenFoodFacts';
 import { FormScrollView } from '../../components/FormScrollView';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { useAddGuard } from '../../hooks/useAddGuard';
 import { useData } from '../../state/DataContext';
+import { AppButton } from '@/src/design-system';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { BarcodeCameraPanel, type ScanStatus } from './BarcodeCameraPanel';
 import { ConfirmPortionSheet } from './ConfirmPortionSheet';
@@ -48,7 +48,7 @@ export function BarcodeLookupSheet({
   visible: boolean;
   onClose: () => void;
 }) {
-  const { repo, dateLocal, meal, refresh, showFlash, revision } = useData();
+  const { repo, dateLocal, meal, refresh, showFlash, revision, setUndo } = useData();
   const allowAdd = useAddGuard();
   void revision;
   const insets = useSafeAreaInsets();
@@ -335,7 +335,7 @@ export function BarcodeLookupSheet({
                 <ActivityIndicator color={colors.text} style={{ marginVertical: space.lg }} />
               ) : (
                 <View style={styles.actions}>
-                  <PrimaryButton label="Найти" onPress={() => void lookupCode(code)} />
+                  <AppButton label="Найти" onPress={() => void lookupCode(code)} />
                 </View>
               )}
               <Text style={styles.attr}>
@@ -399,7 +399,7 @@ export function BarcodeLookupSheet({
                   сбое сети.
                 </Text>
               )}
-              <PrimaryButton label="Снять этикетку и разобрать КБЖУ" onPress={() => setPhase('label')} />
+              <AppButton label="Снять этикетку и разобрать КБЖУ" onPress={() => setPhase('label')} />
               <Pressable
                 style={styles.secondary}
                 onPress={() => setPhase('manual')}
@@ -487,7 +487,7 @@ export function BarcodeLookupSheet({
                 accessibilityLabel="Ккал"
               />
               {manualError ? <Text style={styles.error}>{manualError}</Text> : null}
-              <PrimaryButton label="Сохранить → указать порцию" onPress={saveManual} />
+              <AppButton label="Сохранить → указать порцию" onPress={saveManual} />
               <Pressable style={styles.linkBtn} onPress={() => setPhase('fallback')}>
                 <Text style={styles.link}>Назад</Text>
               </Pressable>
@@ -522,7 +522,7 @@ export function BarcodeLookupSheet({
           if (!product) return;
           if (!allowAdd()) return;
           repo.updateProductNutrition(product.id, result.per100g);
-          repo.addEntryFromProduct({
+          const created = repo.addEntryFromProduct({
             productId: product.id,
             dateLocal,
             meal,
@@ -535,6 +535,7 @@ export function BarcodeLookupSheet({
               : String(Math.round((result.per100g.energyKcal * result.grams) / 100));
           const line = `В дневнике: ${product.name} · ${result.grams} г · ~${kcal} ккал → ${MEAL_LABELS[meal].toLowerCase()}`;
           showFlash(line);
+          setUndo({ entryIds: [created.id], message: line });
           setConfirm(false);
           setMessage(
             `${line}${sourceNote ? `\n${sourceNote}` : ''}\nМожно сканировать следующий продукт.`,

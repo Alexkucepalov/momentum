@@ -9,10 +9,10 @@ import { nutritionForRecipePortion } from '../../../../src/domain/recipeNutritio
 import type { MealSlot, PlannedMeal } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 const PERIODS: MealPlanPeriodDays[] = [3, 5, 7];
 const PORTION_STEPS = [100, 150, 200, 250, 300];
@@ -236,7 +236,7 @@ export default function WeekPlanScreen() {
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label="Спроектировать план" onPress={createDraft} />
+          <AppButton label="Спроектировать план" onPress={createDraft} />
           {repo.listRecipes().length === 0 ? (
             <EmptyState
               compact

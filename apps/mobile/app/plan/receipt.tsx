@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 
 import { parsePurchasePaste, type ParsedPurchaseLineDraft } from '../../../../src/domain/parsePurchasePaste';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import {
   pickPurchaseScreenshotFromLibrary,
   takePurchaseScreenshot,
@@ -12,6 +11,7 @@ import {
 import { usePurchaseScreenshotOcr } from '@/src/ocr/usePurchaseScreenshotOcr';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 type Step = 'input' | 'preview';
 type InputMode = 'paste' | 'manual' | 'screenshot';
@@ -337,7 +337,7 @@ export default function PurchaseImportScreen() {
         </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <PrimaryButton label="Подтвердить покупку" onPress={confirm} />
+        <AppButton label="Подтвердить покупку" onPress={confirm} />
         <Pressable
           onPress={() => setStep('input')}
           accessibilityRole="button"
@@ -399,7 +399,7 @@ export default function PurchaseImportScreen() {
             accessibilityLabel="Текст заказа"
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label="К проверке" onPress={goPreviewFromPaste} />
+          <AppButton label="К проверке" onPress={goPreviewFromPaste} />
         </>
       ) : mode === 'screenshot' ? (
         <>
@@ -424,12 +424,12 @@ export default function PurchaseImportScreen() {
             </View>
           ) : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton
+          <AppButton
             label="Выбрать скрин из галереи"
             onPress={() => void runScreenshotOcr('library')}
             disabled={ocrBusy || ocr.isGenerating}
           />
-          <PrimaryButton
+          <AppButton
             label="Снять камерой"
             onPress={() => void runScreenshotOcr('camera')}
             disabled={ocrBusy || ocr.isGenerating}
@@ -499,7 +499,7 @@ export default function PurchaseImportScreen() {
             <Text style={styles.add}>+ Строка</Text>
           </Pressable>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label="К проверке" onPress={goPreviewFromManual} />
+          <AppButton label="К проверке" onPress={goPreviewFromManual} />
         </>
       )}
     </FormScrollView>

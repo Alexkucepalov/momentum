@@ -9,11 +9,11 @@ import {
   type ParsedRecipeIngredient,
 } from '../../../../src/domain/parseRecipeText';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { parsedRecipeToFormInitial } from '@/src/features/recipes/parsedRecipeToFormInitial';
 import { setRecipeImportDraft } from '@/src/features/recipes/recipeImportDraft';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
+import { AppButton } from '@/src/design-system';
 
 /** Per-100g macros from parser only — never invent. */
 function formatPer100g(ing: ParsedRecipeIngredient): string {
@@ -159,7 +159,7 @@ export default function ImportRecipeTextScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <PrimaryButton
+      <AppButton
         label="Открыть в редакторе"
         onPress={openEditor}
         disabled={!canOpen}

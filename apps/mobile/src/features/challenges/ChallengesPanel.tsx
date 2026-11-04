@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { ChallengeMetric } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 const METRICS: { value: ChallengeMetric; label: string }[] = [
   { value: 'workouts_count', label: 'Тренировки' },
@@ -302,7 +302,7 @@ export function ChallengesPanel() {
               <Text style={styles.secondaryText}>Отмена</Text>
             </Pressable>
             <View style={styles.flex}>
-              <PrimaryButton label="Создать" onPress={create} />
+              <AppButton label="Создать" onPress={create} />
             </View>
           </View>
         </View>

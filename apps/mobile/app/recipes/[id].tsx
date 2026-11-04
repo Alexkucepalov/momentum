@@ -16,6 +16,8 @@ import { RecipeNutritionSummary } from '@/src/features/recipes/RecipeNutritionSu
 import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
+import { FlashBar } from '@/src/components/FlashBar';
+import { UndoBar } from '@/src/components/UndoBar';
 import {
   AppButton,
   AppCard,
@@ -36,7 +38,7 @@ const MEAL_LABELS = {
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { repo, dateLocal, meal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, meal, refresh, revision, showFlash, setUndo } = useData();
   const allowAdd = useAddGuard();
   void revision;
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -194,7 +196,7 @@ export default function RecipeDetailScreen() {
             },
             result.grams,
           );
-          repo.addEntryFromRecipe({
+          const created = repo.addEntryFromRecipe({
             recipeId: recipe.id,
             dateLocal,
             meal,
@@ -207,7 +209,9 @@ export default function RecipeDetailScreen() {
             },
           });
           refresh();
-          showFlash(`В дневник: ${recipe.name}`);
+          const label = `В дневник: ${recipe.name}`;
+          showFlash(label);
+          setUndo({ entryIds: [created.id], message: label });
           setConfirmOpen(false);
         }}
       />
@@ -225,6 +229,8 @@ export default function RecipeDetailScreen() {
           router.replace(`/recipes/${batch.id}`);
         }}
       />
+      <FlashBar />
+      <UndoBar />
     </View>
   );
 }

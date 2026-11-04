@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { WorkoutType } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { SwipeToDismissSheet } from '../../components/SwipeToDismissSheet';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 const TYPES: Array<{ type: WorkoutType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { type: 'walking', label: 'Ходьба', icon: 'walk-outline' },
@@ -268,7 +268,7 @@ export function WorkoutFormSheet({
             {error}
           </Text>
         ) : null}
-        <PrimaryButton label="Сохранить" onPress={submit} />
+        <AppButton label="Сохранить" onPress={submit} />
       </FormScrollView>
     </SwipeToDismissSheet>
   );

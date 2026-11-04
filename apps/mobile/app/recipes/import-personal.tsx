@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import {
   importSelectedPersonalRecipes,
   listPersonalRecipePreviews,
@@ -14,6 +13,7 @@ import {
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 import { alertMessage } from '@/src/utils/confirmAction';
+import { AppButton } from '@/src/design-system';
 
 type Scope = 'suggested' | 'all' | 'prepared';
 
@@ -318,7 +318,7 @@ export default function ImportPersonalRecipesScreen() {
       </FormScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.lg) }]}>
-        <PrimaryButton
+        <AppButton
           label={
             selectedReady === 0
               ? 'Отметь рецепты'

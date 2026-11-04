@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { autoKcalStringFromMacroStrings } from '../../../../../../src/domain/nutritionConsistency';
-import { PrimaryButton } from '../../../components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 export function ManualProductForm({
   name,
@@ -73,7 +73,7 @@ export function ManualProductForm({
         placeholder="100"
       />
 
-      <PrimaryButton label="К выбору порции" onPress={onSubmit} />
+      <AppButton label="К выбору порции" onPress={onSubmit} />
     </View>
   );
 }
