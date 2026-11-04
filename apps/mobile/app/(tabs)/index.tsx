@@ -8,8 +8,6 @@ import {
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
 import { foodLogStreak } from '../../../../src/domain/foodLogStreak';
-import { portion } from '../../../../src/domain/nutrition';
-import type { FoodEntry, FoodProduct } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DayStrip } from '@/src/components/DayStrip';
@@ -24,13 +22,7 @@ import { UndoBar } from '@/src/components/UndoBar';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
-import {
-  ConfirmPortionSheet,
-  type PortionTarget,
-} from '@/src/features/diary/ConfirmPortionSheet';
 import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
-import { TodayRecentStrip } from '@/src/features/today/TodayRecentStrip';
-import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
   AppButton,
@@ -40,13 +32,6 @@ import {
   space,
   touchMin,
 } from '@/src/design-system';
-
-const MEAL_LABELS = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
-} as const;
 
 /** Compact date line under tab title «Сегодня» — no second hero headline. */
 function formatDateLine(iso: string, today: string): string {
@@ -65,24 +50,19 @@ function formatDateLine(iso: string, today: string): string {
 }
 
 /**
- * Today fold: status + copy yesterday + recent (fast log) + habits.
+ * Today: day status + copy yesterday + habits.
+ * Fast recent/favorites live on Food tab.
  */
 export default function TodayScreen() {
   const navigation = useNavigation();
   const router = useRouter();
-  const { repo, dateLocal, setDateLocal, meal, refresh, revision, showFlash, setUndo } = useData();
+  const { repo, dateLocal, setDateLocal, refresh, revision, showFlash } = useData();
   void revision;
-  const allowAdd = useAddGuard();
   const [open, setOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [portionTarget, setPortionTarget] = useState<{
-    target: PortionTarget;
-    initialGrams: number;
-  } | null>(null);
 
   const totals = repo.dailyTotals(dateLocal);
-  const recent = useMemo(() => repo.listRecentEntries(6), [repo, revision]);
   const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
@@ -141,48 +121,6 @@ export default function TodayScreen() {
     });
   }, [navigation, router]);
 
-  const openRecentConfirm = (e: FoodEntry) => {
-    if (e.productId) {
-      const product = repo.listProducts().find((p) => p.id === e.productId);
-      if (!product) return;
-      setPortionTarget({ target: { kind: 'product', product }, initialGrams: e.grams });
-      return;
-    }
-    if (e.recipeId) {
-      const recipe = repo.getRecipe(e.recipeId);
-      if (!recipe) return;
-      const ingredients = repo.getRecipeIngredients(recipe.id);
-      setPortionTarget({
-        target: { kind: 'recipe', recipe, ingredients },
-        initialGrams: e.grams,
-      });
-    }
-  };
-
-  const quickAddRecent = (e: FoodEntry) => {
-    if (!allowAdd()) return;
-    let created: FoodEntry | null = null;
-    if (e.productId) {
-      created = repo.addEntryFromProduct({
-        productId: e.productId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    } else if (e.recipeId) {
-      created = repo.addEntryFromRecipe({
-        recipeId: e.recipeId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    }
-    if (!created) return;
-    refresh();
-    showFlash(`Добавлено: ${e.displayName}`);
-    setUndo({ entryIds: [created.id], message: `Добавлено: ${e.displayName}` });
-  };
-
   return (
     <View style={styles.root} testID="today-screen">
       <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
@@ -229,12 +167,6 @@ export default function TodayScreen() {
           />
 
           <CopyYesterdayButton testID="today-copy-yesterday" />
-
-          <TodayRecentStrip
-            recent={recent}
-            onConfirm={openRecentConfirm}
-            onQuickAdd={quickAddRecent}
-          />
 
           <StatCards
             waterMl={waterMl}
@@ -288,60 +220,6 @@ export default function TodayScreen() {
       <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
       <BarcodeLookupSheet visible={barcodeOpen} onClose={() => setBarcodeOpen(false)} />
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
-      <ConfirmPortionSheet
-        visible={portionTarget != null}
-        target={portionTarget?.target ?? null}
-        meal={meal}
-        mealLabel={MEAL_LABELS[meal]}
-        initialGrams={portionTarget?.initialGrams}
-        onClose={() => setPortionTarget(null)}
-        onConfirm={(result) => {
-          if (!portionTarget) return;
-          if (!allowAdd()) return;
-          let createdId: string;
-          let label: string;
-          if (portionTarget.target.kind === 'product') {
-            const product = portionTarget.target.product as FoodProduct;
-            repo.updateProductNutrition(product.id, result.per100g);
-            const created = repo.addEntryFromProduct({
-              productId: product.id,
-              dateLocal,
-              meal,
-              grams: result.grams,
-            });
-            createdId = created.id;
-            label = product.name;
-          } else {
-            const snap = portion(
-              {
-                kcal: result.per100g.energyKcal,
-                protein: result.per100g.proteinG,
-                fat: result.per100g.fatG,
-                carbs: result.per100g.carbG,
-              },
-              result.grams,
-            );
-            const created = repo.addEntryFromRecipe({
-              recipeId: portionTarget.target.recipe.id,
-              dateLocal,
-              meal,
-              grams: result.grams,
-              nutritionSnapshot: {
-                energyKcal: snap.kcal,
-                proteinG: snap.protein,
-                fatG: snap.fat,
-                carbG: snap.carbs,
-              },
-            });
-            createdId = created.id;
-            label = portionTarget.target.recipe.name;
-          }
-          refresh();
-          setPortionTarget(null);
-          showFlash(`Добавлено: ${label}`);
-          setUndo({ entryIds: [createdId], message: `Добавлено: ${label}` });
-        }}
-      />
       <FlashBar />
       <UndoBar />
     </View>

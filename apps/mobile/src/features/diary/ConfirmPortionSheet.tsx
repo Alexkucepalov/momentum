@@ -198,7 +198,6 @@ export function ConfirmPortionSheet({
         grams,
       );
       onConfirm({ grams, per100g });
-      // Caller closes the sheet; do not call onClose() here — that means "cancel".
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Проверь КБЖУ и граммы');
     }
@@ -206,63 +205,68 @@ export function ConfirmPortionSheet({
 
   return (
     <SwipeToDismissSheet visible={visible} onClose={onClose} maxHeightRatio={0.88}>
-      <FormScrollView ref={scrollRef} variant="sheet" bounces={false} contentContainerStyle={styles.body}>
-        <View style={styles.header}>
-          <Text style={styles.title} accessibilityRole="header">
-            Порция
-          </Text>
-          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Закрыть">
-            <Text style={styles.close}>Закрыть</Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.name} numberOfLines={2}>
-          {title}
-        </Text>
-        <Text style={styles.meta}>
-          {source} · в {mealLabel}
-        </Text>
-        <Text style={styles.portionLead}>
-          Сначала граммы — КБЖУ пересчитаются. Пустые макросы = неизвестно, не ноль.
-        </Text>
-
-        <PortionStepper grams={grams} onChange={setGrams} lastGrams={initialGrams ?? null} />
-
-        <View style={styles.preview}>
-          <Text style={styles.previewKcal}>{fmt(nutrition?.kcal ?? null)}</Text>
-          <Text style={styles.previewUnit}>ккал в порции</Text>
-          <Text style={styles.previewMacros}>
-            Б {fmt(nutrition?.protein ?? null)} · Ж {fmt(nutrition?.fat ?? null)} · У{' '}
-            {fmt(nutrition?.carbs ?? null)}
-          </Text>
-        </View>
-        {consistencyHint ? <Text style={styles.consistency}>{consistencyHint}</Text> : null}
-
-        {error ? (
-          <Text style={styles.error} accessibilityLiveRegion="assertive">
-            {error}
-          </Text>
-        ) : null}
-
-        <AppButton label="Добавить в дневник" onPress={submit} testID="confirm-portion-submit" />
-
-        <View
-          onLayout={(e) => {
-            macroBlockY.current = e.nativeEvent.layout.y;
-          }}
+      <View style={styles.shell}>
+        <FormScrollView
+          ref={scrollRef}
+          variant="sheet"
+          bounces={false}
+          contentContainerStyle={styles.body}
+          style={styles.scroll}
         >
-          <Text style={styles.section}>На 100 г (по желанию)</Text>
-          <View style={styles.macroGrid}>
-            <MacroField label="ккал" value={kcal} onChangeText={setKcal} wide onFocus={scrollMacrosIntoView} />
-            <MacroField label="Б" value={protein} onChangeText={setProtein} onFocus={scrollMacrosIntoView} />
-            <MacroField label="Ж" value={fat} onChangeText={setFat} onFocus={scrollMacrosIntoView} />
-            <MacroField label="У" value={carbs} onChangeText={setCarbs} onFocus={scrollMacrosIntoView} />
+          <View style={styles.header}>
+            <Text style={styles.title} accessibilityRole="header">
+              Порция
+            </Text>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Закрыть">
+              <Text style={styles.close}>Закрыть</Text>
+            </Pressable>
           </View>
-          <Text style={styles.hint}>
-            Пустое = неизвестно (не ноль). Если заданы Б, Ж и У — ккал = 4×Б+9×Ж+4×У.
+
+          <Text style={styles.name} numberOfLines={2}>
+            {title}
           </Text>
+          <Text style={styles.meta}>
+            {source} · в {mealLabel}
+          </Text>
+
+          <PortionStepper grams={grams} onChange={setGrams} lastGrams={initialGrams ?? null} />
+
+          <View style={styles.preview}>
+            <Text style={styles.previewKcal}>{fmt(nutrition?.kcal ?? null)}</Text>
+            <Text style={styles.previewUnit}>ккал в порции</Text>
+            <Text style={styles.previewMacros}>
+              Б {fmt(nutrition?.protein ?? null)} · Ж {fmt(nutrition?.fat ?? null)} · У{' '}
+              {fmt(nutrition?.carbs ?? null)}
+            </Text>
+          </View>
+          {consistencyHint ? <Text style={styles.consistency}>{consistencyHint}</Text> : null}
+
+          {error ? (
+            <Text style={styles.error} accessibilityLiveRegion="assertive">
+              {error}
+            </Text>
+          ) : null}
+
+          <View
+            onLayout={(e) => {
+              macroBlockY.current = e.nativeEvent.layout.y;
+            }}
+          >
+            <Text style={styles.section}>На 100 г (по желанию)</Text>
+            <View style={styles.macroGrid}>
+              <MacroField label="ккал" value={kcal} onChangeText={setKcal} wide onFocus={scrollMacrosIntoView} />
+              <MacroField label="Б" value={protein} onChangeText={setProtein} onFocus={scrollMacrosIntoView} />
+              <MacroField label="Ж" value={fat} onChangeText={setFat} onFocus={scrollMacrosIntoView} />
+              <MacroField label="У" value={carbs} onChangeText={setCarbs} onFocus={scrollMacrosIntoView} />
+            </View>
+            <Text style={styles.hint}>Пустое поле = неизвестно, не ноль.</Text>
+          </View>
+        </FormScrollView>
+
+        <View style={styles.footer}>
+          <AppButton label="Добавить в дневник" onPress={submit} testID="confirm-portion-submit" />
         </View>
-      </FormScrollView>
+      </View>
     </SwipeToDismissSheet>
   );
 }
@@ -298,9 +302,19 @@ function MacroField({
 }
 
 const styles = StyleSheet.create({
+  shell: { flexGrow: 1, maxHeight: '100%' },
+  scroll: { flexGrow: 1 },
   body: {
     paddingHorizontal: space.lg,
     paddingBottom: space.md,
+  },
+  footer: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    paddingBottom: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -309,19 +323,18 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   title: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
-  close: { fontSize: type.body, fontWeight: '600', color: colors.text, minHeight: touchMin, textAlignVertical: 'center' },
+  close: {
+    fontSize: type.body,
+    fontWeight: '600',
+    color: colors.text,
+    minHeight: touchMin,
+    textAlignVertical: 'center',
+  },
   name: { fontSize: type.title, fontWeight: '800', color: colors.text },
   meta: {
     fontSize: type.caption,
     color: colors.textSecondary,
     marginTop: 2,
-    marginBottom: space.xs,
-  },
-  portionLead: {
-    fontSize: type.caption,
-    color: colors.text,
-    fontWeight: '600',
-    lineHeight: 18,
     marginBottom: space.md,
   },
   preview: {
@@ -382,7 +395,7 @@ const styles = StyleSheet.create({
   hint: {
     fontSize: type.micro,
     color: colors.textMuted,
-    marginBottom: space.md,
+    marginBottom: space.sm,
   },
   consistency: {
     fontSize: type.micro,

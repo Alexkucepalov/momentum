@@ -161,8 +161,9 @@ test('Phase 3 UI uses nf-fit design system; no shame copy', () => {
   assert.ok(today.includes('KcalRing'));
   assert.ok(today.includes('StatCards'));
   assert.ok(today.includes('FoodLogStreakCard'), 'gentle food-log streak on Today');
-  assert.ok(today.includes('TodayRecentStrip'), 'recent strip above fold on Today for ≤10s repeat');
-  assert.ok(today.includes('listRecentEntries(6)'), 'shows up to 6 recent entries');
+  assert.ok(!today.includes('TodayRecentStrip'), 'recent strip stays on Food, not Today hub');
+  assert.ok(today.includes('CopyYesterdayButton'), 'copy yesterday on Today for fast day replay');
+
   assert.ok(!today.includes('listFavorites'), 'favorites live on Food, not Today');
   assert.ok(today.includes('@/src/design-system'));
   assert.ok(today.includes('AppButton'));

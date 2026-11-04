@@ -27,7 +27,7 @@
 Included:
 
 - Offline diary, catalog/search (FlatList), Add Food + portion, recent/favorites, copy yesterday + undo  
-- Today recent strip + one-tap «+»; compact diary rows; undo on sheet/barcode/recipe adds  
+- Fast recent on Food (not Today hub); compact diary rows; undo on sheet/barcode/recipe adds  
 - Recipes, pantry / Eat Now / week plan / shop / budget (plan ≠ diary)  
 - Movement = Activity \| Sleep; Garmin Personal API (SecureStore) + Zepp CSV  
 - Progress week overview + primary ChatGPT day copy; PDF in Reports  
