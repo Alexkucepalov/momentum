@@ -9,7 +9,7 @@ import {
 } from '../../../../src/domain/habitWeek';
 import { foodLogStreak } from '../../../../src/domain/foodLogStreak';
 import { portion } from '../../../../src/domain/nutrition';
-import type { FoodProduct } from '../../../../src/storage/types';
+import type { FoodEntry, FoodProduct } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DayStrip } from '@/src/components/DayStrip';
@@ -29,6 +29,7 @@ import {
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
+import { TodayRecentStrip } from '@/src/features/today/TodayRecentStrip';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
@@ -64,8 +65,7 @@ function formatDateLine(iso: string, today: string): string {
 }
 
 /**
- * Today fold: day status + streak + copy yesterday + habits.
- * Fast recent/favorites live on Food tab (not here).
+ * Today fold: status + copy yesterday + recent (fast log) + habits.
  */
 export default function TodayScreen() {
   const navigation = useNavigation();
@@ -82,6 +82,7 @@ export default function TodayScreen() {
   } | null>(null);
 
   const totals = repo.dailyTotals(dateLocal);
+  const recent = useMemo(() => repo.listRecentEntries(6), [repo, revision]);
   const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
@@ -140,6 +141,48 @@ export default function TodayScreen() {
     });
   }, [navigation, router]);
 
+  const openRecentConfirm = (e: FoodEntry) => {
+    if (e.productId) {
+      const product = repo.listProducts().find((p) => p.id === e.productId);
+      if (!product) return;
+      setPortionTarget({ target: { kind: 'product', product }, initialGrams: e.grams });
+      return;
+    }
+    if (e.recipeId) {
+      const recipe = repo.getRecipe(e.recipeId);
+      if (!recipe) return;
+      const ingredients = repo.getRecipeIngredients(recipe.id);
+      setPortionTarget({
+        target: { kind: 'recipe', recipe, ingredients },
+        initialGrams: e.grams,
+      });
+    }
+  };
+
+  const quickAddRecent = (e: FoodEntry) => {
+    if (!allowAdd()) return;
+    let created: FoodEntry | null = null;
+    if (e.productId) {
+      created = repo.addEntryFromProduct({
+        productId: e.productId,
+        dateLocal,
+        meal,
+        grams: e.grams,
+      });
+    } else if (e.recipeId) {
+      created = repo.addEntryFromRecipe({
+        recipeId: e.recipeId,
+        dateLocal,
+        meal,
+        grams: e.grams,
+      });
+    }
+    if (!created) return;
+    refresh();
+    showFlash(`Добавлено: ${e.displayName}`);
+    setUndo({ entryIds: [created.id], message: `Добавлено: ${e.displayName}` });
+  };
+
   return (
     <View style={styles.root} testID="today-screen">
       <DaySwipeArea dateLocal={dateLocal} onDateChange={setDateLocal}>
@@ -185,9 +228,13 @@ export default function TodayScreen() {
             onSetTarget={() => router.push('/profile')}
           />
 
-          <FoodLogStreakCard streak={streak} />
-
           <CopyYesterdayButton testID="today-copy-yesterday" />
+
+          <TodayRecentStrip
+            recent={recent}
+            onConfirm={openRecentConfirm}
+            onQuickAdd={quickAddRecent}
+          />
 
           <StatCards
             waterMl={waterMl}
@@ -201,6 +248,8 @@ export default function TodayScreen() {
               showFlash(`+${ml} мл воды`);
             }}
           />
+
+          <FoodLogStreakCard streak={streak} />
 
           <TodayChecklist
             flexibleHabits={flexibleRows}

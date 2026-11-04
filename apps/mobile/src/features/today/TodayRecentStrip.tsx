@@ -34,14 +34,13 @@ export function TodayRecentStrip({
       {recent.map((e) => {
         const canQuick = e.productId != null || e.recipeId != null;
         return (
-          <Pressable
-            key={e.id}
-            style={({ pressed }) => [pressed && styles.pressed]}
-            onPress={() => onConfirm(e)}
-            accessibilityRole="button"
-            accessibilityLabel={`${e.displayName}, ${e.grams} грамм. Выбрать порцию`}
-          >
-            <AppCard style={styles.row}>
+          <AppCard key={e.id} style={styles.row}>
+            <Pressable
+              style={({ pressed }) => [styles.mainHit, pressed && styles.pressed]}
+              onPress={() => onConfirm(e)}
+              accessibilityRole="button"
+              accessibilityLabel={`${e.displayName}, ${e.grams} грамм. Выбрать порцию`}
+            >
               <View style={styles.iconBubble}>
                 <Ionicons name="time-outline" size={16} color={colors.ink} />
               </View>
@@ -53,23 +52,20 @@ export function TodayRecentStrip({
                   {e.grams} г · {fmtKcal(e.energyKcal)}
                 </AppText>
               </View>
-              {canQuick ? (
-                <Pressable
-                  onPress={(ev) => {
-                    ev.stopPropagation?.();
-                    onQuickAdd(e);
-                  }}
-                  style={({ pressed }) => [styles.plusHit, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Быстро добавить ${e.displayName}, ${e.grams} грамм`}
-                  hitSlop={6}
-                  testID={`today-recent-quick-${e.id}`}
-                >
-                  <AppText variant="title">+</AppText>
-                </Pressable>
-              ) : null}
-            </AppCard>
-          </Pressable>
+            </Pressable>
+            {canQuick ? (
+              <Pressable
+                onPress={() => onQuickAdd(e)}
+                style={({ pressed }) => [styles.plusHit, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Быстро добавить ${e.displayName}, ${e.grams} грамм`}
+                hitSlop={6}
+                testID={`today-recent-quick-${e.id}`}
+              >
+                <AppText variant="title">+</AppText>
+              </Pressable>
+            ) : null}
+          </AppCard>
         );
       })}
     </View>
@@ -87,6 +83,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     marginBottom: space.xs,
   },
+  mainHit: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    minWidth: 0,
+  },
   iconBubble: {
     width: 32,
     height: 32,
@@ -95,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  body: { flex: 1, gap: 2 },
+  body: { flex: 1, gap: 2, minWidth: 0 },
   title: { fontWeight: '600' },
   plusHit: {
     minWidth: 40,

@@ -57,7 +57,7 @@
 | Обещание | Факт |
 |----------|------|
 | Median repeat ≤10 с на device | Только code path; `#37` / DEVICE-DOGFOOD open |
-| Today = быстрый лог above fold | Favorites ниже habits; recent strip нет |
+| Today = быстрый лог above fold | Recent strip wired (`fix/today-recent-strip-wire`); device timing still open |
 | Понять прогресс at a glance | Progress сегментирован, но «стена» карточек |
 | ≥20/30 дней founder dogfood | Процессный gate, не метрика в репо |
 | 0 data-loss / 95% save reliability | Не измерено после force-stop на device |
@@ -233,7 +233,7 @@ Garmin secrets → SecureStore only
 4. **Undo на все add-path’ы** sheet / barcode / recipe detail (симметрия с delete/copy).
 
 ### P1 — скорость и ясность лога
-5. Today: **recent strip 3–6 above fold** + optional one-tap «+» без Confirm для last grams.  
+5. Today: **recent strip 3–6 above fold** + one-tap «+» — **wired in code** (`fix/today-recent-strip-wire`); device stopwatch still open.  
 6. Today: сжать ring+macros; habits ниже fold; favorites/recent выше habits.  
 7. Food diary: **компактные строки** вместо тяжёлых AppCard на каждую запись.  
 8. Явный caption dual model: Дневник = факт · Каталог = база; Plan — «черновик, не дневник».  
