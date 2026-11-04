@@ -14,11 +14,11 @@ export const colors = {
   textSecondary: '#5C6370',
   textMuted: '#8B929E',
   /**
-   * Soft blue accent — selected chrome / streaks / hub icons.
-   * Primary CTA stays ink (`primary`) for contrast. No teal/purple/coral chrome.
+   * Product chrome stays ink (Premium Minimal Utility).
+   * Warmth comes from soft canvas / amber meal hints — not green or blue brand chrome.
    */
-  accent: '#2563EB',
-  accentSoft: '#DBEAFE',
+  accent: '#0A0A0A',
+  accentSoft: '#F3EFE8',
   onAccent: '#FFFFFF',
   /** @deprecated Prefer `primary` — kept for gradual migration. */
   primaryButton: '#0A0A0A',
@@ -33,20 +33,20 @@ export const colors = {
   protein: '#16A34A',
   fat: '#D97706',
   carbs: '#2563EB',
-  /** Meal section accent bars (readable cards, not B&W). */
-  mealBreakfast: '#F59E0B',
-  mealLunch: '#2563EB',
-  mealDinner: '#1E40AF',
-  mealSnack: '#D97706',
+  /** Meal section accent bars — warm neutrals + amber (macros stay labeled B/Ж/У). */
+  mealBreakfast: '#D97706',
+  mealLunch: '#78716C',
+  mealDinner: '#44403C',
+  mealSnack: '#A8A29E',
   ringTrack: '#E8EAED',
-  ringFill: '#2563EB',
+  ringFill: '#0A0A0A',
   success: '#15803D',
   successSoft: '#DCF5E4',
   textOnInverse: '#FFFFFF',
   shadow: '#0A0A0A',
   warning: '#D97706',
   chartTrack: '#E8EAED',
-  chartFill: '#2563EB',
+  chartFill: '#0A0A0A',
   overlay: 'rgba(10,10,10,0.4)',
 } as const;
 

@@ -20,7 +20,7 @@ export function FoodLogStreakCard({ streak }: { streak: FoodLogStreak }) {
     >
       <View style={styles.top}>
         <View style={styles.iconWrap}>
-          <Ionicons name="flame" size={20} color={colors.accent} />
+          <Ionicons name="flame" size={20} color={colors.fat} />
         </View>
         <View style={styles.textCol}>
           <AppText variant="subtitle" style={styles.title}>
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     gap: space.md,
     padding: space.md,
     backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
+    borderColor: colors.border,
   },
   top: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
   iconWrap: {
@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
   title: { fontWeight: '700' },
   dots: { flexDirection: 'row', gap: 6 },
   dot: { flex: 1, height: 6, borderRadius: 3 },
-  dotOn: { backgroundColor: colors.accent },
+  dotOn: { backgroundColor: colors.fat },
   dotOff: { backgroundColor: colors.surface },
 });
