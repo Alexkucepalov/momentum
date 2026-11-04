@@ -84,7 +84,6 @@ export default function FoodScreen() {
   const products = repo.listProducts();
   const recipes = repo.listRecipes();
   const recent = repo.listRecentEntries(8);
-  const favorites = repo.listFavorites().slice(0, 8);
   const savedMeals = repo.listSavedMeals();
   const frequent = repo.listFrequentProducts(24);
   const recipeIngredientCounts = useMemo(() => {
@@ -314,8 +313,6 @@ export default function FoodScreen() {
             <FoodQuickStrips
               savedMeals={savedMeals}
               recent={recent}
-              favorites={favorites}
-              lastGramsFor={(id) => repo.lastGramsForProduct(id) ?? 100}
               onLogSaved={logSavedMeal}
               onRecentConfirm={(e) => {
                 if (e.productId) {
@@ -343,24 +340,6 @@ export default function FoodScreen() {
                 }
               }}
               onRecentQuick={repeatEntry}
-              onFavoriteConfirm={(p, grams) => {
-                setPortionTarget({
-                  target: { kind: 'product', product: p },
-                  initialGrams: grams,
-                });
-              }}
-              onFavoriteQuick={(p, grams) => {
-                if (!allowAdd()) return;
-                const created = repo.addEntryFromProduct({
-                  productId: p.id,
-                  dateLocal,
-                  meal,
-                  grams,
-                });
-                refresh();
-                showFlash(`Добавлено: ${p.name}`);
-                setUndo({ entryIds: [created.id], message: `Добавлено: ${p.name}` });
-              }}
               onOpenSavedInSheet={() => openForMeal(meal, 'meals')}
             />
           </FormScrollView>

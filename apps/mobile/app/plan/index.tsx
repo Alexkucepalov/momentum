@@ -1,191 +1,101 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import { FormScrollView } from '@/src/components/FormScrollView';
-import {
-  AppCard,
-  AppText,
-  colors,
-  radius,
-  space,
-  touchMin,
-} from '@/src/design-system';
+import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
-type HubItem = {
+type LinkItem = {
   key: string;
   title: string;
-  subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  tint: string;
-  href:
-    | '/plan/eat-now'
-    | '/plan/pantry'
-    | '/plan/week'
-    | '/plan/shop'
-    | '/plan/budget'
-    | '/plan/stores'
-    | '/plan/receipt'
-    | '/recipes';
-  primary?: boolean;
+  href: Href;
 };
 
-/** Primary = daily loop; secondary = planning/money — plan ≠ diary. */
-const PRIMARY: HubItem[] = [
-  {
-    key: 'eat-now',
-    title: 'Что съесть сейчас?',
-    subtitle: 'Подбор по остатку КБЖУ · рецепты и запасы',
-    icon: 'flash',
-    tint: colors.fat,
-    href: '/plan/eat-now',
-    primary: true,
-  },
-  {
-    key: 'recipes',
-    title: 'Рецепты',
-    subtitle: 'Библиотека, импорт, повтор готовки',
-    icon: 'book',
-    tint: colors.accent,
-    href: '/recipes',
-    primary: true,
-  },
-  {
-    key: 'pantry',
-    title: 'Запасы дома',
-    subtitle: 'Что есть · для Eat Now и покупок',
-    icon: 'cube',
-    tint: colors.protein,
-    href: '/plan/pantry',
-    primary: true,
-  },
+const NOW: LinkItem[] = [
+  { key: 'recipes', title: 'Рецепты', icon: 'book-outline', href: '/recipes' },
+  { key: 'pantry', title: 'Запасы', icon: 'cube-outline', href: '/plan/pantry' },
 ];
 
-const SECONDARY: HubItem[] = [
-  {
-    key: 'receipt',
-    title: 'Импорт покупки',
-    subtitle: 'Текст заказа → запасы',
-    icon: 'receipt',
-    tint: colors.carbs,
-    href: '/plan/receipt',
-  },
-  {
-    key: 'week',
-    title: 'Меню на неделю',
-    subtitle: 'Черновик порций · не дневник',
-    icon: 'calendar',
-    tint: colors.accent,
-    href: '/plan/week',
-  },
-  {
-    key: 'shop',
-    title: 'Покупки',
-    subtitle: 'Недостающее из меню и запасов',
-    icon: 'cart',
-    tint: colors.fat,
-    href: '/plan/shop',
-  },
-  {
-    key: 'budget',
-    title: 'Бюджет питания',
-    subtitle: 'План / факт · свои цены',
-    icon: 'wallet',
-    tint: colors.protein,
-    href: '/plan/budget',
-  },
+const LATER: LinkItem[] = [
+  { key: 'week', title: 'Меню на неделю', icon: 'calendar-outline', href: '/plan/week' },
+  { key: 'shop', title: 'Покупки', icon: 'cart-outline', href: '/plan/shop' },
+  { key: 'budget', title: 'Бюджет', icon: 'wallet-outline', href: '/plan/budget' },
+  { key: 'receipt', title: 'Импорт покупки', icon: 'receipt-outline', href: '/plan/receipt' },
+  { key: 'stores', title: 'Магазины', icon: 'storefront-outline', href: '/plan/stores' },
 ];
 
-const SETTINGS: HubItem[] = [
-  {
-    key: 'stores',
-    title: 'Магазины',
-    subtitle: 'Справочник мест',
-    icon: 'storefront',
-    tint: colors.textMuted,
-    href: '/plan/stores',
-  },
-];
-
-function HubRow({ item }: { item: HubItem }) {
+function LinkRow({ item, last }: { item: LinkItem; last?: boolean }) {
   const router = useRouter();
   return (
     <Pressable
       onPress={() => router.push(item.href)}
-      style={({ pressed }) => [pressed && styles.pressed]}
+      style={({ pressed }) => [styles.linkRow, !last && styles.linkRowBorder, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={`${item.title}. ${item.subtitle}`}
+      accessibilityLabel={item.title}
       testID={`plan-hub-${item.key}`}
     >
-      <AppCard style={[styles.card, item.primary && styles.cardPrimary]}>
-        <View style={[styles.iconWrap, { backgroundColor: `${item.tint}22` }]}>
-          <Ionicons name={item.icon} size={22} color={item.tint} />
-        </View>
-        <View style={styles.cardText}>
-          <AppText variant="subtitle" style={styles.cardTitle}>
-            {item.title}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            {item.subtitle}
-          </AppText>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-      </AppCard>
+      <View style={styles.linkIcon}>
+        <Ionicons name={item.icon} size={20} color={colors.ink} />
+      </View>
+      <AppText variant="body" style={styles.linkTitle}>
+        {item.title}
+      </AppText>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
   );
 }
 
 export default function PlanHubScreen() {
+  const router = useRouter();
+
   return (
     <FormScrollView contentContainerStyle={styles.content} testID="plan-hub">
-      <View style={styles.hero}>
-        <AppText variant="title" style={styles.heroTitle}>
-          План питания
-        </AppText>
-        <AppText variant="body" tone="secondary" style={styles.lead}>
-          Сначала — что съесть сейчас. Меню и покупки — когда планируешь неделю.
-        </AppText>
-      </View>
-
-      <AppCard style={styles.notice} accessibilityLabel="План не равен дневнику" testID="plan-neq-diary">
-        <View style={styles.noticeRow}>
-          <Ionicons name="information-circle" size={20} color={colors.accent} />
-          <View style={styles.noticeText}>
-            <AppText variant="label" tone="accent">
-              Запланированное ≠ съеденное
-            </AppText>
-            <AppText variant="caption" tone="secondary">
-              В дневник — только явная порция («В дневник»).
-            </AppText>
-          </View>
+      <Pressable
+        onPress={() => router.push('/plan/eat-now')}
+        style={({ pressed }) => [styles.hero, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Что съесть сейчас"
+        testID="plan-hub-eat-now"
+      >
+        <View style={styles.heroIcon}>
+          <Ionicons name="flash" size={22} color={colors.onAccent} />
         </View>
-      </AppCard>
+        <View style={styles.heroText}>
+          <AppText variant="title" tone="inverse" style={styles.heroTitle}>
+            Что съесть сейчас
+          </AppText>
+          <AppText variant="caption" tone="inverse" style={styles.heroSub}>
+            По остатку КБЖУ · запасы и рецепты
+          </AppText>
+        </View>
+        <Ionicons name="arrow-forward" size={20} color={colors.onAccent} />
+      </Pressable>
 
-      <AppText variant="label" tone="muted" style={styles.section}>
-        Сейчас
+      <AppText variant="caption" tone="muted" style={styles.disclaimer} testID="plan-neq-diary">
+        План не пишет в дневник сам — только явная порция.
       </AppText>
-      <View style={styles.list} accessibilityRole="list">
-        {PRIMARY.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
+
+      <View style={styles.group}>
+        <AppText variant="label" tone="muted" style={styles.groupLabel}>
+          Рядом
+        </AppText>
+        <View style={styles.sheet}>
+          {NOW.map((item, i) => (
+            <LinkRow key={item.key} item={item} last={i === NOW.length - 1} />
+          ))}
+        </View>
       </View>
 
-      <AppText variant="label" tone="muted" style={styles.section}>
-        Неделя и деньги
-      </AppText>
-      <View style={styles.list} accessibilityRole="list">
-        {SECONDARY.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
-      </View>
-
-      <AppText variant="label" tone="muted" style={styles.section}>
-        Ещё
-      </AppText>
-      <View style={styles.list} accessibilityRole="list">
-        {SETTINGS.map((item) => (
-          <HubRow key={item.key} item={item} />
-        ))}
+      <View style={styles.group}>
+        <AppText variant="label" tone="muted" style={styles.groupLabel}>
+          Планирование
+        </AppText>
+        <View style={styles.sheet}>
+          {LATER.map((item, i) => (
+            <LinkRow key={item.key} item={item} last={i === LATER.length - 1} />
+          ))}
+        </View>
       </View>
     </FormScrollView>
   );
@@ -195,47 +105,68 @@ const styles = StyleSheet.create({
   content: {
     padding: space.lg,
     paddingBottom: space.xxl,
-    gap: space.md,
+    gap: space.lg,
     backgroundColor: colors.canvas,
   },
   hero: {
-    gap: space.sm,
-    paddingVertical: space.sm,
-  },
-  heroTitle: { fontWeight: '800' },
-  lead: {
-    lineHeight: 22,
-  },
-  notice: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  noticeRow: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
-  noticeText: { flex: 1, gap: 4, minWidth: 0 },
-  section: {
-    marginTop: space.sm,
-  },
-  list: { gap: space.sm },
-  card: {
-    minHeight: touchMin,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: space.md,
+    minHeight: 88,
     paddingHorizontal: space.lg,
+    paddingVertical: space.lg,
+    borderRadius: radius.xl,
+    backgroundColor: colors.ink,
   },
-  cardPrimary: {
-    borderColor: colors.accent,
-    borderWidth: 1.5,
-  },
-  pressed: { opacity: 0.88 },
-  iconWrap: {
+  heroIcon: {
     width: 44,
     height: 44,
     borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardText: { flex: 1, gap: 2, minWidth: 0 },
-  cardTitle: { fontWeight: '700' },
+  heroText: { flex: 1, gap: 4, minWidth: 0 },
+  heroTitle: { fontWeight: '800' },
+  heroSub: { opacity: 0.75 },
+  disclaimer: {
+    marginTop: -space.sm,
+    lineHeight: 18,
+  },
+  group: { gap: space.sm },
+  groupLabel: {
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    paddingHorizontal: space.xs,
+  },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: touchMin + 4,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
+  linkRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  linkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkTitle: { flex: 1, fontWeight: '600' },
+  pressed: { opacity: 0.88 },
 });
