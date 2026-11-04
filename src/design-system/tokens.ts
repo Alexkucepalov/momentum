@@ -14,11 +14,11 @@ export const colors = {
   textSecondary: '#5C6370',
   textMuted: '#8B929E',
   /**
-   * Soft teal accent — selected chrome / streaks / hub icons.
-   * Primary CTA stays ink (`primary`) for contrast. No purple/coral chrome.
+   * Soft blue accent — selected chrome / streaks / hub icons.
+   * Primary CTA stays ink (`primary`) for contrast. No teal/purple/coral chrome.
    */
-  accent: '#0D9488',
-  accentSoft: '#CCFBF1',
+  accent: '#2563EB',
+  accentSoft: '#DBEAFE',
   onAccent: '#FFFFFF',
   /** @deprecated Prefer `primary` — kept for gradual migration. */
   primaryButton: '#0A0A0A',
@@ -35,18 +35,18 @@ export const colors = {
   carbs: '#2563EB',
   /** Meal section accent bars (readable cards, not B&W). */
   mealBreakfast: '#F59E0B',
-  mealLunch: '#0D9488',
-  mealDinner: '#2563EB',
-  mealSnack: '#16A34A',
+  mealLunch: '#2563EB',
+  mealDinner: '#1E40AF',
+  mealSnack: '#D97706',
   ringTrack: '#E8EAED',
-  ringFill: '#0D9488',
+  ringFill: '#2563EB',
   success: '#15803D',
   successSoft: '#DCF5E4',
   textOnInverse: '#FFFFFF',
   shadow: '#0A0A0A',
   warning: '#D97706',
   chartTrack: '#E8EAED',
-  chartFill: '#0D9488',
+  chartFill: '#2563EB',
   overlay: 'rgba(10,10,10,0.4)',
 } as const;
 
