@@ -19,50 +19,39 @@ export function FoodLogStreakCard({ streak }: { streak: FoodLogStreak }) {
       testID="food-log-streak-card"
     >
       <View style={styles.top}>
-        <View style={styles.iconWrap}>
-          <Ionicons name="flame" size={20} color={colors.fat} />
-        </View>
-        <View style={styles.textCol}>
-          <AppText variant="subtitle" style={styles.title}>
-            {copy.title}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            {copy.body}
-          </AppText>
+        <Ionicons name="flame" size={18} color={colors.fat} />
+        <AppText variant="body" style={styles.title}>
+          {copy.title}
+        </AppText>
+        <View style={styles.dots} accessibilityElementsHidden>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <View key={i} style={[styles.dot, i < lit ? styles.dotOn : styles.dotOff]} />
+          ))}
         </View>
       </View>
-      <View style={styles.dots} accessibilityElementsHidden>
-        {Array.from({ length: 7 }).map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, i < lit ? styles.dotOn : styles.dotOff]}
-          />
-        ))}
-      </View>
+      <AppText variant="caption" tone="muted">
+        {copy.body}
+      </AppText>
     </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    gap: space.md,
-    padding: space.md,
+    gap: space.xs,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
     backgroundColor: colors.accentSoft,
     borderColor: colors.border,
   },
-  top: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+  top: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: space.sm,
   },
-  textCol: { flex: 1, gap: 4, minWidth: 0 },
-  title: { fontWeight: '700' },
-  dots: { flexDirection: 'row', gap: 6 },
-  dot: { flex: 1, height: 6, borderRadius: 3 },
+  title: { fontWeight: '700', flexShrink: 1 },
+  dots: { flexDirection: 'row', gap: 3, marginLeft: 'auto' },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   dotOn: { backgroundColor: colors.fat },
   dotOff: { backgroundColor: colors.surface },
 });

@@ -25,7 +25,6 @@ import {
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
-import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
 import { FoodQuickStrips } from '@/src/features/diary/FoodQuickStrips';
 import {
   FoodSegmentTabs,
@@ -34,9 +33,6 @@ import {
 import { MealSection } from '@/src/features/diary/MealSection';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
-import {
-  foodLogStreak,
-} from '../../../../src/domain/foodLogStreak';
 import type { SavedMeal } from '../../../../src/storage/types';
 import type { AddFoodTab } from '@/src/features/diary/addFood/types';
 import {
@@ -91,14 +87,6 @@ export default function FoodScreen() {
   const favorites = repo.listFavorites().slice(0, 8);
   const savedMeals = repo.listSavedMeals();
   const frequent = repo.listFrequentProducts(24);
-  const streak = useMemo(
-    () =>
-      foodLogStreak({
-        endDateLocal: dateLocal,
-        hasLog: (d) => repo.dailyTotals(d).entryCount > 0,
-      }),
-    [repo, dateLocal, revision],
-  );
   const recipeIngredientCounts = useMemo(() => {
     const map: Record<string, number> = {};
     for (const r of recipes) {
@@ -307,9 +295,21 @@ export default function FoodScreen() {
               onSetTarget={() => router.push('/profile')}
             />
 
-            <FoodLogStreakCard streak={streak} />
-
             <CopyYesterdayButton />
+
+            {MEALS.map((slot) => (
+              <MealSection
+                key={slot}
+                meal={slot}
+                entries={mealEntries[slot]}
+                onDelete={onDelete}
+                onEditGrams={setEditing}
+                onCopyEntry={copyEntryToDay}
+                onAdd={() => openForMeal(slot)}
+                onRepeatMeal={() => repeatMealSlot(slot)}
+                onSaveMeal={() => setSaveMealSlot(slot)}
+              />
+            ))}
 
             <FoodQuickStrips
               savedMeals={savedMeals}
@@ -363,20 +363,6 @@ export default function FoodScreen() {
               }}
               onOpenSavedInSheet={() => openForMeal(meal, 'meals')}
             />
-
-            {MEALS.map((slot) => (
-              <MealSection
-                key={slot}
-                meal={slot}
-                entries={mealEntries[slot]}
-                onDelete={onDelete}
-                onEditGrams={setEditing}
-                onCopyEntry={copyEntryToDay}
-                onAdd={() => openForMeal(slot)}
-                onRepeatMeal={() => repeatMealSlot(slot)}
-                onSaveMeal={() => setSaveMealSlot(slot)}
-              />
-            ))}
           </FormScrollView>
         ) : (
           <View style={styles.catalogRoot}>

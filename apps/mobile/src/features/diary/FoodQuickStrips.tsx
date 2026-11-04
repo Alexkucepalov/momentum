@@ -2,18 +2,11 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry, FoodProduct, SavedMeal } from '../../../../../src/storage/types';
-import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
-
-const MEAL_RU = {
-  breakfast: 'завтрак',
-  lunch: 'обед',
-  dinner: 'ужин',
-  snack: 'перекус',
-} as const;
+import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 /**
- * Pleasant horizontal strips for Food diary: saved meals, recent, favorites.
- * Saved meals = bookmark templates (findable path for «любимый завтрак»).
+ * Compact quick-repeat rail under today's meal slots.
+ * Pill chips only — no heavy cards competing with the diary.
  */
 export function FoodQuickStrips({
   savedMeals,
@@ -38,18 +31,36 @@ export function FoodQuickStrips({
   onFavoriteQuick: (product: FoodProduct, grams: number) => void;
   onOpenSavedInSheet: () => void;
 }) {
-  const hasSaved = savedMeals.length > 0;
-  const hasRecent = recent.length > 0;
-  const hasFav = favorites.length > 0;
-  if (!hasSaved && !hasRecent && !hasFav) return null;
+  const saved = savedMeals.slice(0, 6);
+  const recentItems = recent.slice(0, 6);
+  const favItems = favorites.slice(0, 4);
+  if (saved.length === 0 && recentItems.length === 0 && favItems.length === 0) {
+    return (
+      <Pressable
+        onPress={onOpenSavedInSheet}
+        style={({ pressed }) => [styles.footerHint, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Как сохранить приём пищи"
+        testID="food-quick-strips"
+      >
+        <Ionicons name="bookmark-outline" size={16} color={colors.textMuted} />
+        <AppText variant="caption" tone="muted" style={styles.footerHintText}>
+          Закладка на приёме → шаблон в «Мои приёмы»
+        </AppText>
+      </Pressable>
+    );
+  }
 
   return (
     <View style={styles.wrap} testID="food-quick-strips">
-      {hasSaved ? (
-        <View style={styles.block}>
-          <View style={styles.blockHead}>
-            <Ionicons name="bookmark" size={16} color={colors.accent} />
-            <AppText variant="subtitle" style={styles.blockTitle}>
+      <AppText variant="label" tone="muted" style={styles.sectionLabel}>
+        Быстрый повтор
+      </AppText>
+
+      {saved.length > 0 ? (
+        <View style={styles.rail}>
+          <View style={styles.railHead}>
+            <AppText variant="caption" style={styles.railTitle}>
               Мои приёмы
             </AppText>
             <Pressable
@@ -58,145 +69,114 @@ export function FoodQuickStrips({
               accessibilityRole="button"
               accessibilityLabel="Все сохранённые приёмы"
             >
-              <AppText variant="caption" tone="accent">
+              <AppText variant="caption" tone="secondary">
                 все
               </AppText>
             </Pressable>
           </View>
-          <AppText variant="caption" tone="muted" style={styles.hint}>
-            Шаблоны с закладки · тап — сразу в дневник
-          </AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-            {savedMeals.slice(0, 8).map((m) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+          >
+            {saved.map((m) => (
               <Pressable
                 key={m.id}
                 onPress={() => onLogSaved(m)}
-                style={({ pressed }) => [pressed && styles.pressed]}
+                style={({ pressed }) => [styles.pill, styles.pillSaved, pressed && styles.pressed]}
                 accessibilityRole="button"
                 accessibilityLabel={`Добавить приём ${m.name}`}
               >
-                <AppCard style={styles.savedChip}>
-                  <View style={styles.savedIcon}>
-                    <Ionicons name="restaurant" size={16} color={colors.accent} />
-                  </View>
-                  <AppText variant="body" style={styles.chipTitle} numberOfLines={1}>
-                    {m.name}
-                  </AppText>
-                  <AppText variant="caption" tone="muted" numberOfLines={1}>
-                    {m.defaultMeal ? MEAL_RU[m.defaultMeal] : 'приём'} · {m.items.length} поз.
-                  </AppText>
-                </AppCard>
+                <Ionicons name="bookmark" size={14} color={colors.ink} />
+                <AppText variant="caption" style={styles.pillText} numberOfLines={1}>
+                  {m.name}
+                </AppText>
               </Pressable>
             ))}
           </ScrollView>
         </View>
-      ) : (
-        <Pressable
-          onPress={onOpenSavedInSheet}
-          style={({ pressed }) => [styles.emptySaved, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Как сохранить приём пищи"
-        >
-          <Ionicons name="bookmark-outline" size={18} color={colors.accent} />
-          <View style={styles.emptySavedText}>
-            <AppText variant="body" style={styles.chipTitle}>
-              Сохранённые приёмы
-            </AppText>
-            <AppText variant="caption" tone="muted">
-              Закладка на завтраке/обеде → шаблон появится здесь
-            </AppText>
-          </View>
-        </Pressable>
-      )}
+      ) : null}
 
-      {hasRecent ? (
-        <View style={styles.block}>
-          <View style={styles.blockHead}>
-            <Ionicons name="time-outline" size={16} color={colors.carbs} />
-            <AppText variant="subtitle" style={styles.blockTitle}>
-              Недавние
-            </AppText>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-            {recent.slice(0, 8).map((e) => {
+      {recentItems.length > 0 ? (
+        <View style={styles.rail}>
+          <AppText variant="caption" style={styles.railTitleSolo}>
+            Недавние
+          </AppText>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+          >
+            {recentItems.map((e) => {
               const canQuick = e.productId != null || e.recipeId != null;
               return (
-                <Pressable
-                  key={e.id}
-                  onPress={() => onRecentConfirm(e)}
-                  style={({ pressed }) => [pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${e.displayName}, выбрать порцию`}
-                >
-                  <AppCard style={styles.itemChip}>
-                    <AppText variant="body" style={styles.chipTitle} numberOfLines={1}>
+                <View key={e.id} style={styles.pillGroup}>
+                  <Pressable
+                    onPress={() => onRecentConfirm(e)}
+                    style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${e.displayName}, выбрать порцию`}
+                  >
+                    <AppText variant="caption" style={styles.pillText} numberOfLines={1}>
                       {e.displayName}
                     </AppText>
                     <AppText variant="caption" tone="muted">
                       {e.grams} г
                     </AppText>
-                    {canQuick ? (
-                      <Pressable
-                        onPress={(ev) => {
-                          ev.stopPropagation?.();
-                          onRecentQuick(e);
-                        }}
-                        style={styles.plus}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Быстро добавить ${e.displayName}`}
-                        hitSlop={6}
-                      >
-                        <Ionicons name="add" size={18} color={colors.onAccent} />
-                      </Pressable>
-                    ) : null}
-                  </AppCard>
-                </Pressable>
+                  </Pressable>
+                  {canQuick ? (
+                    <Pressable
+                      onPress={() => onRecentQuick(e)}
+                      style={({ pressed }) => [styles.miniPlus, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Быстро добавить ${e.displayName}`}
+                      hitSlop={4}
+                    >
+                      <Ionicons name="add" size={16} color={colors.onAccent} />
+                    </Pressable>
+                  ) : null}
+                </View>
               );
             })}
           </ScrollView>
         </View>
       ) : null}
 
-      {hasFav ? (
-        <View style={styles.block}>
-          <View style={styles.blockHead}>
-            <Ionicons name="star" size={16} color={colors.fat} />
-            <AppText variant="subtitle" style={styles.blockTitle}>
-              Избранное
-            </AppText>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-            {favorites.slice(0, 8).map((p) => {
+      {favItems.length > 0 ? (
+        <View style={styles.rail}>
+          <AppText variant="caption" style={styles.railTitleSolo}>
+            Избранное
+          </AppText>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+          >
+            {favItems.map((p) => {
               const g = lastGramsFor(p.id);
               return (
-                <Pressable
-                  key={p.id}
-                  onPress={() => onFavoriteConfirm(p, g)}
-                  style={({ pressed }) => [pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${p.name}, выбрать порцию`}
-                >
-                  <AppCard style={styles.itemChip}>
-                    <AppText variant="body" style={styles.chipTitle} numberOfLines={1}>
+                <View key={p.id} style={styles.pillGroup}>
+                  <Pressable
+                    onPress={() => onFavoriteConfirm(p, g)}
+                    style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${p.name}, выбрать порцию`}
+                  >
+                    <Ionicons name="star" size={12} color={colors.fat} />
+                    <AppText variant="caption" style={styles.pillText} numberOfLines={1}>
                       {p.name}
                     </AppText>
-                    <AppText variant="caption" tone="muted">
-                      обычно {g} г
-                    </AppText>
-                    <Pressable
-                      onPress={(ev) => {
-                        ev.stopPropagation?.();
-                        onFavoriteQuick(p, g);
-                      }}
-                      style={[styles.plus, styles.plusFav]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Быстро добавить ${p.name}`}
-                      hitSlop={6}
-                    >
-                      <Ionicons name="add" size={18} color={colors.onAccent} />
-                    </Pressable>
-                  </AppCard>
-                </Pressable>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => onFavoriteQuick(p, g)}
+                    style={({ pressed }) => [styles.miniPlus, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Быстро добавить ${p.name}`}
+                    hitSlop={4}
+                  >
+                    <Ionicons name="add" size={16} color={colors.onAccent} />
+                  </Pressable>
+                </View>
               );
             })}
           </ScrollView>
@@ -207,62 +187,75 @@ export function FoodQuickStrips({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.md, marginBottom: space.sm },
-  block: { gap: space.xs },
-  blockHead: {
+  wrap: {
+    gap: space.sm,
+    marginTop: space.md,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  sectionLabel: {
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  rail: { gap: space.xs },
+  railHead: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  railTitle: { fontWeight: '600' },
+  railTitleSolo: { fontWeight: '600' },
+  chips: {
     gap: space.sm,
-  },
-  blockTitle: { flex: 1, fontWeight: '700' },
-  hint: { marginBottom: 2 },
-  row: { gap: space.sm, paddingVertical: space.xs, paddingRight: space.lg },
-  savedChip: {
-    width: 148,
-    gap: 4,
-    padding: space.md,
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  savedIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
+    paddingVertical: 2,
+    paddingRight: space.lg,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
   },
-  itemChip: {
-    width: 140,
+  pillGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
-    padding: space.md,
-    paddingBottom: space.sm,
   },
-  chipTitle: { fontWeight: '600' },
-  plus: {
-    marginTop: space.xs,
-    alignSelf: 'flex-start',
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: 168,
+    minHeight: 36,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  pillSaved: {
+    backgroundColor: colors.accentSoft,
+  },
+  pillText: {
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  miniPlus: {
     width: 32,
     height: 32,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plusFav: { backgroundColor: colors.fat },
-  emptySaved: {
+  footerHint: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    padding: space.md,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
+    gap: space.sm,
+    marginTop: space.md,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
     minHeight: touchMin,
   },
-  emptySavedText: { flex: 1, gap: 2, minWidth: 0 },
-  pressed: { opacity: 0.88 },
+  footerHintText: { flex: 1 },
+  pressed: { opacity: 0.85 },
 });
