@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { energyProgressRatio } from '../../../../src/domain/energyProgress';
@@ -22,6 +23,8 @@ type Props = {
   activityMinutes?: number;
   /** compact = number + bar (Today/Food first screen); ring = legacy large widget */
   variant?: 'compact' | 'ring';
+  /** Bumps a short pulse when diary totals change (e.g. after add). */
+  pulseKey?: number;
   /** Shown when energy target is missing (e.g. open Profile goals). */
   onSetTarget?: () => void;
 };
@@ -33,6 +36,7 @@ export function KcalRing({
   activityKcal = null,
   activityMinutes = 0,
   variant = 'compact',
+  pulseKey,
   onSetTarget,
 }: Props) {
   if (variant === 'ring') {
@@ -52,6 +56,7 @@ export function KcalRing({
       targets={targets}
       activityKcal={activityKcal}
       activityMinutes={activityMinutes}
+      pulseKey={pulseKey}
       onSetTarget={onSetTarget}
     />
   );
@@ -62,8 +67,25 @@ function CompactLayout({
   targets,
   activityKcal = null,
   activityMinutes = 0,
+  pulseKey,
   onSetTarget,
 }: Omit<Props, 'variant'>) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const prevPulse = useRef<number | undefined>(pulseKey);
+  useEffect(() => {
+    if (pulseKey === undefined) return;
+    if (prevPulse.current === undefined) {
+      prevPulse.current = pulseKey;
+      return;
+    }
+    if (prevPulse.current === pulseKey) return;
+    prevPulse.current = pulseKey;
+    scale.setValue(1);
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 1.03, duration: 120, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1, duration: 160, useNativeDriver: true }),
+    ]).start();
+  }, [pulseKey, scale]);
   const foodKcal = totals.energyKcal;
   const hasUnknown = totals.hasUnknownFields;
   const energyTarget = targets?.energyKcal ?? null;
@@ -81,8 +103,8 @@ function CompactLayout({
         }`;
 
   return (
-    <View
-      style={styles.compactWrap}
+    <Animated.View
+      style={[styles.compactWrap, { transform: [{ scale }] }]}
       accessibilityRole="summary"
       accessibilityLabel={`Еда ${fmt(foodKcal)} килокалорий${energyTarget != null ? ` из цели ${fmt(energyTarget)}` : ''}. Белки ${fmt(totals.proteinG)} г. Жиры ${fmt(totals.fatG)} г. Углеводы ${fmt(totals.carbG)} г.${hasUnknown ? ' Часть значений неизвестна.' : ''}`}
     >
@@ -175,7 +197,7 @@ function CompactLayout({
       {hasUnknown ? (
         <Text style={styles.note}>Часть нутриентов неизвестна — не считаем их нулём</Text>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 

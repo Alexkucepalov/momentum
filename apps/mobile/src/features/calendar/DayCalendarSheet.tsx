@@ -19,9 +19,9 @@ import {
 } from '../../../../../src/domain/calendarMonth';
 import { localDateKey } from '../../../../../src/storage/validation';
 import type { FoodEntry, MealSlot, Workout, WorkoutType } from '../../../../../src/storage/types';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'] as const;
 
@@ -239,7 +239,7 @@ export function DayCalendarSheet({
             <View style={styles.todayLink} />
           )}
           <View style={styles.footerBtn}>
-            <PrimaryButton label="Открыть этот день" onPress={applyDay} />
+            <AppButton label="Открыть этот день" onPress={applyDay} />
           </View>
         </View>
       </View>

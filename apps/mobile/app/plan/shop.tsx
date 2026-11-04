@@ -5,9 +5,9 @@ import { useRouter } from 'expo-router';
 import { filterMissingShoppingItems } from '../../../../src/domain/aggregateShopping';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 function fmtQty(q: number, unit: string): string {
   if (unit === 'pcs') return `${Math.round(q)} шт`;
@@ -120,7 +120,7 @@ export default function ShopScreen() {
         Корзина из меню или руками. Цену вводи сам — оценка с датой, не «цена сегодня».
       </Text>
 
-      <PrimaryButton label="Новый пустой список" onPress={createEmpty} />
+      <AppButton label="Новый пустой список" onPress={createEmpty} />
       <Pressable
         onPress={() => router.push('/plan/receipt')}
         style={styles.linkRow}
@@ -170,7 +170,7 @@ export default function ShopScreen() {
           </Pressable>
         ))}
       </View>
-      <PrimaryButton label="В список" onPress={addManual} />
+      <AppButton label="В список" onPress={addManual} />
 
       <Text style={styles.section}>Из рецепта</Text>
       {recipes.length === 0 ? (
@@ -362,7 +362,7 @@ export default function ShopScreen() {
             </Pressable>
           ) : null}
 
-          <PrimaryButton
+          <AppButton
             label="Удалить список"
             onPress={() => {
               repo.softDeleteShoppingList(list.id);

@@ -1,8 +1,9 @@
-build_date: 2026-11-03T06:27:25Z
+build_date: 2026-11-03T21:59:39Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 216680813
-sha256: f862de7138f35a924f1a19edbb5b9362439742a079b128a029873fba55f986e9
-git: f935f04307daa826b230a6c257c7177b298d80f7
-includes: #183 swipe-delete · scanner right · Today steps/sleep · 3 home widgets (FORCE_PREBUILD)
+bytes: 93218406
+sha256: 37cf486c4d36ff49111aa30b3097da79f54186ce326e3edb6fa33cc13b671aa4
+git: 076c3bc
+includes: #183 swipe-delete · scanner right · Today steps/sleep · #185 Nothing-light 5 widgets (day/kcal/steps/water/sleep + Press Start 2P)
+abi: arm64-v8a
 package: app.nffit.dogfood
 dogfood_gate: pending

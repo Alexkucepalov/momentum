@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CenteredFormModal } from './CenteredFormModal';
 import { PortionStepper } from './PortionStepper';
-import { PrimaryButton } from './PrimaryButton';
 import { colors, space, touchMin, type } from '../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 export function PortionEditModal({
   visible,
@@ -60,7 +60,7 @@ export function PortionEditModal({
           <Text style={styles.secondaryText}>Отмена</Text>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <PrimaryButton label="Сохранить" onPress={save} />
+          <AppButton label="Сохранить" onPress={save} />
         </View>
       </View>
     </CenteredFormModal>

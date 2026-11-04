@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { nutritionConsistencyHint } from '../../../../../src/domain/nutritionConsistency';
 import type { FoodEntry, MealSlot } from '../../../../../src/storage/types';
-import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
+import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
@@ -19,7 +19,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
   snack: 'Перекус',
 };
 
-const REVEAL_X = -88;
+const REVEAL_X = -132;
 const COMMIT_DX = -72;
 
 function fmtKcal(n: number | null): string {
@@ -37,6 +37,7 @@ export function MealSection({
   entries,
   onDelete,
   onEditGrams,
+  onCopyEntry,
   onAdd,
   onRepeatMeal,
   onSaveMeal,
@@ -45,6 +46,7 @@ export function MealSection({
   entries: FoodEntry[];
   onDelete: (entry: FoodEntry) => void;
   onEditGrams: (entry: FoodEntry) => void;
+  onCopyEntry?: (entry: FoodEntry) => void;
   onAdd?: () => void;
   onRepeatMeal?: () => void;
   onSaveMeal?: () => void;
@@ -84,13 +86,17 @@ export function MealSection({
   }
 
   return (
-    <AppCard accessibilityLabel={MEAL_LABELS[meal]} style={styles.card}>
+    <View
+      style={styles.section}
+      accessibilityLabel={MEAL_LABELS[meal]}
+      testID={`meal-section-${meal}`}
+    >
       <View style={styles.head}>
         <View style={styles.headText}>
           <AppText variant="subtitle">{MEAL_LABELS[meal]}</AppText>
           <AppText variant="caption" tone="muted">
             {sectionKcal === null ? 'ккал частично неизвестны' : fmtKcal(sectionKcal)}
-            {entries.length > 1 ? ` · ${entries.length} зап.` : ''}
+            {entries.length > 1 ? ` · ${entries.length}` : ''}
           </AppText>
         </View>
         {canSave ? (
@@ -108,7 +114,7 @@ export function MealSection({
             onPress={onRepeatMeal}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={`Повторить ${MEAL_LABELS[meal]} в выбранный приём`}
+            accessibilityLabel={`Повторить ${MEAL_LABELS[meal]} в этот же приём`}
           >
             <Ionicons name="copy-outline" size={18} color={colors.ink} />
           </Pressable>
@@ -131,9 +137,10 @@ export function MealSection({
           entry={entry}
           onDelete={() => onDelete(entry)}
           onEdit={() => onEditGrams(entry)}
+          onCopy={onCopyEntry ? () => onCopyEntry(entry) : undefined}
         />
       ))}
-    </AppCard>
+    </View>
   );
 }
 
@@ -141,10 +148,12 @@ function SwipeEntryRow({
   entry,
   onDelete,
   onEdit,
+  onCopy,
 }: {
   entry: FoodEntry;
   onDelete: () => void;
   onEdit: () => void;
+  onCopy?: () => void;
 }) {
   const tx = useRef(new Animated.Value(0)).current;
   const open = useRef(false);
@@ -184,7 +193,6 @@ function SwipeEntryRow({
 
   const pan = useRef(
     PanResponder.create({
-      // Capture leftward horizontal moves so DaySwipeArea does not steal delete.
       onMoveShouldSetPanResponderCapture: (_, g) =>
         g.dx < -12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.15,
       onMoveShouldSetPanResponder: (_, g) =>
@@ -194,7 +202,7 @@ function SwipeEntryRow({
         dragging.current = true;
       },
       onPanResponderMove: (_, g) => {
-        if (g.dx <= 0) tx.setValue(Math.max(g.dx, -120));
+        if (g.dx <= 0) tx.setValue(Math.max(g.dx, -160));
         else if (open.current) tx.setValue(Math.min(0, REVEAL_X + g.dx));
       },
       onPanResponderRelease: (_, g) => {
@@ -217,7 +225,20 @@ function SwipeEntryRow({
 
   return (
     <View style={styles.swipeWrap} testID="diary-swipe-row">
-      <View style={styles.deleteBehind}>
+      <View style={styles.actionsBehind}>
+        {onCopy ? (
+          <Pressable
+            onPress={() => {
+              snapShut();
+              onCopy();
+            }}
+            style={styles.copyAction}
+            accessibilityRole="button"
+            accessibilityLabel={`Скопировать ${entry.displayName} в этот день`}
+          >
+            <Ionicons name="copy-outline" size={18} color={colors.ink} />
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={commitDelete}
           style={styles.deleteAction}
@@ -225,9 +246,6 @@ function SwipeEntryRow({
           accessibilityLabel={`Удалить ${entry.displayName}`}
         >
           <Ionicons name="trash-outline" size={20} color={colors.primaryButtonText} />
-          <AppText variant="caption" tone="inverse" style={styles.deleteActionText}>
-            Удалить
-          </AppText>
         </Pressable>
       </View>
       <Animated.View
@@ -244,27 +262,18 @@ function SwipeEntryRow({
             onEdit();
           }}
           accessibilityRole="button"
-          accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы. Свайп влево — удалить`}
-          accessibilityHint="Свайп влево, чтобы удалить"
+          accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы. Свайп влево — копировать или удалить`}
+          accessibilityHint="Свайп влево: копировать или удалить"
         >
-          <AppText variant="body" style={styles.name} numberOfLines={2}>
+          <AppText variant="body" style={styles.name} numberOfLines={1}>
             {entry.displayName}
           </AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="caption" tone="secondary" numberOfLines={1}>
             {entry.grams} г · Б {fmtMacro(entry.proteinG)} · Ж {fmtMacro(entry.fatG)} · У{' '}
             {fmtMacro(entry.carbG)}
             {incomplete ? ' · неполно' : ''}
             {diverge ? ' · ккал≠БЖУ' : ''}
           </AppText>
-        </Pressable>
-        <Pressable
-          onPress={commitDelete}
-          style={({ pressed }) => [styles.trashHit, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Удалить ${entry.displayName}`}
-          hitSlop={6}
-        >
-          <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
         </Pressable>
         <AppText variant="caption" style={styles.kcal}>
           {fmtKcal(entry.energyKcal)}
@@ -301,77 +310,72 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  card: {
+  section: {
     marginBottom: space.md,
-    overflow: 'hidden',
-    padding: space.md,
+    paddingBottom: space.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: space.xs,
-    gap: space.sm,
+    gap: space.xs,
   },
   headText: { flex: 1, gap: 2 },
   iconBtn: {
     width: 40,
     height: 40,
     borderRadius: radius.pill,
-    backgroundColor: colors.canvas,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   swipeWrap: {
-    marginTop: space.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    marginTop: 2,
     overflow: 'hidden',
     borderRadius: radius.sm,
   },
-  deleteBehind: {
+  actionsBehind: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    backgroundColor: colors.danger,
-    paddingRight: space.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    backgroundColor: colors.canvas,
   },
-  deleteAction: {
-    minWidth: 76,
+  copyAction: {
+    minWidth: 52,
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    backgroundColor: colors.surface,
   },
-  deleteActionText: {
-    fontWeight: '800',
+  deleteAction: {
+    minWidth: 72,
+    minHeight: touchMin,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.danger,
   },
   rowFront: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    minHeight: touchMin,
-    paddingTop: space.sm,
-    paddingBottom: space.xs,
+    backgroundColor: colors.canvas,
+    minHeight: 48,
+    paddingVertical: space.xs,
     gap: space.xs,
   },
   main: {
     flex: 1,
     paddingRight: space.sm,
-    paddingVertical: space.xs,
+    paddingVertical: 2,
   },
   name: {
     fontWeight: '600',
-  },
-  trashHit: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
   },
   kcal: {
     fontWeight: '700',

@@ -176,7 +176,8 @@ test('Phase 1 UI files use nf-fit design system', () => {
     join(root, 'apps/mobile/src/features/diary/MealSection.tsx'),
     'utf8',
   );
-  assert.ok(meal.includes('AppCard'));
+  assert.ok(meal.includes('@/src/design-system'));
+  assert.ok(meal.includes('AppText'));
   assert.ok(meal.includes('пока пусто') || meal.includes('нажми, чтобы добавить'));
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(meal));
 

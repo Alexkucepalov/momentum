@@ -35,6 +35,7 @@ import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
   AppButton,
+  AppText,
   colors,
   radius,
   space,
@@ -116,7 +117,7 @@ export default function FoodScreen() {
           <Pressable
             onPress={() => router.push('/plan')}
             accessibilityRole="button"
-            accessibilityLabel="План питания"
+            accessibilityLabel="План питания, черновик, не дневник"
             style={styles.headerBtn}
             hitSlop={8}
           >
@@ -154,26 +155,29 @@ export default function FoodScreen() {
 
   const repeatEntry = (e: FoodEntry) => {
     if (!allowAdd()) return;
+    let created: FoodEntry | null = null;
     if (e.productId) {
-      repo.addEntryFromProduct({
+      created = repo.addEntryFromProduct({
         productId: e.productId,
         dateLocal,
         meal,
         grams: e.grams,
       });
     } else if (e.recipeId) {
-      repo.addEntryFromRecipe({
+      created = repo.addEntryFromRecipe({
         recipeId: e.recipeId,
         dateLocal,
         meal,
         grams: e.grams,
       });
-    } else {
-      return;
     }
+    if (!created) return;
     refresh();
+    showFlash(`Добавлено: ${e.displayName}`);
+    setUndo({ entryIds: [created.id], message: `Добавлено: ${e.displayName}` });
   };
 
+  /** Clone slot entries into the same meal slot (not global `meal`). */
   const repeatMealSlot = (slot: MealSlot) => {
     if (!allowAdd()) return;
     const items = repeatableFromEntries(mealEntries[slot]);
@@ -184,7 +188,7 @@ export default function FoodScreen() {
         const e = repo.addEntryFromProduct({
           productId: item.productId,
           dateLocal,
-          meal,
+          meal: slot,
           grams: item.grams,
         });
         createdIds.push(e.id);
@@ -192,7 +196,7 @@ export default function FoodScreen() {
         const e = repo.addEntryFromRecipe({
           recipeId: item.recipeId,
           dateLocal,
-          meal,
+          meal: slot,
           grams: item.grams,
         });
         createdIds.push(e.id);
@@ -204,6 +208,30 @@ export default function FoodScreen() {
       entryIds: createdIds,
       message: `Повторён ${MEAL_LABELS[slot].toLowerCase()} · ${createdIds.length}`,
     });
+  };
+
+  const copyEntryToDay = (e: FoodEntry) => {
+    if (!allowAdd()) return;
+    let created: FoodEntry | null = null;
+    if (e.productId) {
+      created = repo.addEntryFromProduct({
+        productId: e.productId,
+        dateLocal,
+        meal: e.meal,
+        grams: e.grams,
+      });
+    } else if (e.recipeId) {
+      created = repo.addEntryFromRecipe({
+        recipeId: e.recipeId,
+        dateLocal,
+        meal: e.meal,
+        grams: e.grams,
+      });
+    }
+    if (!created) return;
+    refresh();
+    showFlash(`Скопировано: ${e.displayName}`);
+    setUndo({ entryIds: [created.id], message: `Скопировано: ${e.displayName}` });
   };
 
   const openProductPortion = (p: FoodProduct) => {
@@ -227,6 +255,11 @@ export default function FoodScreen() {
         onOpenCalendar={() => setCalendarOpen(true)}
       />
       <FoodSegmentTabs value={segment} onChange={selectSegment} />
+      <AppText variant="caption" tone="muted" style={styles.segmentCaption}>
+        {segment === 'diary'
+          ? 'Дневник — факт за день. План (иконка компаса) — черновик, не дневник.'
+          : 'Каталог — база продуктов и рецептов. Запись в дневник — после выбора порции.'}
+      </AppText>
     </>
   );
 
@@ -267,6 +300,7 @@ export default function FoodScreen() {
                   entries={mealEntries[slot]}
                   onDelete={onDelete}
                   onEditGrams={setEditing}
+                  onCopyEntry={copyEntryToDay}
                   onAdd={() => openForMeal(slot)}
                   onRepeatMeal={() => repeatMealSlot(slot)}
                   onSaveMeal={() => setSaveMealSlot(slot)}
@@ -434,6 +468,7 @@ export default function FoodScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140, gap: space.sm },
+  segmentCaption: { marginTop: -space.sm, marginBottom: space.xs },
   catalogRoot: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.lg },
   catalogChrome: { gap: space.sm, marginBottom: space.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center' },

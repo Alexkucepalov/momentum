@@ -112,6 +112,6 @@ export const WIDGET_SCAFFOLD = {
   product: 'nf-fit',
   preferredApproach: 'config-plugin-appwidgetprovider',
   style: 'nothing-light-pixel',
-  binaryShipped: false,
+  binaryShipped: true,
   variants: WIDGET_VARIANTS.length,
 } as const;

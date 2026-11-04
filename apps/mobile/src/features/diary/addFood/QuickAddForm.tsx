@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { kcalFromCompleteMacros } from '../../../../../../src/domain/nutritionConsistency';
-import { PrimaryButton } from '../../../components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 type Mode = 'kcal' | 'macros';
 
@@ -147,7 +147,7 @@ export function QuickAddForm({
           {error}
         </Text>
       ) : null}
-      <PrimaryButton label="Добавить в дневник" onPress={save} />
+      <AppButton label="Добавить в дневник" onPress={save} />
     </View>
   );
 }

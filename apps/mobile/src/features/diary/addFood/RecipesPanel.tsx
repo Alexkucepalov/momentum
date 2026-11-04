@@ -5,9 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { recipePortion } from '../../../../../../src/domain/nutrition';
 import type { Recipe } from '../../../../../../src/storage/types';
 import { MacroStrip } from '../../../components/MacroStrip';
-import { PrimaryButton } from '../../../components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
 import { emptyIngredient, type DraftIngredient } from './types';
+import { AppButton } from '@/src/design-system';
 
 export function RecipesPanel({
   recipes,
@@ -279,7 +279,7 @@ export function RecipesPanel({
             <Text style={styles.hint}>Сырые ингредиенты + вес готового → порция пересчитается.</Text>
           )}
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label="Сохранить и выбрать порцию" onPress={save} />
+          <AppButton label="Сохранить и выбрать порцию" onPress={save} />
         </View>
       )}
     </View>

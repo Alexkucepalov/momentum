@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 const FOOD_BARCODES = [
   'ean13',
@@ -100,7 +100,7 @@ export function BarcodeCameraPanel({
         <Text style={styles.fallbackText}>
           Нужен доступ к камере, чтобы считать штрихкод. Можно и без неё — введи код вручную.
         </Text>
-        <PrimaryButton label="Разрешить камеру" onPress={() => void requestPermission()} />
+        <AppButton label="Разрешить камеру" onPress={() => void requestPermission()} />
       </View>
     );
   }

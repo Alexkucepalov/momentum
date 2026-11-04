@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CenteredFormModal } from './CenteredFormModal';
-import { PrimaryButton } from './PrimaryButton';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 export function SaveMealModal({
   visible,
@@ -57,7 +57,7 @@ export function SaveMealModal({
           <Text style={styles.cancelText}>Отмена</Text>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <PrimaryButton label="Сохранить" onPress={save} />
+          <AppButton label="Сохранить" onPress={save} />
         </View>
       </View>
     </CenteredFormModal>

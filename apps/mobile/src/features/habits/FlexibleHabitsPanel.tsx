@@ -5,11 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { buildHabitWeekMarks } from '../../../../../src/domain/habitWeek';
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
-import { PrimaryButton } from '../../components/PrimaryButton';
 import { useData } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { HabitCard } from './HabitCard';
 import { HabitFormFields } from './HabitFormFields';
+import { AppButton } from '@/src/design-system';
 
 const emptyForm = {
   name: '',
@@ -248,7 +248,7 @@ export function FlexibleHabitsPanel() {
               <Text style={styles.secondaryText}>Отмена</Text>
             </Pressable>
             <View style={{ flex: 1 }}>
-              <PrimaryButton label="Добавить" onPress={create} />
+              <AppButton label="Добавить" onPress={create} />
             </View>
           </View>
         </View>

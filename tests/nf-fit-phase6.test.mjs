@@ -58,7 +58,7 @@ test('Phase 6 widget contract: unknown energy never displays as 0', () => {
     WIDGET_SCAFFOLD,
   } = mods['widgets/todayWidgetContract'];
 
-  assert.equal(WIDGET_SCAFFOLD.binaryShipped, false);
+  assert.equal(WIDGET_SCAFFOLD.binaryShipped, true);
   assert.equal(WIDGET_SCAFFOLD.product, 'nf-fit');
 
   assert.equal(

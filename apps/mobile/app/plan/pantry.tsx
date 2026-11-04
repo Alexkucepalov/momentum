@@ -6,9 +6,9 @@ import { normalizeShoppingName } from '../../../../src/domain/aggregateShopping'
 import type { FoodProduct, PantryLocation, PantryUnit } from '../../../../src/storage/types';
 import { EmptyState } from '@/src/components/EmptyState';
 import { FormScrollView } from '@/src/components/FormScrollView';
-import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { useData } from '@/src/state/DataContext';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
+import { AppButton } from '@/src/design-system';
 
 const LOCATIONS: { id: PantryLocation; label: string }[] = [
   { id: 'fridge', label: 'Холодильник' },
@@ -345,7 +345,7 @@ export default function PantryScreen() {
             ))}
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton
+          <AppButton
             label="Сохранить в запасы"
             onPress={() => {
               if (addItem()) setAddOpen(false);

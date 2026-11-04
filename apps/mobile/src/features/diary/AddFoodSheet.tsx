@@ -40,7 +40,7 @@ export function AddFoodSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const { repo, dateLocal, meal, setMeal, refresh, revision, showFlash } = useData();
+  const { repo, dateLocal, meal, setMeal, refresh, revision, showFlash, setUndo } = useData();
   void revision;
   const allowAdd = useAddGuard();
   const [tab, setTab] = useState<AddFoodTab>('recent');
@@ -106,46 +106,57 @@ export function AddFoodSheet({
     return n;
   };
 
-  const finishQuick = (label: string) => {
+  const finishQuick = (label: string, entryIds: string[]) => {
     refresh();
     showFlash(label);
+    if (entryIds.length > 0) setUndo({ entryIds, message: label });
     onClose();
   };
 
   const quickAddEntry = (e: FoodEntry) => {
     if (!allowAdd()) return;
     if (e.productId) {
-      repo.addEntryFromProduct({
+      const created = repo.addEntryFromProduct({
         productId: e.productId,
         dateLocal,
         meal,
         grams: e.grams,
       });
-      finishQuick(`Добавлено: ${e.displayName}`);
+      finishQuick(`Добавлено: ${e.displayName}`, [created.id]);
       return;
     }
     if (e.recipeId) {
-      repo.addEntryFromRecipe({
+      const created = repo.addEntryFromRecipe({
         recipeId: e.recipeId,
         dateLocal,
         meal,
         grams: e.grams,
       });
-      finishQuick(`Добавлено: ${e.displayName}`);
+      finishQuick(`Добавлено: ${e.displayName}`, [created.id]);
     }
   };
 
   const quickAddProduct = (p: FoodProduct, g = 100) => {
     if (!allowAdd()) return;
-    repo.addEntryFromProduct({ productId: p.id, dateLocal, meal, grams: g });
-    finishQuick(`Добавлено: ${p.name}`);
+    const created = repo.addEntryFromProduct({
+      productId: p.id,
+      dateLocal,
+      meal,
+      grams: g,
+    });
+    finishQuick(`Добавлено: ${p.name}`, [created.id]);
   };
 
   const quickAddRecipe = (r: Recipe) => {
     if (!allowAdd()) return;
     const g = Math.min(200, r.cookedYieldG);
-    repo.addEntryFromRecipe({ recipeId: r.id, dateLocal, meal, grams: g });
-    finishQuick(`Добавлено: ${r.name}`);
+    const created = repo.addEntryFromRecipe({
+      recipeId: r.id,
+      dateLocal,
+      meal,
+      grams: g,
+    });
+    finishQuick(`Добавлено: ${r.name}`, [created.id]);
   };
 
   const openProductConfirm = (product: FoodProduct, initialGrams = 100) => {
@@ -388,8 +399,13 @@ export function AddFoodSheet({
                       dateLocal,
                       meal,
                     });
+                    const label = `Приём «${m.name}»: +${created.length}`;
                     refresh();
-                    showFlash(`Приём «${m.name}»: +${created.length}`);
+                    showFlash(label);
+                    setUndo({
+                      entryIds: created.map((e) => e.id),
+                      message: label,
+                    });
                     onClose();
                   } catch (e) {
                     setError(e instanceof Error ? e.message : 'Не удалось добавить');
@@ -407,7 +423,7 @@ export function AddFoodSheet({
               <QuickAddForm
                 onSubmit={(values) => {
                   if (!allowAdd()) return;
-                  repo.addQuickEntry({
+                  const created = repo.addQuickEntry({
                     dateLocal,
                     meal,
                     displayName: values.displayName,
@@ -416,8 +432,10 @@ export function AddFoodSheet({
                     fatG: values.fatG,
                     carbG: values.carbG,
                   });
+                  const label = `Быстрый ввод: ${values.displayName}`;
                   refresh();
-                  showFlash(`Быстрый ввод: ${values.displayName}`);
+                  showFlash(label);
+                  setUndo({ entryIds: [created.id], message: label });
                   onClose();
                 }}
               />
@@ -516,6 +534,8 @@ export function AddFoodSheet({
         onConfirm={(result) => {
           if (!confirm) return;
           if (!allowAdd()) return;
+          let createdId: string | null = null;
+          let label = 'Добавлено';
           if (confirm.target.kind === 'product') {
             if (pendingManual && confirm.target.product.id === 'draft') {
               const product = repo.createProduct({
@@ -526,28 +546,30 @@ export function AddFoodSheet({
                 carbG: result.per100g.carbG,
                 source: 'user',
               });
-              repo.addEntryFromProduct({
+              const e = repo.addEntryFromProduct({
                 productId: product.id,
                 dateLocal,
                 meal,
                 grams: result.grams,
               });
+              createdId = e.id;
+              label = `Добавлено: ${product.name}`;
               setName('');
               setKcal('');
               setProtein('');
               setFat('');
               setCarbs('');
               setPendingManual(null);
-              showFlash(`Добавлено: ${product.name}`);
             } else {
               repo.updateProductNutrition(confirm.target.product.id, result.per100g);
-              repo.addEntryFromProduct({
+              const e = repo.addEntryFromProduct({
                 productId: confirm.target.product.id,
                 dateLocal,
                 meal,
                 grams: result.grams,
               });
-              showFlash(`Добавлено: ${confirm.target.product.name}`);
+              createdId = e.id;
+              label = `Добавлено: ${confirm.target.product.name}`;
             }
           } else {
             const snap = portion(
@@ -559,7 +581,7 @@ export function AddFoodSheet({
               },
               result.grams,
             );
-            repo.addEntryFromRecipe({
+            const e = repo.addEntryFromRecipe({
               recipeId: confirm.target.recipe.id,
               dateLocal,
               meal,
@@ -571,8 +593,11 @@ export function AddFoodSheet({
                 carbG: snap.carbs,
               },
             });
-            showFlash(`Добавлено: ${confirm.target.recipe.name}`);
+            createdId = e.id;
+            label = `Добавлено: ${confirm.target.recipe.name}`;
           }
+          showFlash(label);
+          if (createdId) setUndo({ entryIds: [createdId], message: label });
           refresh();
           setConfirm(null);
           onClose();

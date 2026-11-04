@@ -147,6 +147,7 @@ North-star: повторный приём ≤10 с; `unknown ≠ 0`; snapshot п
 
 | Priority | Issue | Acceptance (кратко) |
 |----------|-------|---------------------|
+| ★ | **#186 Audit remediation P0–P2** | In flight: repeatMealSlot, undo adds, Today recent, compact diary, persist coalesce, docs — device Pass **needs-human** |
 | — | **Food Planner FP-1…** | См. epic выше — **без** `agent-ready` до approve |
 | 1 | ~~Parse diary-style recipe paste hardening~~ | Done (#28) |
 | 2 | Catalog / Recipes / Archive visual polish QA | Open #5 + PR #20 (review); **no new agent-ready** — quality freeze |

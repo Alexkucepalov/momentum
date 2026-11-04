@@ -224,6 +224,15 @@ export default function ProgressScreen() {
 
         {tab === 'overview' ? (
           <>
+            <AppButton
+              label="Скопировать день для ChatGPT"
+              onPress={() => void onCopyDayReport()}
+              testID="progress-copy-day-chatgpt"
+            />
+            <AppText variant="caption" tone="muted" style={styles.backupHint}>
+              Без прямой отправки в облако — только буфер. PDF и период — во вкладке «Отчёты».
+            </AppText>
+
             <WeeklyInsightCard insight={weekInsight} />
             <MonthOverviewCard overview={monthOverview} />
             <View style={styles.kpiGrid}>
@@ -308,13 +317,6 @@ export default function ProgressScreen() {
               />
             </AppCard>
 
-            <AppButton
-              label="Копировать отчёт за день → ChatGPT"
-              onPress={() => void onCopyDayReport()}
-            />
-            <AppText variant="caption" tone="muted" style={styles.backupHint}>
-              Прямого коннекта к ChatGPT нет. PDF и период — во вкладке «Отчёты».
-            </AppText>
           </>
         ) : null}
 
