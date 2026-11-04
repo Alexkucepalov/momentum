@@ -17,6 +17,7 @@ type HubItem = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
+  tint: string;
   href:
     | '/plan/eat-now'
     | '/plan/pantry'
@@ -35,7 +36,8 @@ const PRIMARY: HubItem[] = [
     key: 'eat-now',
     title: 'Что съесть сейчас?',
     subtitle: 'Подбор по остатку КБЖУ · рецепты и запасы',
-    icon: 'flash-outline',
+    icon: 'flash',
+    tint: colors.fat,
     href: '/plan/eat-now',
     primary: true,
   },
@@ -43,7 +45,8 @@ const PRIMARY: HubItem[] = [
     key: 'recipes',
     title: 'Рецепты',
     subtitle: 'Библиотека, импорт, повтор готовки',
-    icon: 'book-outline',
+    icon: 'book',
+    tint: colors.accent,
     href: '/recipes',
     primary: true,
   },
@@ -51,7 +54,8 @@ const PRIMARY: HubItem[] = [
     key: 'pantry',
     title: 'Запасы дома',
     subtitle: 'Что есть · для Eat Now и покупок',
-    icon: 'cube-outline',
+    icon: 'cube',
+    tint: colors.protein,
     href: '/plan/pantry',
     primary: true,
   },
@@ -61,40 +65,44 @@ const SECONDARY: HubItem[] = [
   {
     key: 'receipt',
     title: 'Импорт покупки',
-    subtitle: 'Текст заказа → preview → подтверждение → запасы',
-    icon: 'receipt-outline',
+    subtitle: 'Текст заказа → запасы',
+    icon: 'receipt',
+    tint: colors.carbs,
     href: '/plan/receipt',
   },
   {
     key: 'week',
     title: 'Меню на неделю',
     subtitle: 'Черновик порций · не дневник',
-    icon: 'calendar-outline',
+    icon: 'calendar',
+    tint: colors.accent,
     href: '/plan/week',
   },
   {
     key: 'shop',
     title: 'Покупки',
     subtitle: 'Недостающее из меню и запасов',
-    icon: 'cart-outline',
+    icon: 'cart',
+    tint: colors.fat,
     href: '/plan/shop',
   },
   {
     key: 'budget',
     title: 'Бюджет питания',
-    subtitle: 'План / факт / оценка · свои цены',
-    icon: 'wallet-outline',
+    subtitle: 'План / факт · свои цены',
+    icon: 'wallet',
+    tint: colors.protein,
     href: '/plan/budget',
   },
 ];
 
-/** N2: stores demoted off the main planning path. */
 const SETTINGS: HubItem[] = [
   {
     key: 'stores',
     title: 'Магазины',
-    subtitle: 'Справочник мест · не live-цены',
-    icon: 'storefront-outline',
+    subtitle: 'Справочник мест',
+    icon: 'storefront',
+    tint: colors.textMuted,
     href: '/plan/stores',
   },
 ];
@@ -110,8 +118,8 @@ function HubRow({ item }: { item: HubItem }) {
       testID={`plan-hub-${item.key}`}
     >
       <AppCard style={[styles.card, item.primary && styles.cardPrimary]}>
-        <View style={[styles.iconWrap, item.primary && styles.iconWrapPrimary]}>
-          <Ionicons name={item.icon} size={22} color={colors.ink} />
+        <View style={[styles.iconWrap, { backgroundColor: `${item.tint}22` }]}>
+          <Ionicons name={item.icon} size={22} color={item.tint} />
         </View>
         <View style={styles.cardText}>
           <AppText variant="subtitle" style={styles.cardTitle}>
@@ -130,21 +138,27 @@ function HubRow({ item }: { item: HubItem }) {
 export default function PlanHubScreen() {
   return (
     <FormScrollView contentContainerStyle={styles.content} testID="plan-hub">
-      <AppText variant="label" tone="secondary" accessibilityRole="header">
-        План питания · nf-fit
-      </AppText>
-      <AppText variant="body" tone="secondary" style={styles.lead}>
-        Сейчас — что съесть. Рецепты и запасы рядом. Меню и покупки — когда планируешь неделю.
-        План не пишет в дневник сам — только по явной команде.
-      </AppText>
+      <View style={styles.hero}>
+        <AppText variant="title" style={styles.heroTitle}>
+          План питания
+        </AppText>
+        <AppText variant="body" tone="secondary" style={styles.lead}>
+          Сначала — что съесть сейчас. Меню и покупки — когда планируешь неделю.
+        </AppText>
+      </View>
 
       <AppCard style={styles.notice} accessibilityLabel="План не равен дневнику" testID="plan-neq-diary">
-        <AppText variant="label" tone="accent">
-          Запланированное ≠ съеденное
-        </AppText>
-        <AppText variant="caption" tone="secondary">
-          План и меню не пишут в дневник сами. В дневник — только явная порция («В дневник»).
-        </AppText>
+        <View style={styles.noticeRow}>
+          <Ionicons name="information-circle" size={20} color={colors.accent} />
+          <View style={styles.noticeText}>
+            <AppText variant="label" tone="accent">
+              Запланированное ≠ съеденное
+            </AppText>
+            <AppText variant="caption" tone="secondary">
+              В дневник — только явная порция («В дневник»).
+            </AppText>
+          </View>
+        </View>
       </AppCard>
 
       <AppText variant="label" tone="muted" style={styles.section}>
@@ -184,13 +198,20 @@ const styles = StyleSheet.create({
     gap: space.md,
     backgroundColor: colors.canvas,
   },
+  hero: {
+    gap: space.sm,
+    paddingVertical: space.sm,
+  },
+  heroTitle: { fontWeight: '800' },
   lead: {
-    marginBottom: space.xs,
     lineHeight: 22,
   },
   notice: {
-    gap: space.xs,
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
   },
+  noticeRow: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
+  noticeText: { flex: 1, gap: 4, minWidth: 0 },
   section: {
     marginTop: space.sm,
   },
@@ -204,20 +225,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
   },
   cardPrimary: {
-    borderColor: colors.ink,
+    borderColor: colors.accent,
+    borderWidth: 1.5,
   },
   pressed: { opacity: 0.88 },
   iconWrap: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapPrimary: {
-    backgroundColor: colors.accentSoft,
-  },
-  cardText: { flex: 1, gap: 2 },
+  cardText: { flex: 1, gap: 2, minWidth: 0 },
   cardTitle: { fontWeight: '700' },
 });

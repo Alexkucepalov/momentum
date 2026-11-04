@@ -137,12 +137,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   chipOn: {
-    backgroundColor: colors.primaryButton,
+    backgroundColor: colors.accent,
   },
   chipToday: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
   pressed: { opacity: 0.85 },
   wd: {

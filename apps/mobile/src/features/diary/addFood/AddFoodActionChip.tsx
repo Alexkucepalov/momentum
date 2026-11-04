@@ -22,7 +22,7 @@ export function AddFoodActionChip({
       accessibilityState={{ selected: !!active }}
       accessibilityLabel={label}
     >
-      <Ionicons name={icon} size={16} color={active ? colors.primaryButtonText : colors.ink} />
+      <Ionicons name={icon} size={16} color={active ? colors.onAccent : colors.ink} />
       <AppText
         variant="caption"
         tone={active ? 'inverse' : 'ink'}
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   chipOn: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   label: { fontSize: type.micro, fontWeight: '700' },
 });

@@ -80,9 +80,6 @@ export default function RecipesIndexScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.top}>
-        <AppText variant="caption" tone="muted" style={styles.canonHint}>
-          Канон рецептов — этот список. Из дневника «Добавить еду → Рецепты» — быстрый лог порции.
-        </AppText>
         <View style={styles.hubCard}>
           <RecipeHubActions />
         </View>
@@ -252,7 +249,6 @@ function RecipeCard({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   top: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.md },
-  canonHint: { marginBottom: -space.xs },
   hubCard: {
     marginBottom: 0,
   },

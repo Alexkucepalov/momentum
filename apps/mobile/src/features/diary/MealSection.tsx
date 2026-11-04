@@ -10,13 +10,20 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { nutritionConsistencyHint } from '../../../../../src/domain/nutritionConsistency';
 import type { FoodEntry, MealSlot } from '../../../../../src/storage/types';
-import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
+import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 const MEAL_LABELS: Record<MealSlot, string> = {
   breakfast: 'Завтрак',
   lunch: 'Обед',
   dinner: 'Ужин',
   snack: 'Перекус',
+};
+
+const MEAL_ACCENT: Record<MealSlot, string> = {
+  breakfast: colors.mealBreakfast,
+  lunch: colors.mealLunch,
+  dinner: colors.mealDinner,
+  snack: colors.mealSnack,
 };
 
 const REVEAL_X = -132;
@@ -51,6 +58,7 @@ export function MealSection({
   onRepeatMeal?: () => void;
   onSaveMeal?: () => void;
 }) {
+  const accent = MEAL_ACCENT[meal];
   const sectionKcal = entries.some((e) => e.energyKcal === null)
     ? null
     : entries.reduce((sum, e) => sum + (e.energyKcal as number), 0);
@@ -65,33 +73,37 @@ export function MealSection({
   if (empty) {
     return (
       <Pressable
-        style={({ pressed }) => [styles.compactEmpty, pressed && styles.pressed]}
+        style={({ pressed }) => [pressed && styles.pressed]}
         onPress={onAdd}
         accessibilityRole="button"
         accessibilityLabel={`${MEAL_LABELS[meal]} — пока пусто. Добавить`}
+        testID={`meal-section-${meal}`}
       >
-        <View style={styles.compactText}>
-          <AppText variant="body" style={styles.compactLabel}>
-            {MEAL_LABELS[meal]}
-          </AppText>
-          <AppText variant="caption" tone="muted">
-            нажми, чтобы добавить
-          </AppText>
-        </View>
-        <View style={styles.compactPlus}>
-          <Ionicons name="add" size={22} color={colors.primaryButtonText} />
-        </View>
+        <AppCard style={[styles.card, styles.emptyCard, { borderLeftColor: accent }]}>
+          <View style={styles.compactText}>
+            <AppText variant="body" style={styles.compactLabel}>
+              {MEAL_LABELS[meal]}
+            </AppText>
+            <AppText variant="caption" tone="muted">
+              нажми, чтобы добавить
+            </AppText>
+          </View>
+          <View style={[styles.compactPlus, { backgroundColor: accent }]}>
+            <Ionicons name="add" size={22} color={colors.onAccent} />
+          </View>
+        </AppCard>
       </Pressable>
     );
   }
 
   return (
-    <View
-      style={styles.section}
+    <AppCard
+      style={[styles.card, { borderLeftColor: accent }]}
       accessibilityLabel={MEAL_LABELS[meal]}
       testID={`meal-section-${meal}`}
     >
       <View style={styles.head}>
+        <View style={[styles.dot, { backgroundColor: accent }]} />
         <View style={styles.headText}>
           <AppText variant="subtitle">{MEAL_LABELS[meal]}</AppText>
           <AppText variant="caption" tone="muted">
@@ -104,7 +116,7 @@ export function MealSection({
             onPress={onSaveMeal}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={`Сохранить ${MEAL_LABELS[meal]} как шаблон`}
+            accessibilityLabel={`Сохранить ${MEAL_LABELS[meal]} как шаблон приёма`}
           >
             <Ionicons name="bookmark-outline" size={18} color={colors.ink} />
           </Pressable>
@@ -122,11 +134,11 @@ export function MealSection({
         {onAdd ? (
           <Pressable
             onPress={onAdd}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.iconBtn, styles.iconBtnAccent, pressed && styles.pressed]}
             accessibilityRole="button"
             accessibilityLabel={`Добавить в ${MEAL_LABELS[meal]}`}
           >
-            <Ionicons name="add" size={22} color={colors.ink} />
+            <Ionicons name="add" size={22} color={accent} />
           </Pressable>
         ) : null}
       </View>
@@ -135,22 +147,25 @@ export function MealSection({
         <SwipeEntryRow
           key={entry.id}
           entry={entry}
+          accent={accent}
           onDelete={() => onDelete(entry)}
           onEdit={() => onEditGrams(entry)}
           onCopy={onCopyEntry ? () => onCopyEntry(entry) : undefined}
         />
       ))}
-    </View>
+    </AppCard>
   );
 }
 
 function SwipeEntryRow({
   entry,
+  accent,
   onDelete,
   onEdit,
   onCopy,
 }: {
   entry: FoodEntry;
+  accent: string;
   onDelete: () => void;
   onEdit: () => void;
   onCopy?: () => void;
@@ -262,8 +277,7 @@ function SwipeEntryRow({
             onEdit();
           }}
           accessibilityRole="button"
-          accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы. Свайп влево — копировать или удалить`}
-          accessibilityHint="Свайп влево: копировать или удалить"
+          accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы`}
         >
           <AppText variant="body" style={styles.name} numberOfLines={1}>
             {entry.displayName}
@@ -275,7 +289,7 @@ function SwipeEntryRow({
             {diverge ? ' · ккал≠БЖУ' : ''}
           </AppText>
         </Pressable>
-        <AppText variant="caption" style={styles.kcal}>
+        <AppText variant="caption" style={[styles.kcal, { color: accent }]}>
           {fmtKcal(entry.energyKcal)}
         </AppText>
       </Animated.View>
@@ -284,55 +298,62 @@ function SwipeEntryRow({
 }
 
 const styles = StyleSheet.create({
-  compactEmpty: {
+  card: {
+    marginBottom: space.md,
+    overflow: 'hidden',
+    padding: space.md,
+    borderLeftWidth: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  emptyCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
+    minHeight: 64,
     borderStyle: 'dashed',
-    borderColor: colors.border,
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
-    marginBottom: space.sm,
-    minHeight: 56,
   },
-  compactText: { flex: 1, gap: 2 },
+  compactText: { flex: 1, gap: 2, minWidth: 0 },
   compactLabel: {
     fontWeight: '700',
   },
   compactPlus: {
     width: 40,
     height: 40,
+    flexShrink: 0,
     borderRadius: radius.pill,
-    backgroundColor: colors.primaryButton,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  section: {
-    marginBottom: space.md,
-    paddingBottom: space.xs,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
   },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: space.xs,
-    gap: space.xs,
+    gap: space.sm,
   },
-  headText: { flex: 1, gap: 2 },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  headText: { flex: 1, gap: 2, minWidth: 0 },
   iconBtn: {
     width: 40,
     height: 40,
+    flexShrink: 0,
     borderRadius: radius.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.canvas,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconBtnAccent: {
+    backgroundColor: colors.accentSoft,
+  },
   swipeWrap: {
-    marginTop: 2,
+    marginTop: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
     overflow: 'hidden',
     borderRadius: radius.sm,
   },
@@ -352,7 +373,7 @@ const styles = StyleSheet.create({
     minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.accentSoft,
   },
   deleteAction: {
     minWidth: 72,
@@ -364,15 +385,17 @@ const styles = StyleSheet.create({
   rowFront: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.canvas,
+    backgroundColor: colors.surface,
     minHeight: 48,
-    paddingVertical: space.xs,
+    paddingTop: space.sm,
+    paddingBottom: space.xs,
     gap: space.xs,
   },
   main: {
     flex: 1,
+    minWidth: 0,
     paddingRight: space.sm,
-    paddingVertical: 2,
+    paddingVertical: space.xs,
   },
   name: {
     fontWeight: '600',
@@ -381,6 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginRight: space.xs,
     minWidth: 64,
+    flexShrink: 0,
     textAlign: 'right',
   },
   pressed: { opacity: 0.75 },

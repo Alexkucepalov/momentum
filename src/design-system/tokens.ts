@@ -13,9 +13,13 @@ export const colors = {
   text: '#0A0A0A',
   textSecondary: '#5C6370',
   textMuted: '#8B929E',
-  /** Selected / active chrome — mono ink (no coral product chrome). */
-  accent: '#0A0A0A',
-  accentSoft: '#EBEDF0',
+  /**
+   * Soft teal accent — selected chrome / streaks / hub icons.
+   * Primary CTA stays ink (`primary`) for contrast. No purple/coral chrome.
+   */
+  accent: '#0D9488',
+  accentSoft: '#CCFBF1',
+  onAccent: '#FFFFFF',
   /** @deprecated Prefer `primary` — kept for gradual migration. */
   primaryButton: '#0A0A0A',
   /** @deprecated Prefer `onPrimary`. */
@@ -29,15 +33,20 @@ export const colors = {
   protein: '#16A34A',
   fat: '#D97706',
   carbs: '#2563EB',
+  /** Meal section accent bars (readable cards, not B&W). */
+  mealBreakfast: '#F59E0B',
+  mealLunch: '#0D9488',
+  mealDinner: '#2563EB',
+  mealSnack: '#16A34A',
   ringTrack: '#E8EAED',
-  ringFill: '#0A0A0A',
+  ringFill: '#0D9488',
   success: '#15803D',
   successSoft: '#DCF5E4',
   textOnInverse: '#FFFFFF',
   shadow: '#0A0A0A',
   warning: '#D97706',
   chartTrack: '#E8EAED',
-  chartFill: '#0A0A0A',
+  chartFill: '#0D9488',
   overlay: 'rgba(10,10,10,0.4)',
 } as const;
 

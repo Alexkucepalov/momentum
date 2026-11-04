@@ -35,15 +35,18 @@ const CATALOG_TABS: AddFoodTab[] = ['recent', 'favorites', 'recipes'];
 export function AddFoodSheet({
   visible,
   onClose,
+  initialTab = 'recent',
 }: {
   visible: boolean;
   onClose: () => void;
+  /** Open on a specific catalog tab (e.g. saved meals). */
+  initialTab?: AddFoodTab;
 }) {
   const router = useRouter();
   const { repo, dateLocal, meal, setMeal, refresh, revision, showFlash, setUndo } = useData();
   void revision;
   const allowAdd = useAddGuard();
-  const [tab, setTab] = useState<AddFoodTab>('recent');
+  const [tab, setTab] = useState<AddFoodTab>(initialTab);
   const [mealPickerOpen, setMealPickerOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -75,19 +78,21 @@ export function AddFoodSheet({
 
   // Fresh sheet each open — avoid stale search/mode from last session.
   useEffect(() => {
-    if (!visible) {
-      setQuery('');
-      setTab('recent');
-      setMealPickerOpen(false);
-      setError(null);
-      setName('');
-      setKcal('');
-      setProtein('');
-      setFat('');
-      setCarbs('');
-      setGrams('100');
+    if (visible) {
+      setTab(initialTab);
+      return;
     }
-  }, [visible]);
+    setQuery('');
+    setTab('recent');
+    setMealPickerOpen(false);
+    setError(null);
+    setName('');
+    setKcal('');
+    setProtein('');
+    setFat('');
+    setCarbs('');
+    setGrams('100');
+  }, [visible, initialTab]);
 
   const searching = query.trim().length > 0;
   const searchHits = useMemo(

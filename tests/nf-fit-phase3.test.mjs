@@ -160,7 +160,9 @@ test('Phase 3 UI uses nf-fit design system; no shame copy', () => {
   // Stage 4.1 fold: KcalRing + StatCards (water/activity); TodayStatusSummary kept as module.
   assert.ok(today.includes('KcalRing'));
   assert.ok(today.includes('StatCards'));
-  assert.ok(today.includes('slice(0, 3)'), 'favorites capped at 3 on Today');
+  assert.ok(today.includes('FoodLogStreakCard'), 'gentle food-log streak on Today');
+  assert.ok(!today.includes('TodayRecentStrip'), 'recent strip moved to Food');
+  assert.ok(!today.includes('listFavorites'), 'favorites live on Food, not Today');
   assert.ok(today.includes('@/src/design-system'));
   assert.ok(today.includes('AppButton'));
   assert.ok(today.includes('План питания'), 'Plan entry in header');

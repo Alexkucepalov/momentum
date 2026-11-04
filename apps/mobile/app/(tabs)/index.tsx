@@ -7,9 +7,10 @@ import {
   buildHabitWeekMarks,
   formatHabitWeekLabel,
 } from '../../../../src/domain/habitWeek';
-import { localDateKey } from '../../../../src/storage/validation';
+import { foodLogStreak } from '../../../../src/domain/foodLogStreak';
 import { portion } from '../../../../src/domain/nutrition';
-import type { FoodEntry, FoodProduct } from '../../../../src/storage/types';
+import type { FoodProduct } from '../../../../src/storage/types';
+import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DayStrip } from '@/src/components/DayStrip';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
@@ -17,7 +18,6 @@ import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { KcalRing } from '@/src/components/KcalRing';
 import { ScreenFooter } from '@/src/components/ScreenFooter';
-import { SectionHeader } from '@/src/components/SectionHeader';
 import { StatCards } from '@/src/components/StatCards';
 import { TodayChecklist } from '@/src/components/TodayChecklist';
 import { UndoBar } from '@/src/components/UndoBar';
@@ -28,12 +28,11 @@ import {
   ConfirmPortionSheet,
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
-import { TodayRecentStrip } from '@/src/features/today/TodayRecentStrip';
+import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
   AppButton,
-  AppCard,
   AppText,
   colors,
   radius,
@@ -46,13 +45,6 @@ const MEAL_LABELS = {
   lunch: 'Обед',
   dinner: 'Ужин',
   snack: 'Перекус',
-} as const;
-
-const MEAL_RU = {
-  breakfast: 'завтрак',
-  lunch: 'обед',
-  dinner: 'ужин',
-  snack: 'перекус',
 } as const;
 
 /** Compact date line under tab title «Сегодня» — no second hero headline. */
@@ -72,8 +64,8 @@ function formatDateLine(iso: string, today: string): string {
 }
 
 /**
- * Today fold (Stage 4.1 / D1–D9):
- * date + DayStrip + KcalRing + compact water/activity · one primary Add · Plan in header.
+ * Today fold: day status + streak + copy yesterday + habits.
+ * Fast recent/favorites live on Food tab (not here).
  */
 export default function TodayScreen() {
   const navigation = useNavigation();
@@ -90,8 +82,6 @@ export default function TodayScreen() {
   } | null>(null);
 
   const totals = repo.dailyTotals(dateLocal);
-  const recent = repo.listRecentEntries(6);
-  const favorites = repo.listFavorites().slice(0, 3);
   const waterMl = repo.waterMlForDate(dateLocal);
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
@@ -100,6 +90,14 @@ export default function TodayScreen() {
   const daySteps = repo.getDailyActivityStats(dateLocal)?.steps ?? null;
   const sleepSec = repo.getSleepForDate(dateLocal)?.sleepSec ?? null;
   const dateLine = formatDateLine(dateLocal, today);
+  const streak = useMemo(
+    () =>
+      foodLogStreak({
+        endDateLocal: dateLocal,
+        hasLog: (d) => repo.dailyTotals(d).entryCount > 0,
+      }),
+    [repo, dateLocal, revision],
+  );
 
   const flexibleRows = useMemo(() => {
     return repo
@@ -136,69 +134,11 @@ export default function TodayScreen() {
           style={styles.headerBtn}
           hitSlop={8}
         >
-          <Ionicons name="compass-outline" size={22} color={colors.ink} />
+          <Ionicons name="compass-outline" size={22} color={colors.accent} />
         </Pressable>
       ),
     });
   }, [navigation, router]);
-
-  const openRecentConfirm = (e: FoodEntry) => {
-    if (e.productId) {
-      const product = repo.listProducts().find((p) => p.id === e.productId);
-      if (!product) return;
-      setPortionTarget({ target: { kind: 'product', product }, initialGrams: e.grams });
-      return;
-    }
-    if (e.recipeId) {
-      const recipe = repo.getRecipe(e.recipeId);
-      if (!recipe) return;
-      setPortionTarget({
-        target: {
-          kind: 'recipe',
-          recipe,
-          ingredients: repo.getRecipeIngredients(recipe.id),
-        },
-        initialGrams: e.grams,
-      });
-    }
-  };
-
-  const quickAddRecent = (e: FoodEntry) => {
-    if (!allowAdd()) return;
-    let created: FoodEntry | null = null;
-    if (e.productId) {
-      created = repo.addEntryFromProduct({
-        productId: e.productId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    } else if (e.recipeId) {
-      created = repo.addEntryFromRecipe({
-        recipeId: e.recipeId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-    }
-    if (!created) return;
-    refresh();
-    showFlash(`Добавлено: ${e.displayName}`);
-    setUndo({ entryIds: [created.id], message: `Добавлено: ${e.displayName}` });
-  };
-
-  const quickAddFavorite = (p: FoodProduct, grams: number) => {
-    if (!allowAdd()) return;
-    const created = repo.addEntryFromProduct({
-      productId: p.id,
-      dateLocal,
-      meal,
-      grams,
-    });
-    refresh();
-    showFlash(`Добавлено: ${p.name}`);
-    setUndo({ entryIds: [created.id], message: `Добавлено: ${p.name}` });
-  };
 
   return (
     <View style={styles.root} testID="today-screen">
@@ -245,68 +185,9 @@ export default function TodayScreen() {
             onSetTarget={() => router.push('/profile')}
           />
 
+          <FoodLogStreakCard streak={streak} />
+
           <CopyYesterdayButton testID="today-copy-yesterday" />
-
-          <TodayRecentStrip
-            recent={recent}
-            onConfirm={openRecentConfirm}
-            onQuickAdd={quickAddRecent}
-          />
-
-          {favorites.length > 0 ? (
-            <View style={styles.favBlock}>
-              <SectionHeader title="Избранное" />
-              <AppText variant="caption" tone="muted" style={styles.favHint}>
-                «+» — сразу · строка — подтвердить порцию
-              </AppText>
-              {favorites.map((p) => {
-                const lastG = repo.lastGramsForProduct(p.id) ?? 100;
-                return (
-                  <Pressable
-                    key={p.id}
-                    style={({ pressed }) => [pressed && styles.pressed]}
-                    onPress={() => {
-                      setPortionTarget({
-                        target: { kind: 'product', product: p },
-                        initialGrams: lastG,
-                      });
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Добавить ${p.name}, выбрать порцию`}
-                  >
-                    <AppCard style={styles.quick}>
-                      <View style={styles.iconBubble}>
-                        <Ionicons name="star" size={16} color={colors.fat} />
-                      </View>
-                      <View style={styles.quickBody}>
-                        <AppText variant="body" style={styles.quickTitle}>
-                          {p.name}
-                        </AppText>
-                        <AppText variant="caption" tone="secondary">
-                          обычно {lastG} г → {MEAL_RU[meal]}
-                          {p.energyKcal === null
-                            ? ''
-                            : ` · ~${Math.round((p.energyKcal * lastG) / 100)} ккал`}
-                        </AppText>
-                      </View>
-                      <Pressable
-                        onPress={(ev) => {
-                          ev.stopPropagation?.();
-                          quickAddFavorite(p, lastG);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Быстро добавить ${p.name}, ${lastG} грамм`}
-                        hitSlop={6}
-                        style={styles.favPlus}
-                      >
-                        <AppText variant="title">+</AppText>
-                      </Pressable>
-                    </AppCard>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
 
           <StatCards
             waterMl={waterMl}
@@ -441,34 +322,7 @@ const styles = StyleSheet.create({
   todayJumpHit: { minHeight: touchMin, justifyContent: 'center' },
   todayJump: {
     fontWeight: '700',
-    color: colors.ink,
-  },
-  favBlock: { gap: space.xs },
-  favHint: { marginBottom: space.xs },
-  quick: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: space.md,
-    marginBottom: space.xs,
-    minHeight: touchMin,
-    gap: space.sm,
-  },
-  pressed: { opacity: 0.88 },
-  iconBubble: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickBody: { flex: 1 },
-  quickTitle: { fontWeight: '600' },
-  favPlus: {
-    minWidth: 40,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    color: colors.accent,
   },
   footerScan: {
     width: touchMin,
@@ -481,4 +335,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footerBtn: { flex: 1 },
+  pressed: { opacity: 0.88 },
 });

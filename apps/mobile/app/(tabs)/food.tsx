@@ -10,7 +10,6 @@ import { localDateKey } from '../../../../src/storage/validation';
 import { CopyYesterdayButton } from '@/src/components/CopyYesterdayButton';
 import { DayStrip } from '@/src/components/DayStrip';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
-import { EmptyState } from '@/src/components/EmptyState';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { KcalRing } from '@/src/components/KcalRing';
@@ -26,6 +25,8 @@ import {
   type PortionTarget,
 } from '@/src/features/diary/ConfirmPortionSheet';
 import { FoodCatalogList, type CatalogFilter } from '@/src/features/diary/FoodCatalogList';
+import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
+import { FoodQuickStrips } from '@/src/features/diary/FoodQuickStrips';
 import {
   FoodSegmentTabs,
   type FoodSegment,
@@ -34,8 +35,12 @@ import { MealSection } from '@/src/features/diary/MealSection';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { useData } from '@/src/state/DataContext';
 import {
+  foodLogStreak,
+} from '../../../../src/domain/foodLogStreak';
+import type { SavedMeal } from '../../../../src/storage/types';
+import type { AddFoodTab } from '@/src/features/diary/addFood/types';
+import {
   AppButton,
-  AppText,
   colors,
   radius,
   space,
@@ -74,6 +79,7 @@ export default function FoodScreen() {
   const [saveMealSlot, setSaveMealSlot] = useState<MealSlot | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
+  const [addInitialTab, setAddInitialTab] = useState<AddFoodTab>('recent');
 
   const profile = repo.getProfile();
   const today = localDateKey(new Date(), profile.timezone);
@@ -81,8 +87,18 @@ export default function FoodScreen() {
   const totals = repo.dailyTotals(dateLocal);
   const products = repo.listProducts();
   const recipes = repo.listRecipes();
-  const recent = repo.listRecentEntries(16);
+  const recent = repo.listRecentEntries(8);
+  const favorites = repo.listFavorites().slice(0, 8);
+  const savedMeals = repo.listSavedMeals();
   const frequent = repo.listFrequentProducts(24);
+  const streak = useMemo(
+    () =>
+      foodLogStreak({
+        endDateLocal: dateLocal,
+        hasLog: (d) => repo.dailyTotals(d).entryCount > 0,
+      }),
+    [repo, dateLocal, revision],
+  );
   const recipeIngredientCounts = useMemo(() => {
     const map: Record<string, number> = {};
     for (const r of recipes) {
@@ -107,8 +123,6 @@ export default function FoodScreen() {
     for (const e of entries) map[e.meal].push(e);
     return map;
   }, [entries]);
-
-  const diaryEmpty = entries.length === 0;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -148,9 +162,28 @@ export default function FoodScreen() {
     refresh();
   };
 
-  const openForMeal = (slot: MealSlot) => {
+  const openForMeal = (slot: MealSlot, tab: AddFoodTab = 'recent') => {
     setMeal(slot);
+    setAddInitialTab(tab);
     setOpen(true);
+  };
+
+  const logSavedMeal = (m: SavedMeal) => {
+    if (!allowAdd()) return;
+    try {
+      const slot = m.defaultMeal ?? meal;
+      const created = repo.logSavedMeal({
+        savedMealId: m.id,
+        dateLocal,
+        meal: slot,
+      });
+      const label = `Приём «${m.name}»: +${created.length}`;
+      refresh();
+      showFlash(label);
+      setUndo({ entryIds: created.map((e) => e.id), message: label });
+    } catch (e) {
+      showFlash(e instanceof Error ? e.message : 'Не удалось добавить');
+    }
   };
 
   const repeatEntry = (e: FoodEntry) => {
@@ -255,11 +288,6 @@ export default function FoodScreen() {
         onOpenCalendar={() => setCalendarOpen(true)}
       />
       <FoodSegmentTabs value={segment} onChange={selectSegment} />
-      <AppText variant="caption" tone="muted" style={styles.segmentCaption}>
-        {segment === 'diary'
-          ? 'Дневник — факт за день. План (иконка компаса) — черновик, не дневник.'
-          : 'Каталог — база продуктов и рецептов. Запись в дневник — после выбора порции.'}
-      </AppText>
     </>
   );
 
@@ -279,34 +307,76 @@ export default function FoodScreen() {
               onSetTarget={() => router.push('/profile')}
             />
 
+            <FoodLogStreakCard streak={streak} />
+
             <CopyYesterdayButton />
 
-            {diaryEmpty ? (
-              <EmptyState
-                compact
-                icon="restaurant-outline"
-                title="Дневник пуст"
-                body="Повтори вчерашний приём или добавь первую запись."
-                actionLabel="Добавить еду"
-                onAction={() => setOpen(true)}
-                secondaryActionLabel="Открыть каталог"
-                onSecondaryAction={() => selectSegment('catalog')}
+            <FoodQuickStrips
+              savedMeals={savedMeals}
+              recent={recent}
+              favorites={favorites}
+              lastGramsFor={(id) => repo.lastGramsForProduct(id) ?? 100}
+              onLogSaved={logSavedMeal}
+              onRecentConfirm={(e) => {
+                if (e.productId) {
+                  const p = products.find((x) => x.id === e.productId);
+                  if (p) {
+                    setPortionTarget({
+                      target: { kind: 'product', product: p },
+                      initialGrams: e.grams,
+                    });
+                  }
+                  return;
+                }
+                if (e.recipeId) {
+                  const r = recipes.find((x) => x.id === e.recipeId);
+                  if (r) {
+                    setPortionTarget({
+                      target: {
+                        kind: 'recipe',
+                        recipe: r,
+                        ingredients: repo.getRecipeIngredients(r.id),
+                      },
+                      initialGrams: e.grams,
+                    });
+                  }
+                }
+              }}
+              onRecentQuick={repeatEntry}
+              onFavoriteConfirm={(p, grams) => {
+                setPortionTarget({
+                  target: { kind: 'product', product: p },
+                  initialGrams: grams,
+                });
+              }}
+              onFavoriteQuick={(p, grams) => {
+                if (!allowAdd()) return;
+                const created = repo.addEntryFromProduct({
+                  productId: p.id,
+                  dateLocal,
+                  meal,
+                  grams,
+                });
+                refresh();
+                showFlash(`Добавлено: ${p.name}`);
+                setUndo({ entryIds: [created.id], message: `Добавлено: ${p.name}` });
+              }}
+              onOpenSavedInSheet={() => openForMeal(meal, 'meals')}
+            />
+
+            {MEALS.map((slot) => (
+              <MealSection
+                key={slot}
+                meal={slot}
+                entries={mealEntries[slot]}
+                onDelete={onDelete}
+                onEditGrams={setEditing}
+                onCopyEntry={copyEntryToDay}
+                onAdd={() => openForMeal(slot)}
+                onRepeatMeal={() => repeatMealSlot(slot)}
+                onSaveMeal={() => setSaveMealSlot(slot)}
               />
-            ) : (
-              MEALS.map((slot) => (
-                <MealSection
-                  key={slot}
-                  meal={slot}
-                  entries={mealEntries[slot]}
-                  onDelete={onDelete}
-                  onEditGrams={setEditing}
-                  onCopyEntry={copyEntryToDay}
-                  onAdd={() => openForMeal(slot)}
-                  onRepeatMeal={() => repeatMealSlot(slot)}
-                  onSaveMeal={() => setSaveMealSlot(slot)}
-                />
-              ))
-            )}
+            ))}
           </FormScrollView>
         ) : (
           <View style={styles.catalogRoot}>
@@ -376,7 +446,11 @@ export default function FoodScreen() {
         </Pressable>
       </ScreenFooter>
 
-      <AddFoodSheet visible={open} onClose={() => setOpen(false)} />
+      <AddFoodSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        initialTab={addInitialTab}
+      />
       <BarcodeLookupSheet visible={barcodeOpen} onClose={() => setBarcodeOpen(false)} />
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <SaveMealModal
@@ -468,7 +542,6 @@ export default function FoodScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140, gap: space.sm },
-  segmentCaption: { marginTop: -space.sm, marginBottom: space.xs },
   catalogRoot: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.lg },
   catalogChrome: { gap: space.sm, marginBottom: space.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
