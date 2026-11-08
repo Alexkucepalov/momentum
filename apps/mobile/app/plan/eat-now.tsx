@@ -278,24 +278,12 @@ export default function EatNowScreen() {
           })}
         </View>
 
-        {noTargets ? (
-          <EmptyState
-            compact
-            icon="flag-outline"
-            title="Нет дневных целей"
-            body="Задайте КБЖУ в профиле — тогда подбор сможет опираться на остаток. Пока можно листать варианты с известными макросами."
-            actionLabel="В профиль"
-            onAction={() => router.push('/(tabs)/profile')}
-          />
-        ) : null}
-
-        {!hasAnyKnownRemaining(remaining) && !noTargets ? (
-          <EmptyState
-            compact
-            icon="calculator-outline"
-            title="Остаток пока не считается"
-            body="Нужны и цели, и записи за день с известными КБЖУ. Варианты ниже всё равно можно открыть."
-          />
+        {noTargets || !hasAnyKnownRemaining(remaining) ? (
+          <Text style={styles.softHint}>
+            {noTargets
+              ? 'Цели КБЖУ не заданы — подбор без остатка. Можно выбрать блюдо ниже.'
+              : 'Остаток дня пока неполный — варианты ниже всё равно можно открыть.'}
+          </Text>
         ) : null}
 
         {candidates.length === 0 ? (
@@ -470,6 +458,12 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     fontWeight: '700',
     color: colors.textSecondary,
+    marginTop: space.sm,
+  },
+  softHint: {
+    fontSize: type.caption,
+    color: colors.textSecondary,
+    lineHeight: 18,
     marginTop: space.sm,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
