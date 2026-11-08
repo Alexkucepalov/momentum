@@ -137,9 +137,13 @@ export default function BudgetScreen() {
           Прогноз до конца месяца:{' '}
           {snap.forecastRub != null
             ? `~${Math.round(snap.forecastRub)} ₽`
-            : 'мало данных'}
+            : 'Недостаточно данных'}
           {' · '}день {snap.daysElapsed} из {snap.daysInMonth}
-          {snap.forecastRub == null && snap.daysElapsed < 7 ? ' · нужно ≥7 дней с расходами' : ''}
+          {snap.forecastRub == null
+            ? snap.daysElapsed < 7
+              ? ' · нужно ≥7 дней и хотя бы один расход'
+              : ' · добавь расход, чтобы считать прогноз'
+            : ''}
         </AppText>
       </AppCard>
 

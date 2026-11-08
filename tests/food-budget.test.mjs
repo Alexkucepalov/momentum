@@ -31,6 +31,22 @@ test('forecast needs enough elapsed days', () => {
   assert.equal(forecastMonthSpend({ spentRub: null, daysElapsed: 10, daysInMonth: 30 }), null);
 });
 
+test('forecast is null without expenses — not ≈0 ₽', () => {
+  assert.equal(
+    forecastMonthSpend({ spentRub: 0, daysElapsed: 10, daysInMonth: 30, expenseCount: 0 }),
+    null,
+  );
+  assert.equal(forecastMonthSpend({ spentRub: 0, daysElapsed: 10, daysInMonth: 30 }), null);
+  const empty = buildMonthBudgetSnapshot({
+    month: '2026-11',
+    limitRub: 30000,
+    expenseAmounts: [],
+    asOfDateLocal: '2026-11-20',
+  });
+  assert.equal(empty.spentRub, 0);
+  assert.equal(empty.forecastRub, null);
+});
+
 test('budget snapshot + repo expenses', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
   assert.equal(repo.toSnapshot().version, 18);
