@@ -105,6 +105,14 @@ export default function WeekPlanScreen() {
 
   const kcalForMeal = (m: PlannedMeal) => nutritionForPlannedMeal(m, lookup).energyKcal;
 
+  const [selectedDay, setSelectedDay] = useState(dateLocal);
+  useEffect(() => {
+    if (weekDates.includes(dateLocal)) setSelectedDay(dateLocal);
+  }, [dateLocal, weekDates]);
+  const selectedDaySafe = weekDates.includes(selectedDay)
+    ? selectedDay
+    : (weekDates[0] ?? dateLocal);
+
   const [addTarget, setAddTarget] = useState<{ dateLocal: string; slot: MealSlot } | null>(null);
   const [moveMeal, setMoveMeal] = useState<PlannedMeal | null>(null);
   const [editMeal, setEditMeal] = useState<PlannedMeal | null>(null);
@@ -171,16 +179,19 @@ export default function WeekPlanScreen() {
 
         <WeekBoard
           days={boardDays}
+          selectedDateLocal={selectedDaySafe}
+          onSelectDate={setSelectedDay}
           hasEnergyTarget={profile.dailyEnergyKcal != null}
           kcalForMeal={kcalForMeal}
           onAdd={(dateLocalDay, slot) => setAddTarget({ dateLocal: dateLocalDay, slot })}
           onPressMeal={setEditMeal}
-          onLongPressMeal={setMoveMeal}
+          onMoveMeal={setMoveMeal}
           onDeleteMeal={onDelete}
         />
 
         <AppText variant="caption" tone="muted" style={styles.hint}>
-          Долгое нажатие на карточку — перенести на другой день или слот ({MEAL_SLOTS.length} слота).
+          Выбери день сверху. «Перенести» на карточке — другой день или слот ({MEAL_SLOTS.length}{' '}
+          слота).
         </AppText>
 
         <View style={styles.footer}>

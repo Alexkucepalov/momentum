@@ -8,30 +8,40 @@ export function PlannedMealCard({
   meal,
   kcal,
   onPress,
-  onLongPress,
+  onMove,
   onDelete,
 }: {
   meal: PlannedMeal;
   kcal: number | null;
   onPress: () => void;
-  onLongPress: () => void;
+  onMove: () => void;
   onDelete: () => void;
 }) {
   return (
     <View style={styles.card} testID={`planned-meal-${meal.id}`}>
       <Pressable
         onPress={onPress}
-        onLongPress={onLongPress}
-        delayLongPress={350}
         style={({ pressed }) => [styles.body, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel={`${meal.displayName}, ${Math.round(meal.grams)} грамм. Долгое нажатие — перенести`}
+        accessibilityLabel={`${meal.displayName}, ${Math.round(meal.grams)} грамм. Изменить порцию`}
       >
         <AppText variant="body" style={styles.name} numberOfLines={2}>
           {meal.displayName}
         </AppText>
         <AppText variant="caption" tone="muted">
           {Math.round(meal.grams)} г · {formatPlannedKcal(kcal)}
+        </AppText>
+      </Pressable>
+      <Pressable
+        onPress={onMove}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`Перенести ${meal.displayName}`}
+        style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+        testID={`planned-meal-move-${meal.id}`}
+      >
+        <AppText variant="caption" tone="secondary" style={styles.actionText}>
+          Перенести
         </AppText>
       </Pressable>
       <Pressable
@@ -64,6 +74,12 @@ const styles = StyleSheet.create({
   },
   body: { flex: 1, gap: 2, minWidth: 0, justifyContent: 'center' },
   name: { fontWeight: '600' },
+  action: {
+    minHeight: touchMin - 8,
+    justifyContent: 'center',
+    paddingHorizontal: space.xs,
+  },
+  actionText: { fontWeight: '700' },
   delete: {
     minWidth: 28,
     minHeight: 28,

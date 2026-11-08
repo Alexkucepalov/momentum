@@ -21,7 +21,7 @@ export function DayColumn({
   kcalForMeal,
   onAdd,
   onPressMeal,
-  onLongPressMeal,
+  onMoveMeal,
   onDeleteMeal,
 }: {
   dateLocal: string;
@@ -33,7 +33,7 @@ export function DayColumn({
   kcalForMeal: (m: PlannedMeal) => number | null;
   onAdd: (slot: MealSlot) => void;
   onPressMeal: (m: PlannedMeal) => void;
-  onLongPressMeal: (m: PlannedMeal) => void;
+  onMoveMeal: (m: PlannedMeal) => void;
   onDeleteMeal: (m: PlannedMeal) => void;
 }) {
   return (
@@ -85,7 +85,7 @@ export function DayColumn({
                 meal={m}
                 kcal={kcalForMeal(m)}
                 onPress={() => onPressMeal(m)}
-                onLongPress={() => onLongPressMeal(m)}
+                onMove={() => onMoveMeal(m)}
                 onDelete={() => onDeleteMeal(m)}
               />
             ))
@@ -98,7 +98,7 @@ export function DayColumn({
 
 const styles = StyleSheet.create({
   col: {
-    width: 272,
+    alignSelf: 'stretch',
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     borderWidth: StyleSheet.hairlineWidth,
