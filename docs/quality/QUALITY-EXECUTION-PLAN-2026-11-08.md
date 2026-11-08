@@ -25,7 +25,7 @@
 | № | Pri | Пакет | Критерий готовности | Статус |
 |---|-----|-------|---------------------|--------|
 | **0** | — | Базовые состояния + план + mobile Today reshoot | Документ плана; набор состояний для QA | **done** (план) |
-| **1** | P0/P1 | Данные: snapshot / wipe / sync | Force-stop держит записи; wipe чистит SecureStore + snapshot + widget; удалённое не возвращается; stale sync не пишет после wipe | **in PR** |
+| **1** | P0/P1 | Данные: snapshot / wipe / sync | Force-stop держит записи; wipe чистит SecureStore + snapshot + widget; удалённое не возвращается; stale sync не пишет после wipe | **done** (#190) |
 | **2** | P1 | Общие компоненты: tab labels, contrast, touch | 5 подписей читаются; muted ≥4.5:1; 48dp | next |
 | **3** | P1 | Today / Food / Каталог | FoodQuickStrips выше приёмов; компактные empty | next |
 | **4** | P1 | Добавление еды `04–07` | Разделить режимы; независимые ккал; MFP copy убрать | later |
@@ -34,7 +34,7 @@
 | **7** | P1 | Рецепты / импорт | Расчётный выход помечен; verify before save | later |
 | **8** | P1 | Бюджет / покупки | Нет «≈0 ₽» без данных; confirm import | next (с 10) |
 | **9** | P2 | Движение / сон | Прямой Garmin; минимум полей | later |
-| **10** | P1 | Progress | Нет ложного «ср. 0»; экспорт в Отчёты; покрытие | next |
+| **10** | P1 | Progress | Нет ложного «ср. 0»; экспорт в Отчёты; покрытие | **in PR** (avg only) |
 | **11** | P2 | Профиль / Garmin UX | Секции; явный save | later |
 | **12** | P2 | Виджеты native | Один стиль; stale/wipe | later |
 | **13** | Gate | Android dogfood Pass | APK SHA-256 + `DEVICE-DOGFOOD-15MIN` заполнен | after 1–4,8,10 |

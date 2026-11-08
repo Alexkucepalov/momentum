@@ -1,5 +1,6 @@
 import {
   averageKnownKcal,
+  loggedDaysForAverage,
   type WeekDayNutrition,
 } from '../../../../src/domain/weekNutrition';
 import { localDateKey } from '../../../../src/storage/validation';
@@ -25,14 +26,18 @@ export function WeekNutritionStrip({
   timeZone?: string;
 }) {
   const avg = averageKnownKcal(days);
+  const logged = loggedDaysForAverage(days);
   const start = days[0]?.dateLocal;
   const end = days[6]?.dateLocal;
   const today = timeZone ? localDateKey(new Date(), timeZone) : undefined;
   const range = start && end ? formatWeekRangeRu(start, end) : '';
 
+  const avgLabel =
+    avg == null ? 'ср. —' : `ср. ${fmt(avg)} ккал (${logged}/${days.length || 7})`;
+
   const subtitleParts = [
     range,
-    `ср. ${fmt(avg)} ккал`,
+    avgLabel,
     targetKcal != null ? `цель ${Math.round(targetKcal)}` : null,
   ].filter(Boolean);
 
