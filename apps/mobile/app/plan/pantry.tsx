@@ -395,34 +395,27 @@ export default function PantryScreen() {
         </View>
       )}
 
-      <Text style={styles.section}>Отметить приготовленным</Text>
-      {recipes.length === 0 ? (
-        <EmptyState
-          compact
-          icon="book-outline"
-          title="Нет рецептов"
-          body="Импортируй или создай рецепт — потом отмечай партии здесь."
-          actionLabel="К рецептам"
-          onAction={() => router.push('/recipes')}
-        />
-      ) : (
-        <View style={styles.list}>
-          {recipes.slice(0, 16).map((r) => (
-            <Pressable
-              key={r.id}
-              onPress={() => markCooked(r.id)}
-              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`Отметить приготовленным: ${r.name}`}
-            >
-              <Text style={styles.cardTitle}>{r.name}</Text>
-              <Text style={styles.cardSub}>
-                По умолчанию {Math.round(r.cookedYieldG)} г · создать партию
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      {recipes.length > 0 ? (
+        <>
+          <Text style={styles.section}>Отметить приготовленным</Text>
+          <View style={styles.list}>
+            {recipes.slice(0, 16).map((r) => (
+              <Pressable
+                key={r.id}
+                onPress={() => markCooked(r.id)}
+                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Отметить приготовленным: ${r.name}`}
+              >
+                <Text style={styles.cardTitle}>{r.name}</Text>
+                <Text style={styles.cardSub}>
+                  По умолчанию {Math.round(r.cookedYieldG)} г · создать партию
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
     </FormScrollView>
   );
 }

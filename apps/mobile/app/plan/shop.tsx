@@ -115,13 +115,26 @@ export default function ShopScreen() {
     }
   };
 
+  const hasLists = lists.length > 0;
+
   return (
     <FormScrollView contentContainerStyle={styles.content}>
       <Text style={styles.lead}>
         Корзина из меню или руками. Цену вводи сам — оценка с датой, не «цена сегодня».
       </Text>
 
-      <AppButton label="Новый пустой список" onPress={createEmpty} />
+      {!hasLists ? (
+        <EmptyState
+          compact
+          icon="cart-outline"
+          title="Первый список покупок"
+          body="Создай пустой список и добавь позиции вручную — или собери из рецепта после."
+          actionLabel="Создать список"
+          onAction={createEmpty}
+        />
+      ) : (
+        <AppButton label="Новый пустой список" onPress={createEmpty} />
+      )}
       <Pressable
         onPress={() => router.push('/plan/receipt')}
         style={styles.linkRow}
@@ -173,61 +186,47 @@ export default function ShopScreen() {
       </View>
       <AppButton label="В список" onPress={addManual} />
 
-      <Text style={styles.section}>Из рецепта</Text>
-      {recipes.length === 0 ? (
-        <EmptyState
-          compact
-          icon="book-outline"
-          title="Нет рецептов"
-          body="Добавь рецепт — список соберёт только то, чего нет в запасах."
-          actionLabel="К рецептам"
-          onAction={() => router.push('/recipes')}
-        />
-      ) : (
-        <View style={styles.list}>
-          {recipes.slice(0, 8).map((r) => (
-            <Pressable
-              key={r.id}
-              onPress={() => buildFromRecipe(r.id)}
-              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`Собрать покупки из рецепта ${r.name}`}
-            >
-              <Text style={styles.cardTitle}>{r.name}</Text>
-              <Text style={styles.cardSub}>Недостающее · с учётом запасов</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      {recipes.length > 0 ? (
+        <>
+          <Text style={styles.section}>Из рецепта</Text>
+          <View style={styles.list}>
+            {recipes.slice(0, 8).map((r) => (
+              <Pressable
+                key={r.id}
+                onPress={() => buildFromRecipe(r.id)}
+                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Собрать покупки из рецепта ${r.name}`}
+              >
+                <Text style={styles.cardTitle}>{r.name}</Text>
+                <Text style={styles.cardSub}>Недостающее · с учётом запасов</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
-      <Text style={styles.section}>Из меню</Text>
-      {plans.length === 0 ? (
-        <EmptyState
-          compact
-          icon="calendar-outline"
-          title="Нет плана"
-          body="Можно вести список вручную выше — или собрать из меню."
-          actionLabel="К меню"
-          onAction={() => router.push('/plan/week')}
-        />
-      ) : (
-        <View style={styles.list}>
-          {plans.slice(0, 5).map((p) => (
-            <Pressable
-              key={p.id}
-              onPress={() => buildFromPlan(p.id)}
-              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`Собрать покупки из плана ${p.startDate}`}
-            >
-              <Text style={styles.cardTitle}>
-                {p.startDate} → {p.endDate}
-              </Text>
-              <Text style={styles.cardSub}>Собрать список · {p.status}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      {plans.length > 0 ? (
+        <>
+          <Text style={styles.section}>Из меню</Text>
+          <View style={styles.list}>
+            {plans.slice(0, 5).map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => buildFromPlan(p.id)}
+                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Собрать покупки из плана ${p.startDate}`}
+              >
+                <Text style={styles.cardTitle}>
+                  {p.startDate} → {p.endDate}
+                </Text>
+                <Text style={styles.cardSub}>Собрать список · {p.status}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
