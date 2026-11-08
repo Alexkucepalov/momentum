@@ -1,6 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 
-import { nutritionForRecipePortion } from '../../../../../src/domain/recipeNutrition';
+import {
+  isEstimatedCookedYield,
+  nutritionForRecipePortion,
+  recipeHasManualPer100g,
+} from '../../../../../src/domain/recipeNutrition';
 import type { Recipe, RecipeIngredient } from '../../../../../src/storage/types';
 import { AppText, MetricCard, space } from '@/src/design-system';
 
@@ -28,19 +32,17 @@ export function RecipeNutritionSummary({
     preview = null;
   }
 
+  const estimatedYield = isEstimatedCookedYield(recipe.cookedYieldG, ingredients);
   const sourceMeta =
-    ingredients.length === 0 &&
-    recipe.energyKcalPer100g == null &&
-    recipe.proteinGPer100g == null &&
-    recipe.fatGPer100g == null &&
-    recipe.carbGPer100g == null
+    ingredients.length === 0 && !recipeHasManualPer100g(recipe)
       ? 'КБЖУ неизвестны — не выдуманы'
-      : recipe.energyKcalPer100g != null ||
-          recipe.proteinGPer100g != null ||
-          recipe.fatGPer100g != null ||
-          recipe.carbGPer100g != null
-        ? 'ручные значения на 100 г'
-        : `из ингредиентов · выход ${recipe.cookedYieldG} г`;
+      : recipeHasManualPer100g(recipe)
+        ? estimatedYield
+          ? `ручные на 100 г · выход расчётный ${recipe.cookedYieldG} г`
+          : 'ручные значения на 100 г'
+        : estimatedYield
+          ? `из ингредиентов · выход расчётный ${recipe.cookedYieldG} г (сумма масс)`
+          : `из ингредиентов · выход ${recipe.cookedYieldG} г`;
 
   return (
     <View style={styles.wrap} testID={testID} accessibilityLabel="Питание рецепта на порцию">

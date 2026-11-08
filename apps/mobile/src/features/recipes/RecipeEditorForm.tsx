@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { Nutrition } from '../../../../../src/domain/nutrition';
 import { autoKcalStringFromMacroStrings } from '../../../../../src/domain/nutritionConsistency';
+import { isEstimatedCookedYield } from '../../../../../src/domain/recipeNutrition';
 import { useAutoKcalFromMacros } from '../../hooks/useAutoKcalFromMacros';
 import {
   pickRecipePhotoFromLibrary,
@@ -220,6 +221,22 @@ export function RecipeEditorForm({
         keyboardType="decimal-pad"
         placeholder="500"
       />
+      {(() => {
+        const cooked = Number(yieldG.replace(',', '.'));
+        const draftGrams = ingredients
+          .map((ing) => {
+            const n = Number(ing.rawGrams.replace(',', '.'));
+            return Number.isFinite(n) && n >= 0 ? { rawGrams: n } : null;
+          })
+          .filter((x): x is { rawGrams: number } => x != null);
+        if (!isEstimatedCookedYield(cooked, draftGrams)) return null;
+        return (
+          <Text style={styles.yieldHint}>
+            Выход совпадает с суммой масс ингредиентов — значения на 100 г будут расчётными, не
+            взвешенными.
+          </Text>
+        );
+      })()}
 
       <Text style={styles.blockLabel}>2. Ингредиенты</Text>
       <Text style={styles.lead}>
@@ -386,6 +403,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: space.sm,
+  },
+  yieldHint: {
+    fontSize: type.caption,
+    color: colors.warning,
+    lineHeight: 18,
+    marginBottom: space.md,
+    marginTop: -space.sm,
   },
   macroRow: { flexDirection: 'row', gap: space.sm },
   third: { flex: 1 },

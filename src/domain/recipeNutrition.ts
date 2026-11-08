@@ -1,6 +1,35 @@
 import { portion, recipePortion, type Nutrition } from './nutrition';
 import type { Recipe, RecipeIngredient } from '../storage/types';
 
+/** Sum of known ingredient masses; null if none known. */
+export function sumKnownIngredientGrams(
+  ingredients: Array<Pick<RecipeIngredient, 'rawGrams'>>,
+): number | null {
+  let sum = 0;
+  let any = false;
+  for (const i of ingredients) {
+    if (!Number.isFinite(i.rawGrams) || i.rawGrams < 0) continue;
+    sum += i.rawGrams;
+    any = true;
+  }
+  return any ? sum : null;
+}
+
+/**
+ * True when cooked yield matches the sum of ingredient grams (typical import fallback).
+ * Such per-100g values are calculated, not a weighed cooked yield.
+ */
+export function isEstimatedCookedYield(
+  cookedYieldG: number,
+  ingredients: Array<Pick<RecipeIngredient, 'rawGrams'>>,
+  epsilonG = 1,
+): boolean {
+  if (!Number.isFinite(cookedYieldG) || cookedYieldG <= 0) return false;
+  const sum = sumKnownIngredientGrams(ingredients);
+  if (sum == null || sum <= 0) return false;
+  return Math.abs(cookedYieldG - sum) <= epsilonG;
+}
+
 /** True when the recipe has at least one user-entered per-100g value. */
 export function recipeHasManualPer100g(recipe: Pick<
   Recipe,
