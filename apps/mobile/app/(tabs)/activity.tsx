@@ -206,11 +206,15 @@ export default function MovementScreen() {
                   title={isEmptyWeek ? 'Пока пусто' : 'В этот день пусто'}
                   body={
                     isEmptyWeek
-                      ? 'Добавь тренировку или синхронизируй Garmin в Профиле.'
+                      ? 'Добавь тренировку вручную или подключи Garmin.'
                       : 'Свайпни день или выбери дату выше.'
                   }
                   actionLabel="+ Тренировка"
                   onAction={() => openForm('walking')}
+                  secondaryActionLabel={isEmptyWeek ? 'Garmin' : undefined}
+                  onSecondaryAction={
+                    isEmptyWeek ? () => router.push('/garmin' as Href) : undefined
+                  }
                 />
               ) : (
                 <View style={styles.list}>

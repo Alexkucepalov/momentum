@@ -7,7 +7,16 @@ const { createMemoryFoodRepository } = mods['storage/foodRepository'];
 const {
   nutritionForRecipePortion,
   recipeHasManualPer100g,
+  isEstimatedCookedYield,
+  sumKnownIngredientGrams,
 } = mods['domain/recipeNutrition'];
+
+test('estimated cooked yield matches ingredient gram sum', () => {
+  const ingredients = [{ rawGrams: 200 }, { rawGrams: 300 }];
+  assert.equal(sumKnownIngredientGrams(ingredients), 500);
+  assert.equal(isEstimatedCookedYield(500, ingredients), true);
+  assert.equal(isEstimatedCookedYield(420, ingredients), false);
+});
 
 test('manual per-100g recipe logs without ingredients', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
