@@ -8,7 +8,7 @@ import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 type RailTab = 'saved' | 'recent';
 
 /**
- * Quiet “repeat” panel under today's meals.
+ * Quiet “Повторить” panel above meal sections (above-the-fold on filled days).
  * Segment + simple rows (no horizontal chip clutter).
  */
 export function FoodQuickStrips({
@@ -18,6 +18,7 @@ export function FoodQuickStrips({
   onRecentConfirm,
   onRecentQuick,
   onOpenSavedInSheet,
+  onFirstAdd,
 }: {
   savedMeals: SavedMeal[];
   recent: FoodEntry[];
@@ -30,6 +31,8 @@ export function FoodQuickStrips({
   onFavoriteConfirm?: (product: never, grams: number) => void;
   onFavoriteQuick?: (product: never, grams: number) => void;
   onOpenSavedInSheet: () => void;
+  /** Empty history: one clear first-add action instead of a hollow «Повторить» block. */
+  onFirstAdd?: () => void;
 }) {
   const saved = savedMeals.slice(0, 5);
   const recentItems = recent.slice(0, 5);
@@ -39,14 +42,14 @@ export function FoodQuickStrips({
   if (saved.length === 0 && recentItems.length === 0) {
     return (
       <Pressable
-        onPress={onOpenSavedInSheet}
+        onPress={onFirstAdd ?? onOpenSavedInSheet}
         style={({ pressed }) => [styles.empty, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel="Как сохранить приём пищи"
+        accessibilityLabel="Добавить первую запись"
         testID="food-quick-strips"
       >
-        <AppText variant="caption" tone="muted">
-          Закладка на приёме сохранит шаблон сюда
+        <AppText variant="caption" tone="secondary">
+          Добавить первую запись — потом повторы появятся здесь
         </AppText>
       </Pressable>
     );

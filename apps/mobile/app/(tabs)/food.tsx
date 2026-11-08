@@ -302,20 +302,6 @@ export default function FoodScreen() {
 
             <CopyYesterdayButton />
 
-            {MEALS.map((slot) => (
-              <MealSection
-                key={slot}
-                meal={slot}
-                entries={mealEntries[slot]}
-                onDelete={onDelete}
-                onEditGrams={setEditing}
-                onCopyEntry={copyEntryToDay}
-                onAdd={() => openForMeal(slot)}
-                onRepeatMeal={() => repeatMealSlot(slot)}
-                onSaveMeal={() => setSaveMealSlot(slot)}
-              />
-            ))}
-
             <FoodQuickStrips
               savedMeals={savedMeals}
               recent={recent}
@@ -347,7 +333,22 @@ export default function FoodScreen() {
               }}
               onRecentQuick={repeatEntry}
               onOpenSavedInSheet={() => openForMeal(meal, 'meals')}
+              onFirstAdd={() => openForMeal(meal)}
             />
+
+            {MEALS.map((slot) => (
+              <MealSection
+                key={slot}
+                meal={slot}
+                entries={mealEntries[slot]}
+                onDelete={onDelete}
+                onEditGrams={setEditing}
+                onCopyEntry={copyEntryToDay}
+                onAdd={() => openForMeal(slot)}
+                onRepeatMeal={() => repeatMealSlot(slot)}
+                onSaveMeal={() => setSaveMealSlot(slot)}
+              />
+            ))}
           </FormScrollView>
         ) : (
           <View style={styles.catalogRoot}>
