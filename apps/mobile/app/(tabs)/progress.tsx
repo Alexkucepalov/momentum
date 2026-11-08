@@ -375,40 +375,21 @@ export default function ProgressScreen() {
         {tab === 'body' ? (
           <>
             <AppCard style={styles.bodyCard} testID="progress-weight-card">
-              <View style={styles.bodyTop}>
-                <View style={styles.bodyMetric}>
-                  <MetricCard
-                    label="Вес"
-                    value={latest ? latest.kg : null}
-                    unit="кг"
-                    meta={
-                      latest
-                        ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : 'наблюдение, не цель'
-                    }
-                  />
-                </View>
-                <View style={styles.bodyBmi}>
-                  <AppText variant="label" tone="muted">
-                    ИМТ
-                  </AppText>
-                  <AppText variant="metric" style={styles.bmiValue}>
-                    {bmiInfo ? formatBmi(bmiInfo.value) : '—'}
-                  </AppText>
-                  <AppText variant="caption" tone="secondary">
-                    {bmiInfo
-                      ? bmiInfo.band.labelRu
-                      : profile.heightCm == null
-                        ? 'рост в Профиле'
-                        : 'добавь вес'}
-                  </AppText>
-                </View>
-              </View>
+              <MetricCard
+                label="Вес"
+                value={latest ? latest.kg : null}
+                unit="кг"
+                meta={
+                  latest
+                    ? new Date(latest.weighedAt).toLocaleString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'добавь первый замер'
+                }
+              />
 
               <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
 
@@ -433,10 +414,20 @@ export default function ProgressScreen() {
                 style={({ pressed }) => [styles.noteToggle, pressed && styles.pressed]}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: bmiNoteOpen }}
+                testID="progress-bmi-orientir"
               >
-                <AppText variant="caption" tone="muted">
-                  {bmiNoteOpen ? 'Скрыть справку ИМТ' : 'Что значит ИМТ'}
-                </AppText>
+                <View style={styles.orientirHead}>
+                  <AppText variant="caption" tone="secondary" style={styles.orientirTitle}>
+                    Ориентир ИМТ
+                  </AppText>
+                  <AppText variant="caption" tone="muted">
+                    {bmiInfo
+                      ? `${formatBmi(bmiInfo.value)} · ${bmiInfo.band.labelRu}`
+                      : profile.heightCm == null
+                        ? 'нужен рост в Профиле'
+                        : 'после замера веса'}
+                  </AppText>
+                </View>
                 <Ionicons
                   name={bmiNoteOpen ? 'chevron-up' : 'chevron-down'}
                   size={16}
@@ -673,25 +664,20 @@ const styles = StyleSheet.create({
   moreMeta: { flex: 1 },
   moreBody: { gap: space.sm, marginTop: space.xs },
   bodyCard: { gap: space.md, padding: space.lg },
-  bodyTop: { flexDirection: 'row', gap: space.md },
-  bodyMetric: { flex: 1.2 },
-  bodyBmi: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: 2,
-    paddingLeft: space.md,
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: colors.border,
-  },
-  bmiValue: { fontSize: 28 },
   weightForm: { gap: space.sm },
   weightField: {},
   noteToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 36,
+    gap: space.sm,
+    minHeight: touchMin,
+    paddingTop: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
+  orientirHead: { flex: 1, gap: 2 },
+  orientirTitle: { fontWeight: '700' },
   bmiNote: { lineHeight: 18 },
   sheet: {
     backgroundColor: colors.surface,
