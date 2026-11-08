@@ -26,8 +26,8 @@
 |---|-----|-------|---------------------|--------|
 | **0** | — | Базовые состояния + план + mobile Today reshoot | Документ плана; набор состояний для QA | **done** (план) |
 | **1** | P0/P1 | Данные: snapshot / wipe / sync | Force-stop держит записи; wipe чистит SecureStore + snapshot + widget; удалённое не возвращается; stale sync не пишет после wipe | **done** (#190) |
-| **2** | P1 | Общие компоненты: tab labels, contrast, touch | 5 подписей читаются; muted ≥4.5:1; 48dp | next |
-| **3** | P1 | Today / Food / Каталог | FoodQuickStrips выше приёмов; компактные empty | **in PR** (fold) |
+| **2** | P1 | Общие компоненты: tab labels, contrast, touch | 5 подписей читаются; muted ≥4.5:1; 48dp | **in PR** |
+| **3** | P1 | Today / Food / Каталог | FoodQuickStrips выше приёмов; компактные empty | **partial** (#192 fold) |
 | **4** | P1 | Добавление еды `04–07` | Разделить режимы; независимые ккал; MFP copy убрать | later |
 | **5** | P1 | План / неделя | Вертикальный день; явное «Перенести» | later |
 | **6** | P2 | Подбор / запасы / покупки / магазины | Один CTA на empty | later |

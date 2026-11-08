@@ -32,7 +32,7 @@
 | `surfaceMuted` | `#EBEDF0` | Вложенный фон (chips track, stage empty) |
 | `ink` | `#0A0A0A` | Основной текст |
 | `textSecondary` | `#5C6370` | Подписи |
-| `textMuted` | `#8B929E` | Hints / timestamps |
+| `textMuted` | `#646B78` | Hints / timestamps (≥4.5:1 on canvas) |
 | `border` | `#E2E5EA` | Hairline |
 | `borderStrong` | `#C9CED6` | Focus / selected outline |
 | `primary` | `#0A0A0A` | Primary button fill |

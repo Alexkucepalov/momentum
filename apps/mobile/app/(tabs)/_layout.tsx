@@ -25,7 +25,8 @@ function tint(color: unknown): string {
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
-  const tabBarHeight = 52 + bottomInset;
+  /** Icon + label + padding; prior 52dp clipped RU captions on device. */
+  const tabBarHeight = 58 + bottomInset;
   useWidgetSync();
 
   return (
@@ -34,19 +35,24 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarAllowFontScaling: true,
         tabBarLabelStyle: {
-          fontSize: type.micro,
+          fontSize: type.label,
+          lineHeight: 14,
           fontWeight: '600',
-          marginBottom: Platform.OS === 'web' ? 4 : 0,
+          marginTop: 2,
+          marginBottom: Platform.OS === 'web' ? 4 : 2,
         },
         tabBarItemStyle: {
-          paddingTop: 6,
+          paddingTop: 4,
+          paddingBottom: 2,
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           height: tabBarHeight,
+          paddingTop: 4,
           paddingBottom: bottomInset,
         },
         headerStyle: { backgroundColor: colors.canvas },
