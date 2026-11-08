@@ -23,6 +23,9 @@ import {
   touchMin,
   type,
 } from '@/src/design-system';
+import { bumpLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
+import { clearGarminApiKey } from '@/src/features/garmin/secureKeyStore';
+import { clearTodayWidgetPayload } from '@/src/widgets/syncTodayWidget';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
@@ -238,14 +241,19 @@ export default function ProfileScreen() {
   const onDelete = () => {
     confirmAction(
       'Удалить все локальные данные?',
-      'Продукты, дневник, вес и привычки на этом устройстве. Сначала сделай экспорт.',
+      'Продукты, дневник, вес, привычки, ключ Garmin и виджеты на этом устройстве. Сначала сделай экспорт.',
       {
         confirmLabel: 'Удалить',
         destructive: true,
         onConfirm: () => {
-          repo.deleteAllUserData();
-          refresh('profile');
-          showFlash('Локальные данные очищены');
+          void (async () => {
+            bumpLocalDataWipeEpoch();
+            repo.deleteAllUserData();
+            await clearGarminApiKey();
+            await clearTodayWidgetPayload();
+            refresh('all');
+            showFlash('Локальные данные и ключ Garmin очищены');
+          })();
         },
       },
     );
