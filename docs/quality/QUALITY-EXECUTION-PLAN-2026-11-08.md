@@ -35,7 +35,7 @@
 | **8** | P1 | Бюджет / покупки | Нет «≈0 ₽» без данных; confirm import | **partial** (#194 forecast) |
 | **9** | P2 | Движение / сон | Прямой Garmin; минимум полей | **partial** (#197 Garmin CTA) |
 | **10** | P1 | Progress | Нет ложного «ср. 0»; экспорт в Отчёты; покрытие | **partial** (#191 avg; body weight) |
-| **11** | P2 | Профиль / Garmin UX | Секции; явный save | later |
+| **11** | P2 | Профиль / Garmin UX | Секции; явный save | **in PR** (Garmin status) |
 | **12** | P2 | Виджеты native | Один стиль; stale/wipe | later |
 | **13** | Gate | Android dogfood Pass | APK SHA-256 + `DEVICE-DOGFOOD-15MIN` заполнен | protocol ready; device Pass pending |
 
