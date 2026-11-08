@@ -24,9 +24,32 @@ import {
   type,
 } from '@/src/design-system';
 import { bumpLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
-import { clearGarminApiKey } from '@/src/features/garmin/secureKeyStore';
+import { clearGarminApiKey, getGarminApiKey } from '@/src/features/garmin/secureKeyStore';
 import { clearTodayWidgetPayload } from '@/src/widgets/syncTodayWidget';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
+
+function formatGarminGlance(args: {
+  hasKey: boolean | null;
+  lastSuccessfulSyncAt: string | null;
+  lastError: string | null;
+}): string {
+  if (args.hasKey === false) return 'Не подключено';
+  if (args.hasKey === null) return 'Проверка…';
+  if (args.lastError && !args.lastSuccessfulSyncAt) return 'Ошибка синхронизации';
+  if (args.lastSuccessfulSyncAt) {
+    try {
+      return `Готово · ${new Date(args.lastSuccessfulSyncAt).toLocaleString('ru-RU', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
+    } catch {
+      return 'Готово';
+    }
+  }
+  return 'Ключ есть · ещё не синхронизировали';
+}
 
 const WATER_PRESETS = [1500, 2000, 2500, 3000] as const;
 
@@ -65,6 +88,7 @@ export default function ProfileScreen() {
   const [pasteRaw, setPasteRaw] = useState('');
   const [zeppOpen, setZeppOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [garminHasKey, setGarminHasKey] = useState<boolean | null>(null);
 
   useEffect(() => {
     const next = profileToFields(repo.getProfile());
@@ -76,6 +100,17 @@ export default function ProfileScreen() {
     setCarbRaw(next.carbRaw);
   }, [repo, profileRevision]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const key = await getGarminApiKey();
+      if (!cancelled) setGarminHasKey(Boolean(key));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profileRevision]);
+
   const glance = useMemo(() => {
     return {
       kcal: profile.dailyEnergyKcal == null ? '—' : String(Math.round(profile.dailyEnergyKcal)),
@@ -83,6 +118,13 @@ export default function ProfileScreen() {
       height: profile.heightCm == null ? '—' : String(profile.heightCm),
     };
   }, [profile]);
+
+  const garminSync = repo.getGarminSyncState();
+  const garminMeta = formatGarminGlance({
+    hasKey: garminHasKey,
+    lastSuccessfulSyncAt: garminSync.lastSuccessfulSyncAt,
+    lastError: garminSync.lastError,
+  });
 
   const parseOptionalPositive = (raw: string, label: string): number | null => {
     const t = raw.trim();
@@ -431,7 +473,7 @@ export default function ProfileScreen() {
           <LinkRow
             icon="watch-outline"
             title="Garmin"
-            meta="Вес, тренировки, шаги, сон"
+            meta={garminMeta}
             onPress={() => router.push('/garmin' as Href)}
           />
           <LinkRow
