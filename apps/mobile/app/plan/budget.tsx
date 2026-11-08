@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { monthKeyFromDateLocal } from '../../../../src/domain/foodBudget';
@@ -38,10 +38,14 @@ export default function BudgetScreen() {
   const projected = repo.openShoppingProjection();
   const expenses = repo.listFoodExpenses(month);
 
-  const [limit, setLimit] = useState(snap.limitRub != null ? String(snap.limitRub) : '30000');
+  const [limit, setLimit] = useState(snap.limitRub != null ? String(Math.round(snap.limitRub)) : '');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<FoodExpenseCategory>('groceries');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLimit(snap.limitRub != null ? String(Math.round(snap.limitRub)) : '');
+  }, [month, snap.limitRub]);
 
   const byCat = useMemo(() => {
     const map: Record<FoodExpenseCategory, number> = {
@@ -154,9 +158,14 @@ export default function BudgetScreen() {
         value={limit}
         onChangeText={setLimit}
         keyboardType="number-pad"
+        placeholder="не задан — не путать с 0"
+        placeholderTextColor={colors.textMuted}
         style={styles.input}
         accessibilityLabel="Лимит бюджета питания"
       />
+      <AppText variant="caption" tone="muted" style={styles.hint}>
+        Пустое поле = лимит не задан. Ноль как лимит не сохраняется — нужно число &gt; 0.
+      </AppText>
       <AppButton label="Сохранить лимит" onPress={saveLimit} />
 
       <AppText variant="label" tone="secondary" style={styles.section}>
