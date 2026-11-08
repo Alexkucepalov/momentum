@@ -22,6 +22,7 @@ import {
   fetchWeightRangeChunked,
   GarminClientError,
 } from './garminClient';
+import { getLocalDataWipeEpoch } from '../../../../../src/domain/localDataWipeEpoch';
 import { getGarminApiKey } from './secureKeyStore';
 
 export type GarminSyncMode = 'full' | 'incremental';
@@ -76,6 +77,7 @@ export async function runGarminSync(
   opts?: { mode?: GarminSyncMode },
 ): Promise<GarminSyncResult> {
   const attemptAt = new Date().toISOString();
+  const wipeEpochAtStart = getLocalDataWipeEpoch();
   repo.setGarminSyncState({ lastAttemptAt: attemptAt, lastError: null });
 
   const empty: GarminSyncResult = {
@@ -90,6 +92,12 @@ export async function runGarminSync(
     warnings: [],
   };
 
+  const abortedByWipe = (): GarminSyncResult | null => {
+    if (getLocalDataWipeEpoch() === wipeEpochAtStart) return null;
+    const error = 'Синхронизация отменена: локальные данные очищены';
+    return { ...empty, error };
+  };
+
   try {
     const key = await getGarminApiKey();
     if (!key) {
@@ -97,6 +105,8 @@ export async function runGarminSync(
       repo.setGarminSyncState({ lastError: error });
       return { ...empty, error };
     }
+    const wipedEarly = abortedByWipe();
+    if (wipedEarly) return wipedEarly;
 
     const profile = repo.getProfile();
     const todayLocal = localDateKey(new Date(), profile.timezone);
@@ -119,6 +129,8 @@ export async function runGarminSync(
       fetchWeightRangeChunked(accessToken, window.startDate, window.endDate),
     );
     if (weightRes.ok) {
+      const wiped = abortedByWipe();
+      if (wiped) return wiped;
       warnings.push(...weightRes.value.warnings);
       const weights = weightRes.value.payloads.flatMap((p) => mapGarminWeightResponse(p));
       for (const w of weights) {
@@ -145,6 +157,8 @@ export async function runGarminSync(
       fetchDailyStepsChunked(accessToken, window.startDate, window.endDate),
     );
     if (stepsRes.ok) {
+      const wiped = abortedByWipe();
+      if (wiped) return wiped;
       warnings.push(...stepsRes.value.warnings);
       const steps = mapGarminStepsResponse(stepsRes.value.payloads);
       for (const s of steps) {
@@ -168,6 +182,8 @@ export async function runGarminSync(
         fetchDailySummariesChunked(accessToken, window.startDate, window.endDate),
       );
       if (sumRes.ok) {
+        const wiped = abortedByWipe();
+        if (wiped) return wiped;
         warnings.push(...sumRes.value.warnings);
         const steps = sumRes.value.payloads.flatMap((p) => mapGarminDailySummariesForSteps(p));
         for (const s of steps) {
@@ -193,6 +209,8 @@ export async function runGarminSync(
       fetchDailySleepSummariesChunked(accessToken, window.startDate, window.endDate),
     );
     if (sleepRes.ok) {
+      const wiped = abortedByWipe();
+      if (wiped) return wiped;
       warnings.push(...sleepRes.value.warnings);
       const nights = sleepRes.value.payloads.flatMap((p) => mapGarminSleepResponse(p));
       for (const n of nights) {
@@ -234,6 +252,8 @@ export async function runGarminSync(
     });
 
     if (activitiesRes.ok) {
+      const wiped = abortedByWipe();
+      if (wiped) return wiped;
       let mapped = mapGarminActivitiesResponse(activitiesRes.value);
       const ids = mapped.map((m) => m.activityId);
       const details = await fetchActivityDetailsBatched(accessToken, ids, 3);
@@ -273,6 +293,9 @@ export async function runGarminSync(
       warnings.push(activitiesRes.error);
     }
 
+    const wipedFinal = abortedByWipe();
+    if (wipedFinal) return wipedFinal;
+
     const anyOk =
       weightRes.ok || stepsUpserted > 0 || sleepUpserted > 0 || activitiesRes.ok;
     if (!anyOk) {
@@ -303,6 +326,8 @@ export async function runGarminSync(
       warnings,
     };
   } catch (e) {
+    const wiped = abortedByWipe();
+    if (wiped) return wiped;
     const error = errorMessage(e);
     repo.setGarminSyncState({ lastAttemptAt: attemptAt, lastError: error });
     return { ...empty, error };

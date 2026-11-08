@@ -24,8 +24,8 @@
 
 | № | Pri | Пакет | Критерий готовности | Статус |
 |---|-----|-------|---------------------|--------|
-| **0** | — | Базовые состояния + план + mobile Today reshoot | Документ плана; набор состояний для QA | **in progress** |
-| **1** | P0/P1 | Данные: snapshot / wipe / sync | Force-stop держит записи; wipe чистит SecureStore + snapshot + widget; удалённое не возвращается; stale sync не пишет после wipe | next |
+| **0** | — | Базовые состояния + план + mobile Today reshoot | Документ плана; набор состояний для QA | **done** (план) |
+| **1** | P0/P1 | Данные: snapshot / wipe / sync | Force-stop держит записи; wipe чистит SecureStore + snapshot + widget; удалённое не возвращается; stale sync не пишет после wipe | **in PR** |
 | **2** | P1 | Общие компоненты: tab labels, contrast, touch | 5 подписей читаются; muted ≥4.5:1; 48dp | next |
 | **3** | P1 | Today / Food / Каталог | FoodQuickStrips выше приёмов; компактные empty | next |
 | **4** | P1 | Добавление еды `04–07` | Разделить режимы; независимые ккал; MFP copy убрать | later |

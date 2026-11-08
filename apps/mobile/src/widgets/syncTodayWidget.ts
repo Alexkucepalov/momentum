@@ -11,6 +11,25 @@ import { localDateKey } from '../../../../src/storage/validation';
 
 const FILE_NAME = 'nf_fit_today_widget.json';
 
+function widgetFileUri(): string | null {
+  const base = FileSystem.documentDirectory;
+  if (!base) return null;
+  return `${base}${FILE_NAME}`;
+}
+
+/** Remove widget JSON after full local wipe (best-effort). */
+export async function clearTodayWidgetPayload(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    const uri = widgetFileUri();
+    if (!uri) return;
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists) await FileSystem.deleteAsync(uri, { idempotent: true });
+  } catch {
+    // Best-effort — never block wipe UX.
+  }
+}
+
 /**
  * Persist today metrics for Android Nothing-light AppWidgets.
  * Shared JSON feeds day / kcal / steps / water / sleep providers.
@@ -42,9 +61,9 @@ export async function syncTodayWidgetPayload(repo: FoodRepository): Promise<void
       waterUnit: payload.waterMl != null && payload.waterMl >= 1000 ? 'L' : 'ml',
       updatedAt: new Date().toISOString(),
     });
-    const base = FileSystem.documentDirectory;
-    if (!base) return;
-    await FileSystem.writeAsStringAsync(`${base}${FILE_NAME}`, body);
+    const uri = widgetFileUri();
+    if (!uri) return;
+    await FileSystem.writeAsStringAsync(uri, body);
   } catch {
     // Widget file is best-effort — never block diary.
   }
