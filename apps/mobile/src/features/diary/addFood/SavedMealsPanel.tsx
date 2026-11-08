@@ -18,8 +18,7 @@ export function SavedMealsPanel({
       <View style={styles.empty}>
         <Text style={styles.emptyTitle}>Пока нет сохранённых приёмов</Text>
         <Text style={styles.emptyBody}>
-          В дневнике у приёма нажми «Сохранить приём» — потом добавишь весь набор одним тапом (как My
-          Meals в MFP).
+          В дневнике у приёма нажми «Сохранить приём» — набор появится здесь и добавится одним тапом.
         </Text>
       </View>
     );

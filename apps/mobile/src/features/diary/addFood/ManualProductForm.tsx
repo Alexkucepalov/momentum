@@ -1,10 +1,17 @@
-import { useEffect } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { autoKcalStringFromMacroStrings } from '../../../../../../src/domain/nutritionConsistency';
+import {
+  kcalFromCompleteMacros,
+  nutritionConsistencyHint,
+  parseMacroField,
+} from '../../../../../../src/domain/nutritionConsistency';
 import { colors, radius, space, touchMin, type } from '../../../theme/tokens';
 import { AppButton } from '@/src/design-system';
 
+/**
+ * New catalog product. Label kcal is independent of БЖУ (unknown macros stay null).
+ * Atwater fill is opt-in — never overwrites a typed kcal field automatically.
+ */
 export function ManualProductForm({
   name,
   grams,
@@ -34,19 +41,45 @@ export function ManualProductForm({
   onChangeCarbs: (t: string) => void;
   onSubmit: () => void;
 }) {
-  useEffect(() => {
-    const next = autoKcalStringFromMacroStrings(protein, fat, carbs);
-    if (next !== null && next !== kcal) onChangeKcal(next);
-  }, [protein, fat, carbs, kcal, onChangeKcal]);
+  const suggested = kcalFromCompleteMacros(
+    parseMacroField(protein),
+    parseMacroField(fat),
+    parseMacroField(carbs),
+  );
+  const diverge = nutritionConsistencyHint({
+    energyKcal: parseMacroField(kcal),
+    proteinG: parseMacroField(protein),
+    fatG: parseMacroField(fat),
+    carbG: parseMacroField(carbs),
+  });
 
   return (
     <View>
       <Text style={styles.lead}>
-        Новый продукт. Сначала Б/Ж/У на 100 г (ккал сами: 4×Б+9×Ж+4×У). Пустое = неизвестно.
+        Новый продукт на 100 г. Ккал с упаковки можно ввести отдельно; пустые БЖУ остаются
+        неизвестными, не нулями.
       </Text>
       <Field label="Название" value={name} onChangeText={onChangeName} autoFocus placeholder="например Творог 5%" />
 
       <Text style={styles.section}>На 100 г</Text>
+      <Field
+        label="ккал"
+        value={kcal}
+        onChangeText={onChangeKcal}
+        keyboardType="decimal-pad"
+        placeholder="с этикетки, можно без БЖУ"
+      />
+      {suggested != null ? (
+        <Pressable
+          onPress={() => onChangeKcal(String(suggested))}
+          style={styles.suggest}
+          accessibilityRole="button"
+          accessibilityLabel={`Подставить ${suggested} ккал из БЖУ`}
+        >
+          <Text style={styles.suggestText}>Подставить из БЖУ: {suggested} ккал</Text>
+        </Pressable>
+      ) : null}
+      {diverge ? <Text style={styles.hint}>{diverge}</Text> : null}
       <View style={styles.macroRow}>
         <View style={styles.third}>
           <Field label="Белки" value={protein} onChangeText={onChangeProtein} keyboardType="decimal-pad" />
@@ -58,13 +91,6 @@ export function ManualProductForm({
           <Field label="Углеводы" value={carbs} onChangeText={onChangeCarbs} keyboardType="decimal-pad" />
         </View>
       </View>
-      <Field
-        label="ккал (авто из БЖУ)"
-        value={kcal}
-        onChangeText={onChangeKcal}
-        keyboardType="decimal-pad"
-        placeholder="считается из БЖУ"
-      />
       <Field
         label="Порция по умолчанию, г"
         value={grams}
@@ -143,4 +169,22 @@ const styles = StyleSheet.create({
   },
   macroRow: { flexDirection: 'row', gap: space.sm },
   third: { flex: 1 },
+  suggest: {
+    alignSelf: 'flex-start',
+    marginTop: -space.sm,
+    marginBottom: space.md,
+    paddingVertical: space.xs,
+  },
+  suggestText: {
+    fontSize: type.caption,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    textDecorationLine: 'underline',
+  },
+  hint: {
+    fontSize: type.micro,
+    color: colors.warning,
+    marginBottom: space.md,
+    lineHeight: 16,
+  },
 });
