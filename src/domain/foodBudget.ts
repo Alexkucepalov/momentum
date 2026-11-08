@@ -58,18 +58,22 @@ export const FORECAST_MIN_DAYS_ELAPSED = 7;
 
 /**
  * Linear forecast to month end from known spent so far.
- * Needs spent known and enough elapsed days. Never invents spend.
- * With thin history returns null — UI should say «мало данных», not a fake precision.
+ * Needs positive spent, enough elapsed days, and at least one expense row.
+ * Never invents spend. Empty month → null (UI: «Недостаточно данных», not «≈0 ₽»).
  */
 export function forecastMonthSpend(args: {
   spentRub: number | null;
   daysElapsed: number;
   daysInMonth: number;
   minDaysElapsed?: number;
+  /** When 0 / omitted, there is nothing to extrapolate. */
+  expenseCount?: number;
 }): number | null {
   const { spentRub, daysElapsed, daysInMonth: dim } = args;
   const minDays = args.minDaysElapsed ?? FORECAST_MIN_DAYS_ELAPSED;
-  if (spentRub === null || !Number.isFinite(spentRub)) return null;
+  const expenseCount = args.expenseCount ?? (spentRub != null && spentRub > 0 ? 1 : 0);
+  if (expenseCount < 1) return null;
+  if (spentRub === null || !Number.isFinite(spentRub) || spentRub <= 0) return null;
   if (!Number.isInteger(daysElapsed) || daysElapsed < 1) return null;
   if (!Number.isInteger(dim) || dim < 1) return null;
   if (daysElapsed < minDays) return null;
@@ -91,6 +95,7 @@ export function buildMonthBudgetSnapshot(args: {
     spentRub,
     daysElapsed: Math.min(day, dim),
     daysInMonth: dim,
+    expenseCount: args.expenseAmounts.length,
   });
   return {
     month: args.month,
