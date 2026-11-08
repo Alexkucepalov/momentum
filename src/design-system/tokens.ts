@@ -12,7 +12,8 @@ export const colors = {
   ink: '#0A0A0A',
   text: '#0A0A0A',
   textSecondary: '#5C6370',
-  textMuted: '#8B929E',
+  /** Captions / hints — ≥4.5:1 on canvas `#F2F3F5` and white (WCAG AA). */
+  textMuted: '#646B78',
   /** Selected / active chrome — mono ink (no coloured brand chrome). */
   accent: '#0A0A0A',
   accentSoft: '#EBEDF0',

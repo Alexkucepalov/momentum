@@ -21,7 +21,7 @@ Calm, capable, private. Light neutral canvas, white surfaces, black ink, sparse 
 | ink / text / primary | `#0A0A0A` | Primary copy / CTA |
 | onPrimary / primaryButtonText | `#FFFFFF` | On black |
 | textSecondary | `#5C6370` | Supporting |
-| textMuted | `#8B929E` | Hints |
+| textMuted | `#646B78` | Hints (≥4.5:1 on canvas) |
 | accent / accentSoft | `#0A0A0A` / `#EBEDF0` | Selected day / soft fill |
 | border / borderStrong | `#E2E5EA` / `#C9CED6` | Hairlines / focus |
 | danger | `#B42318` | Destructive only |
