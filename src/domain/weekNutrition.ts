@@ -37,9 +37,20 @@ export function buildWeekNutrition(args: {
   });
 }
 
-/** Average of known daily kcal in the week; null if every day unknown/empty energy. */
+/**
+ * Average of known daily kcal for days that have diary entries.
+ * Empty days (`entryCount === 0`) are excluded even when `energyKcal` is 0
+ * (repository totals use 0 for “no entries”, which must not become «ср. 0»).
+ */
 export function averageKnownKcal(days: WeekDayNutrition[]): number | null {
-  const known = days.filter((d) => d.energyKcal != null).map((d) => d.energyKcal as number);
+  const known = days
+    .filter((d) => d.entryCount > 0 && d.energyKcal != null)
+    .map((d) => d.energyKcal as number);
   if (known.length === 0) return null;
   return known.reduce((s, n) => s + n, 0) / known.length;
+}
+
+/** Count of week days that contribute to {@link averageKnownKcal}. */
+export function loggedDaysForAverage(days: WeekDayNutrition[]): number {
+  return days.filter((d) => d.entryCount > 0 && d.energyKcal != null).length;
 }

@@ -4,7 +4,8 @@ import { loadSrcModules } from './loadTsModules.mjs';
 
 const mods = loadSrcModules();
 const { createMemoryFoodRepository } = mods['storage/foodRepository'];
-const { buildWeekNutrition, averageKnownKcal } = mods['domain/weekNutrition'];
+const { buildWeekNutrition, averageKnownKcal, loggedDaysForAverage } =
+  mods['domain/weekNutrition'];
 
 test('quick add logs absolute macros without product', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
@@ -95,6 +96,26 @@ test('week nutrition strip math', () => {
   assert.equal(days[0].vsTarget, null); // Mon 12 unknown kcal
   const avg = averageKnownKcal(days);
   assert.ok(avg != null && avg > 0);
+});
+
+test('averageKnownKcal ignores empty days even when energyKcal is 0', () => {
+  const days = buildWeekNutrition({
+    endDateLocal: '2026-10-17',
+    targetKcal: 2000,
+    totalsForDate: (d) =>
+      d === '2026-10-15'
+        ? { energyKcal: 1800, entryCount: 2 }
+        : { energyKcal: 0, entryCount: 0 },
+  });
+  assert.equal(averageKnownKcal(days), 1800);
+  assert.equal(loggedDaysForAverage(days), 1);
+  const emptyOnly = buildWeekNutrition({
+    endDateLocal: '2026-10-17',
+    targetKcal: null,
+    totalsForDate: () => ({ energyKcal: 0, entryCount: 0 }),
+  });
+  assert.equal(averageKnownKcal(emptyOnly), null);
+  assert.equal(loggedDaysForAverage(emptyOnly), 0);
 });
 
 test('snapshot v8 includes saved meals', () => {
