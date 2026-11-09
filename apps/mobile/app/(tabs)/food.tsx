@@ -287,10 +287,6 @@ export default function FoodScreen() {
           <FormScrollView contentContainerStyle={styles.content}>
             {chrome}
 
-            <AppText variant="caption" tone="muted" style={styles.diaryCaption}>
-              Дневник — факт за день. Каталог — база. План (компас) — черновик.
-            </AppText>
-
             <KcalRing
               variant="compact"
               totals={totals}
@@ -301,6 +297,20 @@ export default function FoodScreen() {
             />
 
             <CopyYesterdayButton />
+
+            {MEALS.map((slot) => (
+              <MealSection
+                key={slot}
+                meal={slot}
+                entries={mealEntries[slot]}
+                onDelete={onDelete}
+                onEditGrams={setEditing}
+                onCopyEntry={copyEntryToDay}
+                onAdd={() => openForMeal(slot)}
+                onRepeatMeal={() => repeatMealSlot(slot)}
+                onSaveMeal={() => setSaveMealSlot(slot)}
+              />
+            ))}
 
             <FoodQuickStrips
               savedMeals={savedMeals}
@@ -335,20 +345,6 @@ export default function FoodScreen() {
               onOpenSavedInSheet={() => openForMeal(meal, 'meals')}
               onFirstAdd={() => openForMeal(meal)}
             />
-
-            {MEALS.map((slot) => (
-              <MealSection
-                key={slot}
-                meal={slot}
-                entries={mealEntries[slot]}
-                onDelete={onDelete}
-                onEditGrams={setEditing}
-                onCopyEntry={copyEntryToDay}
-                onAdd={() => openForMeal(slot)}
-                onRepeatMeal={() => repeatMealSlot(slot)}
-                onSaveMeal={() => setSaveMealSlot(slot)}
-              />
-            ))}
           </FormScrollView>
         ) : (
           <View style={styles.catalogRoot}>
@@ -514,7 +510,6 @@ export default function FoodScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, paddingBottom: 140, gap: space.sm },
-  diaryCaption: { lineHeight: 18 },
   catalogRoot: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.lg },
   catalogChrome: { gap: space.sm, marginBottom: space.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center' },

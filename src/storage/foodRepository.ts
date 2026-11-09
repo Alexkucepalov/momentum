@@ -1078,19 +1078,23 @@ export function createMemoryFoodRepository(seed?: {
   snapshot?: StoreSnapshotAny;
 }): FoodRepository {
   const snap = normalizeSnapshot(seed?.snapshot);
-  const profile: Profile = snap?.profile ?? {
-    id: 'local-profile',
-    timezone: seed?.timezone ?? 'UTC',
-    locale: 'en',
-    units: 'metric',
-    waterTargetMl: 2000,
-    dogfoodStartedOn: null,
-    heightCm: null,
-    dailyEnergyKcal: null,
-    dailyProteinG: null,
-    dailyFatG: null,
-    dailyCarbG: null,
-  };
+  const profile: Profile = snap?.profile
+    ? { ...snap.profile }
+    : {
+        id: 'local-profile',
+        timezone: seed?.timezone ?? 'UTC',
+        locale: 'en',
+        units: 'metric',
+        waterTargetMl: 2000,
+        dogfoodStartedOn: null,
+        heightCm: null,
+        dailyEnergyKcal: null,
+        dailyProteinG: null,
+        dailyFatG: null,
+        dailyCarbG: null,
+      };
+  // Device TZ wins on open so sleep clocks / day keys follow the phone (e.g. MSK), not a stale UTC snapshot.
+  if (seed?.timezone) profile.timezone = seed.timezone;
   const products = new Map<string, FoodProduct>((snap?.products ?? []).map((p) => [p.id, { ...p }]));
   mergeCommonFoodCatalog(products);
   const recipes = new Map<string, Recipe>((snap?.recipes ?? []).map((r) => [r.id, { ...r }]));

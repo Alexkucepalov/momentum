@@ -6,14 +6,20 @@ export function formatSleepClock(iso: string | null, timeZone?: string): string 
   if (!iso) return null;
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return null;
+  const zone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
   try {
     return new Date(t).toLocaleTimeString('ru-RU', {
       hour: '2-digit',
       minute: '2-digit',
-      ...(timeZone ? { timeZone } : {}),
+      hour12: false,
+      ...(zone ? { timeZone: zone } : {}),
     });
   } catch {
-    return new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return new Date(t).toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
   }
 }
 

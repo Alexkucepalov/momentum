@@ -29,3 +29,15 @@ test('formatFoodLogStreakRu stays non-judgmental at zero', () => {
   assert.match(copy.body, /начнётся|счётчик/i);
   assert.ok(!/стыд|провал|неудач/i.test(`${copy.title} ${copy.body}`));
 });
+
+test('formatFoodLogStreakRu avoids soft-shame copy on active streak', () => {
+  const copy = formatFoodLogStreakRu({ current: 5, loggedEndDate: true });
+  assert.match(copy.title, /5/);
+  assert.ok(!/достаточно|пропуск|вед[её]шь дневник/i.test(copy.body));
+});
+
+test('formatSleepClock prefers non-UTC zone for MSK wall clock', async () => {
+  const { formatSleepClock } = loadSrcModules()['domain/sleepStats'];
+  const s = formatSleepClock('2026-11-03T20:10:00.000Z', 'Europe/Moscow');
+  assert.equal(s, '23:10');
+});

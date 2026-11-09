@@ -138,16 +138,17 @@ export function mapGarminSleepItem(raw: unknown): MappedGarminSleep | null {
     if (parts.length > 0) sleepSec = parts.reduce((a, b) => a + b, 0);
   }
 
+  // Prefer GMT / true epoch. Local-first double-shifts when UI formats with profile TZ (MSK).
   const startAt =
-    isoFromMsOrString(nested.sleepStartTimestampLocal) ??
     isoFromMsOrString(nested.sleepStartTimestampGMT) ??
     isoFromMsOrString(nested.sleepStartTimestamp) ??
-    isoFromMsOrString(nested.startGMT);
+    isoFromMsOrString(nested.startGMT) ??
+    isoFromMsOrString(nested.sleepStartTimestampLocal);
   const endAt =
-    isoFromMsOrString(nested.sleepEndTimestampLocal) ??
     isoFromMsOrString(nested.sleepEndTimestampGMT) ??
     isoFromMsOrString(nested.sleepEndTimestamp) ??
-    isoFromMsOrString(nested.endGMT);
+    isoFromMsOrString(nested.endGMT) ??
+    isoFromMsOrString(nested.sleepEndTimestampLocal);
 
   const avgSpo2 =
     nonNegNumber(nested.averageSpO2Value) ??

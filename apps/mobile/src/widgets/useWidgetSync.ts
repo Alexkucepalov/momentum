@@ -7,8 +7,7 @@ import { syncTodayWidgetPayload } from './syncTodayWidget';
 export function useWidgetSync() {
   const { repo } = useData();
   const revision = useAnyRevision();
-  void revision;
   useEffect(() => {
     void syncTodayWidgetPayload(repo);
-  }, [repo]);
+  }, [repo, revision]);
 }
