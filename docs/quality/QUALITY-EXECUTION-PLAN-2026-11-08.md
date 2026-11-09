@@ -16,7 +16,8 @@
 2. Один PR = один пакет; verify зелёный; merge после verify (по разрешению основателя 2026-11-08).  
 3. Visual / data / wipe — отдельные PR.  
 4. Backup/heal **не доказывает** wipe — нужна проверка. JSON snapshot ≠ P0 сам по себе.  
-5. Пиксельный widgets-preview — product decision, не блокер беты, пока не в native release.
+5. Пиксельный widgets-preview — product decision, не блокер беты, пока не в native release.  
+6. **Anti-regression:** аудит/макет не важнее уже принятого поведения на телефоне. Замки — `ANTI-REGRESSION.md` + `tests/anti-regression-locks.test.mjs`. UX-перестановки Food/порции/Garmin/сон/виджеты — только после короткого device smoke.
 
 ---
 
@@ -57,8 +58,9 @@
 
 ## Пакет 3 — Food fold (вариант A)
 
-Порядок diary: **сводка → Повторить (FoodQuickStrips) → приёмы → footer Add**.  
-Пустая история: короткое first-add, не пустой блок «Повторить».
+Порядок diary (замок R3, откат #204): **сводка → приёмы → Повторить (FoodQuickStrips) → footer Add**.  
+Пустая история: короткое first-add, не пустой блок «Повторить».  
+Поднимать «Повторить» выше приёмов **нельзя** без ок основателя на устройстве.
 
 ---
 
