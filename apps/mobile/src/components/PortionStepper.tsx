@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
@@ -11,6 +11,10 @@ function formatGrams(n: number): string {
   return String(rounded);
 }
 
+/**
+ * Local typing buffer; parent `grams` syncs only when not focused so each keystroke
+ * is not wiped by a re-select / controlled rewrite (first-digit regression).
+ */
 export function PortionStepper({
   grams,
   onChange,
@@ -22,17 +26,11 @@ export function PortionStepper({
   lastGrams?: number | null;
 }) {
   const [raw, setRaw] = useState(() => formatGrams(grams));
+  const focusedRef = useRef(false);
 
   useEffect(() => {
-    setRaw((prev) => {
-      const t = prev.trim().replace(',', '.');
-      if (t === '' || t === '.' || t.endsWith('.')) return prev;
-      const asNum = Number(t);
-      if (Number.isFinite(asNum) && Math.round(asNum * 10) / 10 === Math.round(grams * 10) / 10) {
-        return prev;
-      }
-      return formatGrams(grams);
-    });
+    if (focusedRef.current) return;
+    setRaw(formatGrams(grams));
   }, [grams]);
 
   const setSafe = (n: number) => {
@@ -79,19 +77,19 @@ export function PortionStepper({
             const normalized = t.replace(',', '.');
             if (normalized !== '' && !/^\d*\.?\d*$/.test(normalized)) return;
             setRaw(normalized);
-            if (normalized === '' || normalized === '.' || normalized.endsWith('.')) return;
-            const n = Number(normalized);
-            if (Number.isFinite(n) && n >= 0) {
-              onChange(Math.round(n * 10) / 10);
-            }
           }}
-          onBlur={commitRaw}
+          onFocus={() => {
+            focusedRef.current = true;
+          }}
+          onBlur={() => {
+            focusedRef.current = false;
+            commitRaw();
+          }}
           onSubmitEditing={commitRaw}
           keyboardType="decimal-pad"
-          selectTextOnFocus
           style={styles.input}
           accessibilityLabel="Граммы порции"
-          accessibilityHint="Можно полностью стереть и ввести заново"
+          accessibilityHint="Сотри и введи заново, или правь цифры"
         />
         <Pressable
           style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}

@@ -8,7 +8,7 @@ import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 type RailTab = 'saved' | 'recent';
 
 /**
- * Quiet “Повторить” panel above meal sections (above-the-fold on filled days).
+ * Quiet “Повторить” panel below meal sections.
  * Segment + simple rows (no horizontal chip clutter).
  */
 export function FoodQuickStrips({

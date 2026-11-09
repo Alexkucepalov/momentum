@@ -58,7 +58,7 @@ export function formatFoodLogStreakRu(streak: FoodLogStreak): {
   return {
     title: `${n} ${days} подряд`,
     body: streak.loggedEndDate
-      ? 'Ты ведёшь дневник — этого достаточно. Пропуск — нормально.'
+      ? 'Дни с хотя бы одной записью подряд.'
       : 'Серия ещё жива, если сегодня появится хотя бы одна запись.',
   };
 }
