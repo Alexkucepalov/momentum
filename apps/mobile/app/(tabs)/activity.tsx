@@ -226,6 +226,7 @@ export default function MovementScreen() {
               <StrengthWeekBoard
                 days={strengthWeekDays}
                 selectedDate={dateLocal}
+                todayDate={todayKey}
                 onSelectDate={setDateLocal}
                 onAdd={() => setAddPlanOpen(true)}
                 onApplyProgram={() => {
@@ -301,8 +302,20 @@ export default function MovementScreen() {
               <StrengthEntryCard
                 templates={strengthTemplates}
                 inProgress={strengthInProgress}
+                todayPlan={repo.listPlannedActivitiesForDate(dateLocal)}
                 onOpenHub={() => router.push(strengthHubHref())}
                 onContinue={(sessionId) => router.push(strengthSessionHref(sessionId))}
+                onStartPlanned={(activity) => {
+                  const session = repo.startWorkoutSession({
+                    dateLocal: activity.dateLocal,
+                    title: activity.title,
+                    templateId: activity.templateId,
+                    plannedActivityId: activity.id,
+                  });
+                  refresh('activity');
+                  showFlash('Сессия начата');
+                  router.push(strengthSessionHref(session.id));
+                }}
                 onStartTemplate={(templateId) => {
                   const tmpl = repo.getWorkoutTemplate(templateId);
                   if (!tmpl) {
