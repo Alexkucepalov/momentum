@@ -1,7 +1,7 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useNavigation, useRouter, type Href } from 'expo-router';
 
 import {
   buildHabitWeekMarks,
@@ -23,7 +23,11 @@ import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { AddFoodSheet } from '@/src/features/diary/AddFoodSheet';
 import { BarcodeLookupSheet } from '@/src/features/diary/BarcodeLookupSheet';
 import { FoodLogStreakCard } from '@/src/features/diary/FoodLogStreakCard';
-import { useData, useDiaryRevision } from '@/src/state/DataContext';
+import {
+  strengthSessionHref,
+} from '@/src/features/strength/StrengthEntryCard';
+import { TodayTrainingCard } from '@/src/features/strength/TodayTrainingCard';
+import { useActivityRevision, useData, useDiaryRevision } from '@/src/state/DataContext';
 import {
   AppButton,
   AppText,
@@ -58,6 +62,7 @@ export default function TodayScreen() {
   const router = useRouter();
   const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
   const diaryRevision = useDiaryRevision();
+  const activityRevision = useActivityRevision();
   void diaryRevision;
   const [open, setOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
@@ -105,6 +110,21 @@ export default function TodayScreen() {
         };
       });
   }, [repo, dateLocal]);
+
+  useEffect(() => {
+    const before = repo.listWorkoutTemplates().length;
+    repo.ensureStrengthCatalog();
+    if (repo.listWorkoutTemplates().length !== before) refresh('activity');
+  }, [repo, refresh]);
+
+  const strengthInProgress = useMemo(
+    () => repo.listInProgressWorkoutSessions(),
+    [repo, activityRevision],
+  );
+  const todayPlan = useMemo(
+    () => repo.listPlannedActivitiesForDate(dateLocal),
+    [repo, dateLocal, activityRevision],
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -179,6 +199,22 @@ export default function TodayScreen() {
               repo.addWater(dateLocal, ml);
               refresh('diary');
               showFlash(`+${ml} мл воды`);
+            }}
+          />
+
+          <TodayTrainingCard
+            inProgress={strengthInProgress}
+            todayPlan={todayPlan}
+            onStart={(activity) => {
+              const session = repo.startWorkoutSession({
+                dateLocal: activity.dateLocal,
+                title: activity.title,
+                templateId: activity.templateId,
+                plannedActivityId: activity.id,
+              });
+              refresh('activity');
+              showFlash('Сессия начата');
+              router.push(strengthSessionHref(session.id) as Href);
             }}
           />
 

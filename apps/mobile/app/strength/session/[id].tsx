@@ -2,10 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { nextIncompleteSetId } from '../../../../../src/domain/strength';
 import { RestTimerBar } from '@/src/features/strength/RestTimerBar';
 import { SessionFinishSheet } from '@/src/features/strength/SessionFinishSheet';
 import { SetLogRow } from '@/src/features/strength/SetLogRow';
-import { AppButton, AppText, colors, space } from '@/src/design-system';
+import { AppButton, AppText, colors, radius, space } from '@/src/design-system';
 import { useActivityRevision, useData } from '@/src/state/DataContext';
 
 const DEFAULT_REST_SEC = 90;
@@ -20,6 +21,7 @@ export default function StrengthSessionScreen() {
 
   const session = id ? repo.getWorkoutSession(String(id)) : null;
   const sets = session ? repo.listWorkoutSets(session.id) : [];
+  const currentSetId = nextIncompleteSetId(sets);
 
   const restByExercise = useMemo(() => {
     const map = new Map<string, number>();
@@ -41,6 +43,8 @@ export default function StrengthSessionScreen() {
       exerciseId,
       name: repo.getStrengthExercise(exerciseId)?.name ?? exerciseId,
       rows: rows.sort((a, b) => a.setIndex - b.setIndex),
+      done: rows.filter((r) => r.completed).length,
+      total: rows.length,
     }));
   }, [sets, repo]);
 
@@ -60,10 +64,17 @@ export default function StrengthSessionScreen() {
   const doneCount = sets.filter((s) => s.completed).length;
   const total = sets.length;
   const isLive = session.status === 'in_progress';
+  const progress = total > 0 ? doneCount / total : 0;
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.content} testID="strength-session">
+      {restSec != null && isLive ? (
+        <View style={styles.restSticky}>
+          <RestTimerBar seconds={restSec} onSkip={clearRest} onDone={clearRest} />
+        </View>
+      ) : null}
+
+      <ScrollView contentContainerStyle={styles.content} testID="strength-session" keyboardShouldPersistTaps="handled">
         <AppText variant="title">{session.title}</AppText>
         <AppText variant="caption" tone="muted">
           {session.status === 'completed'
@@ -72,46 +83,56 @@ export default function StrengthSessionScreen() {
               : 'Завершена'
             : session.status === 'abandoned'
               ? 'Прервана'
-              : `В процессе · ${doneCount}/${total || '—'} подходов`}
+              : `${doneCount} из ${total || '—'} подходов`}
         </AppText>
+        {isLive && total > 0 ? (
+          <View style={styles.progressTrack} accessibilityLabel={`Прогресс ${doneCount} из ${total}`}>
+            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+          </View>
+        ) : null}
         {session.feelingNote ? (
           <AppText variant="caption" tone="secondary">
             {session.feelingNote}
           </AppText>
         ) : null}
 
-        {restSec != null && isLive ? (
-          <RestTimerBar seconds={restSec} onSkip={clearRest} onDone={clearRest} />
-        ) : null}
-
-        {groups.map((g) => (
-          <View key={g.exerciseId} style={styles.block}>
-            <AppText variant="subtitle" style={styles.exTitle}>
-              {g.name}
-            </AppText>
-            {g.rows.map((s) => (
-              <SetLogRow
-                key={s.id}
-                set={s}
-                exerciseName={g.name}
-                onComplete={({ weightKg, reps }) => {
-                  try {
-                    repo.completeWorkoutSet(s.id, { weightKg, reps });
-                    refresh('activity');
-                    setRestSec(restByExercise.get(g.exerciseId) ?? DEFAULT_REST_SEC);
-                  } catch (e) {
-                    showFlash(e instanceof Error ? e.message : 'Не удалось записать подход');
-                  }
-                }}
-              />
-            ))}
-          </View>
-        ))}
+        {groups.map((g) => {
+          const groupDone = g.done === g.total && g.total > 0;
+          return (
+            <View key={g.exerciseId} style={[styles.block, groupDone && styles.blockDone]}>
+              <View style={styles.exHead}>
+                <AppText variant="subtitle" style={styles.exTitle}>
+                  {g.name}
+                </AppText>
+                <AppText variant="caption" tone="muted">
+                  {g.done}/{g.total}
+                </AppText>
+              </View>
+              {g.rows.map((s) => (
+                <SetLogRow
+                  key={s.id}
+                  set={s}
+                  exerciseName={g.name}
+                  isCurrent={s.id === currentSetId}
+                  onComplete={({ weightKg, reps }) => {
+                    try {
+                      repo.completeWorkoutSet(s.id, { weightKg, reps });
+                      refresh('activity');
+                      setRestSec(restByExercise.get(g.exerciseId) ?? DEFAULT_REST_SEC);
+                    } catch (e) {
+                      showFlash(e instanceof Error ? e.message : 'Не удалось записать подход');
+                    }
+                  }}
+                />
+              ))}
+            </View>
+          );
+        })}
 
         {isLive ? (
           <View style={styles.footer}>
             <AppButton
-              label="Завершить тренировку"
+              label={doneCount === total && total > 0 ? 'Завершить · все подходы есть' : 'Завершить тренировку'}
               onPress={() => setFinishOpen(true)}
               testID="strength-finish"
             />
@@ -154,17 +175,42 @@ export default function StrengthSessionScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
+  restSticky: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    backgroundColor: colors.canvas,
+  },
   content: {
     padding: space.lg,
     gap: space.md,
     paddingBottom: space.xxl,
     backgroundColor: colors.canvas,
   },
+  progressTrack: {
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.ink,
+    borderRadius: radius.pill,
+  },
   block: {
     gap: space.xs,
   },
-  exTitle: {
+  blockDone: {
+    opacity: 0.7,
+  },
+  exHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     marginBottom: space.xs,
+  },
+  exTitle: {
+    flex: 1,
   },
   footer: {
     gap: space.sm,

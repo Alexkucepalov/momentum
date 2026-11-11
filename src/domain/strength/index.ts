@@ -44,3 +44,4 @@ export {
   type ExerciseRecord,
   type WeekStrengthSummary,
 } from './trainingVolume';
+export { initialSetFieldValues, nextIncompleteSetId } from './setLogPrefill';

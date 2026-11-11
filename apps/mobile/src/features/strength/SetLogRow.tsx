@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { parseOptionalNonNegativeNumber } from '../../../../../src/domain/strength';
+import {
+  initialSetFieldValues,
+  parseOptionalNonNegativeNumber,
+} from '../../../../../src/domain/strength';
 import type { WorkoutSet } from '../../../../../src/domain/strength/types';
 import { AppText, Field, colors, radius, space, touchMin } from '@/src/design-system';
 
@@ -10,29 +13,38 @@ function formatHint(kg: number | null, reps: number | null): string | null {
   if (kg == null && reps == null) return null;
   const w = kg == null ? '—' : String(kg);
   const r = reps == null ? '—' : String(reps);
-  return `${w} кг × ${r}`;
+  return `${w} × ${r}`;
 }
 
 export function SetLogRow({
   set,
   exerciseName,
+  isCurrent,
   onComplete,
 }: {
   set: WorkoutSet;
   exerciseName: string;
+  isCurrent?: boolean;
   onComplete: (args: { weightKg: number | null; reps: number | null }) => void;
 }) {
-  const [weight, setWeight] = useState(set.weightKg != null ? String(set.weightKg) : '');
-  const [reps, setReps] = useState(set.reps != null ? String(set.reps) : '');
+  const seeded = initialSetFieldValues(set);
+  const [weight, setWeight] = useState(seeded.weight);
+  const [reps, setReps] = useState(seeded.reps);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setWeight(set.weightKg != null ? String(set.weightKg) : '');
-    setReps(set.reps != null ? String(set.reps) : '');
+    const next = initialSetFieldValues(set);
+    setWeight(next.weight);
+    setReps(next.reps);
     setError(null);
-  }, [set.id, set.weightKg, set.reps, set.completed]);
+  }, [set.id, set.weightKg, set.reps, set.targetWeightKg, set.targetReps, set.completed]);
 
   const hint = formatHint(set.targetWeightKg, set.targetReps);
+  const canRepeat =
+    !set.completed &&
+    set.weightKg == null &&
+    set.reps == null &&
+    (set.targetWeightKg != null || set.targetReps != null);
 
   const submit = () => {
     const w = parseOptionalNonNegativeNumber(weight);
@@ -49,30 +61,55 @@ export function SetLogRow({
     onComplete({ weightKg: w.value, reps: r.value });
   };
 
+  const repeatPrevious = () => {
+    onComplete({
+      weightKg: set.targetWeightKg,
+      reps: set.targetReps,
+    });
+  };
+
   return (
     <View
-      style={[styles.row, set.completed && styles.rowDone]}
-      accessibilityLabel={`${exerciseName}, подход ${set.setIndex}`}
+      style={[
+        styles.row,
+        set.completed && styles.rowDone,
+        isCurrent && !set.completed && styles.rowCurrent,
+      ]}
+      accessibilityLabel={`${exerciseName}, подход ${set.setIndex}${isCurrent ? ', текущий' : ''}`}
     >
       <View style={styles.top}>
-        <AppText variant="label" tone="muted">
-          Подход {set.setIndex}
+        <AppText variant="label" tone={isCurrent ? 'ink' : 'muted'}>
+          {set.setIndex}
+          {isCurrent && !set.completed ? ' · сейчас' : ''}
         </AppText>
-        {set.completed ? (
-          <View accessibilityLabel="Подход записан">
-            <Ionicons name="checkmark-circle" size={28} color={colors.success} />
-          </View>
-        ) : (
-          <Pressable
-            onPress={submit}
-            style={({ pressed }) => [styles.checkBtn, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`Записать подход ${set.setIndex}`}
-            testID={`set-complete-${set.id}`}
-          >
-            <Ionicons name="checkmark" size={22} color={colors.ink} />
-          </Pressable>
-        )}
+        <View style={styles.topActions}>
+          {canRepeat ? (
+            <Pressable
+              onPress={repeatPrevious}
+              style={({ pressed }) => [styles.repeatBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Повторить прошлый ${hint ?? ''}`}
+              testID={`set-repeat-${set.id}`}
+            >
+              <AppText variant="caption">Как в прошлый</AppText>
+            </Pressable>
+          ) : null}
+          {set.completed ? (
+            <View accessibilityLabel="Подход записан">
+              <Ionicons name="checkmark-circle" size={28} color={colors.success} />
+            </View>
+          ) : (
+            <Pressable
+              onPress={submit}
+              style={({ pressed }) => [styles.checkBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Записать подход ${set.setIndex}`}
+              testID={`set-complete-${set.id}`}
+            >
+              <Ionicons name="checkmark" size={22} color={colors.onPrimary} />
+            </Pressable>
+          )}
+        </View>
       </View>
       <View style={styles.fields}>
         <View style={styles.fieldWrap}>
@@ -81,7 +118,7 @@ export function SetLogRow({
             value={weight}
             onChangeText={setWeight}
             keyboardType="decimal-pad"
-            placeholder={set.targetWeightKg != null ? String(set.targetWeightKg) : '—'}
+            placeholder="—"
             editable={!set.completed}
             testID={`set-weight-${set.id}`}
           />
@@ -92,15 +129,15 @@ export function SetLogRow({
             value={reps}
             onChangeText={setReps}
             keyboardType="number-pad"
-            placeholder={set.targetReps != null ? String(set.targetReps) : '—'}
+            placeholder="—"
             editable={!set.completed}
             testID={`set-reps-${set.id}`}
           />
         </View>
       </View>
-      {hint && !set.completed ? (
+      {hint && !set.completed && !canRepeat ? (
         <AppText variant="caption" tone="muted">
-          прошлый: {hint}
+          ориентир: {hint}
         </AppText>
       ) : null}
       {error ? (
@@ -123,13 +160,23 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   rowDone: {
-    opacity: 0.72,
+    opacity: 0.55,
+  },
+  rowCurrent: {
+    borderColor: colors.ink,
+    borderWidth: 1.5,
   },
   top: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: space.xs,
+    gap: space.sm,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
   },
   fields: {
     flexDirection: 'row',
@@ -144,6 +191,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
+    backgroundColor: colors.ink,
+  },
+  repeatBtn: {
+    minHeight: touchMin - 8,
+    paddingHorizontal: space.sm,
+    justifyContent: 'center',
+    borderRadius: radius.sm,
     backgroundColor: colors.canvas,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,

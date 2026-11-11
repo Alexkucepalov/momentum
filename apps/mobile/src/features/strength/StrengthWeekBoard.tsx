@@ -10,6 +10,7 @@ import { PlannedActivityCard } from './PlannedActivityCard';
 export function StrengthWeekBoard({
   days,
   selectedDate,
+  todayDate,
   onSelectDate,
   onAdd,
   onApplyProgram,
@@ -18,6 +19,8 @@ export function StrengthWeekBoard({
 }: {
   days: StrengthWeekDay[];
   selectedDate: string;
+  /** Local today key — chip outline for orientation. */
+  todayDate?: string;
   onSelectDate: (dateLocal: string) => void;
   onAdd: () => void;
   /** Fill / replace week from personal program (4 strength + bike + 2 rest). */
@@ -68,6 +71,7 @@ export function StrengthWeekBoard({
       <View style={styles.chips} accessibilityRole="tablist">
         {days.map((d) => {
           const selectedChip = d.dateLocal === selectedDate;
+          const isToday = todayDate != null && d.dateLocal === todayDate;
           const short = HABIT_WEEKDAY_LABELS_RU[d.weekdayIndex]?.slice(0, 2) ?? '·';
           const dayNum = Number(d.dateLocal.slice(8, 10));
           return (
@@ -77,11 +81,12 @@ export function StrengthWeekBoard({
               style={({ pressed }) => [
                 styles.chip,
                 selectedChip && styles.chipOn,
+                isToday && !selectedChip && styles.chipToday,
                 pressed && styles.pressed,
               ]}
               accessibilityRole="tab"
               accessibilityState={{ selected: selectedChip }}
-              accessibilityLabel={`${HABIT_WEEKDAY_LABELS_RU[d.weekdayIndex]}, ${dayNum}, ${d.activities.length} в плане`}
+              accessibilityLabel={`${HABIT_WEEKDAY_LABELS_RU[d.weekdayIndex]}, ${dayNum}, ${d.activities.length} в плане${isToday ? ', сегодня' : ''}`}
             >
               <AppText
                 variant="caption"
@@ -105,9 +110,14 @@ export function StrengthWeekBoard({
 
       <View style={styles.cards}>
         {cards.length === 0 ? (
-          <AppText variant="caption" tone="muted" style={styles.empty}>
-            Пустой день — не «ноль». Добавь шаблон или отдых.
-          </AppText>
+          <View style={styles.emptyBox}>
+            <AppText variant="body" tone="muted">
+              День свободен
+            </AppText>
+            <AppText variant="caption" tone="muted">
+              Не «ноль» — просто нет плана. «+» или Программа на неделю.
+            </AppText>
+          </View>
         ) : (
           cards.map((a) => (
             <PlannedActivityCard
@@ -175,8 +185,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     borderColor: colors.ink,
   },
+  chipToday: {
+    borderColor: colors.ink,
+    borderWidth: 1.5,
+  },
   chipDow: {
     textTransform: 'lowercase',
+  },
+  emptyBox: {
+    gap: space.xs,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.xs,
   },
   dot: {
     width: 4,
@@ -193,9 +212,6 @@ const styles = StyleSheet.create({
   },
   cards: {
     gap: space.sm,
-  },
-  empty: {
-    paddingVertical: space.sm,
   },
   pressed: { opacity: 0.85 },
 });

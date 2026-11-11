@@ -2,30 +2,39 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Href } from 'expo-router';
 
-import type { WorkoutSession, WorkoutTemplate } from '../../../../../src/domain/strength/types';
+import type {
+  PlannedActivity,
+  WorkoutSession,
+  WorkoutTemplate,
+} from '../../../../../src/domain/strength/types';
 import { AppButton, AppCard, AppText, colors, space } from '@/src/design-system';
 
 export function StrengthEntryCard({
   templates,
   inProgress,
+  todayPlan,
   onOpenHub,
   onContinue,
   onStartTemplate,
+  onStartPlanned,
 }: {
   templates: WorkoutTemplate[];
   inProgress: WorkoutSession[];
+  todayPlan?: PlannedActivity[];
   onOpenHub: () => void;
   onContinue: (sessionId: string) => void;
   onStartTemplate: (templateId: string) => void;
+  onStartPlanned?: (activity: PlannedActivity) => void;
 }) {
   const active = inProgress[0] ?? null;
+  const todayStrength = (todayPlan ?? []).find((a) => a.kind === 'strength') ?? null;
   const preview = templates.slice(0, 3);
 
   return (
     <AppCard accessibilityLabel="Силовые тренировки" testID="strength-entry-card">
       <View style={styles.head}>
         <AppText variant="label" tone="muted">
-          Силовые
+          Быстрый старт
         </AppText>
         <Pressable
           onPress={onOpenHub}
@@ -43,12 +52,29 @@ export function StrengthEntryCard({
         <View style={styles.activeBlock}>
           <AppText variant="subtitle">{active.title}</AppText>
           <AppText variant="caption" tone="muted">
-            Черновик сохранится, если свернуть приложение
+            Черновик на месте после свернуть / kill
           </AppText>
           <AppButton
             label="Продолжить"
             onPress={() => onContinue(active.id)}
             testID="strength-continue"
+          />
+        </View>
+      ) : todayStrength && onStartPlanned ? (
+        <View style={styles.activeBlock}>
+          <AppText variant="caption" tone="muted">
+            По плану на сегодня
+          </AppText>
+          <AppText variant="subtitle">{todayStrength.title}</AppText>
+          {todayStrength.timeLocal || todayStrength.subtitle ? (
+            <AppText variant="caption" tone="secondary">
+              {[todayStrength.timeLocal, todayStrength.subtitle].filter(Boolean).join(' · ')}
+            </AppText>
+          ) : null}
+          <AppButton
+            label="Начать"
+            onPress={() => onStartPlanned(todayStrength)}
+            testID="strength-start-today-plan"
           />
         </View>
       ) : (
