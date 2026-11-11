@@ -228,6 +228,35 @@ export default function MovementScreen() {
                 selectedDate={dateLocal}
                 onSelectDate={setDateLocal}
                 onAdd={() => setAddPlanOpen(true)}
+                onApplyProgram={() => {
+                  const hasCards = strengthWeekDays.some((d) => d.activities.length > 0);
+                  const run = (replace: boolean) => {
+                    try {
+                      const { created } = repo.applyStrengthProgramWeek(weekStart, { replace });
+                      refresh('activity');
+                      showFlash(
+                        replace
+                          ? `Программа на неделю обновлена (${created})`
+                          : `Программа добавлена (${created})`,
+                      );
+                    } catch (e) {
+                      showFlash(e instanceof Error ? e.message : 'Не удалось применить программу');
+                    }
+                  };
+                  if (!hasCards) {
+                    run(false);
+                    return;
+                  }
+                  Alert.alert(
+                    'Программа на неделю',
+                    'Заменить текущие карточки планом (4 силовые + вело + 2 отдыха)? История выполненных тренировок не изменится.',
+                    [
+                      { text: 'Отмена', style: 'cancel' },
+                      { text: 'Добавить сверху', onPress: () => run(false) },
+                      { text: 'Заменить', style: 'destructive', onPress: () => run(true) },
+                    ],
+                  );
+                }}
                 onMenu={(activity) => {
                   Alert.alert(activity.title, 'План ≠ факт. Перенос не меняет историю подходов.', [
                     {

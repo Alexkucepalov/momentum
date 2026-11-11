@@ -12,6 +12,7 @@ export function StrengthWeekBoard({
   selectedDate,
   onSelectDate,
   onAdd,
+  onApplyProgram,
   onMenu,
   onStart,
 }: {
@@ -19,11 +20,14 @@ export function StrengthWeekBoard({
   selectedDate: string;
   onSelectDate: (dateLocal: string) => void;
   onAdd: () => void;
+  /** Fill / replace week from personal program (4 strength + bike + 2 rest). */
+  onApplyProgram?: () => void;
   onMenu: (activity: PlannedActivity) => void;
   onStart: (activity: PlannedActivity) => void;
 }) {
   const selected = days.find((d) => d.dateLocal === selectedDate) ?? days[0];
   const cards = selected?.activities ?? [];
+  const plannedCount = days.reduce((n, d) => n + d.activities.length, 0);
 
   return (
     <View style={styles.wrap} testID="strength-week-board">
@@ -31,15 +35,34 @@ export function StrengthWeekBoard({
         <AppText variant="label" tone="muted">
           План недели
         </AppText>
-        <Pressable
-          onPress={onAdd}
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Добавить в план дня"
-          testID="strength-week-add"
-        >
-          <Ionicons name="add" size={20} color={colors.ink} />
-        </Pressable>
+        <View style={styles.headActions}>
+          {onApplyProgram ? (
+            <Pressable
+              onPress={onApplyProgram}
+              style={({ pressed }) => [styles.programBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={
+                plannedCount > 0
+                  ? 'Повторить программу на эту неделю'
+                  : 'Заполнить неделю программой'
+              }
+              testID="strength-week-apply-program"
+            >
+              <AppText variant="caption" tone="secondary">
+                {plannedCount > 0 ? 'Повторить программу' : 'Программа'}
+              </AppText>
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={onAdd}
+            style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Добавить в план дня"
+            testID="strength-week-add"
+          >
+            <Ionicons name="add" size={20} color={colors.ink} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.chips} accessibilityRole="tablist">
@@ -109,6 +132,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  programBtn: {
+    minHeight: touchMin - 8,
+    paddingHorizontal: space.sm,
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   addBtn: {
     minWidth: touchMin - 8,
