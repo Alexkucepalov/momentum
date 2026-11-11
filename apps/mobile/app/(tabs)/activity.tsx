@@ -1,9 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
 
-import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
+import {
+  datesInWeekFromStart,
+  HABIT_WEEKDAY_LABELS_RU,
+  weekStartMonday,
+} from '../../../../src/domain/habitWeek';
+import { buildStrengthWeekDays } from '../../../../src/domain/strength';
+import type { PlannedActivity } from '../../../../src/domain/strength/types';
 import { shiftDateLocal } from '../../../../src/domain/repeatMeal';
 import type { WorkoutType } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
@@ -17,12 +23,16 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { SleepDayPanel } from '@/src/features/sleep/SleepDayPanel';
+import { AddPlannedStrengthSheet } from '@/src/features/strength/AddPlannedStrengthSheet';
+import { MoveCopyActivitySheet } from '@/src/features/strength/MoveCopyActivitySheet';
 import {
   StrengthEntryCard,
   strengthHubHref,
   strengthSessionHref,
 } from '@/src/features/strength/StrengthEntryCard';
+import { StrengthWeekBoard } from '@/src/features/strength/StrengthWeekBoard';
 import { useData, useActivityRevision } from '@/src/state/DataContext';
+import { confirmAction } from '@/src/utils/confirmAction';
 import {
   AppText,
   SegmentedControl,
@@ -49,7 +59,6 @@ export default function MovementScreen() {
   const params = useLocalSearchParams<{ segment?: string }>();
   const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
   const activityRevision = useActivityRevision();
-  void activityRevision;
   const [segment, setSegment] = useState<MovementTab>(
     params.segment === 'sleep' ? 'sleep' : 'activity',
   );
@@ -57,6 +66,11 @@ export default function MovementScreen() {
   const [formType, setFormType] = useState<WorkoutType>('walking');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
+  const [addPlanOpen, setAddPlanOpen] = useState(false);
+  const [moveCopy, setMoveCopy] = useState<{
+    activity: PlannedActivity;
+    mode: 'move' | 'copy';
+  } | null>(null);
 
   useEffect(() => {
     if (params.segment === 'sleep') setSegment('sleep');
@@ -76,6 +90,24 @@ export default function MovementScreen() {
   }, [repo, refresh]);
   const strengthTemplates = repo.listWorkoutTemplates();
   const strengthInProgress = repo.listInProgressWorkoutSessions();
+  const weekStart = weekStartMonday(dateLocal);
+  const weekDates = useMemo(() => datesInWeekFromStart(weekStart), [weekStart]);
+  const plannedWeek = useMemo(
+    () => repo.listPlannedActivitiesInWeek(weekStart),
+    [repo, weekStart, activityRevision],
+  );
+  const strengthWeekDays = useMemo(
+    () => buildStrengthWeekDays({ weekDates, activities: plannedWeek }),
+    [weekDates, plannedWeek],
+  );
+  const moveDayOptions = useMemo(
+    () =>
+      weekDates.map((d, i) => ({
+        dateLocal: d,
+        label: `${HABIT_WEEKDAY_LABELS_RU[i]} ${Number(d.slice(8, 10))}`,
+      })),
+    [weekDates],
+  );
   const workouts = repo.listWorkoutsForDate(dateLocal);
   const totalMin = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
@@ -191,6 +223,52 @@ export default function MovementScreen() {
                 workoutCalories={workoutCalories}
               />
 
+              <StrengthWeekBoard
+                days={strengthWeekDays}
+                selectedDate={dateLocal}
+                onSelectDate={setDateLocal}
+                onAdd={() => setAddPlanOpen(true)}
+                onMenu={(activity) => {
+                  Alert.alert(activity.title, 'План ≠ факт. Перенос не меняет историю подходов.', [
+                    {
+                      text: 'Перенести',
+                      onPress: () => setMoveCopy({ activity, mode: 'move' }),
+                    },
+                    {
+                      text: 'Копировать',
+                      onPress: () => setMoveCopy({ activity, mode: 'copy' }),
+                    },
+                    {
+                      text: 'Удалить из плана',
+                      style: 'destructive',
+                      onPress: () => {
+                        confirmAction('Убрать из плана?', 'Факт тренировок не затронется.', {
+                          confirmLabel: 'Удалить',
+                          destructive: true,
+                          onConfirm: () => {
+                            repo.softDeletePlannedActivity(activity.id);
+                            refresh('activity');
+                            showFlash('Убрано из плана');
+                          },
+                        });
+                      },
+                    },
+                    { text: 'Отмена', style: 'cancel' },
+                  ]);
+                }}
+                onStart={(activity) => {
+                  const session = repo.startWorkoutSession({
+                    dateLocal: activity.dateLocal,
+                    title: activity.title,
+                    templateId: activity.templateId,
+                    plannedActivityId: activity.id,
+                  });
+                  refresh('activity');
+                  showFlash('Сессия начата');
+                  router.push(strengthSessionHref(session.id));
+                }}
+              />
+
               <StrengthEntryCard
                 templates={strengthTemplates}
                 inProgress={strengthInProgress}
@@ -202,10 +280,18 @@ export default function MovementScreen() {
                     showFlash('Шаблон не найден');
                     return;
                   }
+                  const planned = repo.addPlannedActivity({
+                    dateLocal,
+                    kind: 'strength',
+                    title: tmpl.name,
+                    subtitle: tmpl.subtitle,
+                    templateId: tmpl.id,
+                  });
                   const session = repo.startWorkoutSession({
                     dateLocal,
                     title: tmpl.name,
                     templateId: tmpl.id,
+                    plannedActivityId: planned.id,
                   });
                   refresh('activity');
                   showFlash('Сессия начата');
@@ -344,6 +430,67 @@ export default function MovementScreen() {
         }}
       />
       <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
+      <AddPlannedStrengthSheet
+        visible={addPlanOpen}
+        dateLabel={`${HABIT_WEEKDAY_LABELS_RU[weekDates.indexOf(dateLocal)] ?? ''} ${Number(dateLocal.slice(8, 10))}`}
+        templates={strengthTemplates}
+        onClose={() => setAddPlanOpen(false)}
+        onPickTemplate={(templateId) => {
+          const tmpl = repo.getWorkoutTemplate(templateId);
+          if (!tmpl) return;
+          repo.addPlannedActivity({
+            dateLocal,
+            kind: 'strength',
+            title: tmpl.name,
+            subtitle: tmpl.subtitle,
+            templateId: tmpl.id,
+          });
+          setAddPlanOpen(false);
+          refresh('activity');
+          showFlash('Добавлено в план');
+        }}
+        onAddCardio={() => {
+          repo.addPlannedActivity({
+            dateLocal,
+            kind: 'cardio',
+            title: 'Кардио',
+            cardioMinutes: 30,
+          });
+          setAddPlanOpen(false);
+          refresh('activity');
+          showFlash('Кардио в плане');
+        }}
+        onAddRest={() => {
+          repo.addPlannedActivity({
+            dateLocal,
+            kind: 'rest',
+            title: 'Отдых',
+          });
+          setAddPlanOpen(false);
+          refresh('activity');
+          showFlash('Отдых в плане');
+        }}
+      />
+      <MoveCopyActivitySheet
+        visible={moveCopy != null}
+        mode={moveCopy?.mode ?? 'move'}
+        activityTitle={moveCopy?.activity.title ?? ''}
+        days={moveDayOptions}
+        onClose={() => setMoveCopy(null)}
+        onPick={(targetDate) => {
+          if (!moveCopy) return;
+          if (moveCopy.mode === 'move') {
+            repo.movePlannedActivity(moveCopy.activity.id, { dateLocal: targetDate });
+            showFlash('Перенесено');
+          } else {
+            repo.copyPlannedActivity(moveCopy.activity.id, { dateLocal: targetDate });
+            showFlash('Скопировано');
+          }
+          setMoveCopy(null);
+          refresh('activity');
+          setDateLocal(targetDate);
+        }}
+      />
     </View>
   );
 }
