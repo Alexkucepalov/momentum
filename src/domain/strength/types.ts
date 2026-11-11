@@ -71,6 +71,10 @@ export type WorkoutSession = {
   status: WorkoutSessionStatus;
   startedAt: string;
   completedAt: string | null;
+  /** Subjective difficulty 1–10 after session; null = unknown (not zero). */
+  feelingRpe: number | null;
+  /** Free-text recovery / form note — never invented. */
+  feelingNote: string | null;
   createdAt: string;
   deletedAt: string | null;
 };

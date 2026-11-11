@@ -431,7 +431,10 @@ export type FoodRepository = {
   getWorkoutSession(sessionId: string): WorkoutSession | null;
   listWorkoutSessionsForDate(dateLocal: string): WorkoutSession[];
   listInProgressWorkoutSessions(): WorkoutSession[];
-  completeWorkoutSession(sessionId: string): WorkoutSession;
+  completeWorkoutSession(
+    sessionId: string,
+    opts?: { feelingRpe?: number | null; feelingNote?: string | null },
+  ): WorkoutSession;
   abandonWorkoutSession(sessionId: string): WorkoutSession;
   listWorkoutSets(sessionId: string): WorkoutSet[];
   /**
@@ -1189,7 +1192,9 @@ function normalizePlannedActivity(raw: PlannedActivity): PlannedActivity {
   };
 }
 
-function normalizeWorkoutSession(raw: WorkoutSession): WorkoutSession {
+function normalizeWorkoutSession(
+  raw: WorkoutSession & { feelingRpe?: number | null; feelingNote?: string | null },
+): WorkoutSession {
   return {
     id: raw.id,
     dateLocal: raw.dateLocal,
@@ -1199,6 +1204,8 @@ function normalizeWorkoutSession(raw: WorkoutSession): WorkoutSession {
     status: raw.status,
     startedAt: raw.startedAt,
     completedAt: raw.completedAt ?? null,
+    feelingRpe: raw.feelingRpe ?? null,
+    feelingNote: raw.feelingNote ?? null,
     createdAt: raw.createdAt,
     deletedAt: raw.deletedAt ?? null,
   };
@@ -2904,6 +2911,8 @@ export function createMemoryFoodRepository(seed?: {
         status: 'in_progress' satisfies WorkoutSessionStatus,
         startedAt: ts,
         completedAt: null,
+        feelingRpe: null,
+        feelingNote: null,
         createdAt: ts,
         deletedAt: null,
       };
@@ -2963,9 +2972,20 @@ export function createMemoryFoodRepository(seed?: {
         .map((s) => ({ ...s }))
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     },
-    completeWorkoutSession(sessionId) {
+    completeWorkoutSession(sessionId, opts) {
       const s = workoutSessions.get(sessionId);
       if (!s || s.deletedAt) throw new Error('Workout session not found');
+      if (opts?.feelingRpe != null) {
+        assertPositiveFinite(opts.feelingRpe, 'feelingRpe');
+        if (!Number.isInteger(opts.feelingRpe) || opts.feelingRpe < 1 || opts.feelingRpe > 10) {
+          throw new Error('feelingRpe must be an integer 1–10');
+        }
+        s.feelingRpe = opts.feelingRpe;
+      }
+      if (opts?.feelingNote !== undefined) {
+        const note = opts.feelingNote?.trim() ? opts.feelingNote.trim() : null;
+        s.feelingNote = note;
+      }
       s.status = 'completed';
       s.completedAt = nowIso();
       notify();
