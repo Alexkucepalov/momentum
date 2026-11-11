@@ -37,7 +37,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 03 progress | Working weight / reps chart | Done (#209) |
 | 03b program | Personal week seed 16.11 + apply/repeat | Done (#210) |
 | 03c session UX | Rest timer + RPE after session | Done (#211) |
-| 03d volume/PRs | Week volume + personal records | In progress |
+| 03d volume/PRs | Week volume + personal records | Done (#212) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)

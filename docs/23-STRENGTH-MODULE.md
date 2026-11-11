@@ -1,6 +1,6 @@
 # Strength module (силовые) — PRD slice
 
-**Статус:** Stages 01–03 + program/RPE merged (#206–#211). Volume/PRs next. Stage 04 calendar deferred.  
+**Статус:** Program + session UX + volume/PRs merged (#206–#212). Drag / Google Calendar later.  
 **ADR:** ADR-011 in `docs/14-DECISIONS.md`  
 **Философия:** быстро в зале (≤15 с до записи подхода), шаблон ≠ факт, без стыда за перенос, без 6-й вкладки.
 
