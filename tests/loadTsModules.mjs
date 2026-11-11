@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -40,7 +40,13 @@ export function loadSrcModules() {
       if (spec.startsWith('.')) {
         let resolved = join(dirname(absPath), spec);
         if (resolved.endsWith('.js')) resolved = resolved.slice(0, -3) + '.ts';
-        if (!resolved.endsWith('.ts')) resolved += '.ts';
+        if (!resolved.endsWith('.ts')) {
+          const asFile = `${resolved}.ts`;
+          const asIndex = join(resolved, 'index.ts');
+          if (existsSync(asFile)) resolved = asFile;
+          else if (existsSync(asIndex)) resolved = asIndex;
+          else resolved = asFile;
+        }
         return load(resolved);
       }
       return require(spec);

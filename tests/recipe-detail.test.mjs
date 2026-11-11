@@ -128,7 +128,7 @@ test('v6 recipe migrates optional detail fields', () => {
   assert.equal(r?.description, null);
   assert.equal(r?.photoUri, null);
   assert.equal(r?.energyKcalPer100g, null);
-  assert.equal(repo.toSnapshot().version, 18);
+  assert.equal(repo.toSnapshot().version, 19);
 });
 
 test('diary snapshot keeps unknown recipe macros as null (not zero)', () => {

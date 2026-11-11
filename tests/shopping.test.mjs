@@ -131,7 +131,7 @@ test('createShoppingListFromPlan merges ingredients; plan≠diary', () => {
   assert.ok(rice.coveredByPantry >= 100);
   assert.ok(rice.needToBuy > 0);
   assert.equal(items.every((i) => i.needToBuy > 0), true);
-  assert.equal(repo.toSnapshot().version, 18);
+  assert.equal(repo.toSnapshot().version, 19);
   assert.equal(shoppingKey('Рис', 'g'), 'рис|g');
 });
 
