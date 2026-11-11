@@ -17,6 +17,11 @@ import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
 import { SleepDayPanel } from '@/src/features/sleep/SleepDayPanel';
+import {
+  StrengthEntryCard,
+  strengthHubHref,
+  strengthSessionHref,
+} from '@/src/features/strength/StrengthEntryCard';
 import { useData, useActivityRevision } from '@/src/state/DataContext';
 import {
   AppText,
@@ -64,6 +69,13 @@ export default function MovementScreen() {
   };
 
   const profile = repo.getProfile();
+  useEffect(() => {
+    const before = repo.listWorkoutTemplates().length;
+    repo.ensureStrengthCatalog();
+    if (repo.listWorkoutTemplates().length !== before) refresh('activity');
+  }, [repo, refresh]);
+  const strengthTemplates = repo.listWorkoutTemplates();
+  const strengthInProgress = repo.listInProgressWorkoutSessions();
   const workouts = repo.listWorkoutsForDate(dateLocal);
   const totalMin = repo.activityMinutesForDate(dateLocal);
   const activityKcal = repo.activityEnergyKcalForDate(dateLocal);
@@ -177,6 +189,28 @@ export default function MovementScreen() {
                 activeKcal={dayActiveKcal}
                 workoutCount={workouts.length}
                 workoutCalories={workoutCalories}
+              />
+
+              <StrengthEntryCard
+                templates={strengthTemplates}
+                inProgress={strengthInProgress}
+                onOpenHub={() => router.push(strengthHubHref())}
+                onContinue={(sessionId) => router.push(strengthSessionHref(sessionId))}
+                onStartTemplate={(templateId) => {
+                  const tmpl = repo.getWorkoutTemplate(templateId);
+                  if (!tmpl) {
+                    showFlash('Шаблон не найден');
+                    return;
+                  }
+                  const session = repo.startWorkoutSession({
+                    dateLocal,
+                    title: tmpl.name,
+                    templateId: tmpl.id,
+                  });
+                  refresh('activity');
+                  showFlash('Сессия начата');
+                  router.push(strengthSessionHref(session.id));
+                }}
               />
 
               <View style={styles.quickRow}>

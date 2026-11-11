@@ -22,3 +22,4 @@ export {
   workingWeightFromSets,
   type PreviousSetHint,
 } from './previousPerformance';
+export { parseOptionalNonNegativeNumber } from './parseSetInput';
