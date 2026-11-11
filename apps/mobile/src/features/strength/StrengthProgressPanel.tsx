@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { exerciseWorkingWeightSeries } from '../../../../../src/domain/strength';
+import { datesInWeekFromStart, weekStartMonday } from '../../../../../src/domain/habitWeek';
+import {
+  exerciseWorkingWeightSeries,
+  personalRecordsByExercise,
+  weekStrengthSummary,
+} from '../../../../../src/domain/strength';
 import type { FoodRepository } from '../../../../../src/storage/foodRepository';
 import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
-import { useAnyRevision } from '@/src/state/DataContext';
+import { useAnyRevision, useData } from '@/src/state/DataContext';
 
 export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
+  const { dateLocal } = useData();
   const revision = useAnyRevision();
   const exercises = useMemo(() => {
     repo.ensureStrengthCatalog();
@@ -16,29 +22,67 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
   const activeId =
     exerciseId ?? exercises.find((e) => e.id === 'ex-chest-press')?.id ?? exercises[0]?.id ?? null;
 
-  const series = useMemo(() => {
-    if (!activeId) return [];
+  const weekStart = weekStartMonday(dateLocal);
+  const weekDates = useMemo(() => datesInWeekFromStart(weekStart), [weekStart]);
+
+  const snapMeta = useMemo(() => {
     const snap = repo.toSnapshot();
-    return exerciseWorkingWeightSeries({
-      exerciseId: activeId,
+    const plannedStrength = repo
+      .listPlannedActivitiesInWeek(weekStart)
+      .filter((a) => a.kind === 'strength').length;
+    const summary = weekStrengthSummary({
+      weekStart,
+      weekDates,
+      plannedStrengthCount: plannedStrength,
       sessions: snap.workoutSessions,
       sets: snap.workoutSets,
-      limit: 12,
     });
-  }, [repo, activeId, revision]);
+    const prs = personalRecordsByExercise({
+      sessions: snap.workoutSessions,
+      sets: snap.workoutSets,
+    });
+    const series = activeId
+      ? exerciseWorkingWeightSeries({
+          exerciseId: activeId,
+          sessions: snap.workoutSessions,
+          sets: snap.workoutSets,
+          limit: 12,
+        })
+      : [];
+    return { summary, prs, series };
+  }, [repo, revision, weekStart, weekDates, activeId]);
 
   const selected = exercises.find((e) => e.id === activeId) ?? null;
-  const last = series.length > 0 ? series[series.length - 1] : null;
-  const maxKg = series.reduce<number | null>((acc, p) => {
+  const last =
+    snapMeta.series.length > 0 ? snapMeta.series[snapMeta.series.length - 1] : null;
+  const pr = activeId ? snapMeta.prs.get(activeId) ?? null : null;
+  const maxKg = snapMeta.series.reduce<number | null>((acc, p) => {
     if (p.workingWeightKg == null) return acc;
     if (acc == null || p.workingWeightKg > acc) return p.workingWeightKg;
     return acc;
   }, null);
 
+  const { summary } = snapMeta;
+
   return (
     <AppCard style={styles.card} testID="strength-progress-panel" accessibilityLabel="Прогресс силовых">
       <AppText variant="label" tone="muted">
-        Силовые · рабочий вес
+        Силовые · неделя
+      </AppText>
+      <AppText variant="body">
+        Сессии: {summary.completedSessions}
+        {summary.plannedStrength > 0 ? ` / план ${summary.plannedStrength}` : ''}
+      </AppText>
+      <AppText variant="caption" tone="secondary">
+        Объём:{' '}
+        {summary.tonnageKg == null
+          ? '—'
+          : `${Math.round(summary.tonnageKg)} кг·повт.`}
+        {summary.incompleteTonnage ? ' · часть подходов без веса' : ''}
+      </AppText>
+
+      <AppText variant="label" tone="muted" style={styles.section}>
+        Рабочий вес
       </AppText>
       <AppText variant="caption" tone="secondary">
         Без стыда за пропуск — пустая точка не равна 0 кг
@@ -46,16 +90,16 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
 
       <View style={styles.chips}>
         {exercises.slice(0, 8).map((e) => {
-              const on = e.id === activeId;
-              return (
-                <Pressable
-                  key={e.id}
-                  onPress={() => setExerciseId(e.id)}
-                  style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={e.name}
-                >
+          const on = e.id === activeId;
+          return (
+            <Pressable
+              key={e.id}
+              onPress={() => setExerciseId(e.id)}
+              style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={e.name}
+            >
               <AppText variant="caption" tone={on ? 'inverse' : 'ink'} numberOfLines={1}>
                 {e.name}
               </AppText>
@@ -72,6 +116,16 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
         </AppText>
       )}
 
+      {pr ? (
+        <AppText variant="caption" tone="secondary">
+          Рекорд: {pr.weightKg} кг × {pr.reps} · {pr.dateLocal}
+        </AppText>
+      ) : (
+        <AppText variant="caption" tone="muted">
+          Рекорд появится после подхода с весом
+        </AppText>
+      )}
+
       {last?.workingWeightKg != null ? (
         <AppText variant="body">
           Последний: {last.workingWeightKg} кг
@@ -83,16 +137,13 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
         </AppText>
       )}
 
-      <AppText variant="label" tone="muted">
-        Рабочий вес по сессиям
-      </AppText>
       <View style={styles.bars} accessibilityLabel="Рабочий вес по сессиям">
-        {series.length === 0 ? (
+        {snapMeta.series.length === 0 ? (
           <AppText variant="caption" tone="muted" style={styles.emptyChart}>
             Запиши силовую — появится ряд
           </AppText>
         ) : (
-          series.map((p) => {
+          snapMeta.series.map((p) => {
             const h =
               p.workingWeightKg == null || maxKg == null || maxKg <= 0
                 ? 4
@@ -125,6 +176,7 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
 
 const styles = StyleSheet.create({
   card: { gap: space.sm },
+  section: { marginTop: space.xs },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',

@@ -1,6 +1,6 @@
 # Strength module (силовые) — PRD slice
 
-**Статус:** Stages 01–03 merged (#206–#209). Personal program seed (start **2026-11-16**). Stage 04 calendar deferred.  
+**Статус:** Stages 01–03 + program/RPE merged (#206–#211). Volume/PRs next. Stage 04 calendar deferred.  
 **ADR:** ADR-011 in `docs/14-DECISIONS.md`  
 **Философия:** быстро в зале (≤15 с до записи подхода), шаблон ≠ факт, без стыда за перенос, без 6-й вкладки.
 

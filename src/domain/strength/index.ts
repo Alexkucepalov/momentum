@@ -36,3 +36,11 @@ export {
   exerciseWorkingWeightSeries,
   type ExerciseProgressPoint,
 } from './exerciseProgress';
+export {
+  sessionVolumes,
+  personalRecordsByExercise,
+  weekStrengthSummary,
+  type SessionVolume,
+  type ExerciseRecord,
+  type WeekStrengthSummary,
+} from './trainingVolume';
