@@ -13,10 +13,18 @@ export {
   SEED_STRENGTH_EXERCISES,
   SEED_WORKOUT_TEMPLATES,
   SEED_TEMPLATE_EXERCISES,
+  BUILTIN_TEMPLATE_IDS,
   materializeSeedExercises,
   materializeSeedTemplates,
   muscleLabelRu,
 } from './seedCatalog';
+export {
+  PERSONAL_PROGRAM_START,
+  PERSONAL_PROGRAM_WEEK,
+  buildPersonalProgramWeekDrafts,
+  type ProgramWeekDraft,
+  type ProgramWeekSlot,
+} from './personalProgramWeek';
 export {
   previousCompletedSetsForExercise,
   workingWeightFromSets,

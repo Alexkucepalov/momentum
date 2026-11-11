@@ -5,6 +5,8 @@ import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch'
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
+  BUILTIN_TEMPLATE_IDS,
+  buildPersonalProgramWeekDrafts,
   materializeSeedExercises,
   materializeSeedTemplates,
   previousCompletedSetsForExercise,
@@ -351,8 +353,20 @@ export type FoodRepository = {
   listSleepNights(limit?: number): SleepNight[];
   getGarminSyncState(): GarminSyncState;
   setGarminSyncState(patch: Partial<GarminSyncState>): GarminSyncState;
-  /** Ensure built-in RU strength catalog exists (idempotent by id). */
+  /**
+   * Upsert built-in exercises/templates (personal program v2).
+   * Refreshes lines for builtin template ids only — never rewrites WorkoutSession history.
+   */
   ensureStrengthCatalog(): void;
+  /**
+   * Fill Mon–Sun planned activities from the personal program.
+   * `replace` soft-deletes existing live plan cards in that week first.
+   * Returns number of cards created.
+   */
+  applyStrengthProgramWeek(
+    weekStartMonday: string,
+    opts?: { replace?: boolean },
+  ): { created: number };
   listStrengthExercises(): StrengthExercise[];
   getStrengthExercise(exerciseId: string): StrengthExercise | null;
   listWorkoutTemplates(): WorkoutTemplate[];
@@ -1396,23 +1410,86 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.workoutSets ?? []).map((s) => [s.id, { ...s }]),
   );
 
-  const seedStrengthCatalogIfEmpty = () => {
-    const liveExercises = [...strengthExercises.values()].filter((e) => !e.deletedAt);
-    if (liveExercises.length > 0) return false;
+  const syncBuiltinStrengthProgram = () => {
     const ts = nowIso();
+    let changed = false;
     for (const e of materializeSeedExercises(ts)) {
-      if (!strengthExercises.has(e.id)) strengthExercises.set(e.id, e);
+      const existing = strengthExercises.get(e.id);
+      if (!existing) {
+        strengthExercises.set(e.id, e);
+        changed = true;
+        continue;
+      }
+      const next = {
+        ...existing,
+        name: e.name,
+        primaryMuscles: [...e.primaryMuscles],
+        secondaryMuscles: [...e.secondaryMuscles],
+        equipment: e.equipment,
+        deletedAt: null,
+      };
+      const same =
+        existing.name === next.name &&
+        existing.equipment === next.equipment &&
+        existing.deletedAt == null &&
+        existing.primaryMuscles.join() === next.primaryMuscles.join() &&
+        existing.secondaryMuscles.join() === next.secondaryMuscles.join();
+      if (!same) {
+        strengthExercises.set(e.id, next);
+        changed = true;
+      }
     }
     const { templates, lines } = materializeSeedTemplates(ts);
+    const builtin = new Set(BUILTIN_TEMPLATE_IDS);
     for (const t of templates) {
-      if (!workoutTemplates.has(t.id)) workoutTemplates.set(t.id, t);
+      const existing = workoutTemplates.get(t.id);
+      if (!existing) {
+        workoutTemplates.set(t.id, t);
+        changed = true;
+      } else {
+        const next = {
+          ...existing,
+          name: t.name,
+          subtitle: t.subtitle,
+          updatedAt: ts,
+          deletedAt: null,
+        };
+        if (
+          existing.name !== next.name ||
+          existing.subtitle !== next.subtitle ||
+          existing.deletedAt != null
+        ) {
+          workoutTemplates.set(t.id, next);
+          changed = true;
+        }
+      }
+    }
+    for (const line of [...workoutTemplateExercises.values()]) {
+      if (!builtin.has(line.templateId)) continue;
+      if (!lines.some((l) => l.id === line.id)) {
+        workoutTemplateExercises.delete(line.id);
+        changed = true;
+      }
     }
     for (const l of lines) {
-      if (!workoutTemplateExercises.has(l.id)) workoutTemplateExercises.set(l.id, l);
+      const existing = workoutTemplateExercises.get(l.id);
+      if (
+        !existing ||
+        existing.exerciseId !== l.exerciseId ||
+        existing.sortOrder !== l.sortOrder ||
+        existing.targetSets !== l.targetSets ||
+        existing.targetRepsMin !== l.targetRepsMin ||
+        existing.targetRepsMax !== l.targetRepsMax ||
+        existing.restSec !== l.restSec ||
+        existing.notes !== l.notes
+      ) {
+        workoutTemplateExercises.set(l.id, { ...l });
+        changed = true;
+      }
     }
-    return true;
+    return changed;
   };
-  seedStrengthCatalogIfEmpty();
+  syncBuiltinStrengthProgram();
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
   /** Coalesce burst writes (e.g. copy-yesterday) into one snapshot persist. */
@@ -2553,7 +2630,37 @@ export function createMemoryFoodRepository(seed?: {
       return { ...garminSync };
     },
     ensureStrengthCatalog() {
-      if (seedStrengthCatalogIfEmpty()) notify();
+      if (syncBuiltinStrengthProgram()) notify();
+    },
+    applyStrengthProgramWeek(weekStartMonday, opts) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartMonday)) {
+        throw new Error('weekStartMonday must be YYYY-MM-DD');
+      }
+      api.ensureStrengthCatalog();
+      const replace = opts?.replace === true;
+      if (replace) {
+        const existing = api.listPlannedActivitiesInWeek(weekStartMonday);
+        for (const a of existing) {
+          const row = plannedActivities.get(a.id);
+          if (row && !row.deletedAt) row.deletedAt = nowIso();
+        }
+      }
+      const drafts = buildPersonalProgramWeekDrafts(weekStartMonday);
+      let created = 0;
+      for (const d of drafts) {
+        api.addPlannedActivity({
+          dateLocal: d.dateLocal,
+          timeLocal: d.timeLocal,
+          kind: d.kind,
+          title: d.title,
+          subtitle: d.subtitle,
+          templateId: d.templateId,
+          cardioMinutes: d.cardioMinutes,
+          sortOrder: d.sortOrder,
+        });
+        created += 1;
+      }
+      return { created };
     },
     listStrengthExercises() {
       return [...strengthExercises.values()]
@@ -4485,7 +4592,7 @@ export function createMemoryFoodRepository(seed?: {
       for (const a of next.plannedActivities) plannedActivities.set(a.id, { ...a });
       for (const s of next.workoutSessions) workoutSessions.set(s.id, { ...s });
       for (const s of next.workoutSets) workoutSets.set(s.id, { ...s });
-      seedStrengthCatalogIfEmpty();
+      syncBuiltinStrengthProgram();
 
       notify();
       return summarizeSnapshot(next);
@@ -4534,7 +4641,7 @@ export function createMemoryFoodRepository(seed?: {
       profile.waterTargetMl = 2000;
       // Keep offline staples searchable after wipe.
       mergeCommonFoodCatalog(products);
-      seedStrengthCatalogIfEmpty();
+      syncBuiltinStrengthProgram();
       notify();
     },
   };
