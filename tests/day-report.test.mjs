@@ -66,7 +66,7 @@ describe('day report for ChatGPT paste', () => {
       source: 'garmin',
       externalId: 'garmin-sleep:2026-11-01',
     });
-    assert.equal(repo.toSnapshot().version, 18);
+    assert.equal(repo.toSnapshot().version, 19);
     const night = repo.getSleepForDate('2026-11-01');
     assert.ok(night);
     assert.equal(night.sleepSec, 28800);

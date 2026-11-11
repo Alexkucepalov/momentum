@@ -39,7 +39,7 @@ test('snapshot migrates to v10 with empty pantry', () => {
     },
   });
   const snap = repo.toSnapshot();
-  assert.equal(snap.version, 18);
+  assert.equal(snap.version, 19);
   assert.deepEqual(snap.pantryItems, []);
   assert.deepEqual(snap.cookedBatches, []);
 });

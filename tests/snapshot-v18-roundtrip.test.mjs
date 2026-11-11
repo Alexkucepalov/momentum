@@ -36,7 +36,7 @@ describe('snapshot v18 export → delete → import', () => {
     const json = repo.exportAll();
     const parsed = parseExportJson(json);
     assert.equal(parsed.ok, true);
-    assert.equal(parsed.snapshot.version, 18);
+    assert.equal(parsed.snapshot.version, 19);
     assert.ok(Array.isArray(parsed.snapshot.sleepNights));
     assert.equal(parsed.snapshot.sleepNights.length, 1);
     assert.equal(parsed.snapshot.sleepNights[0].deepSec, null);
@@ -46,7 +46,7 @@ describe('snapshot v18 export → delete → import', () => {
     assert.equal(repo.getDailyActivityStats('2026-11-01'), null);
 
     const result = repo.importAll(json);
-    assert.equal(result.version, 18);
+    assert.equal(result.version, 19);
     const night = repo.getSleepForDate('2026-11-01');
     assert.ok(night);
     assert.equal(night.sleepSec, 25200);
@@ -55,7 +55,7 @@ describe('snapshot v18 export → delete → import', () => {
     assert.equal(repo.getDailyActivityStats('2026-11-01')?.steps, 5000);
   });
 
-  it('parseExportJson accepts v18 and rejects v19', () => {
+  it('parseExportJson accepts v18/v19 and rejects v20', () => {
     const base = {
       version: 18,
       profile: { id: 'x', timezone: 'UTC', locale: 'ru', units: 'metric' },
@@ -66,6 +66,7 @@ describe('snapshot v18 export → delete → import', () => {
       sleepNights: [],
     };
     assert.equal(parseExportJson(JSON.stringify(base)).ok, true);
-    assert.equal(parseExportJson(JSON.stringify({ ...base, version: 19 })).ok, false);
+    assert.equal(parseExportJson(JSON.stringify({ ...base, version: 19 })).ok, true);
+    assert.equal(parseExportJson(JSON.stringify({ ...base, version: 20 })).ok, false);
   });
 });

@@ -25,6 +25,18 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 
 **A9 TAB_SHELL:** aligned — UI matches `today/food/movement/progress/profile`.
 
+## Epic: Strength module (Movement, ADR-011)
+
+SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay in force.
+
+| Stage | Scope | Status |
+|-------|-------|--------|
+| 01 domain | Entities + seed + repo CRUD | In progress (this branch) |
+| 01 UI | Constructor + session + set log | Next |
+| 02 week | Day chips + Move/Copy menu (drag later) | Queued |
+| 03 progress | Working weight / reps chart | Queued |
+| 04 calendar | Google Calendar — later ADR | Deferred |
+
 ## Release Lock (Friends Beta)
 
 **Verdict:** BLOCKED on device Pass — SoT `docs/release/FRIENDS-BETA-STATUS.md`.  

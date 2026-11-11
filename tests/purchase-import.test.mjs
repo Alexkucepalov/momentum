@@ -100,7 +100,7 @@ test('snapshot migrates v13 → v14 with empty purchases', () => {
     },
   });
   const snap = repo.toSnapshot();
-  assert.equal(snap.version, 18);
+  assert.equal(snap.version, 19);
   assert.deepEqual(snap.purchases, []);
   assert.deepEqual(snap.purchaseLines, []);
 });

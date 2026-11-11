@@ -5,6 +5,22 @@ import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch'
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
+  materializeSeedExercises,
+  materializeSeedTemplates,
+  previousCompletedSetsForExercise,
+  type PreviousSetHint,
+} from '../domain/strength';
+import type {
+  PlannedActivity,
+  PlannedActivityKind,
+  StrengthExercise,
+  WorkoutSession,
+  WorkoutSessionStatus,
+  WorkoutSet,
+  WorkoutTemplate,
+  WorkoutTemplateExercise,
+} from '../domain/strength/types';
+import {
   aggregateShopping,
   estimateBasketTotal,
   scaleIngredientGrams,
@@ -97,6 +113,7 @@ import type {
   GarminSyncState,
   IntegrationSource,
 } from './types';
+import { STORE_SNAPSHOT_VERSION } from './types';
 import { barcodeLookupCandidates } from '../integrations/barcodeNormalize';
 import type { OffLookupResult } from '../integrations/openFoodFacts';
 
@@ -334,6 +351,98 @@ export type FoodRepository = {
   listSleepNights(limit?: number): SleepNight[];
   getGarminSyncState(): GarminSyncState;
   setGarminSyncState(patch: Partial<GarminSyncState>): GarminSyncState;
+  /** Ensure built-in RU strength catalog exists (idempotent by id). */
+  ensureStrengthCatalog(): void;
+  listStrengthExercises(): StrengthExercise[];
+  getStrengthExercise(exerciseId: string): StrengthExercise | null;
+  listWorkoutTemplates(): WorkoutTemplate[];
+  getWorkoutTemplate(templateId: string): WorkoutTemplate | null;
+  listTemplateExercises(templateId: string): WorkoutTemplateExercise[];
+  createWorkoutTemplate(input: {
+    name: string;
+    subtitle?: string | null;
+    exercises?: Array<{
+      exerciseId: string;
+      targetSets: number;
+      targetRepsMin?: number | null;
+      targetRepsMax?: number | null;
+      restSec?: number | null;
+      notes?: string | null;
+    }>;
+  }): WorkoutTemplate;
+  updateWorkoutTemplate(
+    templateId: string,
+    fields: { name?: string; subtitle?: string | null },
+  ): WorkoutTemplate;
+  softDeleteWorkoutTemplate(templateId: string): WorkoutTemplate;
+  setTemplateExercises(
+    templateId: string,
+    lines: Array<{
+      exerciseId: string;
+      targetSets: number;
+      targetRepsMin?: number | null;
+      targetRepsMax?: number | null;
+      restSec?: number | null;
+      notes?: string | null;
+    }>,
+  ): WorkoutTemplateExercise[];
+  listPlannedActivitiesForDate(dateLocal: string): PlannedActivity[];
+  listPlannedActivitiesInWeek(weekStart: string): PlannedActivity[];
+  addPlannedActivity(input: {
+    dateLocal: string;
+    timeLocal?: string | null;
+    kind: PlannedActivityKind;
+    title: string;
+    subtitle?: string | null;
+    templateId?: string | null;
+    cardioMinutes?: number | null;
+    sortOrder?: number;
+  }): PlannedActivity;
+  /** Move calendar card only — never mutates WorkoutSession history. */
+  movePlannedActivity(
+    activityId: string,
+    args: { dateLocal: string; timeLocal?: string | null; sortOrder?: number },
+  ): PlannedActivity;
+  copyPlannedActivity(
+    activityId: string,
+    args: { dateLocal: string; timeLocal?: string | null },
+  ): PlannedActivity;
+  softDeletePlannedActivity(activityId: string): PlannedActivity;
+  startWorkoutSession(input: {
+    dateLocal: string;
+    title: string;
+    templateId?: string | null;
+    plannedActivityId?: string | null;
+  }): WorkoutSession;
+  getWorkoutSession(sessionId: string): WorkoutSession | null;
+  listWorkoutSessionsForDate(dateLocal: string): WorkoutSession[];
+  listInProgressWorkoutSessions(): WorkoutSession[];
+  completeWorkoutSession(sessionId: string): WorkoutSession;
+  abandonWorkoutSession(sessionId: string): WorkoutSession;
+  listWorkoutSets(sessionId: string): WorkoutSet[];
+  /**
+   * Upsert a set row. weightKg/reps may be null (unknown ≠ 0).
+   * Rejects negative / non-finite numbers.
+   */
+  upsertWorkoutSet(input: {
+    sessionId: string;
+    exerciseId: string;
+    setIndex: number;
+    weightKg?: number | null;
+    reps?: number | null;
+    completed?: boolean;
+    targetWeightKg?: number | null;
+    targetReps?: number | null;
+  }): WorkoutSet;
+  completeWorkoutSet(
+    setId: string,
+    args: { weightKg: number | null; reps: number | null },
+  ): WorkoutSet;
+  softDeleteWorkoutSet(setId: string): WorkoutSet;
+  previousSetsForExercise(
+    exerciseId: string,
+    excludeSessionId?: string | null,
+  ): PreviousSetHint[];
   activityMinutesForDate(dateLocal: string): number;
   /** MET×weight estimate for the day; null if body weight unknown. Does not change food totals. */
   activityEnergyKcalForDate(dateLocal: string): number | null;
@@ -1013,12 +1122,97 @@ function normalizeGarminSync(raw?: Partial<GarminSyncState> | null): GarminSyncS
   };
 }
 
+function normalizeStrengthExercise(raw: StrengthExercise): StrengthExercise {
+  return {
+    id: raw.id,
+    name: raw.name,
+    primaryMuscles: [...(raw.primaryMuscles ?? [])],
+    secondaryMuscles: [...(raw.secondaryMuscles ?? [])],
+    equipment: raw.equipment ?? null,
+    createdAt: raw.createdAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeWorkoutTemplate(raw: WorkoutTemplate): WorkoutTemplate {
+  return {
+    id: raw.id,
+    name: raw.name,
+    subtitle: raw.subtitle ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeWorkoutTemplateExercise(raw: WorkoutTemplateExercise): WorkoutTemplateExercise {
+  return {
+    id: raw.id,
+    templateId: raw.templateId,
+    exerciseId: raw.exerciseId,
+    sortOrder: raw.sortOrder,
+    targetSets: raw.targetSets,
+    targetRepsMin: raw.targetRepsMin ?? null,
+    targetRepsMax: raw.targetRepsMax ?? null,
+    restSec: raw.restSec ?? null,
+    notes: raw.notes ?? null,
+  };
+}
+
+function normalizePlannedActivity(raw: PlannedActivity): PlannedActivity {
+  return {
+    id: raw.id,
+    dateLocal: raw.dateLocal,
+    timeLocal: raw.timeLocal ?? null,
+    kind: raw.kind,
+    title: raw.title,
+    subtitle: raw.subtitle ?? null,
+    templateId: raw.templateId ?? null,
+    cardioMinutes: raw.cardioMinutes ?? null,
+    sortOrder: raw.sortOrder ?? 0,
+    createdAt: raw.createdAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeWorkoutSession(raw: WorkoutSession): WorkoutSession {
+  return {
+    id: raw.id,
+    dateLocal: raw.dateLocal,
+    templateId: raw.templateId ?? null,
+    plannedActivityId: raw.plannedActivityId ?? null,
+    title: raw.title,
+    status: raw.status,
+    startedAt: raw.startedAt,
+    completedAt: raw.completedAt ?? null,
+    createdAt: raw.createdAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
+function normalizeWorkoutSet(raw: WorkoutSet): WorkoutSet {
+  return {
+    id: raw.id,
+    sessionId: raw.sessionId,
+    exerciseId: raw.exerciseId,
+    setIndex: raw.setIndex,
+    weightKg: raw.weightKg ?? null,
+    reps: raw.reps ?? null,
+    completed: Boolean(raw.completed),
+    completedAt: raw.completedAt ?? null,
+    targetWeightKg: raw.targetWeightKg ?? null,
+    targetReps: raw.targetReps ?? null,
+    createdAt: raw.createdAt,
+    deletedAt: raw.deletedAt ?? null,
+  };
+}
+
 function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   if (!raw) return undefined;
   const ts = nowIso();
   const prefs = (raw.storePreferences ?? []).map(normalizeStorePreference);
   return {
-    version: 18,
+    version: STORE_SNAPSHOT_VERSION,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
@@ -1050,6 +1244,12 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     dailyActivityStats: (raw.dailyActivityStats ?? []).map(normalizeDailyActivityStats),
     sleepNights: (raw.sleepNights ?? []).map(normalizeSleepNight),
     garminSync: normalizeGarminSync(raw.garminSync),
+    strengthExercises: (raw.strengthExercises ?? []).map(normalizeStrengthExercise),
+    workoutTemplates: (raw.workoutTemplates ?? []).map(normalizeWorkoutTemplate),
+    workoutTemplateExercises: (raw.workoutTemplateExercises ?? []).map(normalizeWorkoutTemplateExercise),
+    plannedActivities: (raw.plannedActivities ?? []).map(normalizePlannedActivity),
+    workoutSessions: (raw.workoutSessions ?? []).map(normalizeWorkoutSession),
+    workoutSets: (raw.workoutSets ?? []).map(normalizeWorkoutSet),
   };
 }
 
@@ -1177,6 +1377,42 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.sleepNights ?? []).map((s) => [s.id, { ...s }]),
   );
   let garminSync: GarminSyncState = normalizeGarminSync(snap?.garminSync);
+  const strengthExercises = new Map<string, StrengthExercise>(
+    (snap?.strengthExercises ?? []).map((e) => [e.id, { ...e, primaryMuscles: [...e.primaryMuscles], secondaryMuscles: [...e.secondaryMuscles] }]),
+  );
+  const workoutTemplates = new Map<string, WorkoutTemplate>(
+    (snap?.workoutTemplates ?? []).map((t) => [t.id, { ...t }]),
+  );
+  const workoutTemplateExercises = new Map<string, WorkoutTemplateExercise>(
+    (snap?.workoutTemplateExercises ?? []).map((l) => [l.id, { ...l }]),
+  );
+  const plannedActivities = new Map<string, PlannedActivity>(
+    (snap?.plannedActivities ?? []).map((a) => [a.id, { ...a }]),
+  );
+  const workoutSessions = new Map<string, WorkoutSession>(
+    (snap?.workoutSessions ?? []).map((s) => [s.id, { ...s }]),
+  );
+  const workoutSets = new Map<string, WorkoutSet>(
+    (snap?.workoutSets ?? []).map((s) => [s.id, { ...s }]),
+  );
+
+  const seedStrengthCatalogIfEmpty = () => {
+    const liveExercises = [...strengthExercises.values()].filter((e) => !e.deletedAt);
+    if (liveExercises.length > 0) return false;
+    const ts = nowIso();
+    for (const e of materializeSeedExercises(ts)) {
+      if (!strengthExercises.has(e.id)) strengthExercises.set(e.id, e);
+    }
+    const { templates, lines } = materializeSeedTemplates(ts);
+    for (const t of templates) {
+      if (!workoutTemplates.has(t.id)) workoutTemplates.set(t.id, t);
+    }
+    for (const l of lines) {
+      if (!workoutTemplateExercises.has(l.id)) workoutTemplateExercises.set(l.id, l);
+    }
+    return true;
+  };
+  seedStrengthCatalogIfEmpty();
 
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
   /** Coalesce burst writes (e.g. copy-yesterday) into one snapshot persist. */
@@ -1277,7 +1513,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
-        version: 18,
+        version: STORE_SNAPSHOT_VERSION,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
@@ -1309,6 +1545,16 @@ export function createMemoryFoodRepository(seed?: {
         dailyActivityStats: [...dailyActivityStats.values()].map((s) => ({ ...s })),
         sleepNights: [...sleepNights.values()].map((s) => ({ ...s })),
         garminSync: { ...garminSync },
+        strengthExercises: [...strengthExercises.values()].map((e) => ({
+          ...e,
+          primaryMuscles: [...e.primaryMuscles],
+          secondaryMuscles: [...e.secondaryMuscles],
+        })),
+        workoutTemplates: [...workoutTemplates.values()].map((t) => ({ ...t })),
+        workoutTemplateExercises: [...workoutTemplateExercises.values()].map((l) => ({ ...l })),
+        plannedActivities: [...plannedActivities.values()].map((a) => ({ ...a })),
+        workoutSessions: [...workoutSessions.values()].map((s) => ({ ...s })),
+        workoutSets: [...workoutSets.values()].map((s) => ({ ...s })),
       };
     },
     getProfile: () => ({ ...profile }),
@@ -2305,6 +2551,411 @@ export function createMemoryFoodRepository(seed?: {
       garminSync = normalizeGarminSync({ ...garminSync, ...patch });
       notify();
       return { ...garminSync };
+    },
+    ensureStrengthCatalog() {
+      if (seedStrengthCatalogIfEmpty()) notify();
+    },
+    listStrengthExercises() {
+      return [...strengthExercises.values()]
+        .filter((e) => !e.deletedAt)
+        .map((e) => ({
+          ...e,
+          primaryMuscles: [...e.primaryMuscles],
+          secondaryMuscles: [...e.secondaryMuscles],
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    },
+    getStrengthExercise(exerciseId) {
+      const e = strengthExercises.get(exerciseId);
+      if (!e || e.deletedAt) return null;
+      return {
+        ...e,
+        primaryMuscles: [...e.primaryMuscles],
+        secondaryMuscles: [...e.secondaryMuscles],
+      };
+    },
+    listWorkoutTemplates() {
+      return [...workoutTemplates.values()]
+        .filter((t) => !t.deletedAt)
+        .map((t) => ({ ...t }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    },
+    getWorkoutTemplate(templateId) {
+      const t = workoutTemplates.get(templateId);
+      if (!t || t.deletedAt) return null;
+      return { ...t };
+    },
+    listTemplateExercises(templateId) {
+      return [...workoutTemplateExercises.values()]
+        .filter((l) => l.templateId === templateId)
+        .map((l) => ({ ...l }))
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+    },
+    createWorkoutTemplate(input) {
+      const name = input.name.trim();
+      if (!name) throw new Error('Template name required');
+      const ts = nowIso();
+      const template: WorkoutTemplate = {
+        id: newId(),
+        name,
+        subtitle: input.subtitle?.trim() ? input.subtitle.trim() : null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+      workoutTemplates.set(template.id, template);
+      const lines = input.exercises ?? [];
+      lines.forEach((line, i) => {
+        if (!strengthExercises.has(line.exerciseId)) {
+          throw new Error(`Unknown exercise: ${line.exerciseId}`);
+        }
+        assertPositiveFinite(line.targetSets, 'targetSets');
+        if (line.targetRepsMin != null) assertNonNegativeFinite(line.targetRepsMin, 'targetRepsMin');
+        if (line.targetRepsMax != null) assertNonNegativeFinite(line.targetRepsMax, 'targetRepsMax');
+        if (line.restSec != null) assertNonNegativeFinite(line.restSec, 'restSec');
+        const row: WorkoutTemplateExercise = {
+          id: newId(),
+          templateId: template.id,
+          exerciseId: line.exerciseId,
+          sortOrder: i,
+          targetSets: line.targetSets,
+          targetRepsMin: line.targetRepsMin ?? null,
+          targetRepsMax: line.targetRepsMax ?? null,
+          restSec: line.restSec ?? null,
+          notes: line.notes?.trim() ? line.notes.trim() : null,
+        };
+        workoutTemplateExercises.set(row.id, row);
+      });
+      notify();
+      return { ...template };
+    },
+    updateWorkoutTemplate(templateId, fields) {
+      const t = workoutTemplates.get(templateId);
+      if (!t || t.deletedAt) throw new Error('Workout template not found');
+      if (fields.name !== undefined) {
+        const name = fields.name.trim();
+        if (!name) throw new Error('Template name required');
+        t.name = name;
+      }
+      if (fields.subtitle !== undefined) {
+        t.subtitle = fields.subtitle?.trim() ? fields.subtitle.trim() : null;
+      }
+      t.updatedAt = nowIso();
+      notify();
+      return { ...t };
+    },
+    softDeleteWorkoutTemplate(templateId) {
+      const t = workoutTemplates.get(templateId);
+      if (!t || t.deletedAt) throw new Error('Workout template not found');
+      const ts = nowIso();
+      t.deletedAt = ts;
+      t.updatedAt = ts;
+      notify();
+      return { ...t };
+    },
+    setTemplateExercises(templateId, lines) {
+      const t = workoutTemplates.get(templateId);
+      if (!t || t.deletedAt) throw new Error('Workout template not found');
+      for (const existing of [...workoutTemplateExercises.values()]) {
+        if (existing.templateId === templateId) workoutTemplateExercises.delete(existing.id);
+      }
+      const created: WorkoutTemplateExercise[] = [];
+      lines.forEach((line, i) => {
+        if (!strengthExercises.has(line.exerciseId)) {
+          throw new Error(`Unknown exercise: ${line.exerciseId}`);
+        }
+        assertPositiveFinite(line.targetSets, 'targetSets');
+        if (line.targetRepsMin != null) assertNonNegativeFinite(line.targetRepsMin, 'targetRepsMin');
+        if (line.targetRepsMax != null) assertNonNegativeFinite(line.targetRepsMax, 'targetRepsMax');
+        if (line.restSec != null) assertNonNegativeFinite(line.restSec, 'restSec');
+        const row: WorkoutTemplateExercise = {
+          id: newId(),
+          templateId,
+          exerciseId: line.exerciseId,
+          sortOrder: i,
+          targetSets: line.targetSets,
+          targetRepsMin: line.targetRepsMin ?? null,
+          targetRepsMax: line.targetRepsMax ?? null,
+          restSec: line.restSec ?? null,
+          notes: line.notes?.trim() ? line.notes.trim() : null,
+        };
+        workoutTemplateExercises.set(row.id, row);
+        created.push({ ...row });
+      });
+      t.updatedAt = nowIso();
+      notify();
+      return created;
+    },
+    listPlannedActivitiesForDate(dateLocal) {
+      return [...plannedActivities.values()]
+        .filter((a) => !a.deletedAt && a.dateLocal === dateLocal)
+        .map((a) => ({ ...a }))
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
+    },
+    listPlannedActivitiesInWeek(weekStart) {
+      const days = new Set(datesInWeek(weekStart));
+      return [...plannedActivities.values()]
+        .filter((a) => !a.deletedAt && days.has(a.dateLocal))
+        .map((a) => ({ ...a }))
+        .sort(
+          (a, b) =>
+            a.dateLocal.localeCompare(b.dateLocal) ||
+            a.sortOrder - b.sortOrder ||
+            a.createdAt.localeCompare(b.createdAt),
+        );
+    },
+    addPlannedActivity(input) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
+        throw new Error('dateLocal must be YYYY-MM-DD');
+      }
+      const title = input.title.trim();
+      if (!title) throw new Error('Activity title required');
+      if (input.templateId && !workoutTemplates.has(input.templateId)) {
+        throw new Error('Workout template not found');
+      }
+      if (input.cardioMinutes != null) assertNonNegativeFinite(input.cardioMinutes, 'cardioMinutes');
+      const sameDay = [...plannedActivities.values()].filter(
+        (a) => !a.deletedAt && a.dateLocal === input.dateLocal,
+      );
+      const sortOrder =
+        input.sortOrder ?? (sameDay.length === 0 ? 0 : Math.max(...sameDay.map((a) => a.sortOrder)) + 1);
+      const row: PlannedActivity = {
+        id: newId(),
+        dateLocal: input.dateLocal,
+        timeLocal: input.timeLocal ?? null,
+        kind: input.kind,
+        title,
+        subtitle: input.subtitle?.trim() ? input.subtitle.trim() : null,
+        templateId: input.templateId ?? null,
+        cardioMinutes: input.cardioMinutes ?? null,
+        sortOrder,
+        createdAt: nowIso(),
+        deletedAt: null,
+      };
+      plannedActivities.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    movePlannedActivity(activityId, args) {
+      const a = plannedActivities.get(activityId);
+      if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(args.dateLocal)) {
+        throw new Error('dateLocal must be YYYY-MM-DD');
+      }
+      a.dateLocal = args.dateLocal;
+      if (args.timeLocal !== undefined) a.timeLocal = args.timeLocal;
+      if (args.sortOrder !== undefined) a.sortOrder = args.sortOrder;
+      notify();
+      return { ...a };
+    },
+    copyPlannedActivity(activityId, args) {
+      const a = plannedActivities.get(activityId);
+      if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(args.dateLocal)) {
+        throw new Error('dateLocal must be YYYY-MM-DD');
+      }
+      const sameDay = [...plannedActivities.values()].filter(
+        (x) => !x.deletedAt && x.dateLocal === args.dateLocal,
+      );
+      const sortOrder = sameDay.length === 0 ? 0 : Math.max(...sameDay.map((x) => x.sortOrder)) + 1;
+      const copy: PlannedActivity = {
+        ...a,
+        id: newId(),
+        dateLocal: args.dateLocal,
+        timeLocal: args.timeLocal !== undefined ? args.timeLocal : a.timeLocal,
+        sortOrder,
+        createdAt: nowIso(),
+        deletedAt: null,
+      };
+      plannedActivities.set(copy.id, copy);
+      notify();
+      return { ...copy };
+    },
+    softDeletePlannedActivity(activityId) {
+      const a = plannedActivities.get(activityId);
+      if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      a.deletedAt = nowIso();
+      notify();
+      return { ...a };
+    },
+    startWorkoutSession(input) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
+        throw new Error('dateLocal must be YYYY-MM-DD');
+      }
+      const title = input.title.trim();
+      if (!title) throw new Error('Session title required');
+      if (input.templateId && !workoutTemplates.has(input.templateId)) {
+        throw new Error('Workout template not found');
+      }
+      const ts = nowIso();
+      const session: WorkoutSession = {
+        id: newId(),
+        dateLocal: input.dateLocal,
+        templateId: input.templateId ?? null,
+        plannedActivityId: input.plannedActivityId ?? null,
+        title,
+        status: 'in_progress' satisfies WorkoutSessionStatus,
+        startedAt: ts,
+        completedAt: null,
+        createdAt: ts,
+        deletedAt: null,
+      };
+      workoutSessions.set(session.id, session);
+
+      // Prefill empty set rows from template — targets only, no invented weights.
+      if (session.templateId) {
+        const lines = api.listTemplateExercises(session.templateId);
+        for (const line of lines) {
+          const prev = previousCompletedSetsForExercise({
+            exerciseId: line.exerciseId,
+            sessions: [...workoutSessions.values()],
+            sets: [...workoutSets.values()],
+            excludeSessionId: session.id,
+          });
+          for (let i = 1; i <= line.targetSets; i++) {
+            const hint = prev[i - 1] ?? null;
+            const set: WorkoutSet = {
+              id: newId(),
+              sessionId: session.id,
+              exerciseId: line.exerciseId,
+              setIndex: i,
+              weightKg: null,
+              reps: null,
+              completed: false,
+              completedAt: null,
+              targetWeightKg: hint?.weightKg ?? null,
+              targetReps:
+                hint?.reps ??
+                line.targetRepsMin ??
+                line.targetRepsMax ??
+                null,
+              createdAt: ts,
+              deletedAt: null,
+            };
+            workoutSets.set(set.id, set);
+          }
+        }
+      }
+      notify();
+      return { ...session };
+    },
+    getWorkoutSession(sessionId) {
+      const s = workoutSessions.get(sessionId);
+      if (!s || s.deletedAt) return null;
+      return { ...s };
+    },
+    listWorkoutSessionsForDate(dateLocal) {
+      return [...workoutSessions.values()]
+        .filter((s) => !s.deletedAt && s.dateLocal === dateLocal)
+        .map((s) => ({ ...s }))
+        .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    },
+    listInProgressWorkoutSessions() {
+      return [...workoutSessions.values()]
+        .filter((s) => !s.deletedAt && s.status === 'in_progress')
+        .map((s) => ({ ...s }))
+        .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    },
+    completeWorkoutSession(sessionId) {
+      const s = workoutSessions.get(sessionId);
+      if (!s || s.deletedAt) throw new Error('Workout session not found');
+      s.status = 'completed';
+      s.completedAt = nowIso();
+      notify();
+      return { ...s };
+    },
+    abandonWorkoutSession(sessionId) {
+      const s = workoutSessions.get(sessionId);
+      if (!s || s.deletedAt) throw new Error('Workout session not found');
+      s.status = 'abandoned';
+      s.completedAt = nowIso();
+      notify();
+      return { ...s };
+    },
+    listWorkoutSets(sessionId) {
+      return [...workoutSets.values()]
+        .filter((s) => !s.deletedAt && s.sessionId === sessionId)
+        .map((s) => ({ ...s }))
+        .sort(
+          (a, b) =>
+            a.exerciseId.localeCompare(b.exerciseId) || a.setIndex - b.setIndex || a.id.localeCompare(b.id),
+        );
+    },
+    upsertWorkoutSet(input) {
+      const session = workoutSessions.get(input.sessionId);
+      if (!session || session.deletedAt) throw new Error('Workout session not found');
+      if (!strengthExercises.has(input.exerciseId)) throw new Error('Unknown exercise');
+      if (!Number.isInteger(input.setIndex) || input.setIndex < 1) {
+        throw new Error('setIndex must be a positive integer');
+      }
+      if (input.weightKg != null) assertNonNegativeFinite(input.weightKg, 'weightKg');
+      if (input.reps != null) assertNonNegativeFinite(input.reps, 'reps');
+      if (input.targetWeightKg != null) assertNonNegativeFinite(input.targetWeightKg, 'targetWeightKg');
+      if (input.targetReps != null) assertNonNegativeFinite(input.targetReps, 'targetReps');
+
+      const existing = [...workoutSets.values()].find(
+        (s) =>
+          !s.deletedAt &&
+          s.sessionId === input.sessionId &&
+          s.exerciseId === input.exerciseId &&
+          s.setIndex === input.setIndex,
+      );
+      const completed = input.completed ?? existing?.completed ?? false;
+      const ts = nowIso();
+      if (existing) {
+        existing.weightKg = input.weightKg !== undefined ? input.weightKg : existing.weightKg;
+        existing.reps = input.reps !== undefined ? input.reps : existing.reps;
+        existing.completed = completed;
+        existing.completedAt = completed ? existing.completedAt ?? ts : null;
+        if (input.targetWeightKg !== undefined) existing.targetWeightKg = input.targetWeightKg;
+        if (input.targetReps !== undefined) existing.targetReps = input.targetReps;
+        notify();
+        return { ...existing };
+      }
+      const row: WorkoutSet = {
+        id: newId(),
+        sessionId: input.sessionId,
+        exerciseId: input.exerciseId,
+        setIndex: input.setIndex,
+        weightKg: input.weightKg ?? null,
+        reps: input.reps ?? null,
+        completed,
+        completedAt: completed ? ts : null,
+        targetWeightKg: input.targetWeightKg ?? null,
+        targetReps: input.targetReps ?? null,
+        createdAt: ts,
+        deletedAt: null,
+      };
+      workoutSets.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    completeWorkoutSet(setId, args) {
+      const s = workoutSets.get(setId);
+      if (!s || s.deletedAt) throw new Error('Workout set not found');
+      if (args.weightKg != null) assertNonNegativeFinite(args.weightKg, 'weightKg');
+      if (args.reps != null) assertNonNegativeFinite(args.reps, 'reps');
+      s.weightKg = args.weightKg;
+      s.reps = args.reps;
+      s.completed = true;
+      s.completedAt = nowIso();
+      notify();
+      return { ...s };
+    },
+    softDeleteWorkoutSet(setId) {
+      const s = workoutSets.get(setId);
+      if (!s || s.deletedAt) throw new Error('Workout set not found');
+      s.deletedAt = nowIso();
+      notify();
+      return { ...s };
+    },
+    previousSetsForExercise(exerciseId, excludeSessionId) {
+      return previousCompletedSetsForExercise({
+        exerciseId,
+        sessions: [...workoutSessions.values()],
+        sets: [...workoutSets.values()],
+        excludeSessionId: excludeSessionId ?? null,
+      });
     },
     activityMinutesForDate(dateLocal) {
       const sec = api
@@ -3780,6 +4431,12 @@ export function createMemoryFoodRepository(seed?: {
       purchaseLines.clear();
       dailyActivityStats.clear();
       sleepNights.clear();
+      strengthExercises.clear();
+      workoutTemplates.clear();
+      workoutTemplateExercises.clear();
+      plannedActivities.clear();
+      workoutSessions.clear();
+      workoutSets.clear();
 
       Object.assign(profile, next.profile);
       garminSync = normalizeGarminSync(next.garminSync);
@@ -3816,6 +4473,19 @@ export function createMemoryFoodRepository(seed?: {
       for (const l of next.purchaseLines) purchaseLines.set(l.id, { ...l });
       for (const s of next.dailyActivityStats) dailyActivityStats.set(s.id, { ...s });
       for (const s of next.sleepNights) sleepNights.set(s.id, { ...s });
+      for (const e of next.strengthExercises) {
+        strengthExercises.set(e.id, {
+          ...e,
+          primaryMuscles: [...e.primaryMuscles],
+          secondaryMuscles: [...e.secondaryMuscles],
+        });
+      }
+      for (const t of next.workoutTemplates) workoutTemplates.set(t.id, { ...t });
+      for (const l of next.workoutTemplateExercises) workoutTemplateExercises.set(l.id, { ...l });
+      for (const a of next.plannedActivities) plannedActivities.set(a.id, { ...a });
+      for (const s of next.workoutSessions) workoutSessions.set(s.id, { ...s });
+      for (const s of next.workoutSets) workoutSets.set(s.id, { ...s });
+      seedStrengthCatalogIfEmpty();
 
       notify();
       return summarizeSnapshot(next);
@@ -3847,6 +4517,12 @@ export function createMemoryFoodRepository(seed?: {
       purchaseLines.clear();
       dailyActivityStats.clear();
       sleepNights.clear();
+      strengthExercises.clear();
+      workoutTemplates.clear();
+      workoutTemplateExercises.clear();
+      plannedActivities.clear();
+      workoutSessions.clear();
+      workoutSets.clear();
       garminSync = emptyGarminSync();
       for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
       profile.dogfoodStartedOn = null;
@@ -3858,6 +4534,7 @@ export function createMemoryFoodRepository(seed?: {
       profile.waterTargetMl = 2000;
       // Keep offline staples searchable after wipe.
       mergeCommonFoodCatalog(products);
+      seedStrengthCatalogIfEmpty();
       notify();
     },
   };

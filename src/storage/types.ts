@@ -1,3 +1,24 @@
+import type {
+  PlannedActivity,
+  StrengthExercise,
+  WorkoutSession,
+  WorkoutSet,
+  WorkoutTemplate,
+  WorkoutTemplateExercise,
+} from '../domain/strength/types';
+
+export type {
+  MuscleGroup,
+  StrengthExercise,
+  WorkoutTemplate,
+  WorkoutTemplateExercise,
+  PlannedActivityKind,
+  PlannedActivity,
+  WorkoutSessionStatus,
+  WorkoutSession,
+  WorkoutSet,
+} from '../domain/strength/types';
+
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export type NutritionSource = 'user' | 'label' | 'catalog' | 'recipe' | 'missing';
@@ -517,8 +538,11 @@ export type StorePreference = {
   updatedAt: string;
 };
 
+/** Current on-disk / export snapshot schema. */
+export const STORE_SNAPSHOT_VERSION = 19 as const;
+
 export type StoreSnapshot = {
-  version: 18;
+  version: typeof STORE_SNAPSHOT_VERSION;
   profile: Profile;
   products: FoodProduct[];
   recipes: Recipe[];
@@ -547,6 +571,13 @@ export type StoreSnapshot = {
   dailyActivityStats: DailyActivityStats[];
   sleepNights: SleepNight[];
   garminSync: GarminSyncState;
+  /** ADR-011 strength module — optional on older imports until seeded. */
+  strengthExercises: StrengthExercise[];
+  workoutTemplates: WorkoutTemplate[];
+  workoutTemplateExercises: WorkoutTemplateExercise[];
+  plannedActivities: PlannedActivity[];
+  workoutSessions: WorkoutSession[];
+  workoutSets: WorkoutSet[];
 };
 
 type LegacyRecipe = Omit<
@@ -628,9 +659,28 @@ type LegacyWorkout = Omit<
   chartJson?: string | null;
 };
 
-/** Accept older snapshots from prior installs. */
+/** Accept older snapshots from prior installs (normalized up to STORE_SNAPSHOT_VERSION). */
 export type StoreSnapshotAny = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+  version:
+    | 1
+    | 2
+    | 3
+    | 4
+    | 5
+    | 6
+    | 7
+    | 8
+    | 9
+    | 10
+    | 11
+    | 12
+    | 13
+    | 14
+    | 15
+    | 16
+    | 17
+    | 18
+    | 19;
   profile: Omit<
     Profile,
     | 'waterTargetMl'
@@ -676,4 +726,10 @@ export type StoreSnapshotAny = {
   dailyActivityStats?: DailyActivityStats[];
   sleepNights?: SleepNight[];
   garminSync?: Partial<GarminSyncState> | null;
+  strengthExercises?: StrengthExercise[];
+  workoutTemplates?: WorkoutTemplate[];
+  workoutTemplateExercises?: WorkoutTemplateExercise[];
+  plannedActivities?: PlannedActivity[];
+  workoutSessions?: WorkoutSession[];
+  workoutSets?: WorkoutSet[];
 };
