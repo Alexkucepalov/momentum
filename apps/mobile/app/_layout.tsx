@@ -44,6 +44,7 @@ export default function RootLayout() {
             <Stack.Screen name="recipes" options={{ headerShown: false }} />
             <Stack.Screen name="plan" options={{ headerShown: false }} />
             <Stack.Screen name="garmin" options={{ headerShown: false }} />
+            <Stack.Screen name="strength" options={{ headerShown: false }} />
           </Stack>
         </DataProvider>
       </View>
