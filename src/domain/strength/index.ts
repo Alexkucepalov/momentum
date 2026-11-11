@@ -23,3 +23,4 @@ export {
   type PreviousSetHint,
 } from './previousPerformance';
 export { parseOptionalNonNegativeNumber } from './parseSetInput';
+export { buildStrengthWeekDays, type StrengthWeekDay } from './weekBoard';

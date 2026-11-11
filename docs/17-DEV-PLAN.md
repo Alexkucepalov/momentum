@@ -32,8 +32,8 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | Stage | Scope | Status |
 |-------|-------|--------|
 | 01 domain | Entities + seed + repo CRUD | Done (#206) |
-| 01 UI | Constructor + session + set log | In progress |
-| 02 week | Day chips + Move/Copy menu (drag later) | Queued |
+| 01 UI | Constructor + session + set log | Done (#207) |
+| 02 week | Day chips + Move/Copy menu (drag later) | In progress |
 | 03 progress | Working weight / reps chart | Queued |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
