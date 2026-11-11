@@ -24,6 +24,7 @@ import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { FlexibleReportPanel } from '@/src/features/progress/FlexibleReportPanel';
 import { MonthOverviewCard } from '@/src/features/progress/MonthOverviewCard';
 import { WeeklyInsightCard } from '@/src/features/progress/WeeklyInsightCard';
+import { StrengthProgressPanel } from '@/src/features/strength/StrengthProgressPanel';
 import { useData, useAnyRevision } from '@/src/state/DataContext';
 import {
   AppButton,
@@ -343,6 +344,8 @@ export default function ProgressScreen() {
                 meta={`${sportWeekMinutes.mins} мин · MET не вычитается из еды`}
               />
             </AppCard>
+
+            <StrengthProgressPanel repo={repo} />
 
             <Pressable
               onPress={() => setWeekExtraOpen((v) => !v)}

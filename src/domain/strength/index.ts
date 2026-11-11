@@ -24,3 +24,7 @@ export {
 } from './previousPerformance';
 export { parseOptionalNonNegativeNumber } from './parseSetInput';
 export { buildStrengthWeekDays, type StrengthWeekDay } from './weekBoard';
+export {
+  exerciseWorkingWeightSeries,
+  type ExerciseProgressPoint,
+} from './exerciseProgress';
