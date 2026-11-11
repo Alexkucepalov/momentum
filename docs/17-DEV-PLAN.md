@@ -34,7 +34,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 01 domain | Entities + seed + repo CRUD | Done (#206) |
 | 01 UI | Constructor + session + set log | Done (#207) |
 | 02 week | Day chips + Move/Copy menu (drag later) | Done (#208) |
-| 03 progress | Working weight / reps chart | In progress |
+| 03 progress | Working weight / reps chart | Done (#209) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)
