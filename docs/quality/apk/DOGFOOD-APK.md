@@ -1,9 +1,9 @@
-build_date: 2026-11-12T19:57:50Z
+build_date: 2026-11-12T20:20:14Z
 path: apps/mobile/dist/momentum-dogfood.apk
-bytes: 94278823
-sha256: 72ec0565f18afdaf09bfaca810eaa967ef276ffc3e5ceed690a5d005a4f5f6cf
-git: ac5511f
-includes: #215 template editor (add/reorder exercises, seed-safe) · strength program/session UX through #213
+bytes: 94286743
+sha256: 326fc04b4a8b24507502d8e2f9521c0cedcf858ba3aca87a1d141e4d3f9246f7
+git: e5745d9
+includes: #219 Movement training IA (hero + full week board) · #215 template editor
 abi: arm64-v8a
 package: app.nffit.dogfood
 dogfood_gate: pending
