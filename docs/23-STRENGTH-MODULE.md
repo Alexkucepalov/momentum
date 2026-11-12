@@ -1,6 +1,6 @@
 # Strength module (силовые) — PRD slice
 
-**Статус:** Program + session UX + volume/PRs + template editor (#206–#213+). True DnD / Google Calendar later.  
+**Статус:** Program + session UX + volume/PRs + template editor (#206–#215). True DnD / Google Calendar later.  
 **ADR:** ADR-011 in `docs/14-DECISIONS.md`  
 **Философия:** быстро в зале (≤15 с до записи подхода), шаблон ≠ факт, без стыда за перенос, без 6-й вкладки.
 
