@@ -15,6 +15,7 @@ export default function StrengthLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'Силовые' }} />
       <Stack.Screen name="session/[id]" options={{ title: 'Тренировка' }} />
+      <Stack.Screen name="template/[id]" options={{ title: 'Шаблон' }} />
     </Stack>
   );
 }

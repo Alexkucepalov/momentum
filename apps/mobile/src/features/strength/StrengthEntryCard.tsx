@@ -117,6 +117,10 @@ export function strengthSessionHref(sessionId: string): Href {
   return `/strength/session/${sessionId}` as Href;
 }
 
+export function strengthTemplateHref(templateId: string): Href {
+  return `/strength/template/${templateId}` as Href;
+}
+
 const styles = StyleSheet.create({
   head: {
     flexDirection: 'row',

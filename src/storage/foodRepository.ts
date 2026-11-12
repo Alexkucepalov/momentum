@@ -5,7 +5,6 @@ import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch'
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
-  BUILTIN_TEMPLATE_IDS,
   buildPersonalProgramWeekDrafts,
   materializeSeedExercises,
   materializeSeedTemplates,
@@ -13,6 +12,7 @@ import {
   type PreviousSetHint,
 } from '../domain/strength';
 import type {
+  MuscleGroup,
   PlannedActivity,
   PlannedActivityKind,
   StrengthExercise,
@@ -369,6 +369,13 @@ export type FoodRepository = {
   ): { created: number };
   listStrengthExercises(): StrengthExercise[];
   getStrengthExercise(exerciseId: string): StrengthExercise | null;
+  createStrengthExercise(input: {
+    name: string;
+    primaryMuscles?: MuscleGroup[];
+    secondaryMuscles?: MuscleGroup[];
+    equipment?: string | null;
+  }): StrengthExercise;
+  softDeleteStrengthExercise(exerciseId: string): StrengthExercise;
   listWorkoutTemplates(): WorkoutTemplate[];
   getWorkoutTemplate(templateId: string): WorkoutTemplate | null;
   listTemplateExercises(templateId: string): WorkoutTemplateExercise[];
@@ -400,6 +407,12 @@ export type FoodRepository = {
       notes?: string | null;
     }>,
   ): WorkoutTemplateExercise[];
+  /** Swap adjacent line in template order. Does not touch sessions. */
+  reorderTemplateExercise(
+    templateId: string,
+    lineId: string,
+    direction: 'up' | 'down',
+  ): WorkoutTemplateExercise[];
   listPlannedActivitiesForDate(dateLocal: string): PlannedActivity[];
   listPlannedActivitiesInWeek(weekStart: string): PlannedActivity[];
   addPlannedActivity(input: {
@@ -412,6 +425,21 @@ export type FoodRepository = {
     cardioMinutes?: number | null;
     sortOrder?: number;
   }): PlannedActivity;
+  updatePlannedActivity(
+    activityId: string,
+    fields: {
+      title?: string;
+      subtitle?: string | null;
+      timeLocal?: string | null;
+      templateId?: string | null;
+      cardioMinutes?: number | null;
+    },
+  ): PlannedActivity;
+  /** Reorder within the same day. */
+  reorderPlannedActivity(
+    activityId: string,
+    direction: 'up' | 'down',
+  ): PlannedActivity[];
   /** Move calendar card only — never mutates WorkoutSession history. */
   movePlannedActivity(
     activityId: string,
@@ -1417,6 +1445,10 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.workoutSets ?? []).map((s) => [s.id, { ...s }]),
   );
 
+  /**
+   * Seed missing catalog rows only — never overwrite user-edited
+   * template names/lines or custom exercises (constructor is source of truth).
+   */
   const syncBuiltinStrengthProgram = () => {
     const ts = nowIso();
     let changed = false;
@@ -1425,73 +1457,22 @@ export function createMemoryFoodRepository(seed?: {
       if (!existing) {
         strengthExercises.set(e.id, e);
         changed = true;
-        continue;
-      }
-      const next = {
-        ...existing,
-        name: e.name,
-        primaryMuscles: [...e.primaryMuscles],
-        secondaryMuscles: [...e.secondaryMuscles],
-        equipment: e.equipment,
-        deletedAt: null,
-      };
-      const same =
-        existing.name === next.name &&
-        existing.equipment === next.equipment &&
-        existing.deletedAt == null &&
-        existing.primaryMuscles.join() === next.primaryMuscles.join() &&
-        existing.secondaryMuscles.join() === next.secondaryMuscles.join();
-      if (!same) {
-        strengthExercises.set(e.id, next);
-        changed = true;
+      } else if (existing.deletedAt != null) {
+        // Keep soft-delete; do not resurrect after user removal.
       }
     }
     const { templates, lines } = materializeSeedTemplates(ts);
-    const builtin = new Set(BUILTIN_TEMPLATE_IDS);
     for (const t of templates) {
       const existing = workoutTemplates.get(t.id);
       if (!existing) {
         workoutTemplates.set(t.id, t);
         changed = true;
-      } else {
-        const next = {
-          ...existing,
-          name: t.name,
-          subtitle: t.subtitle,
-          updatedAt: ts,
-          deletedAt: null,
-        };
-        if (
-          existing.name !== next.name ||
-          existing.subtitle !== next.subtitle ||
-          existing.deletedAt != null
-        ) {
-          workoutTemplates.set(t.id, next);
-          changed = true;
+        for (const l of lines.filter((row) => row.templateId === t.id)) {
+          if (!workoutTemplateExercises.has(l.id)) {
+            workoutTemplateExercises.set(l.id, { ...l });
+            changed = true;
+          }
         }
-      }
-    }
-    for (const line of [...workoutTemplateExercises.values()]) {
-      if (!builtin.has(line.templateId)) continue;
-      if (!lines.some((l) => l.id === line.id)) {
-        workoutTemplateExercises.delete(line.id);
-        changed = true;
-      }
-    }
-    for (const l of lines) {
-      const existing = workoutTemplateExercises.get(l.id);
-      if (
-        !existing ||
-        existing.exerciseId !== l.exerciseId ||
-        existing.sortOrder !== l.sortOrder ||
-        existing.targetSets !== l.targetSets ||
-        existing.targetRepsMin !== l.targetRepsMin ||
-        existing.targetRepsMax !== l.targetRepsMax ||
-        existing.restSec !== l.restSec ||
-        existing.notes !== l.notes
-      ) {
-        workoutTemplateExercises.set(l.id, { ...l });
-        changed = true;
       }
     }
     return changed;
@@ -2688,6 +2669,39 @@ export function createMemoryFoodRepository(seed?: {
         secondaryMuscles: [...e.secondaryMuscles],
       };
     },
+    createStrengthExercise(input) {
+      const name = input.name.trim();
+      if (!name) throw new Error('Exercise name required');
+      const primary = input.primaryMuscles?.length ? [...input.primaryMuscles] : (['other'] as MuscleGroup[]);
+      const secondary = input.secondaryMuscles ? [...input.secondaryMuscles] : [];
+      const row: StrengthExercise = {
+        id: newId(),
+        name,
+        primaryMuscles: primary,
+        secondaryMuscles: secondary,
+        equipment: input.equipment?.trim() ? input.equipment.trim() : null,
+        createdAt: nowIso(),
+        deletedAt: null,
+      };
+      strengthExercises.set(row.id, row);
+      notify();
+      return {
+        ...row,
+        primaryMuscles: [...row.primaryMuscles],
+        secondaryMuscles: [...row.secondaryMuscles],
+      };
+    },
+    softDeleteStrengthExercise(exerciseId) {
+      const e = strengthExercises.get(exerciseId);
+      if (!e || e.deletedAt) throw new Error('Exercise not found');
+      e.deletedAt = nowIso();
+      notify();
+      return {
+        ...e,
+        primaryMuscles: [...e.primaryMuscles],
+        secondaryMuscles: [...e.secondaryMuscles],
+      };
+    },
     listWorkoutTemplates() {
       return [...workoutTemplates.values()]
         .filter((t) => !t.deletedAt)
@@ -2775,7 +2789,8 @@ export function createMemoryFoodRepository(seed?: {
       }
       const created: WorkoutTemplateExercise[] = [];
       lines.forEach((line, i) => {
-        if (!strengthExercises.has(line.exerciseId)) {
+        const ex = strengthExercises.get(line.exerciseId);
+        if (!ex || ex.deletedAt) {
           throw new Error(`Unknown exercise: ${line.exerciseId}`);
         }
         assertPositiveFinite(line.targetSets, 'targetSets');
@@ -2799,6 +2814,33 @@ export function createMemoryFoodRepository(seed?: {
       t.updatedAt = nowIso();
       notify();
       return created;
+    },
+    reorderTemplateExercise(templateId, lineId, direction) {
+      const t = workoutTemplates.get(templateId);
+      if (!t || t.deletedAt) throw new Error('Workout template not found');
+      const lines = [...workoutTemplateExercises.values()]
+        .filter((l) => l.templateId === templateId)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+      const idx = lines.findIndex((l) => l.id === lineId);
+      if (idx < 0) throw new Error('Template exercise not found');
+      const swapWith = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= lines.length) {
+        return lines.map((l) => ({ ...l }));
+      }
+      const a = lines[idx]!;
+      const b = lines[swapWith]!;
+      const tmp = a.sortOrder;
+      a.sortOrder = b.sortOrder;
+      b.sortOrder = tmp;
+      // Normalize to 0..n-1 after swap
+      lines
+        .sort((x, y) => x.sortOrder - y.sortOrder || x.id.localeCompare(y.id))
+        .forEach((l, i) => {
+          l.sortOrder = i;
+        });
+      t.updatedAt = nowIso();
+      notify();
+      return api.listTemplateExercises(templateId);
     },
     listPlannedActivitiesForDate(dateLocal) {
       return [...plannedActivities.values()]
@@ -2849,6 +2891,54 @@ export function createMemoryFoodRepository(seed?: {
       plannedActivities.set(row.id, row);
       notify();
       return { ...row };
+    },
+    updatePlannedActivity(activityId, fields) {
+      const a = plannedActivities.get(activityId);
+      if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      if (fields.title !== undefined) {
+        const title = fields.title.trim();
+        if (!title) throw new Error('Activity title required');
+        a.title = title;
+      }
+      if (fields.subtitle !== undefined) {
+        a.subtitle = fields.subtitle?.trim() ? fields.subtitle.trim() : null;
+      }
+      if (fields.timeLocal !== undefined) a.timeLocal = fields.timeLocal;
+      if (fields.templateId !== undefined) {
+        if (fields.templateId && !workoutTemplates.has(fields.templateId)) {
+          throw new Error('Workout template not found');
+        }
+        a.templateId = fields.templateId;
+      }
+      if (fields.cardioMinutes !== undefined) {
+        if (fields.cardioMinutes != null) assertNonNegativeFinite(fields.cardioMinutes, 'cardioMinutes');
+        a.cardioMinutes = fields.cardioMinutes;
+      }
+      notify();
+      return { ...a };
+    },
+    reorderPlannedActivity(activityId, direction) {
+      const a = plannedActivities.get(activityId);
+      if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      const sameDay = [...plannedActivities.values()]
+        .filter((x) => !x.deletedAt && x.dateLocal === a.dateLocal)
+        .sort((x, y) => x.sortOrder - y.sortOrder || x.createdAt.localeCompare(y.createdAt));
+      const idx = sameDay.findIndex((x) => x.id === activityId);
+      const swapWith = direction === 'up' ? idx - 1 : idx + 1;
+      if (idx < 0 || swapWith < 0 || swapWith >= sameDay.length) {
+        return sameDay.map((x) => ({ ...x }));
+      }
+      const other = sameDay[swapWith]!;
+      const tmp = a.sortOrder;
+      a.sortOrder = other.sortOrder;
+      other.sortOrder = tmp;
+      sameDay
+        .sort((x, y) => x.sortOrder - y.sortOrder || x.createdAt.localeCompare(y.createdAt))
+        .forEach((row, i) => {
+          row.sortOrder = i;
+        });
+      notify();
+      return api.listPlannedActivitiesForDate(a.dateLocal);
     },
     movePlannedActivity(activityId, args) {
       const a = plannedActivities.get(activityId);
