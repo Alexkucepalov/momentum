@@ -33,6 +33,10 @@ export {
 export { parseOptionalNonNegativeNumber } from './parseSetInput';
 export { buildStrengthWeekDays, type StrengthWeekDay } from './weekBoard';
 export {
+  resolveNextTrainingTarget,
+  type NextTrainingTarget,
+} from './nextTraining';
+export {
   exerciseWorkingWeightSeries,
   type ExerciseProgressPoint,
 } from './exerciseProgress';

@@ -7,6 +7,10 @@ import type { StrengthWeekDay } from '../../../../../src/domain/strength/weekBoa
 import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 import { PlannedActivityCard } from './PlannedActivityCard';
 
+/**
+ * Full-week training board (ChatGPT / Entraînements IA):
+ * day chips jump focus; all days listed with cards — not only selected day.
+ */
 export function StrengthWeekBoard({
   days,
   selectedDate,
@@ -19,25 +23,26 @@ export function StrengthWeekBoard({
 }: {
   days: StrengthWeekDay[];
   selectedDate: string;
-  /** Local today key — chip outline for orientation. */
   todayDate?: string;
   onSelectDate: (dateLocal: string) => void;
   onAdd: () => void;
-  /** Fill / replace week from personal program (4 strength + bike + 2 rest). */
   onApplyProgram?: () => void;
   onMenu: (activity: PlannedActivity) => void;
   onStart: (activity: PlannedActivity) => void;
 }) {
-  const selected = days.find((d) => d.dateLocal === selectedDate) ?? days[0];
-  const cards = selected?.activities ?? [];
   const plannedCount = days.reduce((n, d) => n + d.activities.length, 0);
 
   return (
     <View style={styles.wrap} testID="strength-week-board">
       <View style={styles.head}>
-        <AppText variant="label" tone="muted">
-          План недели
-        </AppText>
+        <View>
+          <AppText variant="subtitle" style={styles.headTitle}>
+            Неделя
+          </AppText>
+          <AppText variant="caption" tone="muted">
+            {plannedCount > 0 ? `${plannedCount} в плане` : 'План ещё пуст'}
+          </AppText>
+        </View>
         <View style={styles.headActions}>
           {onApplyProgram ? (
             <Pressable
@@ -51,8 +56,8 @@ export function StrengthWeekBoard({
               }
               testID="strength-week-apply-program"
             >
-              <AppText variant="caption" tone="secondary">
-                {plannedCount > 0 ? 'Повторить программу' : 'Программа'}
+              <AppText variant="caption" style={styles.programLabel}>
+                {plannedCount > 0 ? 'Повторить' : 'Программа'}
               </AppText>
             </Pressable>
           ) : null}
@@ -63,7 +68,7 @@ export function StrengthWeekBoard({
             accessibilityLabel="Добавить в план дня"
             testID="strength-week-add"
           >
-            <Ionicons name="add" size={20} color={colors.ink} />
+            <Ionicons name="add" size={22} color={colors.onPrimary} />
           </Pressable>
         </View>
       </View>
@@ -95,7 +100,11 @@ export function StrengthWeekBoard({
               >
                 {short}
               </AppText>
-              <AppText variant="body" tone={selectedChip ? 'inverse' : 'ink'}>
+              <AppText
+                variant="body"
+                tone={selectedChip ? 'inverse' : 'ink'}
+                style={styles.chipNum}
+              >
                 {dayNum}
               </AppText>
               {d.activities.length > 0 ? (
@@ -108,26 +117,64 @@ export function StrengthWeekBoard({
         })}
       </View>
 
-      <View style={styles.cards}>
-        {cards.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <AppText variant="body" tone="muted">
-              День свободен
-            </AppText>
-            <AppText variant="caption" tone="muted">
-              Не «ноль» — просто нет плана. «+» или Программа на неделю.
-            </AppText>
-          </View>
-        ) : (
-          cards.map((a) => (
-            <PlannedActivityCard
-              key={a.id}
-              activity={a}
-              onMenu={() => onMenu(a)}
-              onStart={a.kind === 'strength' ? () => onStart(a) : undefined}
-            />
-          ))
-        )}
+      <View style={styles.days} testID="strength-week-all-days">
+        {days.map((d) => {
+          const isSelected = d.dateLocal === selectedDate;
+          const isToday = todayDate != null && d.dateLocal === todayDate;
+          const dow = HABIT_WEEKDAY_LABELS_RU[d.weekdayIndex] ?? '';
+          const dayNum = Number(d.dateLocal.slice(8, 10));
+          return (
+            <View
+              key={d.dateLocal}
+              style={[styles.dayBlock, isSelected && styles.dayBlockOn]}
+              testID={`week-day-${d.dateLocal}`}
+            >
+              <Pressable
+                onPress={() => onSelectDate(d.dateLocal)}
+                style={styles.dayHead}
+                accessibilityRole="button"
+                accessibilityLabel={`${dow} ${dayNum}`}
+              >
+                <AppText variant="body" style={styles.dayTitle}>
+                  {dow} {dayNum}
+                  {isToday ? ' · сегодня' : ''}
+                </AppText>
+                <AppText variant="caption" tone="muted">
+                  {d.activities.length === 0
+                    ? 'свободно'
+                    : `${d.activities.length} ${d.activities.length === 1 ? 'занятие' : 'занятия'}`}
+                </AppText>
+              </Pressable>
+
+              {d.activities.length === 0 ? (
+                isSelected ? (
+                  <Pressable
+                    onPress={onAdd}
+                    style={({ pressed }) => [styles.emptyAdd, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Добавить в этот день"
+                  >
+                    <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
+                    <AppText variant="caption" tone="muted">
+                      Добавить силу / кардио / отдых
+                    </AppText>
+                  </Pressable>
+                ) : null
+              ) : (
+                <View style={styles.cards}>
+                  {d.activities.map((a) => (
+                    <PlannedActivityCard
+                      key={a.id}
+                      activity={a}
+                      onMenu={() => onMenu(a)}
+                      onStart={a.kind === 'strength' ? () => onStart(a) : undefined}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -135,14 +182,14 @@ export function StrengthWeekBoard({
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: space.sm,
-    marginBottom: space.md,
+    gap: space.md,
   },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headTitle: { fontWeight: '800' },
   headActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -150,22 +197,21 @@ const styles = StyleSheet.create({
   },
   programBtn: {
     minHeight: touchMin - 8,
-    paddingHorizontal: space.sm,
+    paddingHorizontal: space.md,
     justifyContent: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
+  programLabel: { fontWeight: '700' },
   addBtn: {
-    minWidth: touchMin - 8,
-    minHeight: touchMin - 8,
+    minWidth: touchMin - 4,
+    minHeight: touchMin - 4,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
   },
   chips: {
     flexDirection: 'row',
@@ -175,7 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: space.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
@@ -192,10 +238,33 @@ const styles = StyleSheet.create({
   chipDow: {
     textTransform: 'lowercase',
   },
-  emptyBox: {
+  chipNum: { fontWeight: '700' },
+  days: { gap: space.md },
+  dayBlock: {
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceMuted,
+  },
+  dayBlockOn: {
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+  },
+  dayHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: space.sm,
+    minHeight: touchMin - 16,
+  },
+  dayTitle: { fontWeight: '700' },
+  cards: { gap: space.sm },
+  emptyAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: space.xs,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.xs,
+    minHeight: touchMin - 8,
   },
   dot: {
     width: 4,
@@ -209,9 +278,6 @@ const styles = StyleSheet.create({
   },
   dotSpacer: {
     height: 6,
-  },
-  cards: {
-    gap: space.sm,
   },
   pressed: { opacity: 0.85 },
 });
