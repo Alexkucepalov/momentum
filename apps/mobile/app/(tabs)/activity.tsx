@@ -29,6 +29,7 @@ import {
   StrengthEntryCard,
   strengthHubHref,
   strengthSessionHref,
+  strengthTemplateHref,
 } from '@/src/features/strength/StrengthEntryCard';
 import { StrengthWeekBoard } from '@/src/features/strength/StrengthWeekBoard';
 import { useData, useActivityRevision } from '@/src/state/DataContext';
@@ -259,6 +260,8 @@ export default function MovementScreen() {
                   );
                 }}
                 onMenu={(activity) => {
+                  const dayCards = repo.listPlannedActivitiesForDate(activity.dateLocal);
+                  const idx = dayCards.findIndex((a) => a.id === activity.id);
                   Alert.alert(activity.title, 'План ≠ факт. Перенос не меняет историю подходов.', [
                     {
                       text: 'Перенести',
@@ -268,9 +271,40 @@ export default function MovementScreen() {
                       text: 'Копировать',
                       onPress: () => setMoveCopy({ activity, mode: 'copy' }),
                     },
+                    ...(idx > 0
+                      ? [
+                          {
+                            text: 'Выше в дне',
+                            onPress: () => {
+                              repo.reorderPlannedActivity(activity.id, 'up');
+                              refresh('activity');
+                            },
+                          },
+                        ]
+                      : []),
+                    ...(idx >= 0 && idx < dayCards.length - 1
+                      ? [
+                          {
+                            text: 'Ниже в дне',
+                            onPress: () => {
+                              repo.reorderPlannedActivity(activity.id, 'down');
+                              refresh('activity');
+                            },
+                          },
+                        ]
+                      : []),
+                    ...(activity.templateId
+                      ? [
+                          {
+                            text: 'Изменить шаблон',
+                            onPress: () =>
+                              router.push(strengthTemplateHref(activity.templateId!)),
+                          },
+                        ]
+                      : []),
                     {
                       text: 'Удалить из плана',
-                      style: 'destructive',
+                      style: 'destructive' as const,
                       onPress: () => {
                         confirmAction('Убрать из плана?', 'Факт тренировок не затронется.', {
                           confirmLabel: 'Удалить',
@@ -283,7 +317,7 @@ export default function MovementScreen() {
                         });
                       },
                     },
-                    { text: 'Отмена', style: 'cancel' },
+                    { text: 'Отмена', style: 'cancel' as const },
                   ]);
                 }}
                 onStart={(activity) => {

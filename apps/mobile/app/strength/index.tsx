@@ -3,7 +3,10 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { strengthSessionHref } from '@/src/features/strength/StrengthEntryCard';
+import {
+  strengthSessionHref,
+  strengthTemplateHref,
+} from '@/src/features/strength/StrengthEntryCard';
 import { AppButton, AppCard, AppText, colors, space } from '@/src/design-system';
 import { useActivityRevision, useData } from '@/src/state/DataContext';
 
@@ -36,6 +39,20 @@ export default function StrengthHubScreen() {
     router.push(strengthSessionHref(session.id));
   };
 
+  const createBlankTemplate = () => {
+    try {
+      const created = repo.createWorkoutTemplate({
+        name: 'Новый шаблон',
+        subtitle: null,
+        exercises: [],
+      });
+      refresh('activity');
+      router.push(strengthTemplateHref(created.id));
+    } catch (e) {
+      showFlash(e instanceof Error ? e.message : 'Не удалось создать шаблон');
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.content} testID="strength-hub">
       {inProgress.map((s) => (
@@ -55,9 +72,17 @@ export default function StrengthHubScreen() {
         </AppCard>
       ))}
 
-      <AppText variant="label" tone="muted" style={styles.section}>
-        Шаблоны
-      </AppText>
+      <View style={styles.sectionRow}>
+        <AppText variant="label" tone="muted">
+          Шаблоны
+        </AppText>
+        <AppButton
+          label="Новый шаблон"
+          variant="secondary"
+          onPress={createBlankTemplate}
+          testID="hub-new-template"
+        />
+      </View>
       <View style={styles.list}>
         {templates.map((t) => {
           const lines = repo.listTemplateExercises(t.id);
@@ -72,11 +97,19 @@ export default function StrengthHubScreen() {
               <AppText variant="caption" tone="secondary">
                 {lines.length} упр. · {lines.reduce((sum, l) => sum + l.targetSets, 0)} подходов
               </AppText>
-              <AppButton
-                label="Начать"
-                onPress={() => startTemplate(t.id)}
-                testID={`hub-start-${t.id}`}
-              />
+              <View style={styles.actions}>
+                <AppButton
+                  label="Начать"
+                  onPress={() => startTemplate(t.id)}
+                  testID={`hub-start-${t.id}`}
+                />
+                <AppButton
+                  label="Изменить"
+                  variant="secondary"
+                  onPress={() => router.push(strengthTemplateHref(t.id))}
+                  testID={`hub-edit-${t.id}`}
+                />
+              </View>
               <View style={styles.preview}>
                 {lines.slice(0, 4).map((l) => {
                   const ex = repo.getStrengthExercise(l.exerciseId);
@@ -125,13 +158,20 @@ const styles = StyleSheet.create({
   activeCard: {
     gap: space.sm,
   },
-  section: {
+  sectionRow: {
     marginTop: space.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
   },
   list: {
     gap: space.md,
   },
   card: {
+    gap: space.sm,
+  },
+  actions: {
     gap: space.sm,
   },
   preview: {
