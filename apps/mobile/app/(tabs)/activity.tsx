@@ -26,11 +26,14 @@ import { SleepDayPanel } from '@/src/features/sleep/SleepDayPanel';
 import { AddPlannedStrengthSheet } from '@/src/features/strength/AddPlannedStrengthSheet';
 import { MoveCopyActivitySheet } from '@/src/features/strength/MoveCopyActivitySheet';
 import {
-  StrengthEntryCard,
   strengthHubHref,
   strengthSessionHref,
   strengthTemplateHref,
 } from '@/src/features/strength/StrengthEntryCard';
+import {
+  NextTrainingHero,
+  resolveNextTrainingTarget,
+} from '@/src/features/strength/NextTrainingHero';
 import { StrengthWeekBoard } from '@/src/features/strength/StrengthWeekBoard';
 import { useData, useActivityRevision } from '@/src/state/DataContext';
 import { confirmAction } from '@/src/utils/confirmAction';
@@ -67,6 +70,7 @@ export default function MovementScreen() {
   const [formType, setFormType] = useState<WorkoutType>('walking');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
+  const [factOpen, setFactOpen] = useState(false);
   const [addPlanOpen, setAddPlanOpen] = useState(false);
   const [moveCopy, setMoveCopy] = useState<{
     activity: PlannedActivity;
@@ -133,9 +137,11 @@ export default function MovementScreen() {
       title: 'Движение',
       headerRight: () => (
         <Pressable
-          onPress={() => (segment === 'activity' ? openForm('walking') : setCalendarOpen(true))}
+          onPress={() =>
+            segment === 'activity' ? setAddPlanOpen(true) : setCalendarOpen(true)
+          }
           accessibilityRole="button"
-          accessibilityLabel={segment === 'activity' ? 'Добавить тренировку' : 'Календарь'}
+          accessibilityLabel={segment === 'activity' ? 'Добавить в план' : 'Календарь'}
           style={styles.headerBtn}
           hitSlop={8}
         >
@@ -162,6 +168,33 @@ export default function MovementScreen() {
   }, [repo, dateLocal]);
   const todayKey = localDateKey(new Date(), profile.timezone);
   const isEmptyWeek = workouts.length === 0 && weekMinutes.sum === 0;
+  const heroTarget = useMemo(
+    () =>
+      resolveNextTrainingTarget({
+        inProgress: strengthInProgress,
+        todayDate: todayKey,
+        weekActivities: plannedWeek,
+      }),
+    [strengthInProgress, todayKey, plannedWeek],
+  );
+  const heroWeekdayLabel = useMemo(() => {
+    if (heroTarget.kind !== 'planned') return undefined;
+    const idx = weekDates.indexOf(heroTarget.activity.dateLocal);
+    if (idx < 0) return undefined;
+    return `${HABIT_WEEKDAY_LABELS_RU[idx]} ${Number(heroTarget.activity.dateLocal.slice(8, 10))}`;
+  }, [heroTarget, weekDates]);
+
+  const startPlanned = (activity: PlannedActivity) => {
+    const session = repo.startWorkoutSession({
+      dateLocal: activity.dateLocal,
+      title: activity.title,
+      templateId: activity.templateId,
+      plannedActivityId: activity.id,
+    });
+    refresh('activity');
+    showFlash('Сессия начата');
+    router.push(strengthSessionHref(session.id));
+  };
 
   const repeatYesterday = () => {
     const yesterday = shiftDateLocal(dateLocal, -1);
@@ -205,7 +238,7 @@ export default function MovementScreen() {
             value={segment}
             onChange={setSegment}
             options={[
-              { id: 'activity', label: 'Активность' },
+              { id: 'activity', label: 'Тренировки' },
               { id: 'sleep', label: 'Сон' },
             ]}
           />
@@ -214,14 +247,16 @@ export default function MovementScreen() {
             <SleepDayPanel todayKey={todayKey} />
           ) : (
             <>
-              <ActivityDaySummary
-                totalMinutes={totalMin}
-                activityKcal={activityKcal}
-                steps={daySteps}
-                distanceM={dayDistanceM}
-                activeKcal={dayActiveKcal}
-                workoutCount={workouts.length}
-                workoutCalories={workoutCalories}
+              <NextTrainingHero
+                target={heroTarget}
+                weekdayLabel={heroWeekdayLabel}
+                onStart={startPlanned}
+                onContinue={(sessionId) => router.push(strengthSessionHref(sessionId))}
+                onOpenTemplates={() => router.push(strengthHubHref())}
+                onOpenPlan={() => {
+                  const el = strengthWeekDays.find((d) => d.dateLocal === dateLocal);
+                  if (!el) setDateLocal(todayKey);
+                }}
               />
 
               <StrengthWeekBoard
@@ -320,170 +355,157 @@ export default function MovementScreen() {
                     { text: 'Отмена', style: 'cancel' as const },
                   ]);
                 }}
-                onStart={(activity) => {
-                  const session = repo.startWorkoutSession({
-                    dateLocal: activity.dateLocal,
-                    title: activity.title,
-                    templateId: activity.templateId,
-                    plannedActivityId: activity.id,
-                  });
-                  refresh('activity');
-                  showFlash('Сессия начата');
-                  router.push(strengthSessionHref(session.id));
-                }}
+                onStart={startPlanned}
               />
-
-              <StrengthEntryCard
-                templates={strengthTemplates}
-                inProgress={strengthInProgress}
-                todayPlan={repo.listPlannedActivitiesForDate(dateLocal)}
-                onOpenHub={() => router.push(strengthHubHref())}
-                onContinue={(sessionId) => router.push(strengthSessionHref(sessionId))}
-                onStartPlanned={(activity) => {
-                  const session = repo.startWorkoutSession({
-                    dateLocal: activity.dateLocal,
-                    title: activity.title,
-                    templateId: activity.templateId,
-                    plannedActivityId: activity.id,
-                  });
-                  refresh('activity');
-                  showFlash('Сессия начата');
-                  router.push(strengthSessionHref(session.id));
-                }}
-                onStartTemplate={(templateId) => {
-                  const tmpl = repo.getWorkoutTemplate(templateId);
-                  if (!tmpl) {
-                    showFlash('Шаблон не найден');
-                    return;
-                  }
-                  const planned = repo.addPlannedActivity({
-                    dateLocal,
-                    kind: 'strength',
-                    title: tmpl.name,
-                    subtitle: tmpl.subtitle,
-                    templateId: tmpl.id,
-                  });
-                  const session = repo.startWorkoutSession({
-                    dateLocal,
-                    title: tmpl.name,
-                    templateId: tmpl.id,
-                    plannedActivityId: planned.id,
-                  });
-                  refresh('activity');
-                  showFlash('Сессия начата');
-                  router.push(strengthSessionHref(session.id));
-                }}
-              />
-
-              <View style={styles.quickRow}>
-                {TYPE_META.map((t) => (
-                  <Pressable
-                    key={t.type}
-                    style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
-                    onPress={() => openForm(t.type)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Добавить ${t.label}`}
-                  >
-                    <Ionicons name={t.icon} size={16} color={colors.ink} />
-                    <AppText variant="caption" style={styles.quickChipText}>
-                      {t.label}
-                    </AppText>
-                  </Pressable>
-                ))}
-              </View>
-
-              <AppText variant="label" tone="muted" style={styles.listLabel}>
-                Тренировки дня
-              </AppText>
-              {workouts.length === 0 ? (
-                <EmptyState
-                  compact
-                  icon="fitness-outline"
-                  title={isEmptyWeek ? 'Пока пусто' : 'В этот день пусто'}
-                  body={
-                    isEmptyWeek
-                      ? 'Добавь тренировку вручную или подключи Garmin.'
-                      : 'Свайпни день или выбери дату выше.'
-                  }
-                  actionLabel="+ Тренировка"
-                  onAction={() => openForm('walking')}
-                  secondaryActionLabel={isEmptyWeek ? 'Garmin' : undefined}
-                  onSecondaryAction={
-                    isEmptyWeek ? () => router.push('/garmin' as Href) : undefined
-                  }
-                />
-              ) : (
-                <View style={styles.list}>
-                  {workouts.map((w) => (
-                    <WorkoutRow
-                      key={w.id}
-                      workout={w}
-                      onPress={
-                        w.source === 'garmin'
-                          ? () => router.push(`/garmin/workout/${w.id}` as Href)
-                          : undefined
-                      }
-                      onDelete={() => {
-                        repo.softDeleteWorkout(w.id);
-                        refresh('activity');
-                        showFlash('Тренировка удалена');
-                      }}
-                    />
-                  ))}
-                </View>
-              )}
 
               <Pressable
-                onPress={() => setWeekOpen((v) => !v)}
+                onPress={() => setFactOpen((v) => !v)}
                 style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
                 accessibilityRole="button"
-                accessibilityState={{ expanded: weekOpen }}
-                accessibilityLabel="Неделя активности"
+                accessibilityState={{ expanded: factOpen }}
+                accessibilityLabel="Факт: шаги, Garmin, ручные тренировки"
+                testID="activity-fact-toggle"
               >
                 <AppText variant="body" style={styles.moreTitle}>
-                  Неделя
+                  Факт дня
                 </AppText>
                 <AppText variant="caption" tone="muted" style={styles.moreMeta}>
-                  {weekMinutes.sum > 0 ? `${weekMinutes.sum} мин` : 'нет минут'}
+                  {workouts.length > 0
+                    ? `${workouts.length} запис.`
+                    : daySteps != null
+                      ? `${daySteps} шагов`
+                      : 'шаги / Garmin'}
                 </AppText>
                 <Ionicons
-                  name={weekOpen ? 'chevron-up' : 'chevron-down'}
+                  name={factOpen ? 'chevron-up' : 'chevron-down'}
                   size={18}
                   color={colors.textMuted}
                 />
               </Pressable>
-              {weekOpen ? (
-                <WeekBarChart
-                  title="Минуты по дням"
-                  subtitle={formatWeekRangeRu(weekMinutes.start, weekMinutes.end)}
-                  selectedDate={dateLocal}
-                  todayDate={todayKey}
-                  onSelectDate={setDateLocal}
-                  footnote="Пустой день — нет записей, не «ноль»."
-                  days={weekMinutes.days.map((d) => ({
-                    dateLocal: d.date,
-                    weekdayIndex: d.weekdayIndex,
-                    value: d.min,
-                    valueLabel: d.min === 0 ? '·' : String(d.min),
-                  }))}
-                />
-              ) : null}
 
-              <Pressable
-                onPress={repeatYesterday}
-                style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Повторить вчерашние тренировки"
-                testID="activity-repeat-yesterday"
-              >
-                <AppText variant="body" style={styles.moreTitle}>
-                  Повторить вчера
-                </AppText>
-                <AppText variant="caption" tone="muted" style={styles.moreMeta}>
-                  свои тренировки
-                </AppText>
-                <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
-              </Pressable>
+              {factOpen ? (
+                <View style={styles.factBlock}>
+                  <ActivityDaySummary
+                    totalMinutes={totalMin}
+                    activityKcal={activityKcal}
+                    steps={daySteps}
+                    distanceM={dayDistanceM}
+                    activeKcal={dayActiveKcal}
+                    workoutCount={workouts.length}
+                    workoutCalories={workoutCalories}
+                  />
+
+                  <View style={styles.quickRow}>
+                    {TYPE_META.map((t) => (
+                      <Pressable
+                        key={t.type}
+                        style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                        onPress={() => openForm(t.type)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Добавить ${t.label}`}
+                      >
+                        <Ionicons name={t.icon} size={16} color={colors.ink} />
+                        <AppText variant="caption" style={styles.quickChipText}>
+                          {t.label}
+                        </AppText>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <AppText variant="label" tone="muted" style={styles.listLabel}>
+                    Записи дня
+                  </AppText>
+                  {workouts.length === 0 ? (
+                    <EmptyState
+                      compact
+                      icon="fitness-outline"
+                      title={isEmptyWeek ? 'Пока пусто' : 'В этот день пусто'}
+                      body={
+                        isEmptyWeek
+                          ? 'Добавь тренировку вручную или подключи Garmin.'
+                          : 'Свайпни день или выбери дату выше.'
+                      }
+                      actionLabel="+ Тренировка"
+                      onAction={() => openForm('walking')}
+                      secondaryActionLabel={isEmptyWeek ? 'Garmin' : undefined}
+                      onSecondaryAction={
+                        isEmptyWeek ? () => router.push('/garmin' as Href) : undefined
+                      }
+                    />
+                  ) : (
+                    <View style={styles.list}>
+                      {workouts.map((w) => (
+                        <WorkoutRow
+                          key={w.id}
+                          workout={w}
+                          onPress={
+                            w.source === 'garmin'
+                              ? () => router.push(`/garmin/workout/${w.id}` as Href)
+                              : undefined
+                          }
+                          onDelete={() => {
+                            repo.softDeleteWorkout(w.id);
+                            refresh('activity');
+                            showFlash('Тренировка удалена');
+                          }}
+                        />
+                      ))}
+                    </View>
+                  )}
+
+                  <Pressable
+                    onPress={() => setWeekOpen((v) => !v)}
+                    style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: weekOpen }}
+                    accessibilityLabel="Неделя активности"
+                  >
+                    <AppText variant="body" style={styles.moreTitle}>
+                      Минуты недели
+                    </AppText>
+                    <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                      {weekMinutes.sum > 0 ? `${weekMinutes.sum} мин` : 'нет минут'}
+                    </AppText>
+                    <Ionicons
+                      name={weekOpen ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                  </Pressable>
+                  {weekOpen ? (
+                    <WeekBarChart
+                      title="Минуты по дням"
+                      subtitle={formatWeekRangeRu(weekMinutes.start, weekMinutes.end)}
+                      selectedDate={dateLocal}
+                      todayDate={todayKey}
+                      onSelectDate={setDateLocal}
+                      footnote="Пустой день — нет записей, не «ноль»."
+                      days={weekMinutes.days.map((d) => ({
+                        dateLocal: d.date,
+                        weekdayIndex: d.weekdayIndex,
+                        value: d.min,
+                        valueLabel: d.min === 0 ? '·' : String(d.min),
+                      }))}
+                    />
+                  ) : null}
+
+                  <Pressable
+                    onPress={repeatYesterday}
+                    style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Повторить вчерашние тренировки"
+                    testID="activity-repeat-yesterday"
+                  >
+                    <AppText variant="body" style={styles.moreTitle}>
+                      Повторить вчера
+                    </AppText>
+                    <AppText variant="caption" tone="muted" style={styles.moreMeta}>
+                      свои тренировки
+                    </AppText>
+                    <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              ) : null}
             </>
           )}
         </ScrollView>
@@ -577,7 +599,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
     paddingBottom: 48,
-    gap: space.sm,
+    gap: space.md,
+  },
+  factBlock: {
+    gap: space.md,
   },
   headerBtn: {
     minWidth: touchMin,

@@ -16,6 +16,11 @@ export function PlannedActivityCard({
   const kindLabel =
     activity.kind === 'strength' ? 'Сила' : activity.kind === 'cardio' ? 'Кардио' : 'Отдых';
   const canStart = activity.kind === 'strength' && onStart;
+  const metaBits = [
+    kindLabel,
+    activity.timeLocal,
+    activity.cardioMinutes != null ? `${activity.cardioMinutes} мин` : null,
+  ].filter(Boolean);
 
   return (
     <View
@@ -32,11 +37,12 @@ export function PlannedActivityCard({
       />
       <View style={styles.body}>
         <View style={styles.main}>
-          <AppText variant="caption" tone="muted">
-            {kindLabel}
-            {activity.timeLocal ? ` · ${activity.timeLocal}` : ''}
+          <AppText variant="caption" tone="muted" style={styles.meta}>
+            {metaBits.join(' · ')}
           </AppText>
-          <AppText variant="subtitle">{activity.title}</AppText>
+          <AppText variant="subtitle" style={styles.title}>
+            {activity.title}
+          </AppText>
           {activity.subtitle ? (
             <AppText variant="caption" tone="secondary" numberOfLines={2}>
               {activity.subtitle}
@@ -52,7 +58,6 @@ export function PlannedActivityCard({
               accessibilityLabel={`Начать ${activity.title}`}
               testID={`planned-start-${activity.id}`}
             >
-              <Ionicons name="play" size={16} color={colors.onPrimary} />
               <AppText variant="caption" tone="inverse" style={styles.startLabel}>
                 Начать
               </AppText>
@@ -76,11 +81,12 @@ export function PlannedActivityCard({
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    borderRadius: radius.card,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
+    minHeight: touchMin + 8,
   },
   cardRest: {
     opacity: 0.92,
@@ -97,24 +103,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    padding: space.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
   },
   main: {
     flex: 1,
     gap: 2,
   },
+  meta: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    fontWeight: '600',
+  },
+  title: { fontWeight: '700' },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xs,
   },
   startBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    minHeight: touchMin - 4,
+    minHeight: touchMin - 8,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
+    justifyContent: 'center',
+    borderRadius: radius.pill,
     backgroundColor: colors.ink,
   },
   startLabel: { fontWeight: '700' },
