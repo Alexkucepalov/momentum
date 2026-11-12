@@ -39,7 +39,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 03c session UX | Rest timer + RPE after session | Done (#211) |
 | 03d volume/PRs | Week volume + personal records | Done (#212) |
 | 03e template editor | Add/reorder exercises; seed-safe sync | Done (#215) |
-| 03f Movement IA | Hero + full week board; fact demoted | In progress (#218) |
+| 03f Movement IA | Hero + full week board; fact demoted | Done (#219) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)
