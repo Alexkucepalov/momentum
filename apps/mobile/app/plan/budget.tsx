@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 
 import { monthKeyFromDateLocal } from '../../../../src/domain/foodBudget';
 import type { FoodExpenseCategory } from '../../../../src/storage/types';

@@ -1,0 +1,110 @@
+{
+  "env": "node",
+  "node": "v24.22.1",
+  "measuredAt": "2026-11-13T20:27:46.619Z",
+  "note": "Not Android emulator or physical device",
+  "rows": [
+    {
+      "label": "seed D100",
+      "n": 3,
+      "p50_ms": 0.821,
+      "p95_ms": 2.122,
+      "max_ms": 2.122
+    },
+    {
+      "label": "serialize D100",
+      "n": 20,
+      "p50_ms": 0.318,
+      "p95_ms": 1.911,
+      "max_ms": 4.331
+    },
+    {
+      "label": "dailyTotals D100",
+      "n": 50,
+      "p50_ms": 0.005,
+      "p95_ms": 0.032,
+      "max_ms": 6.94
+    },
+    {
+      "label": "unifiedSearch \"ов\" D100",
+      "n": 30,
+      "p50_ms": 0.297,
+      "p95_ms": 1.145,
+      "max_ms": 2.56
+    },
+    {
+      "label": "snapshot bytes D100",
+      "bytes": 119211,
+      "entries": 100,
+      "products": 248
+    },
+    {
+      "label": "seed D1k",
+      "n": 3,
+      "p50_ms": 4.136,
+      "p95_ms": 36.746,
+      "max_ms": 36.746
+    },
+    {
+      "label": "serialize D1k",
+      "n": 20,
+      "p50_ms": 1.224,
+      "p95_ms": 4.711,
+      "max_ms": 5.275
+    },
+    {
+      "label": "dailyTotals D1k",
+      "n": 50,
+      "p50_ms": 0.022,
+      "p95_ms": 0.148,
+      "max_ms": 0.793
+    },
+    {
+      "label": "unifiedSearch \"ов\" D1k",
+      "n": 30,
+      "p50_ms": 0.398,
+      "p95_ms": 21.555,
+      "max_ms": 35.525
+    },
+    {
+      "label": "snapshot bytes D1k",
+      "bytes": 487893,
+      "entries": 1000,
+      "products": 398
+    },
+    {
+      "label": "seed D10k",
+      "n": 3,
+      "p50_ms": 27.389,
+      "p95_ms": 57.478,
+      "max_ms": 57.478
+    },
+    {
+      "label": "serialize D10k",
+      "n": 20,
+      "p50_ms": 15.295,
+      "p95_ms": 71.936,
+      "max_ms": 82.063
+    },
+    {
+      "label": "dailyTotals D10k",
+      "n": 50,
+      "p50_ms": 0.204,
+      "p95_ms": 1.026,
+      "max_ms": 3.121
+    },
+    {
+      "label": "unifiedSearch \"ов\" D10k",
+      "n": 30,
+      "p50_ms": 0.425,
+      "p95_ms": 0.888,
+      "max_ms": 1.727
+    },
+    {
+      "label": "snapshot bytes D10k",
+      "bytes": 3832049,
+      "entries": 10000,
+      "products": 698
+    }
+  ]
+}

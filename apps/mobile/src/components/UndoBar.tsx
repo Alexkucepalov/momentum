@@ -73,6 +73,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   btn: {
+    minHeight: 48,
+    justifyContent: 'center',
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
   },
@@ -82,6 +84,10 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
   },
   dismiss: {
+    minHeight: 48,
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: space.xs,
   },
   dismissText: {

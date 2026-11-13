@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 

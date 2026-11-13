@@ -41,7 +41,7 @@ export function DayStrip({ selected, today, onSelect, onOpenCalendar }: {
 }
 const styles = StyleSheet.create({
   wrap: { marginBottom: space.sm }, head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  range: { flex: 1 }, controls: { flexDirection: 'row' }, control: { width: touchMin - 8, height: touchMin, alignItems: 'center', justifyContent: 'center' },
+  range: { flex: 1 }, controls: { flexDirection: 'row' }, control: { width: touchMin, height: touchMin, alignItems: 'center', justifyContent: 'center' },
   days: { flexDirection: 'row', marginHorizontal: -space.sm }, day: { flex: 1, minWidth: 0, minHeight: 64, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', gap: space.xs, paddingVertical: space.sm },
   active: { backgroundColor: colors.ink }, number: { fontWeight: '600' }, dot: { width: 3, height: 3, borderRadius: 2 }, pressed: { opacity: 0.75 },
 });

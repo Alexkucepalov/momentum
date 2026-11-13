@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   emptyBody: { fontSize: type.caption, color: colors.textSecondary, lineHeight: 18 },
   emptyCta: {
-    minHeight: 40,
+    minHeight: touchMin,
     borderRadius: radius.md,
     backgroundColor: colors.text,
     alignItems: 'center',

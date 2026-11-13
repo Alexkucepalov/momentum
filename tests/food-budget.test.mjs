@@ -49,7 +49,7 @@ test('forecast is null without expenses — not ≈0 ₽', () => {
 
 test('budget snapshot + repo expenses', () => {
   const repo = createMemoryFoodRepository({ timezone: 'UTC' });
-  assert.equal(repo.toSnapshot().version, 19);
+  assert.equal(repo.toSnapshot().version, 20);
   repo.setFoodBudget('2026-10', 30000);
   repo.addFoodExpense({
     amountRub: 1200,

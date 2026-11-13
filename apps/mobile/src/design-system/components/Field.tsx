@@ -22,9 +22,10 @@ export function Field({ label, error, helper, style, testID, ...rest }: FieldPro
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error ? styles.inputError : null, style]}
         accessibilityLabel={label}
+        accessibilityHint={error ?? helper ?? rest.accessibilityHint ?? undefined}
       />
       {error ? (
-        <AppText variant="caption" tone="danger" style={styles.meta}>
+        <AppText variant="caption" tone="danger" style={styles.meta} accessibilityRole="alert" accessibilityLiveRegion="polite">
           {error}
         </AppText>
       ) : helper ? (

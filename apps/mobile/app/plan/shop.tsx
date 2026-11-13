@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useRouter } from 'expo-router';
 
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   qtyInput: { flex: 1, minWidth: 72 },
   unitChip: {
     minHeight: touchMin,
-    minWidth: 44,
+    minWidth: touchMin,
     paddingHorizontal: space.md,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   priceInput: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   priceBtn: {
-    minHeight: 40,
+    minHeight: touchMin,
     paddingHorizontal: space.lg,
     borderRadius: radius.md,
     backgroundColor: colors.accent,

@@ -11,6 +11,13 @@ import { parseExportJson } from '../../../../src/domain/importExport';
 
 const DB_NAME = 'momentum.db';
 
+/** Read-only recovery of the raw snapshot, including invalid/future JSON. */
+export function readRecoveryPayload(): string | null {
+  const db = SQLite.openDatabaseSync(DB_NAME, { useNewConnection: true });
+  try { return db.getFirstSync<{ payload: string }>('SELECT payload FROM store_snapshot WHERE id = 1')?.payload ?? null; }
+  finally { db.closeSync(); }
+}
+
 function readSnapshot(db: SQLite.SQLiteDatabase): StoreSnapshotAny | undefined {
   const row = db.getFirstSync<{ payload: string }>('SELECT payload FROM store_snapshot WHERE id = 1');
   if (!row?.payload) return undefined;

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useRouter } from 'expo-router';
 
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
   editRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
   editInput: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   smallBtn: {
-    minHeight: 40,
+    minHeight: touchMin,
     paddingHorizontal: space.lg,
     borderRadius: radius.md,
     backgroundColor: colors.accent,

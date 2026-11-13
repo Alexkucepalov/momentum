@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-13",
+  "base_commit": "dc2cb15b6edd86cd80eb8b5561f394f390b2170f",
+  "issue": 228,
+  "verify": {
+    "command": "RNET_SKIP_DOWNLOAD=1 npm run verify",
+    "tests_pass": 353,
+    "tests_fail": 0,
+    "root_and_mobile_typecheck": "pass",
+    "security_scan": "pass",
+    "mobile_dependency_compatibility": "pass"
+  },
+  "production_npm_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "clean_mobile_npm_ci": "pass",
+  "android_js_export": {
+    "command": "EXPO_NO_TELEMETRY=1 npx expo export --platform android --no-bytecode",
+    "result": "pass",
+    "native_device_pass": false
+  },
+  "snapshot_version": 20,
+  "sqlite_schema_changed": false,
+  "upstream_decoder_archive_sha256": "68747a955bbb6a700d758155cf5ff15595c0dfa38504d385abdb249c688bfb15",
+  "physical_android": "pending"
+}

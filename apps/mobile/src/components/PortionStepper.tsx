@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { colors, radius, space, touchMin, type } from '../theme/tokens';
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 36,
+    minHeight: touchMin,
     maxWidth: '100%',
     justifyContent: 'center',
   },

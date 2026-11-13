@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xs,
-    minHeight: touchMin - 8,
+    minHeight: touchMin,
     alignSelf: 'flex-start',
   },
   pressed: { opacity: 0.85 },

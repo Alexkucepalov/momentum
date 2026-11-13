@@ -86,7 +86,7 @@ test('fixtures: Самокат qty×price and non-food fees', () => {
 test('E2E: confirm → pantry/expense; re-import blocked; snapshot v14', () => {
   const repo = createMemoryFoodRepository({ timezone: 'Europe/Moscow' });
   const { result } = confirmFromPaste(repo, fixtures.chizhik.paste);
-  assert.equal(repo.toSnapshot().version, 19);
+  assert.equal(repo.toSnapshot().version, 20);
   assert.ok(result.purchase.confirmedAt);
   const pantryBefore = repo.listPantryItems().length;
   assert.ok(pantryBefore >= 3);

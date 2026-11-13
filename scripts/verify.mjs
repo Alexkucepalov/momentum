@@ -27,6 +27,7 @@ const mobilePkg = join(root, 'apps/mobile/package.json');
 if (existsSync(mobilePkg)) {
   run('mobile install', 'npm', ['install', '--no-audit', '--no-fund'], join(root, 'apps/mobile'));
   run('mobile typecheck', 'npx', ['tsc', '--noEmit', '-p', 'apps/mobile']);
+  run('mobile dependency compatibility', 'node', ['scripts/check-mobile-dependencies.mjs']);
 }
 
 console.log('\nverify OK\n');

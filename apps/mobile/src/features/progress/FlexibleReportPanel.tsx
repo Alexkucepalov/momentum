@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Alert, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 

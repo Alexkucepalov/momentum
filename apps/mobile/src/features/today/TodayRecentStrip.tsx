@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import type { FoodEntry } from '../../../../../src/storage/types';
 import { SectionHeader } from '@/src/components/SectionHeader';
-import { AppCard, AppText, colors, radius, space } from '@/src/design-system';
+import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 function fmtKcal(n: number | null): string {
   if (n === null) return '— ккал';
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2, minWidth: 0 },
   title: { fontWeight: '600' },
   plusHit: {
-    minWidth: 40,
-    minHeight: 40,
+    minWidth: touchMin,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
   },

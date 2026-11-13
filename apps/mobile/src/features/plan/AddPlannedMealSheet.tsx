@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 
 import type { MealSlot } from '../../../../../src/storage/types';
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   pick: {
-    minHeight: touchMin - 4,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     borderRadius: radius.md,

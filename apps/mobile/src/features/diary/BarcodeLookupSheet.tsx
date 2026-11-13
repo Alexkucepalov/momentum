@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

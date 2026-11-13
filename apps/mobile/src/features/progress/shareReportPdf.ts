@@ -38,7 +38,7 @@ export async function shareHtmlAsPdf(html: string, fileNameBase = 'momentum-repo
       try {
         await Sharing.shareAsync(printed.uri, {
           mimeType: 'application/pdf',
-          dialogTitle: 'Momentum — личный отчёт',
+          dialogTitle: 'nf-fit — личный отчёт',
           UTI: 'com.adobe.pdf',
         });
         return 'shared';
@@ -56,7 +56,7 @@ export async function shareHtmlAsPdf(html: string, fileNameBase = 'momentum-repo
     try {
       await Sharing.shareAsync(dest, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Momentum — личный отчёт',
+        dialogTitle: 'nf-fit — личный отчёт',
         UTI: 'com.adobe.pdf',
       });
       return 'shared';

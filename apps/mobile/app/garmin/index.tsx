@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, StyleSheet, TextInput, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { useRouter, type Href } from 'expo-router';
 
 import { FlashBar } from '@/src/components/FlashBar';

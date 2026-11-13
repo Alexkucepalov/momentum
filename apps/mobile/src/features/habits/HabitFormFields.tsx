@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
   freqRow: { flexDirection: 'row', gap: space.xs },
   freqChip: {
     flex: 1,
-    minHeight: 44,
+    minHeight: touchMin,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,

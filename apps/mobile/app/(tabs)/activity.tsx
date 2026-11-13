@@ -20,6 +20,8 @@ import { DraftSessionBanner } from '@/src/features/strength/DraftSessionBanner';
 import { MoveCopyActivitySheet } from '@/src/features/strength/MoveCopyActivitySheet';
 import { strengthHubHref, strengthSessionHref, strengthTemplateHref } from '@/src/features/strength/StrengthEntryCard';
 import { StrengthWeekBoard } from '@/src/features/strength/StrengthWeekBoard';
+import { TrainingCycleSheet } from '@/src/features/strength/TrainingCycleSheet';
+import { LinkCyclingSheet } from '@/src/features/strength/LinkCyclingSheet';
 import { useData, useActivityRevision } from '@/src/state/DataContext';
 import { confirmAction } from '@/src/utils/confirmAction';
 import { AppText, SegmentedControl, colors, radius, space, touchMin } from '@/src/design-system';
@@ -38,6 +40,8 @@ export default function MovementScreen() {
   const [editor, setEditor] = useState<{ date: string; activity?: PlannedActivity } | null>(null);
   const [menu, setMenu] = useState<PlannedActivity | null>(null);
   const [weekMenu, setWeekMenu] = useState<'week' | 'program' | null>(null);
+  const [cycleOpen, setCycleOpen] = useState(false);
+  const [linking, setLinking] = useState<PlannedActivity | null>(null);
   const [draggingPlan, setDraggingPlan] = useState(false);
   const [notice, setNotice] = useState<{ message: string; undo: () => void } | null>(null);
   const [moveCopy, setMoveCopy] = useState<{ activity: PlannedActivity; mode: 'move' | 'copy' } | null>(null);
@@ -63,6 +67,11 @@ export default function MovementScreen() {
     if (linked && !weekSessions.some(s => s.id === linked.id)) weekSessions.push(linked);
   }
   const workouts = repo.listWorkoutsForDate(dateLocal);
+  const boardWorkouts = weekDates.flatMap(d => repo.listWorkoutsForDate(d));
+  for (const card of plannedWeek) {
+    const linked = card.linkedWorkoutId ? repo.getWorkoutById(card.linkedWorkoutId) : null;
+    if (linked && !boardWorkouts.some(w => w.id === linked.id)) boardWorkouts.push(linked);
+  }
   const todayKey = localDateKey(new Date(), profile.timezone);
   const options = weekDates.map((d, i) => ({ dateLocal: d, label: `${HABIT_WEEKDAY_LABELS_RU[i]} ${Number(d.slice(8, 10))}` }));
   const feedback = (message: string, undo: () => void) => {
@@ -82,12 +91,13 @@ export default function MovementScreen() {
     showFlash(session.status === 'completed' ? 'Открыт результат тренировки' : existing ? 'Продолжаем тренировку' : 'Сессия начата');
     router.push(strengthSessionHref(session.id));
   });
-  const applyProgram = (replace: boolean) => attempt(() => {
+  const applyProgram = (replace: boolean, fromCycle = false) => attempt(() => {
     const before = repo.listPlannedActivitiesInWeek(weekStart);
-    repo.applyStrengthProgramWeek(weekStart, { replace });
+    if (fromCycle) repo.applyTrainingCycleWeek(weekStart, { replace });
+    else repo.applyStrengthProgramWeek(weekStart, { replace });
     const ids = new Set(before.map(a => a.id));
     const created = repo.listPlannedActivitiesInWeek(weekStart).filter(a => !ids.has(a.id));
-    feedback('Программа добавлена в неделю', () => { created.forEach(a => repo.softDeletePlannedActivity(a.id)); if (replace) before.forEach(a => repo.restorePlannedActivity(a.id)); });
+    feedback(fromCycle ? 'Шаблон применён к неделе' : 'Программа добавлена в неделю', () => { created.forEach(a => repo.softDeletePlannedActivity(a.id)); if (replace) before.forEach(a => repo.restorePlannedActivity(a.id)); });
   });
   const repeatWeek = () => {
     const run = () => attempt(() => {
@@ -101,13 +111,14 @@ export default function MovementScreen() {
   let actions: MenuAction[] = [];
   if (menu) {
     const activity = menu;
-    const linked = repo.getWorkoutSessionForPlan(activity.id);
+    const linked = repo.getWorkoutSessionForPlan(activity.id) || (activity.linkedWorkoutId ? repo.getWorkoutById(activity.linkedWorkoutId) : null);
     const sameDay = repo.listPlannedActivitiesForDate(activity.dateLocal);
     const index = sameDay.findIndex(a => a.id === activity.id);
     actions = [
       { id: 'edit', label: 'Изменить план', detail: 'Название, начало и длительность', onPress: () => openEditor(activity.dateLocal, activity) },
       ...(!linked ? [{ id: 'move', label: 'Перенести', onPress: () => setMoveCopy({ activity, mode: 'move' as const }) }] : []),
       { id: 'copy', label: 'Копировать', onPress: () => setMoveCopy({ activity, mode: 'copy' }) },
+      ...(activity.kind === 'cardio' ? [{ id: 'link-ride', label: activity.linkedWorkoutId ? 'Изменить связь с Garmin' : 'Связать с поездкой Garmin', detail: 'Выбрать выполненную велотренировку', onPress: () => setLinking(activity) }] : []),
       ...(activity.templateId ? [{ id: 'exercises', label: 'Изменить упражнения', detail: 'Шаблон для следующих сессий', onPress: () => router.push(strengthTemplateHref(activity.templateId!)) }] : []),
       ...(!linked && index > 0 ? [{ id: 'up', label: 'Выше в этом дне', onPress: () => attempt(() => { repo.reorderPlannedActivity(activity.id, 'up'); refresh('activity'); }) }] : []),
       ...(!linked && index < sameDay.length - 1 ? [{ id: 'down', label: 'Ниже в этом дне', onPress: () => attempt(() => { repo.reorderPlannedActivity(activity.id, 'down'); refresh('activity'); }) }] : []),
@@ -118,6 +129,9 @@ export default function MovementScreen() {
     { id: 'program-add', label: 'Добавить к текущему плану', onPress: () => applyProgram(false) },
     { id: 'program-replace', label: 'Заменить план недели', detail: 'Выполненные тренировки сохранятся', destructive: true, onPress: () => applyProgram(true) },
   ] : [
+    { id: 'edit-cycle', label: 'Редактировать шаблон недели', detail: repo.getTrainingCycle()?.name ?? 'Силовые, вело и отдых', onPress: () => setCycleOpen(true) },
+    ...(repo.getTrainingCycle() ? [{ id: 'apply-cycle', label: 'Применить мой шаблон', detail: 'Добавить карточки, сохранив изменения этой недели', onPress: () => applyProgram(false, true) }] : []),
+    ...(repo.getTrainingCycle() ? [{ id: 'fill-cycle', label: 'Запланировать 4 недели', detail: 'Заполнить пустые недели; существующие планы сохранятся', onPress: () => confirmAction('Запланировать 4 недели?', 'Пустые недели начиная с выбранной будут заполнены твоим шаблоном. Недели с существующим планом пропускаются.', { confirmLabel: 'Запланировать', onConfirm: () => attempt(() => { const result = repo.fillTrainingCycleWeeks(weekStart, 4); feedback(`Добавлено: ${result.createdIds.length} · сохранено недель: ${result.skippedWeeks}`, () => result.createdIds.forEach(id => repo.softDeletePlannedActivity(id))); }) }) }] : []),
     { id: 'repeat-week', label: 'Повторить прошлую неделю', detail: 'Копия плана с изменениями прошлой недели', onPress: repeatWeek },
     { id: 'program', label: 'Заполнить из программы', onPress: () => plannedWeek.length ? setWeekMenu('program') : applyProgram(false) },
     { id: 'templates', label: 'Шаблоны упражнений', onPress: () => router.push(strengthHubHref()) },
@@ -135,7 +149,7 @@ export default function MovementScreen() {
           {drafts.map(draft => <DraftSessionBanner key={draft.id} session={draft} onContinue={() => router.push(strengthSessionHref(draft.id))} />)}
           <StrengthWeekBoard days={days} selectedDate={dateLocal} todayDate={todayKey} sessions={weekSessions} onSelectDate={setDateLocal} onAdd={date => openEditor(date ?? dateLocal)} onApplyProgram={() => setWeekMenu('week')} onOpenTemplates={() => router.push(strengthHubHref())} onOpenCalendar={() => setCalendarOpen(true)} onMenu={setMenu} onStart={start} onDraggingChange={setDraggingPlan}
             onAutoScroll={pointerY => { const box = scrollBox.current; const delta = pointerY < box.top + 64 ? -16 : pointerY > box.bottom - 64 ? 16 : 0; const next = Math.max(0, Math.min(box.max, scrollY.current + delta)); if (!delta || next === scrollY.current) return false; scrollY.current = next; scroll.current?.scrollTo({ y: next, animated: false }); return true; }}
-            workouts={weekDates.flatMap(d => repo.listWorkoutsForDate(d))} onOpenSession={session => router.push(strengthSessionHref(session.id))}
+            workouts={boardWorkouts} onOpenSession={session => router.push(strengthSessionHref(session.id))}
             onOpenWorkout={w => { if (w.source === 'garmin') router.push(`/garmin/workout/${encodeURIComponent(w.id)}` as Href); else setDateLocal(w.dateLocal); }}
             onDrop={(activity, target) => attempt(() => {
               const other = target.activityId && target.activityId !== activity.id ? plannedWeek.find(a => a.id === target.activityId) : undefined;
@@ -161,10 +175,12 @@ export default function MovementScreen() {
     }} />
     <ActionMenuSheet visible={menu != null} title={menu?.title ?? ''} description="План ≠ факт. Изменения плана не переписывают выполненную тренировку." actions={actions} onClose={() => setMenu(null)} />
     <ActionMenuSheet visible={weekMenu != null} title={weekMenu === 'program' ? 'Программа на неделю' : 'Управление неделей'} actions={weekActions} onClose={() => setWeekMenu(null)} />
+    <TrainingCycleSheet visible={cycleOpen} monday={weekStart} onClose={() => setCycleOpen(false)} onSaved={previous => feedback('Шаблон недели сохранён', () => repo.restoreTrainingCycle(previous))} />
+    <LinkCyclingSheet activity={linking} onClose={() => setLinking(null)} onLinked={previousId => { if (!linking) return; const id = linking.id; feedback('Связь с поездкой обновлена', () => { repo.linkPlannedCycling(id, previousId); }); }} />
     <MoveCopyActivitySheet visible={moveCopy != null} mode={moveCopy?.mode ?? 'move'} activityTitle={moveCopy?.activity.title ?? ''} days={options} onClose={() => setMoveCopy(null)} onPick={targetDate => attempt(() => {
       if (!moveCopy) return;
       const previous = moveCopy.activity;
-      if (moveCopy.mode === 'move') { repo.movePlannedActivity(previous.id, { dateLocal: targetDate }); feedback('Тренировка перенесена', () => { repo.movePlannedActivity(previous.id, { dateLocal: previous.dateLocal, sortOrder: previous.sortOrder }); }); }
+      if (moveCopy.mode === 'move') { repo.movePlannedActivity(previous.id, { dateLocal: targetDate }); feedback('Тренировка перенесена', () => { repo.movePlannedActivity(previous.id, { dateLocal: previous.dateLocal, sortOrder: previous.sortOrder }); setDateLocal(previous.dateLocal); }); }
       else { const copy = repo.copyPlannedActivity(previous.id, { dateLocal: targetDate }); feedback('План скопирован', () => { repo.softDeletePlannedActivity(copy.id); }); }
       setMoveCopy(null); setDateLocal(targetDate);
     })} />

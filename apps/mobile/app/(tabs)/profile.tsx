@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -8,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
 import { localDateKey } from '../../../../src/storage/validation';
 import { asPersistable } from '../../../../src/storage/foodRepository';
+import { clearRecoveryCopies } from '@/src/storage/recoveryCopy';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
@@ -297,10 +299,10 @@ export default function ProfileScreen() {
             setUndo(null);
             try {
               repo.deleteAllUserData();
-              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload()]);
+              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload(), clearRecoveryCopies()]);
               asPersistable(repo).flushPersist();
               refresh('all');
-              if (cleanup.some(result => result.status === 'rejected')) showFlash('Данные очищены, но ключ Garmin удалить не удалось. Повтори удаление.');
+              if (cleanup.some(result => result.status === 'rejected')) showFlash('Часть локальных файлов или ключ Garmin удалить не удалось. Повтори удаление.');
               else showFlash('Локальные данные и ключ Garmin очищены');
             } catch {
               refresh('all');
@@ -798,7 +800,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.canvas,
-    minHeight: 36,
+    minHeight: touchMin,
     justifyContent: 'center',
   },
   presetOn: {

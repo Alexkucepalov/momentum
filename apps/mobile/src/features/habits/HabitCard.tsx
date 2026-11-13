@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   toggleText: { fontWeight: '700', color: colors.text, fontSize: type.body },
   toggleTextOn: { color: colors.primaryButtonText },
   clearBtn: {
-    minHeight: 40,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
   },

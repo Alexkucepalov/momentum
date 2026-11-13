@@ -7,6 +7,7 @@ export {
   elevation,
   fonts,
   TAB_SHELL,
+  HEART_RATE_ZONE_COLORS,
 } from './tokens';
 
 export type { TabShellId } from './tokens';
@@ -15,6 +16,7 @@ export type { ColorToken, TypeToken } from '../../../../src/design-system/tokenT
 export { Screen } from './components/Screen';
 export { AppText } from './components/AppText';
 export { ThemedText } from './components/ThemedText';
+export { ThemedTextInput } from './components/ThemedTextInput';
 export { AppCard } from './components/AppCard';
 export { AppButton } from './components/AppButton';
 export { MetricCard, formatMetricValue } from './components/MetricCard';

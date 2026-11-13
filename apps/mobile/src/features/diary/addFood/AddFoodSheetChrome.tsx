@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { MealSlot } from '../../../../../../src/storage/types';
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
     alignSelf: 'flex-start',
-    minHeight: 28,
+    minHeight: touchMin,
   },
   mealContextText: { fontWeight: '600' },
   closeBtn: {
