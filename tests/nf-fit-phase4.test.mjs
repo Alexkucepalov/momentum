@@ -135,9 +135,13 @@ test('Phase 4 UI uses design system; no shame copy', () => {
     assert.ok(existsSync(join(root, rel)), `missing ${rel}`);
   }
   const activity = readFileSync(join(root, 'apps/mobile/app/(tabs)/activity.tsx'), 'utf8');
-  assert.ok(activity.includes('ActivityDaySummary'));
+  assert.ok(activity.includes('StrengthWeekBoard'));
   assert.ok(activity.includes('@/src/design-system'));
-  assert.ok(activity.includes('не вычитаются из еды') || activity.includes('ActivityDaySummary'));
+  assert.ok(
+    activity.includes('План ≠ факт') ||
+      activity.includes('план выше не меняется') ||
+      activity.includes('План выше не меняется'),
+  );
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(activity));
 
   const summary = readFileSync(
