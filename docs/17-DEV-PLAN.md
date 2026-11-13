@@ -40,7 +40,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 03d volume/PRs | Week volume + personal records | Done (#212) |
 | 03e template editor | Add/reorder exercises; seed-safe sync | Done (#215) |
 | 03f Movement IA | Hero + full week board; fact demoted | Done (#219) |
-| 03g simplify | Day focus: plan → start; drop dual nav | In progress (#222) |
+| 03g simplify | Day focus: plan → start; drop dual nav | Done (#223) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)
