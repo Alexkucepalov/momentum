@@ -1,10 +1,20 @@
 name: Android dogfood APK (manual)
 on:
   workflow_dispatch:
+    inputs:
+      publish_run_id:
+        description: 'Existing successful APK run to upload (leave empty to build a new APK)'
+        type: string
+        default: ''
+      release_tag:
+        description: 'New prerelease tag for the APK commit (upload mode only)'
+        type: string
+        default: ''
 permissions:
   contents: read
 jobs:
   android:
+    if: ${{ inputs.publish_run_id == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -55,3 +65,68 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
+  publish:
+    if: ${{ inputs.publish_run_id != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APK_RUN_ID: ${{ inputs.publish_run_id }}
+      APK_RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - name: Validate upload request
+        id: source
+        run: |
+          [[ "$APK_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$APK_RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$APK_RUN_ID" > "$RUNNER_TEMP/apk-run.json"
+          python - <<'PY'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          run = json.loads((root / 'apk-run.json').read_text())
+          assert run['conclusion'] == 'success', 'Source build must succeed'
+          assert run['path'] == '.github/workflows/android-build.yml', 'Expected a dogfood APK build'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"sha={run['head_sha']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: nf-fit-redesign-arm64
+          path: apk
+          run-id: ${{ inputs.publish_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify and publish existing APK as a prerelease
+        run: |
+          cd apk
+          sha256sum --check SHA256SUMS.txt
+          python - <<'PY'
+          import json, os, pathlib
+          run = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'apk-run.json').read_text())
+          info = pathlib.Path('BUILD-INFO.txt').read_text()
+          assert f"commit: {run['head_sha']}\n" in info, 'APK provenance must match source build'
+          assert 'package: app.nffit.dogfood\n' in info, 'Unexpected application package'
+          PY
+          apk_source_sha="$(python -c 'import json, os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "apk-run.json")))["head_sha"])')"
+          if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$APK_RELEASE_TAG" > "$RUNNER_TEMP/apk-tag.json"; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f "ref=refs/tags/$APK_RELEASE_TAG" -f "sha=$apk_source_sha" > "$RUNNER_TEMP/apk-tag.json"
+          fi
+          python - <<'PY'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          tag = json.loads((root / 'apk-tag.json').read_text())
+          run = json.loads((root / 'apk-run.json').read_text())
+          assert tag['object']['type'] == 'commit', 'Expected a commit tag'
+          assert tag['object']['sha'] == run['head_sha'], 'Release tag must match source build'
+          PY
+          printf 'Standalone dogfood APK (Android ARM64), commit %s.\n\nBuild: %s/%s/actions/runs/%s\n\nPhysical-device verification is pending.\n' \
+            "$apk_source_sha" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$APK_RUN_ID" > RELEASE-NOTES.txt
+          gh release create "$APK_RELEASE_TAG" nf-fit-redesign-arm64.apk SHA256SUMS.txt BUILD-INFO.txt \
+            ../apps/mobile/assets/fonts/OFL-Manrope.txt --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title 'nf-fit — редизайн, тестовый APK' --prerelease --latest=false --notes-file RELEASE-NOTES.txt
