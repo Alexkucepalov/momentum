@@ -28,6 +28,9 @@ if (badNames.length) {
 
 /** Lightweight content patterns — not a full secret scanner. */
 const CONTENT_PATTERNS = [
+  { name: 'github-token', re: /\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})\b/ },
+  { name: 'openai-token', re: /\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{32,}\b/ },
+  { name: 'garmin-bearer-literal', re: /(?:access[_-]?token|authorization)\s*[:=]\s*['"](?:Bearer\s+)?eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+['"]/i },
   {
     name: 'private-key-block',
     re: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,

@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HABIT_WEEKDAY_LABELS_RU } from '../../../../../src/domain/habitWeek';
-import type { PlannedActivity } from '../../../../../src/domain/strength/types';
+import type { PlannedActivity, WorkoutSession } from '../../../../../src/domain/strength/types';
 import type { StrengthWeekDay } from '../../../../../src/domain/strength/weekBoard';
 import type { Workout } from '../../../../../src/storage/types';
 import { formatWeekRangeRu } from '@/src/components/weekFormat';
@@ -12,20 +12,25 @@ type Drop = { dateLocal: string; activityId?: string };
 type Box = Drop & { top: number; bottom: number };
 type Props = {
   days: StrengthWeekDay[]; selectedDate: string; todayDate?: string;
-  onSelectDate?: (date: string) => void; onAdd: () => void;
+  onSelectDate?: (date: string) => void; onAdd: (date?: string) => void;
   onApplyProgram?: () => void; onOpenTemplates?: () => void;
   onMenu: (activity: PlannedActivity) => void; onStart: (activity: PlannedActivity) => void;
   onDrop?: (activity: PlannedActivity, target: Drop) => void;
   onDraggingChange?: (dragging: boolean) => void;
   workouts?: Workout[]; onOpenWorkout?: (workout: Workout) => void;
+  sessions?: WorkoutSession[]; onOpenSession?: (session: WorkoutSession) => void;
+  onOpenCalendar?: () => void; onAutoScroll?: (pointerY: number) => boolean;
 };
 
 /** Full week: planned cards move; imported facts retain their source date. */
-export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate, onAdd, onApplyProgram, onOpenTemplates, onMenu, onStart, onDrop, onDraggingChange, workouts = [], onOpenWorkout }: Props) {
+export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate, onAdd, onApplyProgram, onOpenTemplates, onMenu, onStart, onDrop, onDraggingChange, workouts = [], onOpenWorkout, sessions = [], onOpenSession, onOpenCalendar, onAutoScroll }: Props) {
   const refs = useRef(new Map<string, { node: View; target: Drop }>());
   const boxes = useRef<Box[]>([]);
   const [hover, setHover] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const pointerY = useRef<number | null>(null);
+  const autoScroll = useRef(onAutoScroll);
+  autoScroll.current = onAutoScroll;
   const count = days.reduce((n, d) => n + d.activities.filter(a => a.kind !== 'rest').length, 0);
   const measure = () => {
     boxes.current = [];
@@ -33,6 +38,16 @@ export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate,
       if (h > 0) boxes.current.push({ ...target, top: y, bottom: y + h });
     }));
   };
+  useEffect(() => {
+    if (!activeId) return;
+    const timer = setInterval(() => { if (pointerY.current != null && autoScroll.current?.(pointerY.current)) measure(); }, 50);
+    return () => clearInterval(timer);
+  }, [activeId]);
+  const linkedSession = (activityId: string) => sessions.find(s => s.plannedActivityId === activityId && s.status === 'completed') ?? sessions.find(s => s.plannedActivityId === activityId && s.status === 'in_progress');
+  const completed = sessions.filter(s => s.status === 'completed' && days.some(d => d.dateLocal === s.dateLocal));
+  const cycling = workouts.filter(w => w.type === 'cycling');
+  const knownDistances = cycling.filter(w => w.distanceM != null);
+  const cyclingKm = knownDistances.length ? knownDistances.reduce((sum, w) => sum + w.distanceM!, 0) / 1000 : null;
   const register = (key: string, target: Drop) => (node: View | null) => {
     if (node) refs.current.set(key, { node, target }); else refs.current.delete(key);
   };
@@ -48,9 +63,14 @@ export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate,
   return (
     <View style={styles.wrap} testID="strength-week-board">
       <View style={styles.head}>
-        <View style={styles.heading}><AppText variant="subtitle">Недельный цикл</AppText><AppText variant="caption" tone="secondary">{formatWeekRangeRu(days[0]?.dateLocal ?? selectedDate, days[6]?.dateLocal ?? selectedDate)}</AppText></View>
+        <Pressable style={styles.heading} onPress={onOpenCalendar} accessibilityRole="button" accessibilityLabel="Выбрать неделю в календаре"><AppText variant="subtitle">Недельный цикл</AppText><AppText variant="caption" tone="secondary">{formatWeekRangeRu(days[0]?.dateLocal ?? selectedDate, days[6]?.dateLocal ?? selectedDate)} ⌄</AppText></Pressable>
         <Pressable onPress={() => shiftWeek(-1)} style={styles.icon} accessibilityRole="button" accessibilityLabel="Предыдущая неделя"><Ionicons name="chevron-back" size={18} color={colors.ink} /></Pressable>
         <Pressable onPress={() => shiftWeek(1)} style={styles.icon} accessibilityRole="button" accessibilityLabel="Следующая неделя"><Ionicons name="chevron-forward" size={18} color={colors.ink} /></Pressable>
+      </View>
+      <View style={styles.metrics}>
+        <View style={styles.metric}><AppText variant="label" tone="secondary">В плане</AppText><AppText style={styles.metricValue}>{count}</AppText></View>
+        <View style={styles.metric}><AppText variant="label" tone="secondary">Силовых записано</AppText><AppText style={styles.metricValue}>{completed.length || '—'}</AppText></View>
+        <View style={styles.metric}><AppText variant="label" tone="secondary">Вело, км</AppText><AppText style={styles.metricValue}>{cyclingKm == null ? '—' : cyclingKm.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}</AppText></View>
       </View>
       <View style={styles.summary}><AppText variant="caption" tone="secondary">{count === 0 ? 'Пока без запланированных тренировок' : `Тренировок в плане · ${count}`}</AppText>{onOpenTemplates ? <Pressable onPress={onOpenTemplates} accessibilityRole="button" accessibilityLabel="Шаблоны и редактор" testID="strength-open-templates" style={styles.templateLink}><AppText variant="caption">Шаблоны</AppText><Ionicons name="arrow-forward" size={14} color={colors.ink} /></Pressable> : null}</View>
       <View style={styles.week}>
@@ -65,13 +85,16 @@ export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate,
               </Pressable>
               <View style={styles.dayBody}>
                 {day.activities.map(activity => (
-                  <View key={activity.id} ref={register(`card:${activity.id}`, { dateLocal: day.dateLocal, activityId: activity.id })} collapsable={false} style={activeId === activity.id ? styles.lifted : undefined}>
-                    <DragCard activity={activity} onMenu={() => onMenu(activity)} onStart={activity.kind === 'strength' ? () => onStart(activity) : undefined} draggable={onDrop != null}
+                  <View key={activity.id} ref={register(`card:${activity.id}`, { dateLocal: day.dateLocal, activityId: linkedSession(activity.id) ? undefined : activity.id })} collapsable={false} style={activeId === activity.id ? styles.lifted : undefined}>
+                    <DragCard activity={activity} session={linkedSession(activity.id)} onMenu={() => onMenu(activity)} onStart={activity.kind === 'strength' ? () => onStart(activity) : undefined} draggable={onDrop != null && !linkedSession(activity.id)}
                       onBegin={() => { measure(); setActiveId(activity.id); onDraggingChange?.(true); }}
-                      onMove={y => setHover(targetAt(y, activity.id)?.dateLocal ?? null)}
-                      onEnd={y => { const target = y == null ? undefined : targetAt(y, activity.id); setHover(null); setActiveId(null); onDraggingChange?.(false); if (target) onDrop?.(activity, target); }} />
+                      onMove={y => { pointerY.current = y; setHover(targetAt(y, activity.id)?.dateLocal ?? null); }}
+                      onEnd={y => { const target = y == null ? undefined : targetAt(y, activity.id); pointerY.current = null; setHover(null); setActiveId(null); onDraggingChange?.(false); if (target) onDrop?.(activity, target); }} />
                   </View>
                 ))}
+                {completed.filter(s => s.dateLocal === day.dateLocal && !day.activities.some(a => a.id === s.plannedActivityId)).map(session => <Pressable key={session.id} onPress={() => onOpenSession?.(session)} accessibilityRole="button" accessibilityLabel={`Результат: ${session.title}`} style={styles.fact} testID={`cycle-session-${session.id}`}>
+                  <Ionicons name="barbell-outline" size={18} color={colors.ink} /><View style={styles.factText}><AppText variant="body" style={styles.cardTitle}>{session.title}</AppText><AppText variant="label" tone="secondary">Завершена{session.feelingRpe != null ? ` · RPE ${session.feelingRpe}` : ''}</AppText></View><Ionicons name="checkmark-circle" size={19} color={colors.success} />
+                </Pressable>)}
                 {facts.map(w => (
                   <Pressable key={w.id} onPress={() => onOpenWorkout?.(w)} disabled={!onOpenWorkout} accessibilityRole="button" accessibilityLabel={`${w.type === 'cycling' ? 'Вело' : 'Активность'}, выполнено, ${w.source === 'garmin' ? 'Garmin' : 'ручная запись'}`} style={styles.fact} testID={`cycle-fact-${w.id}`}>
                     <Ionicons name={w.type === 'cycling' ? 'bicycle-outline' : 'fitness-outline'} size={18} color={colors.ink} />
@@ -79,20 +102,20 @@ export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate,
                     <Ionicons name="checkmark" size={17} color={colors.success} />
                   </Pressable>
                 ))}
-                {day.activities.length === 0 && facts.length === 0 ? <Pressable onPress={() => { onSelectDate?.(day.dateLocal); onAdd(); }} style={styles.emptyDay} accessibilityRole="button" accessibilityLabel={`Добавить тренировку ${day.dateLocal}`}><View style={styles.restLine} /><AppText variant="label" tone="muted">Свободный день</AppText></Pressable> : null}
+                {day.activities.length === 0 && facts.length === 0 && !completed.some(s => s.dateLocal === day.dateLocal) ? <Pressable onPress={() => { onSelectDate?.(day.dateLocal); onAdd(day.dateLocal); }} style={styles.emptyDay} accessibilityRole="button" accessibilityLabel={`Добавить тренировку ${day.dateLocal}`}><View style={styles.restLine} /><AppText variant="label" tone="muted">Свободный день</AppText><Ionicons name="add" size={16} color={colors.textMuted} /></Pressable> : null}
               </View>
             </View>
           );
         })}
       </View>
-      <AppButton label="Добавить тренировку" onPress={onAdd} testID="strength-week-add" />
-      {onApplyProgram ? <AppButton label={count === 0 ? 'Заполнить неделю из программы' : 'Повторить программу'} variant="ghost" onPress={onApplyProgram} testID="strength-week-apply-program" /> : null}
+      <AppButton label="Добавить тренировку" onPress={() => onAdd(selectedDate)} testID="strength-week-add" />
+      {onApplyProgram ? <AppButton label="Управлять неделей" variant="ghost" onPress={onApplyProgram} testID="strength-week-apply-program" /> : null}
     </View>
   );
 }
 
-function DragCard({ activity, onMenu, onStart, draggable, onBegin, onMove, onEnd }: {
-  activity: PlannedActivity; onMenu: () => void; onStart?: () => void; draggable: boolean;
+function DragCard({ activity, session, onMenu, onStart, draggable, onBegin, onMove, onEnd }: {
+  activity: PlannedActivity; session?: WorkoutSession; onMenu: () => void; onStart?: () => void; draggable: boolean;
   onBegin: () => void; onMove: (y: number) => void; onEnd: (y: number | null) => void;
 }) {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -116,15 +139,16 @@ function DragCard({ activity, onMenu, onStart, draggable, onBegin, onMove, onEnd
   return (
     <Animated.View style={[styles.card, activity.kind === 'cardio' && styles.cycling, activity.kind === 'rest' && styles.rest, dragging && styles.dragging, { transform: [{ translateY }] }]} testID={`planned-activity-${activity.id}`}>
       <Ionicons name={activity.kind === 'strength' ? 'barbell-outline' : activity.kind === 'cardio' ? 'bicycle-outline' : 'leaf-outline'} size={19} color={colors.ink} />
-      <Pressable onPress={onStart ?? onMenu} style={styles.cardBody} accessibilityRole="button" accessibilityLabel={onStart ? `Начать ${activity.title}` : activity.title} testID={onStart ? `planned-start-${activity.id}` : undefined}>
+      <Pressable onPress={onStart ?? onMenu} style={styles.cardBody} accessibilityRole="button" accessibilityLabel={session ? `${session.status === 'completed' ? 'Результат' : 'Продолжить'}: ${activity.title}` : onStart ? `Начать ${activity.title}` : `Изменить ${activity.title}`} testID={onStart ? `planned-start-${activity.id}` : undefined}>
         <AppText variant="body" style={styles.cardTitle}>{activity.title}</AppText>
-        {[activity.timeLocal, activity.cardioMinutes != null ? `${activity.cardioMinutes} мин` : activity.subtitle].filter(Boolean).length ? <AppText variant="label" tone="secondary" numberOfLines={2}>{[activity.timeLocal, activity.cardioMinutes != null ? `${activity.cardioMinutes} мин` : activity.subtitle].filter(Boolean).join(' · ')}</AppText> : null}
+        <AppText variant="label" tone="secondary" numberOfLines={2}>{session ? session.status === 'completed' ? 'Завершена · открыть результат' : 'В процессе · продолжить' : [activity.timeLocal, activity.cardioMinutes != null ? `${activity.cardioMinutes} мин` : activity.subtitle, onStart ? 'Начать' : null].filter(Boolean).join(' · ') || 'План на день'}</AppText>
       </Pressable>
-      <View {...pan.panHandlers}><Pressable onPress={onMenu} style={styles.handle} accessibilityRole="button" accessibilityLabel={`Перенести ${activity.title}. Потяните или откройте меню`} testID={`planned-menu-${activity.id}`}><Ionicons name="reorder-two-outline" size={20} color={colors.textSecondary} /></Pressable></View>
+      <View {...pan.panHandlers}><Pressable onPress={onMenu} style={styles.handle} accessibilityRole="button" accessibilityLabel={draggable ? `Перенести ${activity.title}. Потяните или откройте меню` : `Действия: ${activity.title}`} testID={`planned-menu-${activity.id}`}><Ionicons name={session?.status === 'completed' ? 'checkmark-circle-outline' : draggable ? 'reorder-two-outline' : 'ellipsis-horizontal'} size={20} color={session?.status === 'completed' ? colors.success : colors.textSecondary} /></Pressable></View>
     </Animated.View>
   );
 }
 const styles = StyleSheet.create({
+  metrics: { flexDirection: 'row', paddingVertical: space.md, gap: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }, metric: { flex: 1, minWidth: 0, gap: space.xs }, metricValue: { fontSize: 28, fontWeight: '500', letterSpacing: -1 },
   wrap: { gap: space.md }, head: { flexDirection: 'row', alignItems: 'center', gap: space.xs }, heading: { flex: 1, gap: space.xs }, icon: { minWidth: touchMin, minHeight: touchMin, alignItems: 'center', justifyContent: 'center' },
   summary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingBottom: space.sm }, templateLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: space.xs, justifyContent: 'center' },
   week: { gap: space.xs }, day: { flexDirection: 'row', gap: space.sm, paddingVertical: 3, borderRadius: radius.md, overflow: 'visible' }, hover: { backgroundColor: colors.surfaceMuted },

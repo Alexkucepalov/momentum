@@ -35,11 +35,6 @@ export function fingerprintApiKey(apiKey: string): string {
   return `fp:${s.length}:${h}`;
 }
 
-function summarizeGarminBody(body: string): string {
-  const t = body.replace(/\s+/g, ' ').trim().slice(0, 120);
-  return t || '(пустой ответ)';
-}
-
 /**
  * Exchange Personal API key for bearer JWT (or reuse SecureStore cache).
  * Never logs the key or token.
@@ -82,7 +77,6 @@ export async function obtainGarminBearerToken(opts?: {
   const bodyText = await res.text();
   if (!res.ok) {
     await clearBearerCache();
-    const hint = summarizeGarminBody(bodyText);
     if (res.status === 401 || res.status === 403) {
       throw new GarminAuthError(
         `Ключ отклонён Garmin (HTTP ${res.status}). Создай новый Personal API Key.`,
@@ -91,11 +85,11 @@ export async function obtainGarminBearerToken(opts?: {
     }
     if (res.status === 400) {
       throw new GarminAuthError(
-        `Garmin не принял ключ (HTTP 400). Проверь, что скопирован именно Personal API Key целиком, без кавычек. ${hint}`,
+        'Garmin не принял ключ (HTTP 400). Проверь, что скопирован именно Personal API Key целиком, без кавычек.',
         res.status,
       );
     }
-    throw new GarminAuthError(`Ошибка токена Garmin (HTTP ${res.status}): ${hint}`, res.status);
+    throw new GarminAuthError(`Ошибка токена Garmin (HTTP ${res.status}). Повтори синхронизацию позже.`, res.status);
   }
   const accessToken = bodyText.trim();
   if (!accessToken) {

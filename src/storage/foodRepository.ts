@@ -58,8 +58,11 @@ import { suggestPantryLocation } from '../domain/suggestPantryLocation';
 import { reconcileShoppingWithPurchaseLines } from '../domain/shoppingReconcile';
 import { computeDailyTotals } from './dailyTotals';
 import {
+  assertLocalDate,
+  assertLocalTime,
   assertNonNegativeFinite,
   assertPositiveFinite,
+  assertRepetitions,
   nutritionFromProductFields,
 } from './validation';
 import type {
@@ -323,6 +326,7 @@ export type FoodRepository = {
   /** Workouts from an integration across dates, newest first. */
   listIntegratedWorkouts(source: IntegrationSource, limit?: number): Workout[];
   softDeleteWorkout(workoutId: string): Workout;
+  restoreWorkout(workoutId: string): Workout;
   upsertDailyActivityStats(input: {
     dateLocal: string;
     steps?: number | null;
@@ -351,6 +355,9 @@ export type FoodRepository = {
   }): SleepNight;
   getSleepForDate(dateLocal: string): SleepNight | null;
   listSleepNights(limit?: number): SleepNight[];
+  /** Manual duration entry; imported nights remain separate and untouched. */
+  removeManualSleepNight(dateLocal: string): SleepNight | null;
+  restoreManualSleepNight(night: SleepNight): void;
   getGarminSyncState(): GarminSyncState;
   setGarminSyncState(patch: Partial<GarminSyncState>): GarminSyncState;
   /**
@@ -367,6 +374,7 @@ export type FoodRepository = {
     weekStartMonday: string,
     opts?: { replace?: boolean },
   ): { created: number };
+  repeatTrainingWeek(sourceMonday: string, targetMonday: string): PlannedActivity[];
   listStrengthExercises(): StrengthExercise[];
   getStrengthExercise(exerciseId: string): StrengthExercise | null;
   createStrengthExercise(input: {
@@ -452,6 +460,7 @@ export type FoodRepository = {
     args: { dateLocal: string; timeLocal?: string | null },
   ): PlannedActivity;
   softDeletePlannedActivity(activityId: string): PlannedActivity;
+  restorePlannedActivity(activityId: string): PlannedActivity;
   startWorkoutSession(input: {
     dateLocal: string;
     title: string;
@@ -459,6 +468,7 @@ export type FoodRepository = {
     plannedActivityId?: string | null;
   }): WorkoutSession;
   getWorkoutSession(sessionId: string): WorkoutSession | null;
+  getWorkoutSessionForPlan(activityId: string): WorkoutSession | null;
   listWorkoutSessionsForDate(dateLocal: string): WorkoutSession[];
   listInProgressWorkoutSessions(): WorkoutSession[];
   completeWorkoutSession(
@@ -1484,10 +1494,20 @@ export function createMemoryFoodRepository(seed?: {
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
   /** Coalesce burst writes (e.g. copy-yesterday) into one snapshot persist. */
   let persistQueued = false;
+  let persistError: Error | null = null;
+  let persistStatusListener: ((error: Error | null) => void) | null = null;
 
   const flushPersist = () => {
     persistQueued = false;
-    if (persistHook) persistHook(api.toSnapshot());
+    if (!persistHook) return;
+    try {
+      persistHook(api.toSnapshot());
+      if (persistError) { persistError = null; persistStatusListener?.(null); }
+    } catch (error) {
+      persistError = error instanceof Error ? error : new Error('Сохранение недоступно');
+      persistStatusListener?.(persistError);
+      throw persistError;
+    }
   };
 
   const notify = () => {
@@ -1498,7 +1518,7 @@ export function createMemoryFoodRepository(seed?: {
     Promise.resolve().then(() => {
       // Skip if flushPersist() already drained this generation.
       if (!persistQueued) return;
-      flushPersist();
+      try { flushPersist(); } catch { /* Status is surfaced to the app; memory remains retryable. */ }
     });
   };
 
@@ -1571,12 +1591,17 @@ export function createMemoryFoodRepository(seed?: {
   const api: FoodRepository & {
     setPersistHook(fn: (snap: StoreSnapshot) => void): void;
     flushPersist(): void;
+    setPersistStatusListener(fn: ((error: Error | null) => void) | null): void;
   } = {
     setPersistHook(fn) {
       persistHook = fn;
     },
     flushPersist() {
       flushPersist();
+    },
+    setPersistStatusListener(fn) {
+      persistStatusListener = fn;
+      fn?.(persistError);
     },
     toSnapshot(): StoreSnapshot {
       return {
@@ -2482,6 +2507,13 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...w };
     },
+    restoreWorkout(workoutId) {
+      const w = workouts.get(workoutId);
+      if (!w) throw new Error('Workout not found');
+      w.deletedAt = null;
+      notify();
+      return { ...w };
+    },
     upsertDailyActivityStats(input) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
         throw new Error('dateLocal must be YYYY-MM-DD');
@@ -2540,9 +2572,7 @@ export function createMemoryFoodRepository(seed?: {
         .map((s) => ({ ...s }));
     },
     upsertSleepNight(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
       const optSec = (v: number | null | undefined, label: string): number | null => {
         if (v === undefined || v === null) return null;
         assertNonNegativeFinite(v, label);
@@ -2556,6 +2586,8 @@ export function createMemoryFoodRepository(seed?: {
       const avgSpo2 = optSec(input.avgSpo2, 'avgSpo2');
       const avgRespiration = optSec(input.avgRespiration, 'avgRespiration');
       const sleepScore = optSec(input.sleepScore, 'sleepScore');
+      if (avgSpo2 != null && avgSpo2 > 100) throw new Error('SpO₂ — от 0 до 100');
+      if (sleepScore != null && sleepScore > 100) throw new Error('Оценка сна — от 0 до 100');
       const existing = [...sleepNights.values()].find(
         (s) =>
           (input.externalId && s.externalId === input.externalId) ||
@@ -2611,6 +2643,22 @@ export function createMemoryFoodRepository(seed?: {
         .slice(0, limit)
         .map((s) => ({ ...s }));
     },
+    removeManualSleepNight(dateLocal) {
+      const row = [...sleepNights.values()].find(s => s.source === 'user' && s.dateLocal === dateLocal);
+      if (!row) return null;
+      sleepNights.delete(row.id);
+      notify();
+      return { ...row };
+    },
+    restoreManualSleepNight(night) {
+      if (night.source !== 'user') throw new Error('Можно восстановить только ручную запись');
+      assertLocalDate(night.dateLocal);
+      if ([...sleepNights.values()].some(s => s.source === 'user' && s.dateLocal === night.dateLocal)) {
+        throw new Error('За эту ночь уже есть новая ручная запись');
+      }
+      sleepNights.set(night.id, { ...night });
+      notify();
+    },
     getGarminSyncState() {
       return { ...garminSync };
     },
@@ -2623,10 +2671,11 @@ export function createMemoryFoodRepository(seed?: {
       if (syncBuiltinStrengthProgram()) notify();
     },
     applyStrengthProgramWeek(weekStartMonday, opts) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartMonday)) {
-        throw new Error('weekStartMonday must be YYYY-MM-DD');
-      }
+      assertLocalDate(weekStartMonday);
+      if (new Date(`${weekStartMonday}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Неделя начинается с понедельника');
       api.ensureStrengthCatalog();
+      const drafts = buildPersonalProgramWeekDrafts(weekStartMonday);
+      for (const d of drafts) if (d.templateId && !api.getWorkoutTemplate(d.templateId)) throw new Error('В программе есть удалённый шаблон');
       const replace = opts?.replace === true;
       if (replace) {
         const existing = api.listPlannedActivitiesInWeek(weekStartMonday);
@@ -2635,7 +2684,6 @@ export function createMemoryFoodRepository(seed?: {
           if (row && !row.deletedAt) row.deletedAt = nowIso();
         }
       }
-      const drafts = buildPersonalProgramWeekDrafts(weekStartMonday);
       let created = 0;
       for (const d of drafts) {
         api.addPlannedActivity({
@@ -2651,6 +2699,24 @@ export function createMemoryFoodRepository(seed?: {
         created += 1;
       }
       return { created };
+    },
+    repeatTrainingWeek(sourceMonday, targetMonday) {
+      for (const date of [sourceMonday, targetMonday]) {
+        assertLocalDate(date);
+        if (new Date(`${date}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Неделя начинается с понедельника');
+      }
+      if (sourceMonday === targetMonday) throw new Error('Выбери другую неделю');
+      const source = api.listPlannedActivitiesInWeek(sourceMonday);
+      if (!source.length) throw new Error('В прошлой неделе нет плана для повтора');
+      // Validate the whole operation before creating anything.
+      for (const row of source) {
+        if (row.templateId && !api.getWorkoutTemplate(row.templateId)) throw new Error('В плане есть удалённый шаблон');
+      }
+      const sourceDates = datesInWeek(sourceMonday);
+      const targetDates = datesInWeek(targetMonday);
+      return source.map(row => api.copyPlannedActivity(row.id, {
+        dateLocal: targetDates[sourceDates.indexOf(row.dateLocal)]!,
+      }));
     },
     listStrengthExercises() {
       return [...strengthExercises.values()]
@@ -2863,12 +2929,11 @@ export function createMemoryFoodRepository(seed?: {
         );
     },
     addPlannedActivity(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
+      assertLocalTime(input.timeLocal ?? null);
       const title = input.title.trim();
       if (!title) throw new Error('Activity title required');
-      if (input.templateId && !workoutTemplates.has(input.templateId)) {
+      if (input.templateId && !api.getWorkoutTemplate(input.templateId)) {
         throw new Error('Workout template not found');
       }
       if (input.cardioMinutes != null) assertNonNegativeFinite(input.cardioMinutes, 'cardioMinutes');
@@ -2897,6 +2962,10 @@ export function createMemoryFoodRepository(seed?: {
     updatePlannedActivity(activityId, fields) {
       const a = plannedActivities.get(activityId);
       if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      if (fields.timeLocal !== undefined) assertLocalTime(fields.timeLocal);
+      if (fields.templateId && !api.getWorkoutTemplate(fields.templateId)) throw new Error('Workout template not found');
+      if (fields.cardioMinutes != null) assertNonNegativeFinite(fields.cardioMinutes, 'cardioMinutes');
+      // All validation precedes mutation, including optional title/template/duration fields.
       if (fields.title !== undefined) {
         const title = fields.title.trim();
         if (!title) throw new Error('Activity title required');
@@ -2945,8 +3014,12 @@ export function createMemoryFoodRepository(seed?: {
     movePlannedActivity(activityId, args) {
       const a = plannedActivities.get(activityId);
       if (!a || a.deletedAt) throw new Error('Planned activity not found');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(args.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
+      assertLocalDate(args.dateLocal);
+      if (args.timeLocal !== undefined) assertLocalTime(args.timeLocal);
+      if (args.sortOrder != null && (!Number.isInteger(args.sortOrder) || args.sortOrder < 0)) throw new Error('Некорректный порядок');
+      const others = api.listPlannedActivitiesForDate(args.dateLocal).filter(row => row.id !== activityId);
+      if (args.sortOrder === undefined && a.dateLocal !== args.dateLocal) {
+        a.sortOrder = others.length ? Math.max(...others.map(row => row.sortOrder)) + 1 : 0;
       }
       a.dateLocal = args.dateLocal;
       if (args.timeLocal !== undefined) a.timeLocal = args.timeLocal;
@@ -2973,9 +3046,8 @@ export function createMemoryFoodRepository(seed?: {
     copyPlannedActivity(activityId, args) {
       const a = plannedActivities.get(activityId);
       if (!a || a.deletedAt) throw new Error('Planned activity not found');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(args.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(args.dateLocal);
+      if (args.timeLocal !== undefined) assertLocalTime(args.timeLocal);
       const sameDay = [...plannedActivities.values()].filter(
         (x) => !x.deletedAt && x.dateLocal === args.dateLocal,
       );
@@ -3000,14 +3072,28 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...a };
     },
+    restorePlannedActivity(activityId) {
+      const a = plannedActivities.get(activityId);
+      if (!a) throw new Error('Planned activity not found');
+      a.deletedAt = null;
+      notify();
+      return { ...a };
+    },
     startWorkoutSession(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
       const title = input.title.trim();
       if (!title) throw new Error('Session title required');
-      if (input.templateId && !workoutTemplates.has(input.templateId)) {
+      if (input.templateId && !api.getWorkoutTemplate(input.templateId)) {
         throw new Error('Workout template not found');
+      }
+      if (input.plannedActivityId) {
+        const planned = plannedActivities.get(input.plannedActivityId);
+        if (!planned || planned.deletedAt || planned.kind !== 'strength') throw new Error('Силовая тренировка не найдена в плане');
+        const existing = api.getWorkoutSessionForPlan(input.plannedActivityId);
+        if (existing) return { ...existing };
+      } else {
+        const draft = [...workoutSessions.values()].find(s => !s.deletedAt && s.status === 'in_progress' && s.dateLocal === input.dateLocal && s.templateId === (input.templateId ?? null) && s.title === title);
+        if (draft) return { ...draft };
       }
       const ts = nowIso();
       const session: WorkoutSession = {
@@ -3068,6 +3154,11 @@ export function createMemoryFoodRepository(seed?: {
       if (!s || s.deletedAt) return null;
       return { ...s };
     },
+    getWorkoutSessionForPlan(activityId) {
+      const rows = [...workoutSessions.values()].filter(s => !s.deletedAt && s.plannedActivityId === activityId && s.status !== 'abandoned');
+      rows.sort((a, b) => Number(b.status === 'completed') - Number(a.status === 'completed') || b.startedAt.localeCompare(a.startedAt));
+      return rows[0] ? { ...rows[0] } : null;
+    },
     listWorkoutSessionsForDate(dateLocal) {
       return [...workoutSessions.values()]
         .filter((s) => !s.deletedAt && s.dateLocal === dateLocal)
@@ -3088,8 +3179,10 @@ export function createMemoryFoodRepository(seed?: {
         if (!Number.isInteger(opts.feelingRpe) || opts.feelingRpe < 1 || opts.feelingRpe > 10) {
           throw new Error('feelingRpe must be an integer 1–10');
         }
-        s.feelingRpe = opts.feelingRpe;
       }
+      if (s.status === 'completed') return { ...s };
+      if (s.status !== 'in_progress') throw new Error('Сессия уже закрыта');
+      if (opts?.feelingRpe != null) s.feelingRpe = opts.feelingRpe;
       if (opts?.feelingNote !== undefined) {
         const note = opts.feelingNote?.trim() ? opts.feelingNote.trim() : null;
         s.feelingNote = note;
@@ -3102,29 +3195,36 @@ export function createMemoryFoodRepository(seed?: {
     abandonWorkoutSession(sessionId) {
       const s = workoutSessions.get(sessionId);
       if (!s || s.deletedAt) throw new Error('Workout session not found');
+      if (s.status !== 'in_progress') throw new Error('Сессия уже закрыта');
       s.status = 'abandoned';
       s.completedAt = nowIso();
       notify();
       return { ...s };
     },
     listWorkoutSets(sessionId) {
-      return [...workoutSets.values()]
-        .filter((s) => !s.deletedAt && s.sessionId === sessionId)
+      const rows = [...workoutSets.values()].filter(s => !s.deletedAt && s.sessionId === sessionId);
+      // Map insertion order captures the template at session creation, even if edited later.
+      const exerciseOrder = new Map<string, number>();
+      for (const row of rows) if (!exerciseOrder.has(row.exerciseId)) exerciseOrder.set(row.exerciseId, exerciseOrder.size);
+      return rows
         .map((s) => ({ ...s }))
         .sort(
           (a, b) =>
-            a.exerciseId.localeCompare(b.exerciseId) || a.setIndex - b.setIndex || a.id.localeCompare(b.id),
+            exerciseOrder.get(a.exerciseId)! - exerciseOrder.get(b.exerciseId)! || a.setIndex - b.setIndex,
         );
     },
     upsertWorkoutSet(input) {
       const session = workoutSessions.get(input.sessionId);
       if (!session || session.deletedAt) throw new Error('Workout session not found');
+      if (session.status !== 'in_progress') throw new Error('Завершённая сессия доступна только для просмотра');
       if (!strengthExercises.has(input.exerciseId)) throw new Error('Unknown exercise');
       if (!Number.isInteger(input.setIndex) || input.setIndex < 1) {
         throw new Error('setIndex must be a positive integer');
       }
       if (input.weightKg != null) assertNonNegativeFinite(input.weightKg, 'weightKg');
       if (input.reps != null) assertNonNegativeFinite(input.reps, 'reps');
+      assertRepetitions(input.reps);
+      assertRepetitions(input.targetReps);
       if (input.targetWeightKg != null) assertNonNegativeFinite(input.targetWeightKg, 'targetWeightKg');
       if (input.targetReps != null) assertNonNegativeFinite(input.targetReps, 'targetReps');
 
@@ -3168,8 +3268,10 @@ export function createMemoryFoodRepository(seed?: {
     completeWorkoutSet(setId, args) {
       const s = workoutSets.get(setId);
       if (!s || s.deletedAt) throw new Error('Workout set not found');
+      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress') throw new Error('Завершённая сессия доступна только для просмотра');
       if (args.weightKg != null) assertNonNegativeFinite(args.weightKg, 'weightKg');
       if (args.reps != null) assertNonNegativeFinite(args.reps, 'reps');
+      assertRepetitions(args.reps);
       s.weightKg = args.weightKg;
       s.reps = args.reps;
       s.completed = true;
@@ -3180,6 +3282,7 @@ export function createMemoryFoodRepository(seed?: {
     softDeleteWorkoutSet(setId) {
       const s = workoutSets.get(setId);
       if (!s || s.deletedAt) throw new Error('Workout set not found');
+      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress') throw new Error('Завершённая сессия доступна только для просмотра');
       s.deletedAt = nowIso();
       notify();
       return { ...s };
@@ -4779,6 +4882,8 @@ export function createMemoryFoodRepository(seed?: {
 
 export type PersistableFoodRepository = ReturnType<typeof createMemoryFoodRepository> & {
   setPersistHook(fn: (snap: StoreSnapshot) => void): void;
+  flushPersist(): void;
+  setPersistStatusListener(fn: ((error: Error | null) => void) | null): void;
 };
 
 export function asPersistable(repo: FoodRepository): PersistableFoodRepository {

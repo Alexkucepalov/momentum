@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { SwipeToDismissSheet } from '@/src/components/SwipeToDismissSheet';
@@ -11,14 +11,19 @@ export function SessionFinishSheet({
   title,
   onClose,
   onConfirm,
+  completedCount,
+  totalCount,
 }: {
   visible: boolean;
   title: string;
   onClose: () => void;
   onConfirm: (args: { feelingRpe: number | null; feelingNote: string | null }) => void;
+  completedCount?: number;
+  totalCount?: number;
 }) {
   const [rpe, setRpe] = useState<number | null>(null);
   const [note, setNote] = useState('');
+  useEffect(() => { if (visible) { setRpe(null); setNote(''); } }, [visible, title]);
 
   return (
     <SwipeToDismissSheet visible={visible} onClose={onClose} maxHeightRatio={0.7} testID="session-finish-sheet">
@@ -26,6 +31,7 @@ export function SessionFinishSheet({
         <AppText variant="title" style={styles.title}>
           Как прошла?
         </AppText>
+        {completedCount != null && totalCount != null ? <AppText variant="caption" tone="secondary">Записано подходов: {completedCount} из {totalCount}. {completedCount < totalCount ? 'Незаписанные подходы останутся пустыми.' : ''}</AppText> : null}
         <AppText variant="caption" tone="muted" style={styles.sub}>
           {title} · сложность по желанию (1–10). Пусто = неизвестно, не ноль.
         </AppText>
@@ -35,7 +41,7 @@ export function SessionFinishSheet({
             return (
               <Pressable
                 key={n}
-                onPress={() => setRpe(n)}
+                onPress={() => setRpe(value => value === n ? null : n)}
                 style={({ pressed }) => [styles.rpeChip, on && styles.rpeOn, pressed && styles.pressed]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
@@ -65,9 +71,9 @@ export function SessionFinishSheet({
           testID="session-finish-save"
         />
         <AppButton
-          label="Без оценки"
+          label="Сохранить без оценки"
           variant="ghost"
-          onPress={() => onConfirm({ feelingRpe: null, feelingNote: null })}
+          onPress={() => onConfirm({ feelingRpe: null, feelingNote: note.trim() || null })}
         />
       </View>
     </SwipeToDismissSheet>
@@ -85,8 +91,8 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   rpeChip: {
-    minWidth: touchMin - 12,
-    minHeight: touchMin - 12,
+    minWidth: touchMin,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,

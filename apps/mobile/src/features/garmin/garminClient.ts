@@ -10,10 +10,6 @@ export class GarminClientError extends Error {
   }
 }
 
-function summarizeBody(body: string): string {
-  return body.replace(/\s+/g, ' ').trim().slice(0, 100) || '(пусто)';
-}
-
 async function garminGet(
   accessToken: string,
   path: string,
@@ -38,7 +34,7 @@ async function garminGet(
     throw new GarminClientError(
       res.status === 401
         ? 'Сессия Garmin истекла — повтори синхронизацию'
-        : `${path} → HTTP ${res.status}: ${summarizeBody(text)}`,
+        : `${path} → HTTP ${res.status}. Повтори синхронизацию позже.`,
       res.status,
     );
   }

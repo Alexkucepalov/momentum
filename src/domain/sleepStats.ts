@@ -108,12 +108,9 @@ export function buildSleepStageRows(night: {
   const sleepParts = [night.deepSec, night.lightSec, night.remSec, night.awakeSec].filter(
     (n): n is number => n != null && n > 0,
   );
-  const barDenom =
-    sleepParts.length > 0
-      ? sleepParts.reduce((a, b) => a + b, 0)
-      : night.sleepSec != null && night.sleepSec > 0
-        ? night.sleepSec
-        : null;
+  const knownTotal = sleepParts.reduce((a, b) => a + b, 0);
+  const overnightTotal = (night.sleepSec ?? 0) + (night.awakeSec ?? 0);
+  const barDenom = Math.max(knownTotal, overnightTotal) || null;
 
   return defs.map((d) => {
     let percent: number | null;
@@ -142,4 +139,15 @@ export function buildSleepStageRows(night: {
       barShare,
     };
   });
+}
+
+/** Averages include recorded nights only; an unknown duration never becomes zero. */
+export function sleepWeekSummary(nights: Array<{ sleepSec: number | null; sleepScore: number | null } | null>) {
+  const durations = nights.flatMap(n => n?.sleepSec != null && Number.isFinite(n.sleepSec) && n.sleepSec >= 0 ? [n.sleepSec] : []);
+  const scores = nights.flatMap(n => n?.sleepScore != null && Number.isFinite(n.sleepScore) && n.sleepScore >= 0 && n.sleepScore <= 100 ? [n.sleepScore] : []);
+  return {
+    knownCount: durations.length,
+    averageSec: durations.length ? durations.reduce((sum, n) => sum + n, 0) / durations.length : null,
+    averageScore: scores.length ? scores.reduce((sum, n) => sum + n, 0) / scores.length : null,
+  };
 }

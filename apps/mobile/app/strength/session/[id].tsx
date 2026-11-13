@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -8,6 +8,7 @@ import { SessionFinishSheet } from '@/src/features/strength/SessionFinishSheet';
 import { SetLogRow } from '@/src/features/strength/SetLogRow';
 import { AppButton, AppText, colors, radius, space } from '@/src/design-system';
 import { useActivityRevision, useData } from '@/src/state/DataContext';
+import { confirmAction } from '@/src/utils/confirmAction';
 
 const DEFAULT_REST_SEC = 90;
 
@@ -16,7 +17,7 @@ export default function StrengthSessionScreen() {
   const router = useRouter();
   const { repo, refresh, showFlash } = useData();
   useActivityRevision();
-  const [restSec, setRestSec] = useState<number | null>(null);
+  const [restUntil, setRestUntil] = useState<number | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
 
   const session = id ? repo.getWorkoutSession(String(id)) : null;
@@ -31,6 +32,13 @@ export default function StrengthSessionScreen() {
     }
     return map;
   }, [repo, session?.templateId]);
+
+  useEffect(() => {
+    if (!session || session.status !== 'in_progress') { setRestUntil(null); return; }
+    const latest = repo.listWorkoutSets(session.id).filter(s => s.completedAt).sort((a, b) => b.completedAt!.localeCompare(a.completedAt!))[0];
+    const deadline = latest?.completedAt ? Date.parse(latest.completedAt) + (restByExercise.get(latest.exerciseId) ?? DEFAULT_REST_SEC) * 1000 : null;
+    setRestUntil(deadline != null && deadline > Date.now() ? deadline : null);
+  }, [id, repo, restByExercise]);
 
   const groups = useMemo(() => {
     const map = new Map<string, typeof sets>();
@@ -48,7 +56,7 @@ export default function StrengthSessionScreen() {
     }));
   }, [sets, repo]);
 
-  const clearRest = useCallback(() => setRestSec(null), []);
+  const clearRest = useCallback(() => setRestUntil(null), []);
 
   if (!session) {
     return (
@@ -68,14 +76,15 @@ export default function StrengthSessionScreen() {
 
   return (
     <View style={styles.root}>
-      {restSec != null && isLive ? (
+      {restUntil != null && isLive ? (
         <View style={styles.restSticky}>
-          <RestTimerBar seconds={restSec} onSkip={clearRest} onDone={clearRest} />
+          <RestTimerBar deadlineMs={restUntil} onSkip={clearRest} onDone={clearRest} />
         </View>
       ) : null}
 
       <ScrollView contentContainerStyle={styles.content} testID="strength-session" keyboardShouldPersistTaps="handled">
         <AppText variant="title">{session.title}</AppText>
+        <AppText variant="caption" tone="secondary">{new Date(`${session.dateLocal}T12:00:00Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' })}</AppText>
         <AppText variant="caption" tone="muted">
           {session.status === 'completed'
             ? session.feelingRpe != null
@@ -114,11 +123,12 @@ export default function StrengthSessionScreen() {
                   set={s}
                   exerciseName={g.name}
                   isCurrent={s.id === currentSetId}
+                  readOnly={!isLive}
                   onComplete={({ weightKg, reps }) => {
                     try {
                       repo.completeWorkoutSet(s.id, { weightKg, reps });
                       refresh('activity');
-                      setRestSec(restByExercise.get(g.exerciseId) ?? DEFAULT_REST_SEC);
+                      if (!s.completed) setRestUntil(Date.now() + (restByExercise.get(g.exerciseId) ?? DEFAULT_REST_SEC) * 1000);
                     } catch (e) {
                       showFlash(e instanceof Error ? e.message : 'Не удалось записать подход');
                     }
@@ -140,12 +150,12 @@ export default function StrengthSessionScreen() {
             <AppButton
               label="Прервать"
               variant="ghost"
-              onPress={() => {
+              onPress={() => confirmAction('Прервать тренировку?', 'Записанные подходы сохранятся в истории. Чтобы продолжить позже, можно просто вернуться назад.', { confirmLabel: 'Прервать', destructive: true, onConfirm: () => {
                 repo.abandonWorkoutSession(session.id);
                 refresh('activity');
                 showFlash('Сессия прервана — история подходов сохранена');
                 router.back();
-              }}
+              } })}
               testID="strength-abandon"
             />
           </View>
@@ -157,6 +167,8 @@ export default function StrengthSessionScreen() {
       <SessionFinishSheet
         visible={finishOpen}
         title={session.title}
+        completedCount={doneCount}
+        totalCount={total}
         onClose={() => setFinishOpen(false)}
         onConfirm={({ feelingRpe, feelingNote }) => {
           try {

@@ -4,19 +4,22 @@ import { useRouter, type Href } from 'expo-router';
 import type { PlannedActivity, WorkoutSession } from '../../../../../src/domain/strength/types';
 import { AppText, colors, radius, space } from '@/src/design-system';
 import { strengthSessionHref } from './StrengthEntryCard';
+import { useData } from '@/src/state/DataContext';
 
 export function TodayTrainingCard({ inProgress, todayPlan, onStart }: {
   inProgress: WorkoutSession[]; todayPlan: PlannedActivity[]; onStart: (activity: PlannedActivity) => void;
 }) {
   const router = useRouter();
+  const { repo } = useData();
   const draft = inProgress[0];
-  const strength = todayPlan.find(a => a.kind === 'strength');
+  const strength = todayPlan.find(a => a.kind === 'strength' && repo.getWorkoutSessionForPlan(a.id)?.status !== 'completed');
+  const finished = todayPlan.map(a => repo.getWorkoutSessionForPlan(a.id)).find(s => s?.status === 'completed');
   const cardio = todayPlan.find(a => a.kind === 'cardio');
   const rest = todayPlan.length > 0 && todayPlan.every(a => a.kind === 'rest');
   const plan = strength ?? cardio;
-  const title = draft?.title ?? plan?.title ?? (rest ? 'Восстановление' : 'Твой недельный цикл');
+  const title = draft?.title ?? plan?.title ?? finished?.title ?? (rest ? 'Восстановление' : 'Твой недельный цикл');
   const subtitle = draft ? 'Продолжить с последнего подхода' : plan ? [plan.timeLocal, plan.subtitle, plan.cardioMinutes != null ? `${plan.cardioMinutes} мин` : null].filter(Boolean).join(' · ') : rest ? 'День без запланированной нагрузки' : 'Силовые, вело и дни отдыха';
-  const action = () => draft ? router.push(strengthSessionHref(draft.id)) : strength ? onStart(strength) : router.push('/(tabs)/activity' as Href);
+  const action = () => draft ? router.push(strengthSessionHref(draft.id)) : strength ? onStart(strength) : finished && !plan ? router.push(strengthSessionHref(finished.id)) : router.push('/(tabs)/activity' as Href);
   return (
     <View style={styles.section} testID="today-training-card">
       <View style={styles.head}><AppText variant="subtitle">Твой план</AppText><Pressable onPress={() => router.push('/activity')} accessibilityRole="button" accessibilityLabel="Открыть план недели" style={styles.weekLink}><AppText variant="caption" tone="secondary">Неделя</AppText><Ionicons name="arrow-forward" size={14} color={colors.textSecondary} /></Pressable></View>

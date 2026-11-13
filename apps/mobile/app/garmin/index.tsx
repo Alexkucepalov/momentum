@@ -131,11 +131,15 @@ export default function GarminConnectScreen() {
       confirmLabel: 'Отключить',
       onConfirm: () => {
         void (async () => {
+          try {
           await clearGarminApiKey();
           await reloadKeyStatus();
           setStatusNote('Garmin отключён, ключ удалён');
           showFlash('Garmin отключён');
           refresh();
+          } catch (e) {
+            showFlash(e instanceof Error ? e.message : 'Не удалось отключить Garmin');
+          }
         })();
       },
     });

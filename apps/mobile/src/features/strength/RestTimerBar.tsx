@@ -1,30 +1,33 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, View } from 'react-native';
+import { restSecondsRemaining } from '../../../../../src/domain/strength/restTimer';
 
 import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
 
 export function RestTimerBar({
-  seconds,
+  deadlineMs,
   onSkip,
   onDone,
 }: {
-  seconds: number;
+  deadlineMs: number;
   onSkip: () => void;
   onDone: () => void;
 }) {
-  const [left, setLeft] = useState(seconds);
+  const [left, setLeft] = useState(() => restSecondsRemaining(deadlineMs, Date.now()));
 
   useEffect(() => {
-    setLeft(seconds);
-  }, [seconds]);
+    const update = () => setLeft(restSecondsRemaining(deadlineMs, Date.now()));
+    update();
+    const timer = setInterval(update, 250);
+    const subscription = AppState.addEventListener('change', update);
+    return () => { clearInterval(timer); subscription.remove(); };
+  }, [deadlineMs]);
 
   useEffect(() => {
     if (left <= 0) {
       onDone();
       return;
     }
-    const t = setTimeout(() => setLeft((v) => v - 1), 1000);
-    return () => clearTimeout(t);
   }, [left, onDone]);
 
   const mm = String(Math.floor(left / 60)).padStart(1, '0');

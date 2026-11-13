@@ -12,6 +12,26 @@ export function assertPositiveFinite(value: number, label: string): void {
   }
 }
 
+/** Calendar date, including month length/leap years; regex alone accepts 30 February. */
+export function assertLocalDate(value: string): void {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('Некорректная дата');
+  const time = Date.parse(`${value}T12:00:00Z`);
+  if (!Number.isFinite(time) || new Date(time).toISOString().slice(0, 10) !== value) {
+    throw new Error('Некорректная дата');
+  }
+}
+
+export function assertLocalTime(value: string | null): void {
+  if (value != null && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+    throw new Error('Время — в формате ЧЧ:ММ');
+  }
+}
+
+export function assertRepetitions(value: number | null | undefined): void {
+  if (value == null) return;
+  if (!Number.isInteger(value) || value < 0) throw new Error('Повторения — целое число от 0');
+}
+
 export function nutritionFromProductFields(fields: {
   energyKcal: number | null;
   proteinG: number | null;

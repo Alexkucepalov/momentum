@@ -23,8 +23,5 @@ export function initialSetFieldValues(set: WorkoutSet): { weight: string; reps: 
 
 /** Next incomplete set index in a flat list (for focus / scroll hints). */
 export function nextIncompleteSetId(sets: WorkoutSet[]): string | null {
-  const open = sets
-    .filter((s) => s.deletedAt == null && !s.completed)
-    .sort((a, b) => a.exerciseId.localeCompare(b.exerciseId) || a.setIndex - b.setIndex);
-  return open[0]?.id ?? null;
+  return sets.find((s) => s.deletedAt == null && !s.completed)?.id ?? null;
 }

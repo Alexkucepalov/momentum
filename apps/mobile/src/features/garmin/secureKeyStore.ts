@@ -32,8 +32,13 @@ export async function setGarminApiKey(apiKey: string): Promise<void> {
 }
 
 export async function clearGarminApiKey(): Promise<void> {
-  await SecureStore.deleteItemAsync(API_KEY).catch(() => undefined);
-  await SecureStore.deleteItemAsync(BEARER_CACHE).catch(() => undefined);
+  const results = await Promise.allSettled([
+    SecureStore.deleteItemAsync(API_KEY),
+    SecureStore.deleteItemAsync(BEARER_CACHE),
+  ]);
+  if (results.some(result => result.status === 'rejected')) {
+    throw new Error('Не удалось полностью удалить ключ Garmin. Повтори удаление.');
+  }
 }
 
 export async function getBearerCache(): Promise<BearerCache | null> {
@@ -44,7 +49,8 @@ export async function getBearerCache(): Promise<BearerCache | null> {
     if (
       typeof parsed.fingerprint !== 'string' ||
       typeof parsed.accessToken !== 'string' ||
-      typeof parsed.expiresAt !== 'number'
+      !parsed.accessToken.trim() ||
+      typeof parsed.expiresAt !== 'number' || !Number.isFinite(parsed.expiresAt)
     ) {
       return null;
     }

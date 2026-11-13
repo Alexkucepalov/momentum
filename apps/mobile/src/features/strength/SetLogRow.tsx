@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { initialSetFieldValues, parseOptionalNonNegativeNumber } from '../../../../../src/domain/strength';
+import { initialSetFieldValues, parseOptionalNonNegativeNumber, parseOptionalRepetitions } from '../../../../../src/domain/strength';
 import type { WorkoutSet } from '../../../../../src/domain/strength/types';
 import { AppButton, AppText, Field, colors, radius, space, touchMin } from '@/src/design-system';
 
 const fmt = (n: number | null) => n == null ? '—' : n.toLocaleString('ru-RU');
-export function SetLogRow({ set, exerciseName, isCurrent, onComplete }: {
-  set: WorkoutSet; exerciseName: string; isCurrent?: boolean;
+export function SetLogRow({ set, exerciseName, isCurrent, readOnly = false, onComplete }: {
+  set: WorkoutSet; exerciseName: string; isCurrent?: boolean; readOnly?: boolean;
   onComplete: (args: { weightKg: number | null; reps: number | null }) => void;
 }) {
   const initial = initialSetFieldValues(set);
@@ -20,12 +20,12 @@ export function SetLogRow({ set, exerciseName, isCurrent, onComplete }: {
     setWeight(next.weight); setReps(next.reps); setError(null);
   }, [set.id, set.weightKg, set.reps, set.targetWeightKg, set.targetReps, set.completed]);
 
-  if (set.completed) return (
-    <View style={styles.saved} accessibilityLabel={`${exerciseName}, подход ${set.setIndex}, записан: ${fmt(set.weightKg)} кг, ${fmt(set.reps)} повторов`}>
+  if (readOnly || (set.completed && !expanded)) return (
+    <Pressable onPress={readOnly ? undefined : () => setExpanded(true)} disabled={readOnly} accessibilityRole={readOnly ? undefined : 'button'} style={styles.saved} accessibilityLabel={`${exerciseName}, подход ${set.setIndex}, ${set.completed ? 'записан' : 'не записан'}: ${fmt(set.weightKg)} кг, ${fmt(set.reps)} повторов${readOnly ? '' : '. Изменить подход'}`}>
       <AppText variant="caption" tone="secondary">Подход {set.setIndex}</AppText>
       <AppText variant="body" style={styles.savedValue}>{fmt(set.weightKg)} кг × {fmt(set.reps)}</AppText>
-      <Ionicons name="checkmark" size={18} color={colors.success} />
-    </View>
+      <Ionicons name={set.completed ? 'checkmark' : 'remove-outline'} size={18} color={set.completed ? colors.success : colors.textMuted} />
+    </Pressable>
   );
   if (!isCurrent && !expanded) return (
     <Pressable onPress={() => setExpanded(true)} style={styles.saved} accessibilityRole="button" accessibilityLabel={`${exerciseName}, настроить подход ${set.setIndex}`}>
@@ -36,10 +36,10 @@ export function SetLogRow({ set, exerciseName, isCurrent, onComplete }: {
   );
   const submit = () => {
     const w = parseOptionalNonNegativeNumber(weight);
-    const r = parseOptionalNonNegativeNumber(reps);
+    const r = parseOptionalRepetitions(reps);
     if (!w.ok) { setError(w.error); return; }
     if (!r.ok) { setError(r.error); return; }
-    setError(null); onComplete({ weightKg: w.value, reps: r.value });
+    setError(null); onComplete({ weightKg: w.value, reps: r.value }); setExpanded(false);
   };
   const canRepeat = set.weightKg == null && set.reps == null && (set.targetWeightKg != null || set.targetReps != null);
   return (
@@ -50,7 +50,8 @@ export function SetLogRow({ set, exerciseName, isCurrent, onComplete }: {
         <View style={styles.field}><Field label="Повторения" value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="—" style={styles.input} testID={`set-reps-${set.id}`} /></View>
       </View>
       {error ? <AppText variant="caption" tone="danger" accessibilityRole="alert">{error}</AppText> : null}
-      <AppButton label="Записать подход" onPress={submit} testID={`set-complete-${set.id}`} />
+      <AppButton label={set.completed ? 'Сохранить изменения' : 'Записать подход'} onPress={submit} testID={`set-complete-${set.id}`} />
+      {set.completed ? <AppButton label="Отмена" variant="ghost" onPress={() => setExpanded(false)} /> : null}
     </View>
   );
 }

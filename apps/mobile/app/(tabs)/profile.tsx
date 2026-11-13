@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
 import { localDateKey } from '../../../../src/storage/validation';
+import { asPersistable } from '../../../../src/storage/foodRepository';
 import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
@@ -76,7 +77,7 @@ export default function ProfileScreen() {
   const params = useLocalSearchParams<{ section?: string }>();
   const [goalsOpen, setGoalsOpen] = useState(params.section === 'goals');
   useEffect(() => { if (params.section === 'goals') setGoalsOpen(true); }, [params.section]);
-  const { repo, refresh, showFlash, setDateLocal, dateLocal } = useData();
+  const { repo, refresh, showFlash, setDateLocal, dateLocal, setUndo } = useData();
   const profileRevision = useProfileRevision();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
@@ -293,11 +294,18 @@ export default function ProfileScreen() {
         onConfirm: () => {
           void (async () => {
             bumpLocalDataWipeEpoch();
-            repo.deleteAllUserData();
-            await clearGarminApiKey();
-            await clearTodayWidgetPayload();
-            refresh('all');
-            showFlash('Локальные данные и ключ Garmin очищены');
+            setUndo(null);
+            try {
+              repo.deleteAllUserData();
+              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload()]);
+              asPersistable(repo).flushPersist();
+              refresh('all');
+              if (cleanup.some(result => result.status === 'rejected')) showFlash('Данные очищены, но ключ Garmin удалить не удалось. Повтори удаление.');
+              else showFlash('Локальные данные и ключ Garmin очищены');
+            } catch {
+              refresh('all');
+              showFlash('Удаление не завершилось. Повтори попытку; сохранение может быть недоступно.');
+            }
           })();
         },
       },

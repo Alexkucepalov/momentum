@@ -7,13 +7,16 @@ import {
 } from '../../../../src/storage/foodRepository';
 import { migrateExpoDb } from '../../../../src/storage/migrations';
 import type { StoreSnapshot, StoreSnapshotAny } from '../../../../src/storage/types';
+import { parseExportJson } from '../../../../src/domain/importExport';
 
 const DB_NAME = 'momentum.db';
 
 function readSnapshot(db: SQLite.SQLiteDatabase): StoreSnapshotAny | undefined {
   const row = db.getFirstSync<{ payload: string }>('SELECT payload FROM store_snapshot WHERE id = 1');
   if (!row?.payload) return undefined;
-  return JSON.parse(row.payload) as StoreSnapshotAny;
+  const parsed = parseExportJson(row.payload);
+  if (!parsed.ok) throw new Error('Локальный снимок данных не удалось прочитать');
+  return parsed.snapshot;
 }
 
 function writeSnapshot(db: SQLite.SQLiteDatabase, snap: StoreSnapshot): void {
