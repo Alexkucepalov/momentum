@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
-import { colors, type } from '@/src/design-system';
+import { colors, fonts, type } from '@/src/design-system';
+import { FloatingTabBar } from '@/src/design-system/components/FloatingTabBar';
 import { GarminAutoSyncHost } from '@/src/features/garmin/GarminAutoSyncHost';
 import { useWidgetSync } from '@/src/widgets/useWidgetSync';
 
@@ -23,40 +23,17 @@ function tint(color: unknown): string {
  * Sleep lives inside Movement (Activity | Sleep). Route `sleep` hidden + redirects.
  */
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 0);
-  /** Icon + label + padding; prior 52dp clipped RU captions on device. */
-  const tabBarHeight = 58 + bottomInset;
   useWidgetSync();
 
   return (
     <View style={{ flex: 1 }}>
       <GarminAutoSyncHost />
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarAllowFontScaling: true,
-        tabBarLabelStyle: {
-          fontSize: type.label,
-          lineHeight: 14,
-          fontWeight: '600',
-          marginTop: 2,
-          marginBottom: Platform.OS === 'web' ? 4 : 2,
-        },
-        tabBarItemStyle: {
-          paddingTop: 4,
-          paddingBottom: 2,
-        },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: tabBarHeight,
-          paddingTop: 4,
-          paddingBottom: bottomInset,
-        },
         headerStyle: { backgroundColor: colors.canvas },
-        headerTitleStyle: { color: colors.ink, fontWeight: '700', fontSize: type.title },
+        headerTitleStyle: { color: colors.ink, fontFamily: fonts.medium, fontWeight: 'normal', fontSize: type.title },
+        headerTitleAlign: 'left',
         headerShadowVisible: false,
       }}
     >

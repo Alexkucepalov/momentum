@@ -1,51 +1,55 @@
 /**
- * nf-fit / Momentum — Premium Minimal Utility token contract.
+ * nf-fit — Fresh Utility. One runtime contract for every screen and sheet.
  * Runtime RN re-exports via apps/mobile/src/design-system/tokens.ts.
  * Do not introduce screen-local hex colors; extend this file instead.
  */
 
 export const colors = {
-  canvas: '#F2F3F5',
-  background: '#F2F3F5',
+  canvas: '#F7F7F2',
+  background: '#F7F7F2',
   surface: '#FFFFFF',
-  surfaceMuted: '#EBEDF0',
-  ink: '#0A0A0A',
-  text: '#0A0A0A',
-  textSecondary: '#5C6370',
-  /** Captions / hints — ≥4.5:1 on canvas `#F2F3F5` and white (WCAG AA). */
-  textMuted: '#646B78',
+  surfaceMuted: '#EDF0E9',
+  ink: '#20251F',
+  text: '#20251F',
+  textSecondary: '#626B5F',
+  /** Captions / hints — ≥4.5:1 on canvas `#F7F7F2` and white (WCAG AA). */
+  textMuted: '#697166',
   /** Selected / active chrome — mono ink (no coloured brand chrome). */
-  accent: '#0A0A0A',
-  accentSoft: '#EBEDF0',
+  accent: '#20251F',
+  accentSoft: '#EDF0E9',
   onAccent: '#FFFFFF',
   /** @deprecated Prefer `primary` — kept for gradual migration. */
-  primaryButton: '#0A0A0A',
+  primaryButton: '#20251F',
   /** @deprecated Prefer `onPrimary`. */
   primaryButtonText: '#FFFFFF',
-  primary: '#0A0A0A',
+  primary: '#20251F',
   onPrimary: '#FFFFFF',
-  border: '#E2E5EA',
-  borderStrong: '#C9CED6',
+  border: '#E1E5DC',
+  borderStrong: '#B9C2B3',
   danger: '#B42318',
-  preview: '#F2F3F5',
-  protein: '#16A34A',
-  fat: '#D97706',
-  carbs: '#2563EB',
+  preview: '#F7F7F2',
+  protein: '#52714F',
+  fat: '#8C6548',
+  carbs: '#4C7081',
+  trainingStrength: '#E8EEE1',
+  trainingCycling: '#E8F0F4',
+  warmSurface: '#F8EDE3',
+  sageInk: '#4B6745',
   /** Meal section accent bars — cool gray scale only. */
-  mealBreakfast: '#8B929E',
-  mealLunch: '#5C6370',
-  mealDinner: '#0A0A0A',
-  mealSnack: '#C9CED6',
-  ringTrack: '#E8EAED',
-  ringFill: '#0A0A0A',
-  success: '#15803D',
-  successSoft: '#DCF5E4',
+  mealBreakfast: '#626B5F',
+  mealLunch: '#626B5F',
+  mealDinner: '#20251F',
+  mealSnack: '#626B5F',
+  ringTrack: '#E1E5DC',
+  ringFill: '#20251F',
+  success: '#4B6745',
+  successSoft: '#E8EEE1',
   textOnInverse: '#FFFFFF',
-  shadow: '#0A0A0A',
-  warning: '#D97706',
-  chartTrack: '#E8EAED',
-  chartFill: '#0A0A0A',
-  overlay: 'rgba(10,10,10,0.4)',
+  shadow: '#20251F',
+  warning: '#89602E',
+  chartTrack: '#E1E5DC',
+  chartFill: '#20251F',
+  overlay: 'rgba(32,37,31,0.32)',
 } as const;
 
 export const space = {
@@ -54,16 +58,17 @@ export const space = {
   md: 12,
   lg: 16,
   xl: 24,
+  screen: 20,
   xxl: 32,
   /** Screen-level section break */
-  section: 48,
+  section: 28,
 } as const;
 
 export const radius = {
   sm: 8,
-  md: 12,
+  md: 14,
   lg: 16,
-  card: 16,
+  card: 22,
   xl: 24,
   pill: 999,
 } as const;
@@ -71,19 +76,26 @@ export const radius = {
 export const touchMin = 48;
 
 export const type = {
-  metric: 36,
-  hero: 34,
-  title: 22,
-  subtitle: 17,
-  body: 15,
-  caption: 13,
+  metric: 46,
+  hero: 36,
+  title: 28,
+  subtitle: 18,
+  body: 14,
+  caption: 12,
   label: 11,
   micro: 11,
 } as const;
 
 export const elevation = {
   none: 0,
-  card: 2,
+  card: 0,
+} as const;
+
+/** Bundled, offline Manrope instances; font files include Cyrillic. */
+export const fonts = {
+  regular: 'ManropeRegular',
+  medium: 'ManropeMedium',
+  semibold: 'ManropeSemiBold',
 } as const;
 
 /**

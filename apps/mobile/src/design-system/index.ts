@@ -5,6 +5,7 @@ export {
   touchMin,
   type,
   elevation,
+  fonts,
   TAB_SHELL,
 } from './tokens';
 
@@ -13,6 +14,7 @@ export type { ColorToken, TypeToken } from '../../../../src/design-system/tokenT
 
 export { Screen } from './components/Screen';
 export { AppText } from './components/AppText';
+export { ThemedText } from './components/ThemedText';
 export { AppCard } from './components/AppCard';
 export { AppButton } from './components/AppButton';
 export { MetricCard, formatMetricValue } from './components/MetricCard';

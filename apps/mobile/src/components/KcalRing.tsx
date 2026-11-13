@@ -1,644 +1,92 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { energyProgressRatio } from '../../../../src/domain/energyProgress';
 import type { DailyNutritionTargets, DailyTotals } from '../../../../src/storage/types';
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
-
-function fmt(n: number | null): string {
-  if (n === null) return '—';
-  return String(Math.round(n));
-}
-
-const SIZE = 168;
-const STROKE = 14;
-const R = (SIZE - STROKE) / 2;
-const C = 2 * Math.PI * R;
+import { AppText, colors, space, type } from '../design-system';
 
 type Props = {
   totals: DailyTotals;
   targets?: DailyNutritionTargets | null;
   activityKcal?: number | null;
   activityMinutes?: number;
-  /** compact = number + bar (Today/Food first screen); ring = legacy large widget */
   variant?: 'compact' | 'ring';
-  /** Bumps a short pulse when diary totals change (e.g. after add). */
   pulseKey?: number;
-  /** Shown when energy target is missing (e.g. open Profile goals). */
   onSetTarget?: () => void;
 };
+const SIZE = 94;
+const R = 41;
+const C = Math.PI * 2 * R;
+const fmt = (n: number | null) => n == null ? '—' : Math.round(n).toLocaleString('ru-RU');
 
-/** Nutrition summary. Compact by default to keep first viewport usable. */
-export function KcalRing({
-  totals,
-  targets = null,
-  activityKcal = null,
-  activityMinutes = 0,
-  variant = 'compact',
-  pulseKey,
-  onSetTarget,
-}: Props) {
-  if (variant === 'ring') {
-    return (
-      <RingLayout
-        totals={totals}
-        targets={targets}
-        activityKcal={activityKcal}
-        activityMinutes={activityMinutes}
-        onSetTarget={onSetTarget}
-      />
-    );
-  }
+/** Editorial day summary. An unset target never produces an invented progress ring. */
+export function KcalRing({ totals, targets, onSetTarget }: Props) {
+  const target = targets?.energyKcal ?? null;
+  const hasTarget = target != null && target > 0;
+  const ratio = energyProgressRatio(totals.energyKcal, target);
   return (
-    <CompactLayout
-      totals={totals}
-      targets={targets}
-      activityKcal={activityKcal}
-      activityMinutes={activityMinutes}
-      pulseKey={pulseKey}
-      onSetTarget={onSetTarget}
-    />
-  );
-}
-
-function CompactLayout({
-  totals,
-  targets,
-  activityKcal = null,
-  activityMinutes = 0,
-  pulseKey,
-  onSetTarget,
-}: Omit<Props, 'variant'>) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const prevPulse = useRef<number | undefined>(pulseKey);
-  useEffect(() => {
-    if (pulseKey === undefined) return;
-    if (prevPulse.current === undefined) {
-      prevPulse.current = pulseKey;
-      return;
-    }
-    if (prevPulse.current === pulseKey) return;
-    prevPulse.current = pulseKey;
-    scale.setValue(1);
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 1.03, duration: 120, useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1, duration: 160, useNativeDriver: true }),
-    ]).start();
-  }, [pulseKey, scale]);
-  const foodKcal = totals.energyKcal;
-  const hasUnknown = totals.hasUnknownFields;
-  const energyTarget = targets?.energyKcal ?? null;
-  const actMin = activityMinutes ?? 0;
-  const actKcal = activityKcal ?? null;
-  const remaining =
-    foodKcal !== null && energyTarget !== null ? Math.round(energyTarget - foodKcal) : null;
-  const fill = energyProgressRatio(foodKcal, energyTarget);
-
-  const entryLabel =
-    totals.entryCount === 0
-      ? 'пока пусто'
-      : `${totals.entryCount} ${
-          totals.entryCount === 1 ? 'запись' : totals.entryCount < 5 ? 'записи' : 'записей'
-        }`;
-
-  return (
-    <Animated.View
-      style={[styles.compactWrap, { transform: [{ scale }] }]}
-      accessibilityRole="summary"
-      accessibilityLabel={`Еда ${fmt(foodKcal)} килокалорий${energyTarget != null ? ` из цели ${fmt(energyTarget)}` : ''}. Белки ${fmt(totals.proteinG)} г. Жиры ${fmt(totals.fatG)} г. Углеводы ${fmt(totals.carbG)} г.${hasUnknown ? ' Часть значений неизвестна.' : ''}`}
-    >
-      <View style={styles.compactHead}>
-        <View style={styles.compactKcalCol}>
-          <Text style={styles.compactKcal}>{fmt(foodKcal)}</Text>
-          <Text style={styles.compactUnit}>
-            {totals.entryCount === 0 ? 'ккал еды' : 'ккал записано'}
-          </Text>
-          <Text style={styles.compactMeta}>{entryLabel}</Text>
+    <View style={styles.wrap} accessibilityRole="summary" accessibilityLabel={`Записано ${fmt(totals.energyKcal)} килокалорий. Белки ${fmt(totals.proteinG)}, жиры ${fmt(totals.fatG)}, углеводы ${fmt(totals.carbG)} грамм.${totals.hasUnknownFields ? ' Часть значений неизвестна.' : ''}`}>
+      <View style={styles.hero}>
+        <View style={styles.main}>
+          <AppText variant="label" tone="muted" style={styles.eyebrow}>Записано за день</AppText>
+          <AppText variant="metric" style={styles.value}>{fmt(totals.energyKcal)}</AppText>
+          <AppText variant="caption" tone="secondary">
+            {hasTarget ? `из ${fmt(target)} ккал` : totals.entryCount > 0 ? 'ккал · без ориентира' : 'ккал · пока нет записей'}
+          </AppText>
         </View>
-        <View style={styles.compactSide}>
-          {energyTarget == null ? (
-            onSetTarget ? (
-              <Pressable
-                onPress={onSetTarget}
-                style={({ pressed }) => [styles.targetCta, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Настроить ориентир калорий"
-              >
-                <Text style={styles.targetCtaText}>Настроить ориентир</Text>
-              </Pressable>
-            ) : (
-              <Text style={styles.targetHint}>Ориентир — в Профиле</Text>
-            )
-          ) : (
-            <>
-              <Text style={styles.sideLabel}>До ориентира</Text>
-              <Text style={styles.sideValue}>
-                {remaining === null
-                  ? '—'
-                  : remaining > 0
-                    ? `${remaining}`
-                    : remaining < 0
-                      ? `+${Math.abs(remaining)}`
-                      : '0'}
-              </Text>
-              <Text style={styles.sideHint}>
-                {remaining === null
-                  ? ''
-                  : remaining > 0
-                    ? 'ккал осталось'
-                    : remaining < 0
-                      ? 'ккал сверх'
-                      : 'ровно по цели'}
-              </Text>
-            </>
-          )}
-          {actMin > 0 ? (
-            <Text style={styles.activityHint}>
-              Активность{' '}
-              {actKcal === null ? `${actMin} мин` : `~${fmt(actKcal)} ккал · ${actMin} мин`}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-
-      <View style={styles.barTrack} accessibilityElementsHidden>
-        {energyTarget != null && energyTarget > 0 ? (
-          <View style={[styles.barFill, { width: `${Math.round(fill * 100)}%` }]} />
-        ) : (
-          <View style={styles.barNeutral} />
-        )}
-      </View>
-
-      <View style={styles.macros}>
-        <Macro
-          label="Белки"
-          short="Б"
-          value={fmt(totals.proteinG)}
-          target={targets?.proteinG ?? null}
-          color={colors.protein}
-        />
-        <Macro
-          label="Жиры"
-          short="Ж"
-          value={fmt(totals.fatG)}
-          target={targets?.fatG ?? null}
-          color={colors.fat}
-        />
-        <Macro
-          label="Углеводы"
-          short="У"
-          value={fmt(totals.carbG)}
-          target={targets?.carbG ?? null}
-          color={colors.carbs}
-        />
-      </View>
-
-      {hasUnknown ? (
-        <Text style={styles.note}>Часть нутриентов неизвестна — не считаем их нулём</Text>
-      ) : null}
-    </Animated.View>
-  );
-}
-
-function RingLayout({
-  totals,
-  targets,
-  activityKcal = null,
-  activityMinutes = 0,
-  onSetTarget,
-}: Omit<Props, 'variant'>) {
-  const foodKcal = totals.energyKcal;
-  const hasUnknown = totals.hasUnknownFields;
-  const energyTarget = targets?.energyKcal ?? null;
-  const actMin = activityMinutes ?? 0;
-  const actKcal = activityKcal ?? null;
-
-  const foodFill = energyProgressRatio(foodKcal, energyTarget);
-
-  const remaining =
-    foodKcal !== null && energyTarget !== null ? Math.round(energyTarget - foodKcal) : null;
-
-  const progressOffset = C * (1 - foodFill);
-
-  return (
-    <View
-      style={styles.wrap}
-      accessibilityRole="summary"
-      accessibilityLabel={`Еда ${fmt(foodKcal)} килокалорий${energyTarget != null ? ` из цели ${fmt(energyTarget)}` : ''}. Активность ${fmt(actKcal)} килокалорий за ${actMin} минут. Белки ${fmt(totals.proteinG)} г. Жиры ${fmt(totals.fatG)} г. Углеводы ${fmt(totals.carbG)} г.${hasUnknown ? ' Часть значений неизвестна.' : ''}`}
-    >
-      <View style={styles.ringRow}>
-        <View style={styles.ringOuter}>
-          <Svg width={SIZE} height={SIZE}>
-            <Circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={R}
-              stroke={colors.ringTrack}
-              strokeWidth={STROKE}
-              fill="none"
-            />
-            <Circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={R}
-              stroke={colors.ringFill}
-              strokeWidth={STROKE}
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={`${C} ${C}`}
-              strokeDashoffset={progressOffset}
-              transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
-            />
-          </Svg>
-          <View style={styles.ringHole} pointerEvents="none">
-            <Text style={styles.kcalValue}>{fmt(foodKcal)}</Text>
-            <Text style={styles.kcalUnit}>
-              {energyTarget != null ? `из ${fmt(energyTarget)} ккал` : 'ккал еды'}
-            </Text>
-            {totals.entryCount > 0 ? (
-              <Text style={styles.entryHint}>
-                {totals.entryCount}{' '}
-                {totals.entryCount === 1 ? 'запись' : totals.entryCount < 5 ? 'записи' : 'записей'}
-              </Text>
-            ) : (
-              <Text style={styles.entryHint}>пока пусто</Text>
-            )}
+        {hasTarget ? (
+          <View style={styles.ring}>
+            <Svg width={SIZE} height={SIZE} aria-hidden={true}>
+              <Circle cx={47} cy={47} r={R} stroke={colors.ringTrack} strokeWidth={5} fill="none" />
+              <Circle cx={47} cy={47} r={R} stroke={colors.ringFill} strokeWidth={5} fill="none" strokeLinecap="round" strokeDasharray={`${C} ${C}`} strokeDashoffset={C * (1 - ratio)} transform="rotate(-90 47 47)" />
+            </Svg>
+            <View style={styles.ringText} pointerEvents="none">
+              <AppText variant="subtitle">{totals.energyKcal == null ? '—' : `${Math.round(ratio * 100)}%`}</AppText>
+              <AppText variant="label" tone="muted" style={styles.ringLabel}>ориентира</AppText>
+            </View>
           </View>
-        </View>
-
-        <View style={styles.metaCol}>
-          {energyTarget == null && onSetTarget ? (
-            <Pressable
-              onPress={onSetTarget}
-              style={({ pressed }) => [styles.metaTile, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Настроить ориентир калорий"
-            >
-              <Text style={styles.metaLabel}>Ориентир</Text>
-              <Text style={styles.metaValue}>—</Text>
-              <Text style={styles.metaHint}>настроить</Text>
-            </Pressable>
-          ) : (
-            <MetaTile
-              label="До ориентира"
-              value={
-                remaining === null
-                  ? '—'
-                  : remaining > 0
-                    ? `${remaining}`
-                    : remaining < 0
-                      ? `+${Math.abs(remaining)}`
-                      : '0'
-              }
-              hint={
-                remaining === null
-                  ? 'цель в Профиле'
-                  : remaining > 0
-                    ? 'ккал осталось'
-                    : remaining < 0
-                      ? 'ккал сверх'
-                      : 'ровно по цели'
-              }
-            />
-          )}
-          {actMin > 0 ? (
-            <MetaTile
-              label="Активность"
-              value={actKcal === null ? `${actMin}` : `~${fmt(actKcal)}`}
-              hint={actKcal === null ? `${actMin} мин` : `${actMin} мин · MET`}
-            />
-          ) : null}
-        </View>
+        ) : onSetTarget ? (
+          <Pressable onPress={onSetTarget} accessibilityRole="button" accessibilityLabel="Задать ориентир калорий" style={styles.target}>
+            <AppText variant="caption" style={styles.targetText}>Задать{`\n`}ориентир</AppText>
+          </Pressable>
+        ) : null}
       </View>
-
       <View style={styles.macros}>
-        <Macro
-          label="Белки"
-          short="Б"
-          value={fmt(totals.proteinG)}
-          target={targets?.proteinG ?? null}
-          color={colors.protein}
-        />
-        <Macro
-          label="Жиры"
-          short="Ж"
-          value={fmt(totals.fatG)}
-          target={targets?.fatG ?? null}
-          color={colors.fat}
-        />
-        <Macro
-          label="Углеводы"
-          short="У"
-          value={fmt(totals.carbG)}
-          target={targets?.carbG ?? null}
-          color={colors.carbs}
-        />
+        {([
+          ['Белки', totals.proteinG, targets?.proteinG],
+          ['Жиры', totals.fatG, targets?.fatG],
+          ['Углеводы', totals.carbG, targets?.carbG],
+        ] as const).map(([label, value, goal]) => (
+          <View key={label} style={styles.macro}>
+            <AppText variant="label" tone="muted">{label}</AppText>
+            <AppText variant="body" style={styles.macroValue}>
+              {fmt(value)}<AppText variant="label" tone="secondary">{goal != null ? ` / ${fmt(goal)} г` : ' г'}</AppText>
+            </AppText>
+            {goal != null && goal > 0 && value != null ? (
+              <View style={styles.track}><View style={[styles.fill, { width: `${energyProgressRatio(value, goal) * 100}%` }]} /></View>
+            ) : null}
+          </View>
+        ))}
       </View>
-
-      {hasUnknown ? (
-        <Text style={styles.note}>Часть нутриентов неизвестна — не считаем их нулём</Text>
-      ) : null}
-      {actKcal !== null ? (
-        <Text style={styles.note}>Активность не вычитается из еды автоматически</Text>
-      ) : null}
+      {totals.hasUnknownFields ? <AppText variant="caption" tone="muted" style={styles.note}>Часть БЖУ не указана</AppText> : null}
     </View>
   );
 }
-
-function MetaTile({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <View style={styles.metaTile}>
-      <Text style={styles.metaLabel}>{label}</Text>
-      <Text style={styles.metaValue}>{value}</Text>
-      <Text style={styles.metaHint}>{hint}</Text>
-    </View>
-  );
-}
-
-function Macro({
-  label,
-  short,
-  value,
-  target,
-  color,
-}: {
-  label: string;
-  short: string;
-  value: string;
-  target: number | null;
-  color: string;
-}) {
-  const ratio =
-    target != null && target > 0 && value !== '—'
-      ? energyProgressRatio(Number(value), target)
-      : null;
-  const display = target != null ? `${value}/${Math.round(target)}` : value;
-
-  return (
-    <View style={styles.macro} accessibilityLabel={`${label} ${display} грамм`}>
-      <View style={styles.macroTop}>
-        <View style={[styles.macroDot, { backgroundColor: color }]} />
-        <Text style={styles.macroShort}>{short}</Text>
-      </View>
-      <Text style={styles.macroValue} numberOfLines={1}>
-        {display}
-      </Text>
-      <Text style={styles.macroUnit}>г</Text>
-      <View style={styles.macroBarTrack}>
-        <View
-          style={[
-            styles.macroBarFill,
-            {
-              backgroundColor: color,
-              width: `${Math.round((ratio ?? 0) * 100)}%`,
-              opacity: ratio === null ? 0.15 : 1,
-            },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  compactWrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: space.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: space.md,
-  },
-  compactHead: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.md,
-    marginBottom: space.sm,
-  },
-  compactKcalCol: { flexShrink: 0, minWidth: 96 },
-  compactKcal: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -1.2,
-    lineHeight: 44,
-  },
-  compactUnit: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  compactMeta: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  compactSide: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingTop: 4,
-  },
-  sideLabel: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  sideValue: {
-    fontSize: type.title,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: 2,
-    letterSpacing: -0.4,
-  },
-  sideHint: {
-    fontSize: type.micro,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  targetCta: {
-    alignSelf: 'flex-start',
-    minHeight: touchMin - 8,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-  },
-  targetCtaText: {
-    fontSize: type.caption,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  targetHint: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  activityHint: {
-    marginTop: space.sm,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  barTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: space.md,
-    position: 'relative',
-  },
-  barFill: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.ringFill,
-  },
-  /** Hairline marker when no energy target — not a progress fill. */
-  barNeutral: {
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -1,
-    width: 2,
-    height: 6,
-    borderRadius: 1,
-    backgroundColor: colors.textMuted,
-    opacity: 0.45,
-  },
-  pressed: { opacity: 0.88 },
-  wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: space.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: space.lg,
-  },
-  ringRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.lg,
-    marginBottom: space.lg,
-  },
-  ringOuter: {
-    width: SIZE,
-    height: SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringHole: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.md,
-  },
-  kcalValue: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -1,
-  },
-  kcalUnit: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  entryHint: {
-    marginTop: 4,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  metaCol: {
-    flex: 1,
-    gap: space.sm,
-  },
-  metaTile: {
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-  },
-  metaLabel: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  metaValue: {
-    fontSize: type.title,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: 2,
-    letterSpacing: -0.4,
-  },
-  metaHint: {
-    fontSize: type.micro,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  macros: {
-    flexDirection: 'row',
-    gap: space.sm,
-  },
-  macro: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    padding: space.md,
-  },
-  macroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  macroDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  macroShort: {
-    fontSize: type.caption,
-    color: colors.textSecondary,
-    fontWeight: '700',
-  },
-  macroValue: {
-    fontSize: type.subtitle,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  macroUnit: {
-    fontSize: type.micro,
-    color: colors.textMuted,
-    marginTop: 1,
-    fontWeight: '600',
-  },
-  macroBarTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginTop: space.sm,
-    overflow: 'hidden',
-  },
-  macroBarFill: {
-    height: 4,
-    borderRadius: 2,
-  },
-  note: {
-    marginTop: space.md,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
+  wrap: { marginBottom: space.sm },
+  hero: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md, paddingVertical: space.md, paddingBottom: space.xl, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  main: { flex: 1, minWidth: 0 },
+  eyebrow: { textTransform: 'uppercase', letterSpacing: 1.1 },
+  value: { fontSize: type.metric, lineHeight: 58, fontWeight: '500', letterSpacing: -2, marginVertical: space.xs },
+  ring: { width: SIZE, height: SIZE },
+  ringText: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  ringLabel: { fontSize: type.micro - 1 },
+  target: { minHeight: 48, justifyContent: 'center', paddingHorizontal: space.sm },
+  targetText: { lineHeight: 20 },
+  macros: { flexDirection: 'row', gap: space.lg, paddingTop: space.lg, paddingBottom: space.sm },
+  macro: { flex: 1, minWidth: 0, gap: space.xs },
+  macroValue: { fontWeight: '600' },
+  track: { height: 3, borderRadius: 2, overflow: 'hidden', backgroundColor: colors.ringTrack, marginTop: space.xs },
+  fill: { height: '100%', backgroundColor: colors.ink },
+  note: { marginTop: space.sm },
 });

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { portion, type Nutrition } from '../../../../../src/domain/nutrition';
 import { nutritionConsistencyHint } from '../../../../../src/domain/nutritionConsistency';

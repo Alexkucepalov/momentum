@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, radius, space, touchMin } from '../tokens';
+import { colors, space, touchMin } from '../tokens';
 import { AppText } from './AppText';
 
 export type SegmentOption<T extends string> = {
@@ -42,7 +42,7 @@ export function SegmentedControl<T extends string>({
             accessibilityState={{ selected: on }}
             accessibilityLabel={opt.label}
           >
-            <AppText variant="caption" tone={on ? 'inverse' : 'secondary'} style={styles.label}>
+            <AppText variant="caption" tone={on ? 'ink' : 'secondary'} style={styles.label}>
               {opt.label}
             </AppText>
           </Pressable>
@@ -55,23 +55,24 @@ export function SegmentedControl<T extends string>({
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.md,
-    padding: 4,
-    gap: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    gap: space.lg,
     minHeight: touchMin,
   },
   seg: {
     flex: 1,
     minHeight: touchMin - 8,
-    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.sm,
+    paddingHorizontal: space.xs,
+    paddingVertical: space.sm,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
   segOn: {
-    backgroundColor: colors.ink,
+    borderBottomColor: colors.ink,
   },
-  label: { fontWeight: '700' },
+  label: { fontWeight: '500', textAlign: 'center' },
   pressed: { opacity: 0.88 },
 });

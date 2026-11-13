@@ -79,17 +79,17 @@ export function MealSection({
         accessibilityLabel={`${MEAL_LABELS[meal]} — пока пусто. Добавить`}
         testID={`meal-section-${meal}`}
       >
-        <AppCard style={[styles.card, styles.emptyCard, { borderLeftColor: accent }]}>
+        <AppCard style={[styles.card, styles.emptyCard]}>
           <View style={styles.compactText}>
             <AppText variant="body" style={styles.compactLabel}>
               {MEAL_LABELS[meal]}
             </AppText>
             <AppText variant="caption" tone="muted">
-              нажми, чтобы добавить
+              Добавить продукты
             </AppText>
           </View>
-          <View style={[styles.compactPlus, { backgroundColor: accent }]}>
-            <Ionicons name="add" size={22} color={colors.onAccent} />
+          <View style={styles.compactPlus}>
+            <Ionicons name="add" size={20} color={colors.ink} />
           </View>
         </AppCard>
       </Pressable>
@@ -98,14 +98,13 @@ export function MealSection({
 
   return (
     <AppCard
-      style={[styles.card, { borderLeftColor: accent }]}
+      style={styles.card}
       accessibilityLabel={MEAL_LABELS[meal]}
       testID={`meal-section-${meal}`}
     >
       <View style={styles.head}>
-        <View style={[styles.dot, { backgroundColor: accent }]} />
         <View style={styles.headText}>
-          <AppText variant="subtitle">{MEAL_LABELS[meal]}</AppText>
+          <AppText variant="body" style={styles.compactLabel}>{MEAL_LABELS[meal]}</AppText>
           <AppText variant="caption" tone="muted">
             {sectionKcal === null ? 'ккал частично неизвестны' : fmtKcal(sectionKcal)}
             {entries.length > 1 ? ` · ${entries.length}` : ''}
@@ -299,20 +298,20 @@ function SwipeEntryRow({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: space.sm,
+    marginBottom: 0,
     overflow: 'hidden',
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    borderLeftWidth: 3,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    paddingVertical: space.md,
+    paddingHorizontal: 0,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   emptyCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    minHeight: touchMin,
-    borderStyle: 'dashed',
+    minHeight: touchMin + 16,
   },
   compactText: { flex: 1, gap: 0, minWidth: 0 },
   compactLabel: {
@@ -325,6 +324,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
   head: {
     flexDirection: 'row',
@@ -340,16 +340,16 @@ const styles = StyleSheet.create({
   },
   headText: { flex: 1, gap: 0, minWidth: 0 },
   iconBtn: {
-    width: 36,
-    height: 36,
+    width: touchMin,
+    height: touchMin,
     flexShrink: 0,
     borderRadius: radius.pill,
-    backgroundColor: colors.canvas,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconBtnAccent: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: 'transparent',
   },
   swipeWrap: {
     marginTop: space.xs,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   rowFront: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.canvas,
     minHeight: touchMin - 4,
     paddingVertical: space.xs,
     gap: space.xs,

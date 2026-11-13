@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter, type Href } from 'expo-router';
 
@@ -54,6 +54,13 @@ export default function MovementScreen() {
   const [formType, setFormType] = useState<WorkoutType>('walking');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [addPlanOpen, setAddPlanOpen] = useState(false);
+  const [draggingPlan, setDraggingPlan] = useState(false);
+  const [moveUndo, setMoveUndo] = useState<{ message: string; undo: () => void } | null>(null);
+  useEffect(() => {
+    if (!moveUndo) return;
+    const timer = setTimeout(() => setMoveUndo(null), 6500);
+    return () => clearTimeout(timer);
+  }, [moveUndo]);
   const [moveCopy, setMoveCopy] = useState<{
     activity: PlannedActivity;
     mode: 'move' | 'copy';
@@ -148,6 +155,10 @@ export default function MovementScreen() {
   };
 
   const openPlanMenu = (activity: PlannedActivity) => {
+    if (Platform.OS === 'web') {
+      setMoveCopy({ activity, mode: 'move' });
+      return;
+    }
     const dayCards = repo.listPlannedActivitiesForDate(activity.dateLocal);
     const idx = dayCards.findIndex((a) => a.id === activity.id);
     Alert.alert(activity.title, 'План ≠ факт. Перенос не меняет историю.', [
@@ -220,6 +231,7 @@ export default function MovementScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={!draggingPlan}
           testID="activity-screen"
         >
           <SegmentedControl<MovementTab>
@@ -236,13 +248,6 @@ export default function MovementScreen() {
             <SleepDayPanel todayKey={todayKey} />
           ) : (
             <>
-              <DayStrip
-                selected={dateLocal}
-                today={todayKey}
-                onSelect={setDateLocal}
-                onOpenCalendar={() => setCalendarOpen(true)}
-              />
-
               {draft ? (
                 <DraftSessionBanner
                   session={draft}
@@ -260,6 +265,27 @@ export default function MovementScreen() {
                 onOpenTemplates={() => router.push(strengthHubHref())}
                 onMenu={openPlanMenu}
                 onStart={startPlanned}
+                onDraggingChange={setDraggingPlan}
+                workouts={weekDates.flatMap(d => repo.listWorkoutsForDate(d))}
+                onOpenWorkout={w => {
+                  if (w.source === 'garmin') router.push(`/garmin/workout/${w.id}` as Href);
+                  else setDateLocal(w.dateLocal);
+                }}
+                onDrop={(activity, target) => {
+                  try {
+                    const other = target.activityId && target.activityId !== activity.id
+                      ? plannedWeek.find(a => a.id === target.activityId)
+                      : undefined;
+                    if (other) {
+                      repo.swapPlannedActivities(activity.id, other.id);
+                      setMoveUndo({ message: 'Тренировки поменялись местами', undo: () => { repo.swapPlannedActivities(activity.id, other.id); } });
+                    } else if (activity.dateLocal !== target.dateLocal) {
+                      repo.movePlannedActivity(activity.id, { dateLocal: target.dateLocal });
+                      setMoveUndo({ message: 'Тренировка перенесена', undo: () => { repo.movePlannedActivity(activity.id, { dateLocal: activity.dateLocal, sortOrder: activity.sortOrder }); } });
+                    }
+                    refresh('activity');
+                  } catch (e) { showFlash(e instanceof Error ? e.message : 'Не удалось перенести тренировку'); }
+                }}
               />
 
               <View style={styles.logSection}>
@@ -284,7 +310,7 @@ export default function MovementScreen() {
 
                 {workouts.length === 0 ? (
                   <AppText variant="caption" tone="muted" style={styles.logEmpty}>
-                    Пока нет факта — Garmin или ручная запись. План выше не меняется.
+                    Нет записей за выбранный день. Добавь активность или синхронизируй Garmin.
                   </AppText>
                 ) : (
                   <View style={styles.list}>
@@ -364,12 +390,12 @@ export default function MovementScreen() {
           repo.addPlannedActivity({
             dateLocal,
             kind: 'cardio',
-            title: 'Кардио',
+            title: 'Вело',
             cardioMinutes: 30,
           });
           setAddPlanOpen(false);
           refresh('activity');
-          showFlash('Кардио в плане');
+          showFlash('Велотренировка в плане');
         }}
         onAddRest={() => {
           repo.addPlannedActivity({
@@ -392,7 +418,8 @@ export default function MovementScreen() {
           if (!moveCopy) return;
           if (moveCopy.mode === 'move') {
             repo.movePlannedActivity(moveCopy.activity.id, { dateLocal: targetDate });
-            showFlash('Перенесено');
+            const previous = moveCopy.activity;
+            setMoveUndo({ message: 'Тренировка перенесена', undo: () => { repo.movePlannedActivity(previous.id, { dateLocal: previous.dateLocal, sortOrder: previous.sortOrder }); } });
           } else {
             repo.copyPlannedActivity(moveCopy.activity.id, { dateLocal: targetDate });
             showFlash('Скопировано');
@@ -402,6 +429,7 @@ export default function MovementScreen() {
           setDateLocal(targetDate);
         }}
       />
+      {moveUndo ? <View style={styles.moveNotice} accessibilityRole="alert"><AppText variant="caption" tone="inverse" style={{ flex: 1 }}>{moveUndo.message}</AppText><Pressable accessibilityRole="button" accessibilityLabel="Отменить перенос тренировки" onPress={() => { try { moveUndo.undo(); refresh('activity'); } catch (e) { showFlash(e instanceof Error ? e.message : 'Не удалось отменить'); } setMoveUndo(null); }} style={styles.undoButton}><AppText variant="caption" tone="inverse">Отменить</AppText></Pressable></View> : null}
     </View>
   );
 }
@@ -409,7 +437,7 @@ export default function MovementScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: {
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingTop: space.sm,
     paddingBottom: 48,
     gap: space.md,
@@ -457,4 +485,6 @@ const styles = StyleSheet.create({
     minHeight: touchMin - 8,
   },
   pressed: { opacity: 0.85 },
+  moveNotice: { position: 'absolute', left: space.screen, right: space.screen, bottom: space.md, paddingLeft: space.lg, paddingRight: space.sm, borderRadius: radius.lg, backgroundColor: colors.ink, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  undoButton: { minHeight: touchMin, paddingHorizontal: space.sm, justifyContent: 'center' },
 });

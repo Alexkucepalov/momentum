@@ -184,23 +184,9 @@ export default function TodayScreen() {
             }}
             activityKcal={activityKcal}
             activityMinutes={activityMinutes}
-            onSetTarget={() => router.push('/profile')}
+            onSetTarget={() => router.push('/profile?section=goals')}
           />
 
-          <CopyYesterdayButton testID="today-copy-yesterday" />
-
-          <StatCards
-            waterMl={waterMl}
-            waterTargetMl={profile.waterTargetMl}
-            activityMinutes={activityMinutes}
-            steps={daySteps}
-            sleepSec={sleepSec}
-            onAddWater={(ml) => {
-              repo.addWater(dateLocal, ml);
-              refresh('diary');
-              showFlash(`+${ml} мл воды`);
-            }}
-          />
 
           <TodayTrainingCard
             inProgress={strengthInProgress}
@@ -217,6 +203,22 @@ export default function TodayScreen() {
               router.push(strengthSessionHref(session.id) as Href);
             }}
           />
+
+
+          <StatCards
+            waterMl={waterMl}
+            waterTargetMl={profile.waterTargetMl}
+            activityMinutes={activityMinutes}
+            steps={daySteps}
+            sleepSec={sleepSec}
+            onAddWater={(ml) => {
+              repo.addWater(dateLocal, ml);
+              refresh('diary');
+              showFlash(`+${ml} мл воды`);
+            }}
+          />
+
+          <CopyYesterdayButton testID="today-copy-yesterday" />
 
           <FoodLogStreakCard streak={streak} />
 
@@ -265,7 +267,7 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  content: { padding: space.lg, paddingBottom: 140, gap: space.sm },
+  content: { padding: space.screen, paddingBottom: 100, gap: space.sm },
   headerBtn: {
     minWidth: touchMin,
     minHeight: touchMin,
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
   },
   dateLine: {
     flex: 1,
-    fontWeight: '600',
+    fontWeight: '400',
   },
   todayJumpHit: { minHeight: touchMin, justifyContent: 'center' },
   todayJump: {

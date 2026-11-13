@@ -1,13 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { FoodProduct } from '../../../../../src/storage/types';

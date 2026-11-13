@@ -1,15 +1,16 @@
 import { Stack } from 'expo-router';
 
-import { colors, type } from '@/src/theme/tokens';
+import { colors, fonts, type } from '@/src/theme/tokens';
 
 export default function PlanLayout() {
   return (
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text, fontWeight: '700', fontSize: type.title },
+        headerTitleStyle: { color: colors.text, fontFamily: fonts.medium, fontWeight: 'normal', fontSize: type.subtitle + 4 },
         headerTintColor: colors.text,
         headerShadowVisible: false,
+        headerTitleAlign: 'left',
         contentStyle: { backgroundColor: colors.background },
       }}
     >

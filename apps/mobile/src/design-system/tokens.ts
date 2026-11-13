@@ -8,6 +8,7 @@ export {
   touchMin,
   type,
   elevation,
+  fonts,
   TAB_SHELL,
 } from '../../../../src/design-system/tokens';
 

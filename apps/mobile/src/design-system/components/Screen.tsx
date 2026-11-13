@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingVertical: space.lg,
     gap: space.md,
   },

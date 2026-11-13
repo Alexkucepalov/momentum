@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -29,14 +31,22 @@ function createRepo(): FoodRepository {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    ManropeRegular: require('../assets/fonts/Manrope_400Regular.ttf'),
+    ManropeMedium: require('../assets/fonts/Manrope_500Medium.ttf'),
+    ManropeSemiBold: require('../assets/fonts/Manrope_600SemiBold.ttf'),
+  });
   const [repo] = useState(createRepo);
 
   useEffect(() => {
-    SplashScreen.hideAsync().catch(() => undefined);
-  }, []);
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => undefined);
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
+      <StatusBar style="dark" />
       <View style={styles.root}>
         <DataProvider repo={repo}>
           <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>

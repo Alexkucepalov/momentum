@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, radius, space, touchMin, type } from '../tokens';
+import { colors, fonts, radius, space, touchMin, type } from '../tokens';
 import { AppText } from './AppText';
 
 type FieldProps = TextInputProps & {
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     fontSize: type.body,
     color: colors.ink,
+    fontFamily: fonts.regular,
   },
   inputError: {
     borderColor: colors.danger,

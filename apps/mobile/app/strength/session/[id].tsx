@@ -133,6 +133,7 @@ export default function StrengthSessionScreen() {
           <View style={styles.footer}>
             <AppButton
               label={doneCount === total && total > 0 ? 'Завершить · все подходы есть' : 'Завершить тренировку'}
+              variant={doneCount === total && total > 0 ? 'primary' : 'secondary'}
               onPress={() => setFinishOpen(true)}
               testID="strength-finish"
             />
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.canvas,
   },
   content: {
-    padding: space.lg,
+    padding: space.screen,
     gap: space.md,
     paddingBottom: space.xxl,
     backgroundColor: colors.canvas,

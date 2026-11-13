@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 
@@ -281,16 +282,7 @@ export default function ProgressScreen() {
                 />
               </View>
               <AppText variant="caption" tone="muted" style={styles.weekHint}>
-                С понедельника · неизвестные значения — «—», не считаем нулём
-              </AppText>
-              <AppButton
-                label="Скопировать день для ChatGPT"
-                onPress={() => void onCopyDayReport()}
-                testID="progress-copy-day-chatgpt"
-                style={styles.weekPrimary}
-              />
-              <AppText variant="caption" tone="muted">
-                Дата из общего календаря · только буфер
+                За неделю · неизвестные значения — «—»
               </AppText>
             </AppCard>
 
@@ -303,6 +295,16 @@ export default function ProgressScreen() {
               timeZone={profile.timezone}
             />
 
+              <AppButton
+                label="Скопировать день для ChatGPT"
+                variant="secondary"
+                onPress={() => void onCopyDayReport()}
+                testID="progress-copy-day-chatgpt"
+                style={styles.weekPrimary}
+              />
+              <AppText variant="caption" tone="muted">
+                Копирует данные выбранного дня
+              </AppText>
             <GroupLabel>Движение и сон</GroupLabel>
             <WeekBarChart
               title="Шаги"
@@ -608,21 +610,23 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingTop: space.sm,
     paddingBottom: space.xxl,
     gap: space.sm,
   },
   tabs: { marginBottom: space.sm },
   weekHero: {
-    padding: space.md,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
     gap: space.sm,
   },
   glanceRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    backgroundColor: colors.canvas,
-    borderRadius: radius.md,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
     paddingVertical: space.md,
     paddingHorizontal: space.xs,
   },
@@ -632,7 +636,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     fontWeight: '700',
   },
-  glanceValue: { fontWeight: '800' },
+  glanceValue: { fontWeight: '500', fontSize: 22 },
   glanceRule: {
     width: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
@@ -693,7 +697,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingVertical: space.md,
     minHeight: touchMin,
   },
@@ -710,7 +714,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     minHeight: touchMin + 4,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingVertical: space.md,
   },
   linkIcon: {
