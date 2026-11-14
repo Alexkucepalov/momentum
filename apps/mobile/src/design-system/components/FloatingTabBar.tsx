@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     paddingHorizontal: 2,
   },
-  selected: { backgroundColor: colors.ink },
+  selected: { backgroundColor: colors.accent },
   label: { fontSize: type.label, fontWeight: "500", textAlign: "center" },
   pressed: { opacity: 0.8 },
 });

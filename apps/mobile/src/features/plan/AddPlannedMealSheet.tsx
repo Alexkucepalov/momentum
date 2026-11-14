@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pickOn: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderColor: colors.ink,
   },
   pickTextOn: { color: colors.onAccent, fontWeight: '600' },

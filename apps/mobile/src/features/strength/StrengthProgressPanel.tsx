@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chipOn: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderColor: colors.ink,
   },
   bars: {

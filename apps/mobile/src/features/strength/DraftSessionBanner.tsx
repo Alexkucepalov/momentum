@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     gap: space.md,
     padding: space.md,
     borderRadius: radius.xl,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
   },
   text: { flex: 1, gap: 2 },
   eyebrow: { opacity: 0.75, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },

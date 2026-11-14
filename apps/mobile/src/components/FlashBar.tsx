@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderRadius: radius.lg,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,

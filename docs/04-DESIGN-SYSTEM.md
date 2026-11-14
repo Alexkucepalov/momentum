@@ -6,22 +6,23 @@ The founder explicitly requested a complete visual refresh on13 November2026, in
 
 ## Visual language
 
-Cool neutral canvas, graphite ink, white surfaces and fine dividers. No sage/green chrome on backgrounds or primary controls. Use open space and typography to group information; a repeated list does not need a card around every item. Reserve a contained surface for a coherent summary, editing state or action. Planned strength uses a cool gray fill; cycling uses a cool blue-gray. These fills do not score health or performance.
+Cool blue-gray canvas, slate ink, white surfaces and fine dividers. Primary chrome uses a readable blue accent (tabs, chips, CTAs, progress) — not mono black and not sage-green backgrounds. Use open space and typography to group information; a repeated list does not need a card around every item. Reserve a contained surface for a coherent summary, editing state or action. Planned strength uses a soft blue fill; cycling uses a soft teal. Meal section bars use distinct hues. These fills do not score health or performance.
 
-Primary actions are charcoal. One primary action per local task. Secondary actions remain quiet. Errors use the danger token; missing data uses a dash and an explanatory label. Unknown data is never converted to a measured zero. Green remains only for semantic success and protein macro accent.
+Primary actions are accent blue. One primary action per local task. Secondary actions remain quiet. Errors use the danger token; missing data uses a dash and an explanatory label. Unknown data is never converted to a measured zero. Green remains for semantic success and the protein macro accent.
 
 ## Tokens
 
 | Role | Token / value |
 | --- | --- |
-| Canvas | `canvas` / `background`: `#F2F3F5` |
+| Canvas | `canvas` / `background`: `#EEF2F7` |
 | Surface | `surface`: `#FFFFFF` |
-| Neutral fill | `surfaceMuted`: `#EBEDF0` |
-| Main text / action | `ink` / `primary`: `#0A0A0A` |
-| Supporting text | `textSecondary`: `#5C6370`; `textMuted`: `#646B78` |
-| Divider | `border`: `#E2E5EA` |
-| Planned strength | `trainingStrength`: `#EBEDF0` |
-| Planned cycling | `trainingCycling`: `#E8EEF4` |
+| Neutral fill | `surfaceMuted`: `#E4EAF2` |
+| Main text | `ink`: `#0F172A` |
+| Accent / primary CTA | `accent` / `primary`: `#1D5BBF` |
+| Supporting text | `textSecondary`: `#475569`; `textMuted`: `#5B6578` |
+| Divider | `border`: `#D5DCE8` |
+| Planned strength | `trainingStrength`: `#D9E4FB` |
+| Planned cycling | `trainingCycling`: `#CFF3EA` |
 | Positive marker | `success`: `#15803D` (`sageInk` aliases `ink`) |
 | Destructive | `danger`: `#B42318` |
 

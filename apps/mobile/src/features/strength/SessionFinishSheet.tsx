@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   rpeOn: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderColor: colors.ink,
   },
   pressed: { opacity: 0.85 },

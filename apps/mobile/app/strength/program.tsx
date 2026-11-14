@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.pill,
   },
-  choiceOn: { backgroundColor: colors.ink },
+  choiceOn: { backgroundColor: colors.accent },
   plan: { gap: space.md },
   head: { flexDirection: "row", gap: space.md, alignItems: "center" },
   copy: { flex: 1, minWidth: 0, gap: space.xs },
