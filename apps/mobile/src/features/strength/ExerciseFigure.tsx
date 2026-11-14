@@ -1,19 +1,10 @@
+import { equipmentLabel } from "../../../../../src/domain/strength/sessionReview";
 import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import type { MuscleGroup } from "../../../../../src/domain/strength/types";
 import { muscleLabelRu } from "../../../../../src/domain/strength";
 import { AppText, colors, space } from "@/src/design-system";
 
-export const equipmentLabel = (value: string | null | undefined) =>
-  ({
-    machine: "Тренажёр",
-    cable: "Блочный тренажёр",
-    dumbbell: "Гантели",
-    barbell: "Штанга",
-    bodyweight: "Собственный вес",
-  })[value ?? ""] ??
-  value ??
-  "Оборудование не указано";
 /** Decorative muscle-group diagram, never a demonstration of exercise technique. */
 export function ExerciseFigure({
   muscles,

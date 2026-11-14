@@ -72,8 +72,11 @@ export default function StrengthSessionScreen() {
     active?.sets.find((s) => !s.completed) ??
     null;
   const isLive = session?.status === "in_progress";
-  const names = Object.fromEntries(
-    repo.listStrengthExercises().map((ex) => [ex.id, ex.name]),
+  const names: Record<string, string> = Object.assign(
+    Object.create(null),
+    Object.fromEntries(
+      repo.listStrengthExercises().map((ex) => [ex.id, ex.name]),
+    ),
   );
   const restDeadline = session?.restUntilAt
     ? Date.parse(session.restUntilAt)
@@ -428,14 +431,14 @@ export default function StrengthSessionScreen() {
               onPress={() => select(index)}
               style={styles.listRow}
               accessibilityRole="button"
-              accessibilityLabel={`Открыть упражнение ${index + 1}: ${group.plan?.name ?? names[group.exerciseId]}`}
+              accessibilityLabel={`Открыть упражнение ${index + 1}: ${group.plan?.name ?? names[group.exerciseId] ?? "Упражнение"}`}
             >
               <AppText variant="caption" tone="secondary">
                 {String(index + 1).padStart(2, "0")}
               </AppText>
               <View style={styles.flex}>
                 <AppText variant="body">
-                  {group.plan?.name ?? names[group.exerciseId]}
+                  {group.plan?.name ?? names[group.exerciseId] ?? "Упражнение"}
                 </AppText>
                 <AppText variant="caption" tone="secondary">
                   {group.completed}/{group.sets.length} подходов

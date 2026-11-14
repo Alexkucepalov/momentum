@@ -325,3 +325,16 @@ test("freezing a plan preserves longer legacy exercise notes and fractional rest
     80.5,
   );
 });
+
+test("custom equipment labels cannot resolve prototype properties instead of text", () => {
+  const { equipmentLabel } = modules["domain/strength/sessionReview"];
+  for (const label of [
+    "__proto__",
+    "constructor",
+    "toString",
+    "Synthetic equipment",
+  ])
+    assert.equal(equipmentLabel(label), label);
+  assert.equal(equipmentLabel("dumbbell"), "Гантели");
+  assert.equal(equipmentLabel(null), "Оборудование не указано");
+});

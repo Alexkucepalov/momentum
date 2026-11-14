@@ -186,3 +186,15 @@ export function validateExercisePlan(
         throw new Error("Некорректное описание плана");
   }
 }
+
+/** Imported custom labels are plain text, including JavaScript property names. */
+const equipmentLabels = new Map<string, string>([
+  ["machine", "Тренажёр"],
+  ["cable", "Блочный тренажёр"],
+  ["dumbbell", "Гантели"],
+  ["barbell", "Штанга"],
+  ["bodyweight", "Собственный вес"],
+]);
+export function equipmentLabel(value: string | null | undefined): string {
+  return equipmentLabels.get(value ?? "") ?? value ?? "Оборудование не указано";
+}
