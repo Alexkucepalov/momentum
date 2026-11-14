@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
   ctaRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
   ctaPrimary: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   },
   ctaPrimaryText: { fontSize: type.caption, fontWeight: '800', color: colors.primaryButtonText },
   ctaSecondary: {
-    minHeight: 40,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,

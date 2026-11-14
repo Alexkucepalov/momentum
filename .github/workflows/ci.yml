@@ -25,3 +25,4 @@ jobs:
         run: |
           npm install --no-audit --no-fund --prefix apps/mobile
           npx tsc --noEmit -p apps/mobile
+          node scripts/check-mobile-dependencies.mjs

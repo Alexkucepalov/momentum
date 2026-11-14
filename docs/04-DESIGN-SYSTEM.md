@@ -31,11 +31,11 @@ All color values belong in the token source; do not add screen-local hex values.
 
 Manrope400/500/600 is bundled locally, including Cyrillic and its SIL OFL license. App startup loads these local assets with expo-font before dismissing the splash. No remote font service or new runtime dependency is needed.
 
-`AppText` and `ThemedText` select the registered font instance. Existing bold text maps to the600 instance instead of synthesizing very heavy headings. Explicit monospace families remain available for JSON previews.
+`AppText`, `ThemedText`, `Field` and `ThemedTextInput` select the registered font instance. Legacy forms use the same input wrapper, preserving native refs and explicitly requested monospace fonts. Existing bold text maps to the600 instance instead of synthesizing very heavy headings. Explicit monospace families remain available for JSON previews.
 
 Scale: metric46, hero36, title28, subtitle18, body14, caption12, label11. Headings and large metrics use medium weight. Body copy uses regular weight; semibold is for actions and row emphasis. Text scaling stays enabled.
 
-Screen padding20; base spacing4/8/12/16/20/24/32; section break28. Card radius22, controls14–16, floating dock24. Effective main touch targets remain48dp. The dock occupies layout space, so it cannot cover the last scroll item or the existing sticky food action.
+Screen padding20; base spacing4/8/12/16/20/24/32; section break28. Card radius22, controls14–16, floating dock24. Interactive chips, presets, row actions and main touch targets use a minimum48dp; decorative bars and labels may be smaller. The dock occupies layout space, so it cannot cover the last scroll item or the existing sticky food action.
 
 ## Shared components
 
@@ -60,8 +60,8 @@ Planner, recipes, Garmin and strength stacks share the same font, headers, contr
 
 ## Data and validation
 
-Dragging changes planned cards only. `swapPlannedActivities` validates both cards before mutation, exchanges date/order and emits one persistence notification. Times remain attached to their activities; actual workout/session history is untouched. Move and swap expose Undo. Snapshot version19 and the SQLite schema do not change.
+Dragging changes planned cards only. `swapPlannedActivities` validates both cards before mutation, exchanges date/order and emits one persistence notification. Times remain attached to their activities; actual workout/session history is untouched. Move and swap expose Undo. Snapshot v20 adds an independent training-cycle pattern and explicit plan-to-Garmin-ride links (ADR-012). The SQLite schema does not change. Week edits never rewrite the pattern, and imported ride dates/metrics stay immutable.
 
 The browser evidence uses the repository's explicitly synthetic fixture, shifted to the QA week. Expo-web screenshots are not an Android device Pass. Device force-stop, TalkBack, large text, keyboard and drag behavior still need physical Android verification before updating device baselines.
 
-Implementation notes and evidence: [fresh-utility/README.md](quality/fresh-utility/README.md).
+Implementation notes and evidence: [fresh-utility/README.md](quality/fresh-utility/README.md), [followup-228/README.md](quality/followup-228/README.md).

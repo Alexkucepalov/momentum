@@ -21,6 +21,7 @@ import type {
   WorkoutSet,
   WorkoutTemplate,
   WorkoutTemplateExercise,
+  TrainingCycle,
 } from '../domain/strength/types';
 import {
   aggregateShopping,
@@ -375,6 +376,12 @@ export type FoodRepository = {
     opts?: { replace?: boolean },
   ): { created: number };
   repeatTrainingWeek(sourceMonday: string, targetMonday: string): PlannedActivity[];
+  getTrainingCycle(): TrainingCycle | null;
+  saveTrainingCycle(input: Omit<TrainingCycle, 'updatedAt'>): TrainingCycle;
+  restoreTrainingCycle(previous: TrainingCycle | null): void;
+  applyTrainingCycleWeek(monday: string, opts?: { replace?: boolean }): { created: number };
+  fillTrainingCycleWeeks(monday: string, weeks: number): { createdIds: string[]; skippedWeeks: number };
+  linkPlannedCycling(activityId: string, workoutId: string | null): PlannedActivity;
   listStrengthExercises(): StrengthExercise[];
   getStrengthExercise(exerciseId: string): StrengthExercise | null;
   createStrengthExercise(input: {
@@ -1216,8 +1223,21 @@ function normalizeWorkoutTemplateExercise(raw: WorkoutTemplateExercise): Workout
   };
 }
 
+function cloneTrainingCycle(raw: TrainingCycle): TrainingCycle {
+  if (!raw || typeof raw.name !== 'string' || !raw.name.trim() || !Array.isArray(raw.slots) || raw.slots.length > 100) throw new Error('Некорректный шаблон недели');
+  const slots = raw.slots.map((slot, index) => {
+    if (!slot || !Number.isInteger(slot.weekdayIndex) || slot.weekdayIndex < 0 || slot.weekdayIndex > 6 || !['strength', 'cardio', 'rest'].includes(slot.kind) || typeof slot.title !== 'string' || !slot.title.trim()) throw new Error('Некорректный день в шаблоне');
+    assertLocalTime(slot.timeLocal ?? null);
+    if (slot.cardioMinutes != null) assertNonNegativeFinite(slot.cardioMinutes, 'cardioMinutes');
+    if (slot.kind === 'strength' && !slot.templateId) throw new Error('Выбери шаблон упражнений для силовой');
+    return { weekdayIndex: slot.weekdayIndex, kind: slot.kind, title: slot.title.trim(), subtitle: slot.subtitle?.trim() || null, templateId: slot.kind === 'strength' ? slot.templateId : null, timeLocal: slot.timeLocal ?? null, cardioMinutes: slot.kind === 'cardio' ? slot.cardioMinutes ?? null : null, sortOrder: Number.isInteger(slot.sortOrder) && slot.sortOrder >= 0 ? slot.sortOrder : index };
+  });
+  return { name: raw.name.trim(), slots, updatedAt: raw.updatedAt };
+}
+
 function normalizePlannedActivity(raw: PlannedActivity): PlannedActivity {
   return {
+    linkedWorkoutId: raw.linkedWorkoutId ?? null,
     id: raw.id,
     dateLocal: raw.dateLocal,
     timeLocal: raw.timeLocal ?? null,
@@ -1273,6 +1293,7 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   const ts = nowIso();
   const prefs = (raw.storePreferences ?? []).map(normalizeStorePreference);
   return {
+    trainingCycle: raw.trainingCycle ? cloneTrainingCycle(raw.trainingCycle) : null,
     version: STORE_SNAPSHOT_VERSION,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
@@ -1339,6 +1360,7 @@ export function createMemoryFoodRepository(seed?: {
   snapshot?: StoreSnapshotAny;
 }): FoodRepository {
   const snap = normalizeSnapshot(seed?.snapshot);
+  let trainingCycle: TrainingCycle | null = snap?.trainingCycle ?? null;
   const profile: Profile = snap?.profile
     ? { ...snap.profile }
     : {
@@ -1605,6 +1627,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     toSnapshot(): StoreSnapshot {
       return {
+        trainingCycle: trainingCycle ? cloneTrainingCycle(trainingCycle) : null,
         version: STORE_SNAPSHOT_VERSION,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
@@ -2718,6 +2741,50 @@ export function createMemoryFoodRepository(seed?: {
         dateLocal: targetDates[sourceDates.indexOf(row.dateLocal)]!,
       }));
     },
+    getTrainingCycle() { return trainingCycle ? cloneTrainingCycle(trainingCycle) : null; },
+    restoreTrainingCycle(previous) { trainingCycle = previous ? cloneTrainingCycle(previous) : null; notify(); },
+    saveTrainingCycle(input) {
+      const next = cloneTrainingCycle({ ...input, updatedAt: nowIso() });
+      for (const slot of next.slots) if (slot.templateId && !api.getWorkoutTemplate(slot.templateId)) throw new Error('В шаблоне есть удалённая силовая тренировка');
+      trainingCycle = next; notify(); return cloneTrainingCycle(next);
+    },
+    applyTrainingCycleWeek(monday, opts) {
+      assertLocalDate(monday);
+      if (new Date(`${monday}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Неделя начинается с понедельника');
+      if (!trainingCycle) throw new Error('Сначала сохрани шаблон недели');
+      const cycle = cloneTrainingCycle(trainingCycle);
+      if (!cycle.slots.length) throw new Error('Добавь тренировки или дни отдыха в шаблон');
+      for (const slot of cycle.slots) if (slot.templateId && !api.getWorkoutTemplate(slot.templateId)) throw new Error('В шаблоне есть удалённая силовая тренировка');
+      if (opts?.replace) for (const row of api.listPlannedActivitiesInWeek(monday)) api.softDeletePlannedActivity(row.id);
+      const dates = datesInWeek(monday);
+      for (const slot of cycle.slots) api.addPlannedActivity({ ...slot, dateLocal: dates[slot.weekdayIndex]! });
+      return { created: cycle.slots.length };
+    },
+    linkPlannedCycling(activityId, workoutId) {
+      const row = plannedActivities.get(activityId);
+      if (!row || row.deletedAt || row.kind !== 'cardio') throw new Error('Велоплан не найден');
+      if (workoutId) {
+        const workout = api.getWorkoutById(workoutId);
+        if (!workout || workout.source !== 'garmin' || workout.type !== 'cycling') throw new Error('Выбери выполненную велотренировку Garmin');
+        if ([...plannedActivities.values()].some(a => !a.deletedAt && a.id !== activityId && a.linkedWorkoutId === workoutId)) throw new Error('Эта велотренировка уже связана с другим планом');
+      }
+      row.linkedWorkoutId = workoutId; notify(); return { ...row };
+    },
+    fillTrainingCycleWeeks(monday, weeks) {
+      assertLocalDate(monday);
+      if (!Number.isInteger(weeks) || weeks < 1 || weeks > 12 || new Date(`${monday}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Выбери от 1 до 12 недель с понедельника');
+      if (!trainingCycle) throw new Error('Сначала сохрани шаблон недели');
+      if (!trainingCycle.slots.length) throw new Error('Добавь тренировки или дни отдыха в шаблон');
+      for (const slot of trainingCycle.slots) if (slot.templateId && !api.getWorkoutTemplate(slot.templateId)) throw new Error('В шаблоне есть удалённая силовая тренировка');
+      const starts = Array.from({ length: weeks }, (_, index) => { const d = new Date(`${monday}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + index * 7); const start = d.toISOString().slice(0, 10); assertLocalDate(start); return start; });
+      const createdIds: string[] = []; let skippedWeeks = 0;
+      for (const start of starts) {
+        if (api.listPlannedActivitiesInWeek(start).length) { skippedWeeks++; continue; }
+        api.applyTrainingCycleWeek(start);
+        createdIds.push(...api.listPlannedActivitiesInWeek(start).map(a => a.id));
+      }
+      return { createdIds, skippedWeeks };
+    },
     listStrengthExercises() {
       return [...strengthExercises.values()]
         .filter((e) => !e.deletedAt)
@@ -2943,6 +3010,7 @@ export function createMemoryFoodRepository(seed?: {
       const sortOrder =
         input.sortOrder ?? (sameDay.length === 0 ? 0 : Math.max(...sameDay.map((a) => a.sortOrder)) + 1);
       const row: PlannedActivity = {
+        linkedWorkoutId: null,
         id: newId(),
         dateLocal: input.dateLocal,
         timeLocal: input.timeLocal ?? null,
@@ -3054,6 +3122,7 @@ export function createMemoryFoodRepository(seed?: {
       const sortOrder = sameDay.length === 0 ? 0 : Math.max(...sameDay.map((x) => x.sortOrder)) + 1;
       const copy: PlannedActivity = {
         ...a,
+        linkedWorkoutId: null,
         id: newId(),
         dateLocal: args.dateLocal,
         timeLocal: args.timeLocal !== undefined ? args.timeLocal : a.timeLocal,
@@ -4778,6 +4847,7 @@ export function createMemoryFoodRepository(seed?: {
 
       Object.assign(profile, next.profile);
       garminSync = normalizeGarminSync(next.garminSync);
+      trainingCycle = next.trainingCycle ? cloneTrainingCycle(next.trainingCycle) : null;
       for (const p of next.products) products.set(p.id, { ...p });
       mergeCommonFoodCatalog(products);
       for (const r of next.recipes) recipes.set(r.id, { ...r });
@@ -4862,6 +4932,7 @@ export function createMemoryFoodRepository(seed?: {
       workoutSessions.clear();
       workoutSets.clear();
       garminSync = emptyGarminSync();
+      trainingCycle = null;
       for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;

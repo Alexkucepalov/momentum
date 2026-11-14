@@ -8,6 +8,11 @@ import { parseExportJson } from '../../../../src/domain/importExport';
 
 const WEB_SNAPSHOT_KEY = 'momentum.web.store_snapshot.v1';
 
+/** Raw recovery reads never normalize or overwrite the original payload. */
+export function readRecoveryPayload(): string | null {
+  return globalThis.localStorage?.getItem(WEB_SNAPSHOT_KEY) ?? null;
+}
+
 function readWebSnapshot(): StoreSnapshotAny | undefined {
   if (typeof globalThis.localStorage === 'undefined') return undefined;
   const raw = globalThis.localStorage.getItem(WEB_SNAPSHOT_KEY);

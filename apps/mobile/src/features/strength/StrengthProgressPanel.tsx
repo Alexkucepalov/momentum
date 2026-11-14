@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     maxWidth: '48%',
-    minHeight: touchMin - 12,
+    minHeight: touchMin,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
     borderRadius: radius.pill,

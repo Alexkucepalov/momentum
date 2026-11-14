@@ -12,7 +12,7 @@ type ChipProps = {
   testID?: string;
 };
 
-/** Filter / toggle chip — height ≥ 40, touch target padded to 48 where needed. */
+/** Filter / toggle chip with a full 48dp touch target. */
 export function Chip({
   label,
   selected = false,
@@ -45,7 +45,7 @@ export function Chip({
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: 40,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     borderRadius: radius.sm,
@@ -54,8 +54,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    // Expand hit slop visually toward touchMin without forcing huge chips.
-    marginVertical: Math.max(0, (touchMin - 40) / 2),
   },
   chipOn: {
     backgroundColor: colors.ink,

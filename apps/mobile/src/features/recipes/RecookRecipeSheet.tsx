@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { nutritionForRecipePortion } from '../../../../../src/domain/recipeNutrition';
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   ingName: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
   ingInput: {
     width: 72,
-    minHeight: touchMin - 4,
+    minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,

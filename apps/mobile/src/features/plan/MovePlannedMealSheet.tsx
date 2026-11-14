@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   slotRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   slotChip: {
-    minHeight: touchMin - 4,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     borderRadius: radius.pill,

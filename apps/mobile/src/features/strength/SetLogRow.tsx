@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
   saved: { minHeight: touchMin, flexDirection: 'row', alignItems: 'center', gap: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingVertical: space.sm },
   savedValue: { flex: 1, textAlign: 'right', fontWeight: '500' },
   current: { borderRadius: radius.card, backgroundColor: colors.trainingStrength, padding: space.lg, gap: space.md, marginVertical: space.sm },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm }, repeat: { minHeight: 44, justifyContent: 'center' },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm }, repeat: { minHeight: touchMin, justifyContent: 'center' },
   fields: { flexDirection: 'row', gap: space.md }, field: { flex: 1, minWidth: 0 }, input: { fontSize: 32, height: 64, textAlign: 'center', borderWidth: 0, backgroundColor: colors.surface, letterSpacing: -1 },
 });

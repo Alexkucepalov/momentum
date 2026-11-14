@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   segBtn: {
     flex: 1,
-    minHeight: 36,
+    minHeight: touchMin,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    minHeight: 40,
+    minHeight: touchMin,
     justifyContent: 'center',
   },
   pressed: { opacity: 0.85 },

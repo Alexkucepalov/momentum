@@ -5,6 +5,7 @@ import type {
   WorkoutSet,
   WorkoutTemplate,
   WorkoutTemplateExercise,
+  TrainingCycle,
 } from '../domain/strength/types';
 
 export type {
@@ -539,9 +540,10 @@ export type StorePreference = {
 };
 
 /** Current on-disk / export snapshot schema. */
-export const STORE_SNAPSHOT_VERSION = 19 as const;
+export const STORE_SNAPSHOT_VERSION = 20 as const;
 
 export type StoreSnapshot = {
+  trainingCycle: TrainingCycle | null;
   version: typeof STORE_SNAPSHOT_VERSION;
   profile: Profile;
   products: FoodProduct[];
@@ -661,6 +663,7 @@ type LegacyWorkout = Omit<
 
 /** Accept older snapshots from prior installs (normalized up to STORE_SNAPSHOT_VERSION). */
 export type StoreSnapshotAny = {
+  trainingCycle?: TrainingCycle | null;
   version:
     | 1
     | 2
@@ -680,7 +683,8 @@ export type StoreSnapshotAny = {
     | 16
     | 17
     | 18
-    | 19;
+    | 19
+    | 20;
   profile: Omit<
     Profile,
     | 'waterTargetMl'

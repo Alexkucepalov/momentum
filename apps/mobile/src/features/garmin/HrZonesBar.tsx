@@ -1,9 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import type { WorkoutHrZone } from '../../../../../src/storage/types';
-import { AppText, colors, space } from '@/src/design-system';
-
-const ZONE_COLORS = ['#9CA3AF', '#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA'];
+import { AppText, colors, space, HEART_RATE_ZONE_COLORS } from '@/src/design-system';
 
 export function HrZonesBar({ zones }: { zones: WorkoutHrZone[] | null }) {
   if (!zones || zones.length === 0) {
@@ -24,12 +22,12 @@ export function HrZonesBar({ zones }: { zones: WorkoutHrZone[] | null }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.bar}>
-        {zones.map((z) => (
+        {zones.filter(z => z.secs > 0).map((z) => (
           <View
             key={z.zone}
             style={{
-              flex: Math.max(z.secs / total, 0.02),
-              backgroundColor: ZONE_COLORS[(z.zone - 1) % ZONE_COLORS.length],
+              flex: z.secs / total,
+              backgroundColor: HEART_RATE_ZONE_COLORS[Math.max(0, Math.min(z.zone - 1, HEART_RATE_ZONE_COLORS.length - 1))],
               height: 10,
             }}
           />

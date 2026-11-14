@@ -55,10 +55,15 @@ export type PlannedActivity = {
   subtitle: string | null;
   templateId: string | null;
   cardioMinutes: number | null;
+  /** Explicit relation to an imported completed ride; never changes the source record. */
+  linkedWorkoutId?: string | null;
   sortOrder: number;
   createdAt: string;
   deletedAt: string | null;
 };
+
+export type TrainingCycleSlot = Pick<PlannedActivity, 'kind' | 'title' | 'subtitle' | 'templateId' | 'timeLocal' | 'cardioMinutes' | 'sortOrder'> & { weekdayIndex: number };
+export type TrainingCycle = { name: string; slots: TrainingCycleSlot[]; updatedAt: string };
 
 export type WorkoutSessionStatus = 'in_progress' | 'completed' | 'abandoned';
 

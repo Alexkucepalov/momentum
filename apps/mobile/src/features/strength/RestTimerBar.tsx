@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   skip: {
-    minHeight: touchMin - 8,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     justifyContent: 'center',
   },

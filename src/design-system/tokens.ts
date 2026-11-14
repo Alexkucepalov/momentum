@@ -64,6 +64,9 @@ export const space = {
   section: 28,
 } as const;
 
+/** Labeled intensity buckets for imported HR data; shared by every Garmin view. */
+export const HEART_RATE_ZONE_COLORS = ['#AEB8AD', '#7F999C', '#6D8B68', '#B78E63', '#AD6657', '#796C84'] as const;
+
 export const radius = {
   sm: 8,
   md: 14,

@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: touchMin - 8,
+    minHeight: touchMin,
     gap: space.sm,
   },
   headText: { flex: 1, fontWeight: '700' },

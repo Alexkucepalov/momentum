@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { portion, type Nutrition } from '../../../../../src/domain/nutrition';
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fieldInput: {
-    minHeight: 44,
+    minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,

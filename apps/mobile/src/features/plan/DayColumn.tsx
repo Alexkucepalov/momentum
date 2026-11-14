@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   addBtn: {
-    minWidth: touchMin - 12,
-    minHeight: touchMin - 12,
+    minWidth: touchMin,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,

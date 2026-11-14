@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { kcalFromCompleteMacros } from '../../../../../../src/domain/nutritionConsistency';
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
   },
   modeChip: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,

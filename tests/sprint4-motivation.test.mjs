@@ -16,7 +16,7 @@ test('snapshot migrates to v9 with quantity habit defaults', () => {
   assert.equal(habit.targetValue, null);
   assert.equal(habit.autoSource, null);
   const snap = repo.toSnapshot();
-  assert.equal(snap.version, 19);
+  assert.equal(snap.version, 20);
   assert.ok(Array.isArray(snap.challenges));
   const restored = createMemoryFoodRepository({ snapshot: snap });
   assert.equal(restored.listFlexibleHabits()[0].kind, 'checkbox');
