@@ -165,6 +165,21 @@ export default function WeekPlanScreen() {
     });
   };
 
+  const onLog = (m: PlannedMeal) => {
+    if (m.status !== 'planned') return;
+    try {
+      const entry = repo.logPlannedMealToDiary(m.id);
+      refresh('all');
+      setUndo({
+        message: `В дневник: ${m.displayName}`,
+        scope: 'all',
+        action: () => repo.undoPlannedMealLog(m.id, entry.id),
+      });
+    } catch (e) {
+      showFlash(e instanceof Error ? e.message : 'Не удалось записать в дневник');
+    }
+  };
+
   const rangeLabel = `${HABIT_WEEKDAY_LABELS_RU[0]} ${Number(weekDates[0]!.slice(8, 10))} — ${HABIT_WEEKDAY_LABELS_RU[6]} ${Number(weekDates[6]!.slice(8, 10))}`;
 
   return (
@@ -183,13 +198,13 @@ export default function WeekPlanScreen() {
           kcalForMeal={kcalForMeal}
           onAdd={(dateLocalDay, slot) => setAddTarget({ dateLocal: dateLocalDay, slot })}
           onPressMeal={setEditMeal}
+          onLogMeal={onLog}
           onMoveMeal={setMoveMeal}
           onDeleteMeal={onDelete}
         />
 
         <AppText variant="caption" tone="muted" style={styles.hint}>
-          Выбери день сверху. «Перенести» на карточке — другой день или слот ({MEAL_SLOTS.length}{' '}
-          слота).
+          «В дневник» — съел по плану. «Перенести» — другой день или слот. План ≠ дневник.
         </AppText>
 
         <View style={styles.footer}>

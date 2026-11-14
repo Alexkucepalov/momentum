@@ -32,6 +32,7 @@ import {
 import { useAddGuard } from '@/src/hooks/useAddGuard';
 import { PlanNotDiaryNote } from '@/src/features/plan/PlanNotDiaryNote';
 import { useData, useAnyRevision } from '@/src/state/DataContext';
+import { AppButton } from '@/src/design-system';
 import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
 
 const FILTERS: { id: EatNowFilterId; label: string }[] = [
@@ -97,7 +98,7 @@ function RemainingStrip({
 
 export default function EatNowScreen() {
   const router = useRouter();
-  const { repo, dateLocal, meal, setMeal, refresh, showFlash } = useData();
+  const { repo, dateLocal, meal, setMeal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   void revision;
   const allowAdd = useAddGuard();
@@ -278,11 +279,21 @@ export default function EatNowScreen() {
         </View>
 
         {noTargets || !hasAnyKnownRemaining(remaining) ? (
-          <Text style={styles.softHint}>
-            {noTargets
-              ? 'Цели КБЖУ не заданы — подбор без остатка. Можно выбрать блюдо ниже.'
-              : 'Остаток дня пока неполный — варианты ниже всё равно можно открыть.'}
-          </Text>
+          <View style={styles.softHintBlock}>
+            <Text style={styles.softHint}>
+              {noTargets
+                ? 'Цели КБЖУ не заданы — подбор без остатка. Можно выбрать блюдо ниже.'
+                : 'Остаток дня пока неполный — варианты ниже всё равно можно открыть.'}
+            </Text>
+            {noTargets ? (
+              <AppButton
+                label="Задать ориентир"
+                variant="secondary"
+                onPress={() => router.push('/profile?section=goals')}
+                testID="eat-now-set-goals"
+              />
+            ) : null}
+          </View>
         ) : null}
 
         {candidates.length === 0 ? (
@@ -312,7 +323,7 @@ export default function EatNowScreen() {
                     recipeId =
                       repo.listCookedBatches().find((b) => b.id === c.id)?.recipeId ?? null;
                   }
-                  repo.addPlannedMeal({
+                  const created = repo.addPlannedMeal({
                     dateLocal,
                     meal,
                     displayName: c.title,
@@ -321,7 +332,11 @@ export default function EatNowScreen() {
                     productId,
                   });
                   refresh();
-                  showFlash(`В меню: ${c.title}`);
+                  setUndo({
+                    message: `В меню: ${c.title}`,
+                    scope: 'plan',
+                    action: () => repo.softDeletePlannedMeal(created.id),
+                  });
                 }}
               />
             ))}
@@ -342,13 +357,19 @@ export default function EatNowScreen() {
             const t = portionTarget.target;
             if (t.kind === 'product') {
               repo.updateProductNutrition(t.product.id, result.per100g);
-              repo.addEntryFromProduct({
+              const entry = repo.addEntryFromProduct({
                 productId: t.product.id,
                 dateLocal,
                 meal,
                 grams: result.grams,
               });
-              showFlash(`В дневник: ${t.product.name}`);
+              setPortionTarget(null);
+              refresh();
+              setUndo({
+                message: `В дневник: ${t.product.name}`,
+                scope: 'all',
+                action: () => repo.softDeleteEntry(entry.id),
+              });
             } else {
               const snap = portion(
                 {
@@ -359,7 +380,7 @@ export default function EatNowScreen() {
                 },
                 result.grams,
               );
-              repo.addEntryFromRecipe({
+              const entry = repo.addEntryFromRecipe({
                 recipeId: t.recipe.id,
                 dateLocal,
                 meal,
@@ -371,10 +392,14 @@ export default function EatNowScreen() {
                   carbG: snap.carbs,
                 },
               });
-              showFlash(`В дневник: ${t.recipe.name}`);
+              setPortionTarget(null);
+              refresh();
+              setUndo({
+                message: `В дневник: ${t.recipe.name}`,
+                scope: 'all',
+                action: () => repo.softDeleteEntry(entry.id),
+              });
             }
-            setPortionTarget(null);
-            refresh();
           }}
         />
       ) : null}
@@ -459,11 +484,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: space.sm,
   },
+  softHintBlock: {
+    gap: space.sm,
+    marginTop: space.sm,
+  },
   softHint: {
     fontSize: type.caption,
     color: colors.textSecondary,
     lineHeight: 18,
-    marginTop: space.sm,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {

@@ -21,6 +21,7 @@ import type {
 } from "../../../../src/storage/types";
 import { localDateKey } from "../../../../src/storage/validation";
 import { CopyYesterdayButton } from "@/src/components/CopyYesterdayButton";
+import { EmptyState } from "@/src/components/EmptyState";
 import { DiaryDayHeader } from "@/src/features/diary/DiaryDayHeader";
 import { DaySwipeArea } from "@/src/components/DaySwipeArea";
 import { FormScrollView } from "@/src/components/FormScrollView";
@@ -223,10 +224,18 @@ export default function FoodScreen() {
               </AppText>
             </View>
             {!entries.length ? (
-              <AppText variant="body" tone="secondary" testID="diary-empty">
-                Начни с любого приёма. Можно найти продукт, отсканировать
-                упаковку или записать калории вручную.
-              </AppText>
+              <View testID="diary-empty">
+                <EmptyState
+                  compact
+                  icon="restaurant-outline"
+                  title="Дневник пуст"
+                  body="Начни с любого приёма: поиск, сканер или калории вручную."
+                  actionLabel="Добавить еду"
+                  onAction={() => add()}
+                  secondaryActionLabel="Сканер"
+                  onSecondaryAction={() => setBarcodeOpen(true)}
+                />
+              </View>
             ) : null}
             {MEALS.map((slot) => (
               <MealSection
@@ -301,6 +310,7 @@ export default function FoodScreen() {
               onAddRecipe={openRecipe}
               onOpenRecipe={(r) => router.push(`/recipes/${r.id}`)}
               onBrowseRecipes={() => router.push("/recipes")}
+              onCreateManual={() => add(meal, "manual")}
               onToggleFavorite={(p) => {
                 const previous = p.isFavorite;
                 repo.setFavorite(p.id, !previous);

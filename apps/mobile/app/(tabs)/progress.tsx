@@ -2,11 +2,12 @@ import type { WeightEntry } from '../../../../src/storage/types';
 import { confirmAction } from '@/src/utils/confirmAction';
 import { WeightValueSheet } from '@/src/features/progress/WeightValueSheet';
 import { completedTrainingFacts } from '../../../../src/domain/completedTraining';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useLocalSearchParams } from 'expo-router';
 
 import { bmiBand, computeBmi, formatBmi } from '../../../../src/domain/bmi';
 import { datesInWeekFromStart, weekStartMonday } from '../../../../src/domain/habitWeek';
@@ -64,7 +65,25 @@ function fmtSleepHours(sec: number | null): string {
 export default function ProgressScreen() {
   const { repo, dateLocal, setDateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
-  const [tab, setTab] = useState<ProgressTab>('overview');
+  const params = useLocalSearchParams<{ segment?: string }>();
+  const initialTab: ProgressTab =
+    params.segment === 'habits' ||
+    params.segment === 'body' ||
+    params.segment === 'reports' ||
+    params.segment === 'overview'
+      ? params.segment
+      : 'overview';
+  const [tab, setTab] = useState<ProgressTab>(initialTab);
+  useEffect(() => {
+    if (
+      params.segment === 'habits' ||
+      params.segment === 'body' ||
+      params.segment === 'reports' ||
+      params.segment === 'overview'
+    ) {
+      setTab(params.segment);
+    }
+  }, [params.segment]);
   const [lastExport, setLastExport] = useState<string | null>(null);
   const [editingWeight, setEditingWeight] = useState<WeightEntry | null>(null);
   const [kgRaw, setKgRaw] = useState('');

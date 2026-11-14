@@ -21,6 +21,7 @@ export function DayColumn({
   kcalForMeal,
   onAdd,
   onPressMeal,
+  onLogMeal,
   onMoveMeal,
   onDeleteMeal,
 }: {
@@ -33,6 +34,7 @@ export function DayColumn({
   kcalForMeal: (m: PlannedMeal) => number | null;
   onAdd: (slot: MealSlot) => void;
   onPressMeal: (m: PlannedMeal) => void;
+  onLogMeal?: (m: PlannedMeal) => void;
   onMoveMeal: (m: PlannedMeal) => void;
   onDeleteMeal: (m: PlannedMeal) => void;
 }) {
@@ -85,6 +87,7 @@ export function DayColumn({
                 meal={m}
                 kcal={kcalForMeal(m)}
                 onPress={() => onPressMeal(m)}
+                onLog={onLogMeal ? () => onLogMeal(m) : undefined}
                 onMove={() => onMoveMeal(m)}
                 onDelete={() => onDeleteMeal(m)}
               />

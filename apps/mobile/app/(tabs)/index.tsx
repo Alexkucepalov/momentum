@@ -23,6 +23,7 @@ import { WaterEntrySheet } from "@/src/features/diary/WaterEntrySheet";
 import { HabitDayValueSheet } from "@/src/features/habits/HabitDayValueSheet";
 import { useQuickFood } from "@/src/features/diary/useQuickFood";
 import type { AddFoodTab } from "@/src/features/diary/addFood/types";
+import { TodayPlanStrip } from "@/src/features/plan/TodayPlanStrip";
 import { strengthSessionHref } from "@/src/features/strength/StrengthEntryCard";
 import { TodayTrainingCard } from "@/src/features/strength/TodayTrainingCard";
 import {
@@ -38,6 +39,7 @@ import {
   space,
   touchMin,
 } from "@/src/design-system";
+import { EmptyState } from "@/src/components/EmptyState";
 
 /** Daily overview; detailed entry management lives in Food. */
 export default function TodayScreen() {
@@ -175,6 +177,7 @@ export default function TodayScreen() {
             </View>
             <Ionicons name="arrow-forward" size={20} color={colors.ink} />
           </Pressable>
+          <TodayPlanStrip />
           {recent.length || saved.length ? (
             <View style={styles.repeat}>
               <FoodQuickStrips
@@ -190,9 +193,18 @@ export default function TodayScreen() {
                 onOpenRecentInSheet={() => add()}
                 onOpenSavedInSheet={() => add("meals")}
               />
-              <CopyYesterdayButton testID="today-copy-yesterday" />
             </View>
+          ) : totals.entryCount === 0 ? (
+            <EmptyState
+              compact
+              icon="restaurant-outline"
+              title="Пока пусто"
+              body="Добавь первую запись или повтори вчерашний день."
+              actionLabel="Добавить еду"
+              onAction={() => add()}
+            />
           ) : null}
+          <CopyYesterdayButton testID="today-copy-yesterday" />
           <TodayTrainingCard
             inProgress={inProgress}
             todayPlan={plan}
@@ -244,7 +256,7 @@ export default function TodayScreen() {
           />
           <TodayChecklist
             flexibleHabits={flexibleRows}
-            onManageHabits={() => router.push("/progress")}
+            onManageHabits={() => router.push("/progress?segment=habits" as Href)}
             onToggleFlexible={(id) => {
               const selected = repo
                 .listFlexibleHabits()

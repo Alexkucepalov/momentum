@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter, type Href } from "expo-router";
 import type { PlannedActivity } from "../../../../../src/domain/strength/types";
 import { SwipeToDismissSheet } from "@/src/components/SwipeToDismissSheet";
 import {
@@ -21,6 +22,7 @@ export function LinkCyclingSheet({
   onClose: () => void;
   onLinked: (previousId: string | null) => void;
 }) {
+  const router = useRouter();
   const { repo } = useData();
   const revision = useActivityRevision();
   const [query, setQuery] = useState("");
@@ -101,11 +103,24 @@ export function LinkCyclingSheet({
           keyExtractor={(w) => w.id}
           style={styles.list}
           ListEmptyComponent={
-            <AppText variant="body" tone="secondary">
-              {query.trim()
-                ? "По этой дате поездки не найдены."
-                : "Пока нет выполненных велотренировок Garmin. Сначала синхронизируй записи."}
-            </AppText>
+            <View style={styles.empty}>
+              <AppText variant="body" tone="secondary">
+                {query.trim()
+                  ? "По этой дате поездки не найдены."
+                  : "Пока нет выполненных велотренировок Garmin."}
+              </AppText>
+              {!query.trim() ? (
+                <AppButton
+                  label="Открыть Garmin"
+                  variant="secondary"
+                  onPress={() => {
+                    onClose();
+                    router.push("/garmin" as Href);
+                  }}
+                  testID="link-ride-open-garmin"
+                />
+              ) : null}
+            </View>
           }
           renderItem={({ item: w }) => (
             <Pressable
@@ -160,6 +175,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  empty: { gap: space.md, paddingVertical: space.md },
   list: { flexGrow: 0 },
   ride: {
     flexDirection: "row",

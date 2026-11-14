@@ -43,6 +43,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 03g simplify | Day focus: plan → start; drop dual nav | Done (#223) |
 | 03h Codex audit stack | Fresh UI + gym/diary/durability land | Done (#239) |
 | 03i neutral polish | Cool gray canvas; no sage chrome | Done (#240) |
+| 03j product gaps | Plan→diary, empty CTAs, deep-links | In progress (#242) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)
