@@ -1,55 +1,58 @@
 /**
  * nf-fit — Fresh Utility. One runtime contract for every screen and sheet.
  * Runtime RN re-exports via apps/mobile/src/design-system/tokens.ts.
+ * Neutral cool gray + graphite chrome (no sage/green canvas).
  * Do not introduce screen-local hex colors; extend this file instead.
  */
 
 export const colors = {
-  canvas: '#F7F7F2',
-  background: '#F7F7F2',
+  canvas: '#F2F3F5',
+  background: '#F2F3F5',
   surface: '#FFFFFF',
-  surfaceMuted: '#EDF0E9',
-  ink: '#20251F',
-  text: '#20251F',
-  textSecondary: '#626B5F',
-  /** Captions / hints — WCAG AA on canvas, white and the strength surface. */
-  textMuted: '#626B5F',
+  surfaceMuted: '#EBEDF0',
+  ink: '#0A0A0A',
+  text: '#0A0A0A',
+  textSecondary: '#5C6370',
+  /** Captions / hints — ≥4.5:1 on canvas and white (WCAG AA). */
+  textMuted: '#646B78',
   /** Selected / active chrome — mono ink (no coloured brand chrome). */
-  accent: '#20251F',
-  accentSoft: '#EDF0E9',
+  accent: '#0A0A0A',
+  accentSoft: '#EBEDF0',
   onAccent: '#FFFFFF',
   /** @deprecated Prefer `primary` — kept for gradual migration. */
-  primaryButton: '#20251F',
+  primaryButton: '#0A0A0A',
   /** @deprecated Prefer `onPrimary`. */
   primaryButtonText: '#FFFFFF',
-  primary: '#20251F',
+  primary: '#0A0A0A',
   onPrimary: '#FFFFFF',
-  border: '#E1E5DC',
-  borderStrong: '#B9C2B3',
+  border: '#E2E5EA',
+  borderStrong: '#C9CED6',
   danger: '#B42318',
-  preview: '#F7F7F2',
-  protein: '#52714F',
-  fat: '#8C6548',
-  carbs: '#4C7081',
-  trainingStrength: '#E8EEE1',
-  trainingCycling: '#E8F0F4',
-  warmSurface: '#F8EDE3',
-  sageInk: '#4B6745',
+  preview: '#F2F3F5',
+  /** Macro accents — data only, not chrome. */
+  protein: '#15803D',
+  fat: '#C2410C',
+  carbs: '#1D4ED8',
+  trainingStrength: '#EBEDF0',
+  trainingCycling: '#E8EEF4',
+  warmSurface: '#F5F0EA',
+  /** @deprecated Prefer `ink` / `accent` — kept so call sites compile. */
+  sageInk: '#0A0A0A',
   /** Meal section accent bars — cool gray scale only. */
-  mealBreakfast: '#626B5F',
-  mealLunch: '#626B5F',
-  mealDinner: '#20251F',
-  mealSnack: '#626B5F',
-  ringTrack: '#E1E5DC',
-  ringFill: '#20251F',
-  success: '#4B6745',
-  successSoft: '#E8EEE1',
+  mealBreakfast: '#8B929E',
+  mealLunch: '#5C6370',
+  mealDinner: '#0A0A0A',
+  mealSnack: '#C9CED6',
+  ringTrack: '#E8EAED',
+  ringFill: '#0A0A0A',
+  success: '#15803D',
+  successSoft: '#DCF5E4',
   textOnInverse: '#FFFFFF',
-  shadow: '#20251F',
-  warning: '#89602E',
-  chartTrack: '#E1E5DC',
-  chartFill: '#20251F',
-  overlay: 'rgba(32,37,31,0.32)',
+  shadow: '#0A0A0A',
+  warning: '#D97706',
+  chartTrack: '#E8EAED',
+  chartFill: '#0A0A0A',
+  overlay: 'rgba(10,10,10,0.4)',
 } as const;
 
 export const space = {
@@ -65,7 +68,14 @@ export const space = {
 } as const;
 
 /** Labeled intensity buckets for imported HR data; shared by every Garmin view. */
-export const HEART_RATE_ZONE_COLORS = ['#AEB8AD', '#7F999C', '#6D8B68', '#B78E63', '#AD6657', '#796C84'] as const;
+export const HEART_RATE_ZONE_COLORS = [
+  '#AEB6BF',
+  '#7A8B99',
+  '#5C6B78',
+  '#B78E63',
+  '#AD6657',
+  '#796C84',
+] as const;
 
 export const radius = {
   sm: 8,
