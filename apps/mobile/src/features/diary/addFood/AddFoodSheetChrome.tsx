@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mealOptOn: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderColor: colors.ink,
   },
   mealOptText: { fontWeight: '600' },

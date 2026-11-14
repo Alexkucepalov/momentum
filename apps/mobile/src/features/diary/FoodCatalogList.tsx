@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   addBtn: {
     width: touchMin,
     height: touchMin,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },

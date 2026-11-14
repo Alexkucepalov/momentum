@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
     width: 4,
     backgroundColor: colors.borderStrong,
   },
-  barStrength: { backgroundColor: colors.ink },
-  barCardio: { backgroundColor: colors.textSecondary },
+  barStrength: { backgroundColor: colors.accent },
+  barCardio: { backgroundColor: colors.mealDinner },
   barRest: { backgroundColor: colors.border },
   body: {
     flex: 1,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     justifyContent: 'center',
     borderRadius: radius.pill,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
   },
   startLabel: { fontWeight: '700' },
   iconBtn: {

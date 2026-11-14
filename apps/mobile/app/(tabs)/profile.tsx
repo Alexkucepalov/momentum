@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   presetOn: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderColor: colors.ink,
   },
   presetText: { fontWeight: '700' },

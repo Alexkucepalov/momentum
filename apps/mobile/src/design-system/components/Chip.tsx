@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipOn: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   label: { fontWeight: '700' },
   pressed: { opacity: 0.85 },

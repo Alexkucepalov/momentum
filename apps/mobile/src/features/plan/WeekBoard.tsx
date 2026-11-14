@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   dayChipOn: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
     borderColor: colors.ink,
   },
   dayChipWd: {

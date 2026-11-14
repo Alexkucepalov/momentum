@@ -243,6 +243,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ringTrack,
     marginTop: space.xs,
   },
-  fill: { height: "100%", backgroundColor: colors.ink },
+  fill: { height: "100%", backgroundColor: colors.accent },
   note: { marginTop: space.sm },
 });

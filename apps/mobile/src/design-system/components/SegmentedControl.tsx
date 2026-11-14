@@ -82,7 +82,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "transparent",
   },
-  segOn: { backgroundColor: colors.surface, borderColor: colors.border },
+  segOn: {
+    backgroundColor: colors.surface,
+    borderColor: colors.accentSoft,
+  },
   label: { fontWeight: "500", textAlign: "center" },
   pressed: { opacity: 0.88 },
 });

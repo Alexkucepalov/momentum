@@ -217,6 +217,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.surfaceMuted,
   },
-  selected: { backgroundColor: colors.ink },
+  selected: { backgroundColor: colors.accent },
   pressed: { opacity: 0.65 },
 });

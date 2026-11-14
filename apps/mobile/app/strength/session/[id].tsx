@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     overflow: "hidden",
   },
-  progressFill: { height: "100%", backgroundColor: colors.ink },
+  progressFill: { height: "100%", backgroundColor: colors.accent },
   exerciseBlock: { gap: space.xs },
   exerciseTitle: { letterSpacing: -0.5 },
   iconButton: {
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: space.xs,
   },
-  setPillCurrent: { backgroundColor: colors.ink },
+  setPillCurrent: { backgroundColor: colors.accent },
   navigation: { flexDirection: "row", gap: space.sm },
   exerciseDone: { gap: space.sm, alignItems: "center" },
   sheet: { padding: space.screen, gap: space.md },

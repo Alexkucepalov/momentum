@@ -9,13 +9,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 test('nf-fit tokens: Fresh Utility contract', () => {
   const { colors, radius, type, TAB_SHELL, touchMin } = loadSrcModules()['design-system/tokens'];
-  assert.equal(colors.canvas, '#F2F3F5');
+  assert.equal(colors.canvas, '#EEF2F7');
   assert.equal(colors.surface, '#FFFFFF');
-  assert.equal(colors.ink, '#0A0A0A');
-  assert.equal(colors.primary, '#0A0A0A');
-  assert.equal(colors.primaryButton, '#0A0A0A');
-  assert.equal(colors.surfaceMuted, '#EBEDF0');
-  assert.equal(colors.trainingStrength, '#EBEDF0');
+  assert.equal(colors.ink, '#0F172A');
+  assert.equal(colors.primary, '#1D5BBF');
+  assert.equal(colors.primaryButton, '#1D5BBF');
+  assert.equal(colors.accent, '#1D5BBF');
+  assert.equal(colors.surfaceMuted, '#E4EAF2');
+  assert.equal(colors.trainingStrength, '#D9E4FB');
   assert.equal(colors.sageInk, colors.ink);
   assert.ok(radius.card >= 12 && radius.card <= 24);
   assert.equal(radius.pill, 999);
