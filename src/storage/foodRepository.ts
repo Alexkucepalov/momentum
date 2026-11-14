@@ -1,3 +1,4 @@
+import { cloneWorkoutSession, validateExercisePlan } from '../domain/strength/sessionReview';
 import { allocateCookedConsumption, cloneFoodEntry, cloneConsumption, validateCookedConsumption, mergeConsumption, planConsumptionChange } from '../domain/cookedConsumption';
 import { completedTrainingFacts } from '../domain/completedTraining';
 import { MEALS, resizeEntrySnapshot, type EntryDetails } from '../domain/diaryEntry';
@@ -421,7 +422,7 @@ export type FoodRepository = {
   }): WorkoutTemplate;
   updateWorkoutTemplate(
     templateId: string,
-    fields: { name?: string; subtitle?: string | null },
+    fields: { name?: string; subtitle?: string | null; notes?: string | null },
   ): WorkoutTemplate;
   softDeleteWorkoutTemplate(templateId: string): WorkoutTemplate;
   setTemplateExercises(
@@ -496,6 +497,7 @@ export type FoodRepository = {
     opts?: { feelingRpe?: number | null; feelingNote?: string | null },
   ): WorkoutSession;
   abandonWorkoutSession(sessionId: string): WorkoutSession;
+  getStrengthHistory(): { sessions: WorkoutSession[]; sets: WorkoutSet[] };
   listWorkoutSets(sessionId: string): WorkoutSet[];
   /**
    * Upsert a set row. weightKg/reps may be null (unknown ≠ 0).
@@ -515,6 +517,9 @@ export type FoodRepository = {
     setId: string,
     args: { weightKg: number | null; reps: number | null },
   ): WorkoutSet;
+  saveWorkoutSetDraft(setId: string, input: { weight: string; reps: string }): WorkoutSet;
+  restoreWorkoutSet(previous: WorkoutSet): WorkoutSet;
+  setSessionRestDeadline(sessionId: string, until: string | null): WorkoutSession;
   softDeleteWorkoutSet(setId: string): WorkoutSet;
   previousSetsForExercise(
     exerciseId: string,
@@ -1221,6 +1226,7 @@ function normalizeStrengthExercise(raw: StrengthExercise): StrengthExercise {
 
 function normalizeWorkoutTemplate(raw: WorkoutTemplate): WorkoutTemplate {
   return {
+    ...(raw.notes === undefined ? {} : { notes: raw.notes }),
     id: raw.id,
     name: raw.name,
     subtitle: raw.subtitle ?? null,
@@ -1277,6 +1283,9 @@ function normalizeWorkoutSession(
   raw: WorkoutSession & { feelingRpe?: number | null; feelingNote?: string | null },
 ): WorkoutSession {
   return {
+    ...(raw.exercisePlan === undefined ? {} : { exercisePlan: cloneWorkoutSession(raw).exercisePlan }),
+    ...(raw.planNotes === undefined ? {} : { planNotes: raw.planNotes }),
+    ...(raw.restUntilAt === undefined ? {} : { restUntilAt: raw.restUntilAt }),
     id: raw.id,
     dateLocal: raw.dateLocal,
     templateId: raw.templateId ?? null,
@@ -1294,6 +1303,8 @@ function normalizeWorkoutSession(
 
 function normalizeWorkoutSet(raw: WorkoutSet): WorkoutSet {
   return {
+    ...(raw.draftWeightText === undefined ? {} : { draftWeightText: raw.draftWeightText }),
+    ...(raw.draftRepsText === undefined ? {} : { draftRepsText: raw.draftRepsText }),
     id: raw.id,
     sessionId: raw.sessionId,
     exerciseId: raw.exerciseId,
@@ -1513,7 +1524,7 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.plannedActivities ?? []).map((a) => [a.id, { ...a }]),
   );
   const workoutSessions = new Map<string, WorkoutSession>(
-    (snap?.workoutSessions ?? []).map((s) => [s.id, { ...s }]),
+    (snap?.workoutSessions ?? []).map((s) => [s.id, cloneWorkoutSession(s)]),
   );
   const workoutSets = new Map<string, WorkoutSet>(
     (snap?.workoutSets ?? []).map((s) => [s.id, { ...s }]),
@@ -1708,7 +1719,7 @@ export function createMemoryFoodRepository(seed?: {
         workoutTemplates: [...workoutTemplates.values()].map((t) => ({ ...t })),
         workoutTemplateExercises: [...workoutTemplateExercises.values()].map((l) => ({ ...l })),
         plannedActivities: [...plannedActivities.values()].map((a) => ({ ...a })),
-        workoutSessions: [...workoutSessions.values()].map((s) => ({ ...s })),
+        workoutSessions: [...workoutSessions.values()].map(cloneWorkoutSession),
         workoutSets: [...workoutSets.values()].map((s) => ({ ...s })),
       };
     },
@@ -2998,6 +3009,11 @@ export function createMemoryFoodRepository(seed?: {
     updateWorkoutTemplate(templateId, fields) {
       const t = workoutTemplates.get(templateId);
       if (!t || t.deletedAt) throw new Error('Workout template not found');
+      if (
+        fields.notes != null &&
+        (typeof fields.notes !== 'string' || fields.notes.length > 4000)
+      )
+        throw new Error('Описание плана: не больше 4000 символов');
       if (fields.name !== undefined) {
         const name = fields.name.trim();
         if (!name) throw new Error('Template name required');
@@ -3006,6 +3022,7 @@ export function createMemoryFoodRepository(seed?: {
       if (fields.subtitle !== undefined) {
         t.subtitle = fields.subtitle?.trim() ? fields.subtitle.trim() : null;
       }
+      if (fields.notes !== undefined) t.notes = fields.notes?.trim() || null;
       t.updatedAt = nowIso();
       notify();
       return { ...t };
@@ -3022,9 +3039,6 @@ export function createMemoryFoodRepository(seed?: {
     setTemplateExercises(templateId, lines) {
       const t = workoutTemplates.get(templateId);
       if (!t || t.deletedAt) throw new Error('Workout template not found');
-      for (const existing of [...workoutTemplateExercises.values()]) {
-        if (existing.templateId === templateId) workoutTemplateExercises.delete(existing.id);
-      }
       const created: WorkoutTemplateExercise[] = [];
       lines.forEach((line, i) => {
         const ex = strengthExercises.get(line.exerciseId);
@@ -3032,9 +3046,24 @@ export function createMemoryFoodRepository(seed?: {
           throw new Error(`Unknown exercise: ${line.exerciseId}`);
         }
         assertPositiveFinite(line.targetSets, 'targetSets');
-        if (line.targetRepsMin != null) assertNonNegativeFinite(line.targetRepsMin, 'targetRepsMin');
-        if (line.targetRepsMax != null) assertNonNegativeFinite(line.targetRepsMax, 'targetRepsMax');
-        if (line.restSec != null) assertNonNegativeFinite(line.restSec, 'restSec');
+        if (!Number.isInteger(line.targetSets) || line.targetSets > 100)
+          throw new Error('Подходы: целое от 1 до 100');
+        if (created.some((c) => c.exerciseId === line.exerciseId))
+          throw new Error('Упражнение уже есть в шаблоне');
+        assertRepetitions(line.targetRepsMin);
+        assertRepetitions(line.targetRepsMax);
+        if (
+          line.targetRepsMin != null &&
+          line.targetRepsMax != null &&
+          line.targetRepsMin > line.targetRepsMax
+        )
+          throw new Error('Минимум повторений больше максимума');
+        if (line.targetRepsMin != null)
+          assertNonNegativeFinite(line.targetRepsMin, 'targetRepsMin');
+        if (line.targetRepsMax != null)
+          assertNonNegativeFinite(line.targetRepsMax, 'targetRepsMax');
+        if (line.restSec != null)
+          assertNonNegativeFinite(line.restSec, 'restSec');
         const row: WorkoutTemplateExercise = {
           id: newId(),
           templateId,
@@ -3046,9 +3075,13 @@ export function createMemoryFoodRepository(seed?: {
           restSec: line.restSec ?? null,
           notes: line.notes?.trim() ? line.notes.trim() : null,
         };
-        workoutTemplateExercises.set(row.id, row);
         created.push({ ...row });
       });
+      for (const existing of [...workoutTemplateExercises.values()]) {
+        if (existing.templateId === templateId)
+          workoutTemplateExercises.delete(existing.id);
+      }
+      for (const row of created) workoutTemplateExercises.set(row.id, { ...row });
       t.updatedAt = nowIso();
       notify();
       return created;
@@ -3260,12 +3293,20 @@ export function createMemoryFoodRepository(seed?: {
       }
       if (input.plannedActivityId) {
         const planned = plannedActivities.get(input.plannedActivityId);
-        if (!planned || planned.deletedAt || planned.kind !== 'strength') throw new Error('Силовая тренировка не найдена в плане');
+        if (!planned || planned.deletedAt || planned.kind !== 'strength')
+          throw new Error('Силовая тренировка не найдена в плане');
         const existing = api.getWorkoutSessionForPlan(input.plannedActivityId);
         if (existing) return { ...existing };
       } else {
-        const draft = [...workoutSessions.values()].find(s => !s.deletedAt && s.status === 'in_progress' && s.dateLocal === input.dateLocal && s.templateId === (input.templateId ?? null) && s.title === title);
-        if (draft) return { ...draft };
+        const draft = [...workoutSessions.values()].find(
+          (s) =>
+            !s.deletedAt &&
+            s.status === 'in_progress' &&
+            s.dateLocal === input.dateLocal &&
+            s.templateId === (input.templateId ?? null) &&
+            s.title === title,
+        );
+        if (draft) return cloneWorkoutSession(draft);
       }
       const ts = nowIso();
       const session: WorkoutSession = {
@@ -3282,6 +3323,28 @@ export function createMemoryFoodRepository(seed?: {
         createdAt: ts,
         deletedAt: null,
       };
+      if (session.templateId) {
+        session.exercisePlan = api
+          .listTemplateExercises(session.templateId)
+          .map((line) => {
+            const exercise = api.getStrengthExercise(line.exerciseId);
+            return {
+              exerciseId: line.exerciseId,
+              name: exercise?.name ?? line.exerciseId,
+              equipment: exercise?.equipment ?? null,
+              primaryMuscles: [...(exercise?.primaryMuscles ?? [])],
+              targetSets: line.targetSets,
+              targetRepsMin: line.targetRepsMin,
+              targetRepsMax: line.targetRepsMax,
+              restSec: line.restSec,
+              notes: line.notes,
+            };
+          });
+        validateExercisePlan(session.exercisePlan);
+        session.planNotes =
+          api.getWorkoutTemplate(session.templateId)?.notes ?? null;
+      }
+      session.restUntilAt = null;
       workoutSessions.set(session.id, session);
 
       // Prefill empty set rows from template — targets only, no invented weights.
@@ -3307,10 +3370,7 @@ export function createMemoryFoodRepository(seed?: {
               completedAt: null,
               targetWeightKg: hint?.weightKg ?? null,
               targetReps:
-                hint?.reps ??
-                line.targetRepsMin ??
-                line.targetRepsMax ??
-                null,
+                hint?.reps ?? line.targetRepsMin ?? line.targetRepsMax ?? null,
               createdAt: ts,
               deletedAt: null,
             };
@@ -3319,28 +3379,37 @@ export function createMemoryFoodRepository(seed?: {
         }
       }
       notify();
-      return { ...session };
+      return cloneWorkoutSession(session);
     },
     getWorkoutSession(sessionId) {
       const s = workoutSessions.get(sessionId);
       if (!s || s.deletedAt) return null;
-      return { ...s };
+      return cloneWorkoutSession(s);
     },
     getWorkoutSessionForPlan(activityId) {
-      const rows = [...workoutSessions.values()].filter(s => !s.deletedAt && s.plannedActivityId === activityId && s.status !== 'abandoned');
-      rows.sort((a, b) => Number(b.status === 'completed') - Number(a.status === 'completed') || b.startedAt.localeCompare(a.startedAt));
-      return rows[0] ? { ...rows[0] } : null;
+      const rows = [...workoutSessions.values()].filter(
+        (s) =>
+          !s.deletedAt &&
+          s.plannedActivityId === activityId &&
+          s.status !== 'abandoned',
+      );
+      rows.sort(
+        (a, b) =>
+          Number(b.status === 'completed') - Number(a.status === 'completed') ||
+          b.startedAt.localeCompare(a.startedAt),
+      );
+      return rows[0] ? cloneWorkoutSession(rows[0]) : null;
     },
     listWorkoutSessionsForDate(dateLocal) {
       return [...workoutSessions.values()]
         .filter((s) => !s.deletedAt && s.dateLocal === dateLocal)
-        .map((s) => ({ ...s }))
+        .map(cloneWorkoutSession)
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     },
     listInProgressWorkoutSessions() {
       return [...workoutSessions.values()]
         .filter((s) => !s.deletedAt && s.status === 'in_progress')
-        .map((s) => ({ ...s }))
+        .map(cloneWorkoutSession)
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     },
     completeWorkoutSession(sessionId, opts) {
@@ -3348,59 +3417,91 @@ export function createMemoryFoodRepository(seed?: {
       if (!s || s.deletedAt) throw new Error('Workout session not found');
       if (opts?.feelingRpe != null) {
         assertPositiveFinite(opts.feelingRpe, 'feelingRpe');
-        if (!Number.isInteger(opts.feelingRpe) || opts.feelingRpe < 1 || opts.feelingRpe > 10) {
+        if (
+          !Number.isInteger(opts.feelingRpe) ||
+          opts.feelingRpe < 1 ||
+          opts.feelingRpe > 10
+        ) {
           throw new Error('feelingRpe must be an integer 1–10');
         }
       }
-      if (s.status === 'completed') return { ...s };
+      if (s.status === 'completed') return cloneWorkoutSession(s);
       if (s.status !== 'in_progress') throw new Error('Сессия уже закрыта');
       if (opts?.feelingRpe != null) s.feelingRpe = opts.feelingRpe;
       if (opts?.feelingNote !== undefined) {
         const note = opts.feelingNote?.trim() ? opts.feelingNote.trim() : null;
         s.feelingNote = note;
       }
+      s.restUntilAt = null;
       s.status = 'completed';
       s.completedAt = nowIso();
-      const elapsed = (Date.parse(s.completedAt) - Date.parse(s.startedAt)) / 1000;
-      api.applyWorkoutHabitAutoCredit({ dateLocal: s.dateLocal, workoutType: 'strength', durationSec: Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0 });
+      const elapsed =
+        (Date.parse(s.completedAt) - Date.parse(s.startedAt)) / 1000;
+      api.applyWorkoutHabitAutoCredit({
+        dateLocal: s.dateLocal,
+        workoutType: 'strength',
+        durationSec: Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0,
+      });
       notify();
-      return { ...s };
+      return cloneWorkoutSession(s);
     },
     abandonWorkoutSession(sessionId) {
       const s = workoutSessions.get(sessionId);
       if (!s || s.deletedAt) throw new Error('Workout session not found');
       if (s.status !== 'in_progress') throw new Error('Сессия уже закрыта');
+      s.restUntilAt = null;
       s.status = 'abandoned';
       s.completedAt = nowIso();
       notify();
-      return { ...s };
+      return cloneWorkoutSession(s);
+    },
+    getStrengthHistory() {
+      return {
+        sessions: [...workoutSessions.values()]
+          .filter((s) => !s.deletedAt)
+          .map(cloneWorkoutSession),
+        sets: [...workoutSets.values()]
+          .filter((s) => !s.deletedAt)
+          .map((s) => ({ ...s })),
+      };
     },
     listWorkoutSets(sessionId) {
-      const rows = [...workoutSets.values()].filter(s => !s.deletedAt && s.sessionId === sessionId);
+      const rows = [...workoutSets.values()].filter(
+        (s) => !s.deletedAt && s.sessionId === sessionId,
+      );
       // Map insertion order captures the template at session creation, even if edited later.
       const exerciseOrder = new Map<string, number>();
-      for (const row of rows) if (!exerciseOrder.has(row.exerciseId)) exerciseOrder.set(row.exerciseId, exerciseOrder.size);
+      for (const row of rows)
+        if (!exerciseOrder.has(row.exerciseId))
+          exerciseOrder.set(row.exerciseId, exerciseOrder.size);
       return rows
         .map((s) => ({ ...s }))
         .sort(
           (a, b) =>
-            exerciseOrder.get(a.exerciseId)! - exerciseOrder.get(b.exerciseId)! || a.setIndex - b.setIndex,
+            exerciseOrder.get(a.exerciseId)! - exerciseOrder.get(b.exerciseId)! ||
+            a.setIndex - b.setIndex,
         );
     },
     upsertWorkoutSet(input) {
       const session = workoutSessions.get(input.sessionId);
-      if (!session || session.deletedAt) throw new Error('Workout session not found');
-      if (session.status !== 'in_progress') throw new Error('Завершённая сессия доступна только для просмотра');
-      if (!strengthExercises.has(input.exerciseId)) throw new Error('Unknown exercise');
+      if (!session || session.deletedAt)
+        throw new Error('Workout session not found');
+      if (session.status !== 'in_progress')
+        throw new Error('Завершённая сессия доступна только для просмотра');
+      if (!strengthExercises.has(input.exerciseId))
+        throw new Error('Unknown exercise');
       if (!Number.isInteger(input.setIndex) || input.setIndex < 1) {
         throw new Error('setIndex must be a positive integer');
       }
-      if (input.weightKg != null) assertNonNegativeFinite(input.weightKg, 'weightKg');
+      if (input.weightKg != null)
+        assertNonNegativeFinite(input.weightKg, 'weightKg');
       if (input.reps != null) assertNonNegativeFinite(input.reps, 'reps');
       assertRepetitions(input.reps);
       assertRepetitions(input.targetReps);
-      if (input.targetWeightKg != null) assertNonNegativeFinite(input.targetWeightKg, 'targetWeightKg');
-      if (input.targetReps != null) assertNonNegativeFinite(input.targetReps, 'targetReps');
+      if (input.targetWeightKg != null)
+        assertNonNegativeFinite(input.targetWeightKg, 'targetWeightKg');
+      if (input.targetReps != null)
+        assertNonNegativeFinite(input.targetReps, 'targetReps');
 
       const existing = [...workoutSets.values()].find(
         (s) =>
@@ -3412,12 +3513,15 @@ export function createMemoryFoodRepository(seed?: {
       const completed = input.completed ?? existing?.completed ?? false;
       const ts = nowIso();
       if (existing) {
-        existing.weightKg = input.weightKg !== undefined ? input.weightKg : existing.weightKg;
+        existing.weightKg =
+          input.weightKg !== undefined ? input.weightKg : existing.weightKg;
         existing.reps = input.reps !== undefined ? input.reps : existing.reps;
         existing.completed = completed;
-        existing.completedAt = completed ? existing.completedAt ?? ts : null;
-        if (input.targetWeightKg !== undefined) existing.targetWeightKg = input.targetWeightKg;
-        if (input.targetReps !== undefined) existing.targetReps = input.targetReps;
+        existing.completedAt = completed ? (existing.completedAt ?? ts) : null;
+        if (input.targetWeightKg !== undefined)
+          existing.targetWeightKg = input.targetWeightKg;
+        if (input.targetReps !== undefined)
+          existing.targetReps = input.targetReps;
         notify();
         return { ...existing };
       }
@@ -3442,21 +3546,90 @@ export function createMemoryFoodRepository(seed?: {
     completeWorkoutSet(setId, args) {
       const s = workoutSets.get(setId);
       if (!s || s.deletedAt) throw new Error('Workout set not found');
-      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress') throw new Error('Завершённая сессия доступна только для просмотра');
-      if (args.weightKg != null) assertNonNegativeFinite(args.weightKg, 'weightKg');
+      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress')
+        throw new Error('Завершённая сессия доступна только для просмотра');
+      if (args.weightKg != null)
+        assertNonNegativeFinite(args.weightKg, 'weightKg');
       if (args.reps != null) assertNonNegativeFinite(args.reps, 'reps');
       assertRepetitions(args.reps);
+      const wasCompleted = s.completed;
       s.weightKg = args.weightKg;
       s.reps = args.reps;
       s.completed = true;
-      s.completedAt = nowIso();
+      if (!wasCompleted) s.completedAt = nowIso();
+      delete s.draftWeightText;
+      delete s.draftRepsText;
+      if (!wasCompleted) {
+        const session = workoutSessions.get(s.sessionId)!;
+        const rest =
+          session.exercisePlan?.find((p) => p.exerciseId === s.exerciseId)
+            ?.restSec ?? 90;
+        const unfinished = [...workoutSets.values()].some(
+          (row) =>
+            row.sessionId === s.sessionId && !row.deletedAt && !row.completed,
+        );
+        session.restUntilAt =
+          unfinished && rest > 0
+            ? new Date(Date.now() + rest * 1000).toISOString()
+            : null;
+      }
       notify();
       return { ...s };
+    },
+    saveWorkoutSetDraft(setId, input) {
+      const s = workoutSets.get(setId);
+      if (
+        !s ||
+        s.deletedAt ||
+        s.completed ||
+        workoutSessions.get(s.sessionId)?.status !== 'in_progress'
+      )
+        throw new Error('Подход уже закрыт');
+      if (
+        typeof input.weight !== 'string' ||
+        typeof input.reps !== 'string' ||
+        input.weight.length > 32 ||
+        input.reps.length > 32
+      )
+        throw new Error('Слишком длинное значение подхода');
+      s.draftWeightText = input.weight;
+      s.draftRepsText = input.reps;
+      notify();
+      return { ...s };
+    },
+    restoreWorkoutSet(previous) {
+      const s = workoutSets.get(previous.id);
+      if (
+        !s ||
+        s.sessionId !== previous.sessionId ||
+        s.exerciseId !== previous.exerciseId ||
+        s.setIndex !== previous.setIndex ||
+        workoutSessions.get(s.sessionId)?.status !== 'in_progress'
+      )
+        throw new Error('Этот подход уже нельзя изменить');
+      for (const n of [previous.weightKg, previous.targetWeightKg])
+        if (n != null) assertNonNegativeFinite(n, 'weight');
+      assertRepetitions(previous.reps);
+      assertRepetitions(previous.targetReps);
+      workoutSets.set(s.id, { ...previous });
+      notify();
+      return { ...previous };
+    },
+    setSessionRestDeadline(sessionId, until) {
+      const s = workoutSessions.get(sessionId);
+      if (!s || s.deletedAt || s.status !== 'in_progress')
+        throw new Error('Сессия уже закрыта');
+      if (until != null && !Number.isFinite(Date.parse(until)))
+        throw new Error('Некорректный таймер');
+      s.restUntilAt = until;
+      notify();
+      return cloneWorkoutSession(s);
     },
     softDeleteWorkoutSet(setId) {
       const s = workoutSets.get(setId);
       if (!s || s.deletedAt) throw new Error('Workout set not found');
-      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress') throw new Error('Завершённая сессия доступна только для просмотра');
+      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress')
+        throw new Error('Завершённая сессия доступна только для просмотра');
       s.deletedAt = nowIso();
       notify();
       return { ...s };
@@ -5066,7 +5239,7 @@ export function createMemoryFoodRepository(seed?: {
       for (const t of next.workoutTemplates) workoutTemplates.set(t.id, { ...t });
       for (const l of next.workoutTemplateExercises) workoutTemplateExercises.set(l.id, { ...l });
       for (const a of next.plannedActivities) plannedActivities.set(a.id, { ...a });
-      for (const s of next.workoutSessions) workoutSessions.set(s.id, { ...s });
+      for (const s of next.workoutSessions) workoutSessions.set(s.id, cloneWorkoutSession(s));
       for (const s of next.workoutSets) workoutSets.set(s.id, { ...s });
       syncBuiltinStrengthProgram();
 

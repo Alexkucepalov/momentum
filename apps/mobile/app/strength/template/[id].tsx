@@ -1,13 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { AddExerciseToTemplateSheet } from '@/src/features/strength/AddExerciseToTemplateSheet';
-import { CreateExerciseSheet } from '@/src/features/strength/CreateExerciseSheet';
-import { AppButton, AppText, Field, colors, radius, space, touchMin } from '@/src/design-system';
-import { useActivityRevision, useData } from '@/src/state/DataContext';
-import { confirmAction } from '@/src/utils/confirmAction';
+import { AddExerciseToTemplateSheet } from "@/src/features/strength/AddExerciseToTemplateSheet";
+import { CreateExerciseSheet } from "@/src/features/strength/CreateExerciseSheet";
+import {
+  AppButton,
+  AppText,
+  Field,
+  colors,
+  radius,
+  space,
+  touchMin,
+} from "@/src/design-system";
+import { useActivityRevision, useData } from "@/src/state/DataContext";
+import { confirmAction } from "@/src/utils/confirmAction";
 
 type DraftLine = {
   key: string;
@@ -25,12 +33,13 @@ export default function TemplateEditorScreen() {
   const { repo, refresh, showFlash } = useData();
   useActivityRevision();
 
-  const templateId = String(id ?? '');
+  const templateId = String(id ?? "");
   const template = templateId ? repo.getWorkoutTemplate(templateId) : null;
   const exercises = repo.listStrengthExercises();
 
-  const [name, setName] = useState(template?.name ?? '');
-  const [subtitle, setSubtitle] = useState(template?.subtitle ?? '');
+  const [name, setName] = useState(template?.name ?? "");
+  const [subtitle, setSubtitle] = useState(template?.subtitle ?? "");
+  const [notes, setNotes] = useState(template?.notes ?? "");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -39,21 +48,25 @@ export default function TemplateEditorScreen() {
   useEffect(() => {
     if (!template) return;
     setName(template.name);
-    setSubtitle(template.subtitle ?? '');
+    setSubtitle(template.subtitle ?? "");
+    setNotes(template.notes ?? "");
     const rows = repo.listTemplateExercises(template.id).map((l) => ({
       key: l.id,
       exerciseId: l.exerciseId,
       targetSets: String(l.targetSets),
-      targetRepsMin: l.targetRepsMin != null ? String(l.targetRepsMin) : '',
-      targetRepsMax: l.targetRepsMax != null ? String(l.targetRepsMax) : '',
-      restSec: l.restSec != null ? String(l.restSec) : '90',
-      notes: l.notes ?? '',
+      targetRepsMin: l.targetRepsMin != null ? String(l.targetRepsMin) : "",
+      targetRepsMax: l.targetRepsMax != null ? String(l.targetRepsMax) : "",
+      restSec: l.restSec != null ? String(l.restSec) : "90",
+      notes: l.notes ?? "",
     }));
     setLines(rows);
     setDirty(false);
   }, [template?.id, repo]);
 
-  const excludeIds = useMemo(() => new Set(lines.map((l) => l.exerciseId)), [lines]);
+  const excludeIds = useMemo(
+    () => new Set(lines.map((l) => l.exerciseId)),
+    [lines],
+  );
 
   if (!template) {
     return (
@@ -61,20 +74,26 @@ export default function TemplateEditorScreen() {
         <AppText variant="body" tone="muted">
           Шаблон не найден
         </AppText>
-        <AppButton label="Назад" variant="secondary" onPress={() => router.back()} />
+        <AppButton
+          label="Назад"
+          variant="secondary"
+          onPress={() => router.back()}
+        />
       </View>
     );
   }
 
   const updateLine = (key: string, patch: Partial<DraftLine>) => {
-    setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+    setLines((prev) =>
+      prev.map((l) => (l.key === key ? { ...l, ...patch } : l)),
+    );
     setDirty(true);
   };
 
-  const moveLine = (key: string, direction: 'up' | 'down') => {
+  const moveLine = (key: string, direction: "up" | "down") => {
     setLines((prev) => {
       const idx = prev.findIndex((l) => l.key === key);
-      const swap = direction === 'up' ? idx - 1 : idx + 1;
+      const swap = direction === "up" ? idx - 1 : idx + 1;
       if (idx < 0 || swap < 0 || swap >= prev.length) return prev;
       const next = [...prev];
       const tmp = next[idx]!;
@@ -96,11 +115,11 @@ export default function TemplateEditorScreen() {
       {
         key: `new-${exerciseId}-${prev.length}`,
         exerciseId,
-        targetSets: '2',
-        targetRepsMin: '8',
-        targetRepsMax: '12',
-        restSec: '90',
-        notes: '',
+        targetSets: "2",
+        targetRepsMin: "8",
+        targetRepsMax: "12",
+        restSec: "90",
+        notes: "",
       },
     ]);
     setDirty(true);
@@ -111,21 +130,31 @@ export default function TemplateEditorScreen() {
   const save = () => {
     try {
       const trimmed = name.trim();
-      if (!trimmed) throw new Error('Введи название шаблона');
+      if (!trimmed) throw new Error("Введи название шаблона");
+      if (notes.length > 4000)
+        throw new Error("Описание: не больше 4000 символов");
       const payload = lines.map((l) => {
-        const sets = Number(l.targetSets.replace(',', '.'));
-        if (!Number.isFinite(sets) || sets < 1) throw new Error('Подходы: целое ≥ 1');
-        const repsMin = l.targetRepsMin.trim() === '' ? null : Number(l.targetRepsMin.replace(',', '.'));
-        const repsMax = l.targetRepsMax.trim() === '' ? null : Number(l.targetRepsMax.replace(',', '.'));
-        const rest = l.restSec.trim() === '' ? null : Number(l.restSec.replace(',', '.'));
+        const sets = Number(l.targetSets.replace(",", "."));
+        if (!Number.isInteger(sets) || sets < 1 || sets > 100)
+          throw new Error("Подходы: целое ≥ 1");
+        const repsMin =
+          l.targetRepsMin.trim() === ""
+            ? null
+            : Number(l.targetRepsMin.replace(",", "."));
+        const repsMax =
+          l.targetRepsMax.trim() === ""
+            ? null
+            : Number(l.targetRepsMax.replace(",", "."));
+        const rest =
+          l.restSec.trim() === "" ? null : Number(l.restSec.replace(",", "."));
         if (repsMin != null && (!Number.isFinite(repsMin) || repsMin < 0)) {
-          throw new Error('Повторы мин: число ≥ 0 или пусто');
+          throw new Error("Повторы мин: число ≥ 0 или пусто");
         }
         if (repsMax != null && (!Number.isFinite(repsMax) || repsMax < 0)) {
-          throw new Error('Повторы макс: число ≥ 0 или пусто');
+          throw new Error("Повторы макс: число ≥ 0 или пусто");
         }
         if (rest != null && (!Number.isFinite(rest) || rest < 0)) {
-          throw new Error('Отдых: секунды ≥ 0 или пусто');
+          throw new Error("Отдых: секунды ≥ 0 или пусто");
         }
         return {
           exerciseId: l.exerciseId,
@@ -139,24 +168,24 @@ export default function TemplateEditorScreen() {
       repo.updateWorkoutTemplate(template.id, {
         name: trimmed,
         subtitle: subtitle.trim() ? subtitle.trim() : null,
+        notes: notes.trim() || null,
       });
-      repo.setTemplateExercises(template.id, payload);
-      refresh('activity');
+      refresh("activity");
       setDirty(false);
-      showFlash('Шаблон сохранён');
+      showFlash("Шаблон сохранён");
       // Reload keys from persisted ids
       const rows = repo.listTemplateExercises(template.id).map((l) => ({
         key: l.id,
         exerciseId: l.exerciseId,
         targetSets: String(l.targetSets),
-        targetRepsMin: l.targetRepsMin != null ? String(l.targetRepsMin) : '',
-        targetRepsMax: l.targetRepsMax != null ? String(l.targetRepsMax) : '',
-        restSec: l.restSec != null ? String(l.restSec) : '',
-        notes: l.notes ?? '',
+        targetRepsMin: l.targetRepsMin != null ? String(l.targetRepsMin) : "",
+        targetRepsMax: l.targetRepsMax != null ? String(l.targetRepsMax) : "",
+        restSec: l.restSec != null ? String(l.restSec) : "",
+        notes: l.notes ?? "",
       }));
       setLines(rows);
     } catch (e) {
-      showFlash(e instanceof Error ? e.message : 'Не удалось сохранить');
+      showFlash(e instanceof Error ? e.message : "Не удалось сохранить");
     }
   };
 
@@ -167,14 +196,35 @@ export default function TemplateEditorScreen() {
         keyboardShouldPersistTaps="handled"
         testID="template-editor"
       >
-        <Field label="Название" value={name} onChangeText={(v) => { setName(v); setDirty(true); }} />
+        <Field
+          label="Название"
+          value={name}
+          onChangeText={(v) => {
+            setName(v);
+            setDirty(true);
+          }}
+        />
         <Field
           label="Подзаголовок"
           value={subtitle}
-          onChangeText={(v) => { setSubtitle(v); setDirty(true); }}
+          onChangeText={(v) => {
+            setSubtitle(v);
+            setDirty(true);
+          }}
           placeholder="например: Грудь и спина · 19:30"
         />
 
+        <Field
+          label="Описание и личные заметки к плану"
+          value={notes}
+          onChangeText={(value) => {
+            setNotes(value);
+            setDirty(true);
+          }}
+          multiline
+          maxLength={4000}
+          placeholder="Акцент, настройки тренажёра, что учесть на занятии"
+        />
         <View style={styles.sectionHead}>
           <AppText variant="label" tone="muted">
             Упражнения · {lines.length}
@@ -200,14 +250,18 @@ export default function TemplateEditorScreen() {
         {lines.map((l, index) => {
           const ex = repo.getStrengthExercise(l.exerciseId);
           return (
-            <View key={l.key} style={styles.lineCard} testID={`template-line-${l.key}`}>
+            <View
+              key={l.key}
+              style={styles.lineCard}
+              testID={`template-line-${l.key}`}
+            >
               <View style={styles.lineTop}>
                 <AppText variant="body" style={styles.lineTitle}>
                   {index + 1}. {ex?.name ?? l.exerciseId}
                 </AppText>
                 <View style={styles.orderBtns}>
                   <Pressable
-                    onPress={() => moveLine(l.key, 'up')}
+                    onPress={() => moveLine(l.key, "up")}
                     disabled={index === 0}
                     style={({ pressed }) => [
                       styles.iconBtn,
@@ -220,7 +274,7 @@ export default function TemplateEditorScreen() {
                     <Ionicons name="chevron-up" size={18} color={colors.ink} />
                   </Pressable>
                   <Pressable
-                    onPress={() => moveLine(l.key, 'down')}
+                    onPress={() => moveLine(l.key, "down")}
                     disabled={index === lines.length - 1}
                     style={({ pressed }) => [
                       styles.iconBtn,
@@ -230,21 +284,36 @@ export default function TemplateEditorScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Ниже"
                   >
-                    <Ionicons name="chevron-down" size={18} color={colors.ink} />
+                    <Ionicons
+                      name="chevron-down"
+                      size={18}
+                      color={colors.ink}
+                    />
                   </Pressable>
                   <Pressable
                     onPress={() =>
-                      confirmAction('Убрать упражнение?', 'Из шаблона, не из истории тренировок.', {
-                        confirmLabel: 'Убрать',
-                        destructive: true,
-                        onConfirm: () => removeLine(l.key),
-                      })
+                      confirmAction(
+                        "Убрать упражнение?",
+                        "Из шаблона, не из истории тренировок.",
+                        {
+                          confirmLabel: "Убрать",
+                          destructive: true,
+                          onConfirm: () => removeLine(l.key),
+                        },
+                      )
                     }
-                    style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+                    style={({ pressed }) => [
+                      styles.iconBtn,
+                      pressed && styles.pressed,
+                    ]}
                     accessibilityRole="button"
                     accessibilityLabel="Убрать"
                   >
-                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={colors.danger}
+                    />
                   </Pressable>
                 </View>
               </View>
@@ -261,7 +330,9 @@ export default function TemplateEditorScreen() {
                   <Field
                     label="повт. от"
                     value={l.targetRepsMin}
-                    onChangeText={(v) => updateLine(l.key, { targetRepsMin: v })}
+                    onChangeText={(v) =>
+                      updateLine(l.key, { targetRepsMin: v })
+                    }
                     keyboardType="number-pad"
                   />
                 </View>
@@ -269,7 +340,9 @@ export default function TemplateEditorScreen() {
                   <Field
                     label="до"
                     value={l.targetRepsMax}
-                    onChangeText={(v) => updateLine(l.key, { targetRepsMax: v })}
+                    onChangeText={(v) =>
+                      updateLine(l.key, { targetRepsMax: v })
+                    }
                     keyboardType="number-pad"
                   />
                 </View>
@@ -282,12 +355,20 @@ export default function TemplateEditorScreen() {
                   />
                 </View>
               </View>
+              <Field
+                label={`Заметка: ${ex?.name ?? "упражнение"}`}
+                value={l.notes}
+                onChangeText={(value) => updateLine(l.key, { notes: value })}
+                multiline
+                maxLength={4000}
+                placeholder="Например: повторы на каждую сторону"
+              />
             </View>
           );
         })}
 
         <AppButton
-          label={dirty ? 'Сохранить изменения' : 'Сохранено'}
+          label={dirty ? "Сохранить изменения" : "Сохранено"}
           onPress={save}
           disabled={!dirty}
           testID="template-save"
@@ -296,7 +377,20 @@ export default function TemplateEditorScreen() {
           label="Удалить шаблон"
           variant="ghost"
           onPress={() => {
-            confirmAction('Удалить шаблон?', 'План на неделе и история сессий не сотрутся.', { confirmLabel: 'Удалить', destructive: true, onConfirm: () => { repo.softDeleteWorkoutTemplate(template.id); refresh('activity'); showFlash('Шаблон удалён'); router.back(); } });
+            confirmAction(
+              "Удалить шаблон?",
+              "План на неделе и история сессий не сотрутся.",
+              {
+                confirmLabel: "Удалить",
+                destructive: true,
+                onConfirm: () => {
+                  repo.softDeleteWorkoutTemplate(template.id);
+                  refresh("activity");
+                  showFlash("Шаблон удалён");
+                  router.back();
+                },
+              },
+            );
           }}
         />
       </ScrollView>
@@ -318,11 +412,11 @@ export default function TemplateEditorScreen() {
         onCreate={(input) => {
           try {
             const created = repo.createStrengthExercise(input);
-            refresh('activity');
+            refresh("activity");
             addExercise(created.id);
-            showFlash('Упражнение создано');
+            showFlash("Упражнение создано");
           } catch (e) {
-            showFlash(e instanceof Error ? e.message : 'Не удалось создать');
+            showFlash(e instanceof Error ? e.message : "Не удалось создать");
           }
         }}
       />
@@ -334,13 +428,13 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   sectionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     minHeight: touchMin,
     paddingHorizontal: space.sm,
@@ -358,23 +452,28 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   lineTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: space.sm,
   },
-  lineTitle: { flex: 1, fontWeight: '600' },
-  orderBtns: { flexDirection: 'row', gap: 4 },
+  lineTitle: { flex: 1, fontWeight: "600" },
+  orderBtns: { flexDirection: "row", gap: 4 },
   iconBtn: {
     minWidth: touchMin,
     minHeight: touchMin,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: radius.sm,
     backgroundColor: colors.canvas,
   },
   disabled: { opacity: 0.35 },
-  fieldsRow: { flexDirection: 'row', gap: space.xs },
+  fieldsRow: { flexDirection: "row", gap: space.xs },
   fieldGrow: { flex: 1 },
-  missing: { flex: 1, padding: space.lg, gap: space.md, justifyContent: 'center' },
+  missing: {
+    flex: 1,
+    padding: space.lg,
+    gap: space.md,
+    justifyContent: "center",
+  },
   pressed: { opacity: 0.85 },
 });

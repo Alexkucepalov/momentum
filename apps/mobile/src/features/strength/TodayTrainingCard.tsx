@@ -150,10 +150,28 @@ export function TodayTrainingCard({
           />
         </View>
       </Pressable>
+      <Pressable
+        onPress={() => router.push("/strength/program" as Href)}
+        style={styles.planLink}
+        accessibilityRole="button"
+        accessibilityLabel="Содержание тренировочного плана"
+      >
+        <AppText variant="caption" tone="secondary">
+          Содержание и ориентиры плана
+        </AppText>
+        <Ionicons name="arrow-forward" size={16} color={colors.textSecondary} />
+      </Pressable>
     </View>
   );
 }
 const styles = StyleSheet.create({
+  planLink: {
+    minHeight: touchMin,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space.sm,
+  },
   section: { gap: space.sm, marginTop: space.md },
   head: {
     flexDirection: "row",

@@ -1,0 +1,12 @@
+{
+  "passed": [
+    "Unconfirmed weight/reps survive browser reload and are not completed sets",
+    "Stepper, rapid record guard, extend rest and Undo preserve one actual set",
+    "Extra-set double tap adds one row and Undo leaves the template intact",
+    "Skipping rest persists; exercise navigation does not mark skipped work completed",
+    "Partial finish stays on real review; previous-session comparison, rating and note survive reload"
+  ],
+  "errors": [],
+  "platform": "Chromium / Expo web",
+  "native_pass": false
+}

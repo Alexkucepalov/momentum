@@ -1,0 +1,616 @@
+{
+  "states": [
+    {
+      "route": "/",
+      "state": "today",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/food",
+      "state": "diary",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity",
+      "state": "week",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "sleep",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "overview",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "body",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "habits",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "reports",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/profile",
+      "state": "profile",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes",
+      "state": "recipes",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes/new",
+      "state": "recipe-form",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes/import-text",
+      "state": "text-import",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan",
+      "state": "plan",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/week",
+      "state": "food-week",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "pantry",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/shop",
+      "state": "shop",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "budget",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/receipt",
+      "state": "receipt",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/stores",
+      "state": "stores",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin",
+      "state": "garmin",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin/data",
+      "state": "garmin-data",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength",
+      "state": "hub",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/program",
+      "state": "program",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/template/tmpl-upper-a",
+      "state": "template",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/",
+      "state": "today",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/food",
+      "state": "diary",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity",
+      "state": "week",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "sleep",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "overview",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "body",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "habits",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "reports",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/profile",
+      "state": "profile",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes",
+      "state": "recipes",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes/new",
+      "state": "recipe-form",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes/import-text",
+      "state": "text-import",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan",
+      "state": "plan",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/week",
+      "state": "food-week",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "pantry",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/shop",
+      "state": "shop",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "budget",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/receipt",
+      "state": "receipt",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/stores",
+      "state": "stores",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin",
+      "state": "garmin",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin/data",
+      "state": "garmin-data",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength",
+      "state": "hub",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/program",
+      "state": "program",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/template/tmpl-upper-a",
+      "state": "template",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/",
+      "state": "today",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/food",
+      "state": "diary",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity",
+      "state": "week",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "sleep",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "overview",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "body",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "habits",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "reports",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/profile",
+      "state": "profile",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes",
+      "state": "recipes",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes/new",
+      "state": "recipe-form",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/recipes/import-text",
+      "state": "text-import",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan",
+      "state": "plan",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/week",
+      "state": "food-week",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "pantry",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/shop",
+      "state": "shop",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "budget",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/receipt",
+      "state": "receipt",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/stores",
+      "state": "stores",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin",
+      "state": "garmin",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin/data",
+      "state": "garmin-data",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength",
+      "state": "hub",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/program",
+      "state": "program",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/template/tmpl-upper-a",
+      "state": "template",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "focus",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "list",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "info",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "finish",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "review",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "focus",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "list",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "info",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "finish",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "review",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "focus",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "list",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "info",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "finish",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/strength/session/id-1794664800855-8a538027a24f78",
+      "state": "review",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "platform": "Expo web / Chromium",
+  "native_device_pass": false
+}

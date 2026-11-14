@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { ReactNode } from "react";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
-import { colors, radius, space } from '../tokens';
+import { colors, radius, space } from "../tokens";
 
 type AppCardProps = {
   children: ReactNode;
@@ -10,7 +10,12 @@ type AppCardProps = {
   testID?: string;
 };
 
-export function AppCard({ children, style, accessibilityLabel, testID }: AppCardProps) {
+export function AppCard({
+  children,
+  style,
+  accessibilityLabel,
+  testID,
+}: AppCardProps) {
   return (
     <View
       style={[styles.card, style]}
@@ -26,6 +31,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     padding: space.screen,
     gap: space.sm,
   },

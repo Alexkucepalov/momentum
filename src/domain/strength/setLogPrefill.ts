@@ -1,23 +1,28 @@
-import type { WorkoutSet } from './types';
+import type { WorkoutSet } from "./types";
 
 /**
  * Prefill set log fields for gym speed.
  * Actual logged values win; otherwise use previous/target hints.
  * Empty string means unknown — never invent "0".
  */
-export function initialSetFieldValues(set: WorkoutSet): { weight: string; reps: string } {
+export function initialSetFieldValues(set: WorkoutSet): {
+  weight: string;
+  reps: string;
+} {
   const weight =
-    set.weightKg != null
+    set.draftWeightText ??
+    (set.weightKg != null
       ? String(set.weightKg)
       : set.targetWeightKg != null
         ? String(set.targetWeightKg)
-        : '';
+        : "");
   const reps =
-    set.reps != null
+    set.draftRepsText ??
+    (set.reps != null
       ? String(set.reps)
       : set.targetReps != null
         ? String(set.targetReps)
-        : '';
+        : "");
   return { weight, reps };
 }
 
