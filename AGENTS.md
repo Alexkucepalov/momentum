@@ -1,5 +1,5 @@
 # Instructions for ALL coding agents
-Project: **nf-fit** (repo remote may still be `momentum`). Read `docs/00-PROJECT-BLUEPRINT.md`, `docs/00-NAVIGATION.md` and relevant specifications first. Treat docs as current baseline unless ADR is added.
+Project: **nf-fit** (repo remote may still be `momentum`). Read `docs/00-PROJECT-BLUEPRINT.md`, `docs/00-NAVIGATION.md`, **`docs/AGENT-ORIENTATION.md`** (screen/domain graphs) and relevant specifications first. Treat docs as current baseline unless ADR is added.
 ## Mission
 Ship delightful, reliable low-friction offline-first nutrition/habits/fitness Android app (**nf-fit**). Optimize repeated logging speed and privacy. Do not add feature bloat.
 ## Rules
