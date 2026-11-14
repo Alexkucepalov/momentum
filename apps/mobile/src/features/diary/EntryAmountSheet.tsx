@@ -96,6 +96,9 @@ export function EntryAmountSheet({
           {entry ? `Было: ${entryAmountLabel(entry)}. ` : ""}Расчёт по
           сохранённой записи. Неизвестные значения останутся неизвестными.
         </AppText>
+        {entry?.recipeId ? <AppText variant="caption" tone="secondary">
+          {entry.cookedConsumption === undefined ? 'Это старая запись: изменения порции не пересчитывают запасы.' : 'Изменение порции обновит связанные остатки готового блюда.'}
+        </AppText> : null}
         {error ? (
           <AppText variant="caption" tone="danger" accessibilityRole="alert">
             {error}

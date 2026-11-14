@@ -1,3 +1,4 @@
+import { validateCookedConsumption } from "./cookedConsumption";
 import { assertLocalDate, assertLocalTime } from "../storage/validation";
 
 type Row = Record<string, unknown>;
@@ -80,7 +81,7 @@ const dates = new Set(
   ),
 );
 const timestamps = new Set(
-  "createdAt updatedAt deletedAt weighedAt startAt endAt pausedAt confirmedAt startedAt completedAt lastSuccessfulSyncAt lastAttemptAt".split(
+  "cookedAt createdAt updatedAt deletedAt weighedAt startAt endAt pausedAt confirmedAt startedAt completedAt lastSuccessfulSyncAt lastAttemptAt".split(
     " ",
   ),
 );
@@ -213,6 +214,14 @@ function validateRow(
             : ["user", "garmin", "zepp"];
     if (!allowed.includes(row.source as string)) fail(`${path}.source`);
   }
+  if (table === "entries" && row.cookedConsumption !== undefined) {
+    try {
+      validateCookedConsumption(row.cookedConsumption, row.grams as number);
+    } catch {
+      fail(`${path}.cookedConsumption`);
+    }
+    if (row.cookedConsumption.length && !row.recipeId) fail(`${path}.recipeId`);
+  }
   if (table === "savedMeals") {
     if (!Array.isArray(row.items)) fail(`${path}.items`);
     row.items.forEach((v, i) =>
@@ -328,6 +337,19 @@ export function validateSnapshotPayload(snapshot: Row): void {
         fail(`${table}[${i}].id — повтор или пустое значение`);
       ids.add(row.id);
     });
+  }
+  const batches = new Map(
+    ((snapshot.cookedBatches ?? []) as Row[]).map((b) => [b.id, b]),
+  );
+  for (const entry of (snapshot.entries ?? []) as Row[]) {
+    for (const part of (entry.cookedConsumption ?? []) as Array<{
+      batchId: string;
+      grams: number;
+    }>) {
+      const batch = batches.get(part.batchId);
+      if (batch && batch.recipeId !== entry.recipeId)
+        fail("entries.cookedConsumption — другой рецепт");
+    }
   }
   if (snapshot.garminSync != null)
     validateRow(snapshot.garminSync, "garminSync", [], "garminSync");

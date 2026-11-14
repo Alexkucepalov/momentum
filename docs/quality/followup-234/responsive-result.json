@@ -1,0 +1,217 @@
+{
+  "pages": [
+    {
+      "route": "/progress",
+      "state": "body",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "expense",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "empty",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "form",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "stock",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/shop",
+      "state": "list",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "empty",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "filled",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin",
+      "state": "idle",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "body",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "expense",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "empty",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "form",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "stock",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/shop",
+      "state": "list",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "empty",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "filled",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin",
+      "state": "idle",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/progress",
+      "state": "body",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "expense",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "empty",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "form",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/pantry",
+      "state": "stock",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/shop",
+      "state": "list",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "empty",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "state": "filled",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/garmin",
+      "state": "idle",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "details",
+      "width": 360,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "details",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "route": "/plan/budget",
+      "state": "details",
+      "width": 430,
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "platform": "Chromium / Expo web",
+  "native_talkback_pass": false
+}

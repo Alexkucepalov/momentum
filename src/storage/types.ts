@@ -119,7 +119,10 @@ export type RecipeIngredient = {
   carbG: number | null;
 };
 
+export type CookedConsumption = { batchId: string; grams: number };
 export type FoodEntry = {
+  /** undefined = legacy provenance unknown; [] = tracked portion without stock consumed. */
+  cookedConsumption?: CookedConsumption[];
   id: string;
   dateLocal: string;
   meal: MealSlot;

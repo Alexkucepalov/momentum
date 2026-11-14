@@ -1,3 +1,4 @@
+import { cloneConsumption } from "./cookedConsumption";
 import type { FoodEntry, MealSlot } from "../storage/types";
 import { assertNonNegativeFinite } from "../storage/validation";
 
@@ -10,11 +11,29 @@ export const MEAL_LABELS: Record<MealSlot, string> = {
 };
 export type EntryDetails = Pick<
   FoodEntry,
-  "dateLocal" | "meal" | "grams" | "energyKcal" | "proteinG" | "fatG" | "carbG"
+  | "dateLocal"
+  | "meal"
+  | "grams"
+  | "energyKcal"
+  | "proteinG"
+  | "fatG"
+  | "carbG"
+  | "cookedConsumption"
 >;
 export function entryDetails(entry: FoodEntry): EntryDetails {
   const { dateLocal, meal, grams, energyKcal, proteinG, fatG, carbG } = entry;
-  return { dateLocal, meal, grams, energyKcal, proteinG, fatG, carbG };
+  return {
+    dateLocal,
+    meal,
+    grams,
+    energyKcal,
+    proteinG,
+    fatG,
+    carbG,
+    ...(entry.cookedConsumption === undefined
+      ? {}
+      : { cookedConsumption: cloneConsumption(entry.cookedConsumption) }),
+  };
 }
 /** A diary edit scales its historical snapshot, never a mutable catalog card. */
 export function resizeEntrySnapshot(
@@ -29,8 +48,9 @@ export function resizeEntrySnapshot(
     );
   const factor = grams / entry.grams;
   const scale = (n: number | null) => (n == null ? null : n * factor);
+  const { cookedConsumption: _receipt, ...unchanged } = entryDetails(entry);
   const next = {
-    ...entryDetails(entry),
+    ...unchanged,
     grams,
     energyKcal: scale(entry.energyKcal),
     proteinG: scale(entry.proteinG),

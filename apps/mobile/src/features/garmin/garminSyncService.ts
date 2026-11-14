@@ -1,3 +1,4 @@
+import { RequestCancelledError, RequestTimeoutError } from '../../integrations/requestText';
 import {
   chartsToJson,
   computeSyncWindow,
@@ -23,7 +24,7 @@ import {
   GarminClientError,
 } from './garminClient';
 import { getLocalDataWipeEpoch } from '../../../../../src/domain/localDataWipeEpoch';
-import { getGarminApiKey } from './secureKeyStore';
+import { getGarminApiKey, clearBearerCache } from './secureKeyStore';
 
 export type GarminSyncMode = 'full' | 'incremental';
 
@@ -52,6 +53,7 @@ async function settle<T>(
   try {
     return { ok: true, value: await fn() };
   } catch (e) {
+    if (e instanceof RequestCancelledError || e instanceof RequestTimeoutError || (e instanceof GarminClientError && e.statusCode === 401)) throw e;
     return { ok: false, error: `${label}: ${errorMessage(e)}` };
   }
 }
@@ -74,8 +76,9 @@ function detailJsonOf(w: MappedGarminWorkout): string | null {
  */
 export async function runGarminSync(
   repo: FoodRepository,
-  opts?: { mode?: GarminSyncMode },
+  opts?: { mode?: GarminSyncMode; signal?: AbortSignal },
 ): Promise<GarminSyncResult> {
+  if (opts?.signal?.aborted) return { ok: false, weightsUpserted: 0, workoutsUpserted: 0, stepsUpserted: 0, sleepUpserted: 0, windowStart: null, windowEnd: null, error: 'Синхронизация отменена', warnings: [] };
   const attemptAt = new Date().toISOString();
   const wipeEpochAtStart = getLocalDataWipeEpoch();
   repo.setGarminSyncState({ lastAttemptAt: attemptAt, lastError: null });
@@ -93,6 +96,7 @@ export async function runGarminSync(
   };
 
   const abortedByWipe = (): GarminSyncResult | null => {
+    if (opts?.signal?.aborted) return { ...empty, error: 'Синхронизация отменена' };
     if (getLocalDataWipeEpoch() === wipeEpochAtStart) return null;
     const error = 'Синхронизация отменена: локальные данные очищены';
     return { ...empty, error };
@@ -118,7 +122,7 @@ export async function runGarminSync(
       mode,
     });
 
-    const { accessToken } = await obtainGarminBearerToken({ forceRefresh: false });
+    const { accessToken } = await obtainGarminBearerToken({ forceRefresh: false, signal: opts?.signal });
     const warnings: string[] = [];
     let weightsUpserted = 0;
     let workoutsUpserted = 0;
@@ -126,7 +130,7 @@ export async function runGarminSync(
     let sleepUpserted = 0;
 
     const weightRes = await settle('Вес', () =>
-      fetchWeightRangeChunked(accessToken, window.startDate, window.endDate),
+      fetchWeightRangeChunked(accessToken, window.startDate, window.endDate, opts?.signal),
     );
     if (weightRes.ok) {
       const wiped = abortedByWipe();
@@ -154,7 +158,7 @@ export async function runGarminSync(
     // Steps: chunked stats, then daily summaries fallback.
     let stepsMapped = 0;
     const stepsRes = await settle('Шаги', () =>
-      fetchDailyStepsChunked(accessToken, window.startDate, window.endDate),
+      fetchDailyStepsChunked(accessToken, window.startDate, window.endDate, opts?.signal),
     );
     if (stepsRes.ok) {
       const wiped = abortedByWipe();
@@ -179,7 +183,7 @@ export async function runGarminSync(
 
     if (stepsMapped === 0) {
       const sumRes = await settle('Шаги (daily summaries)', () =>
-        fetchDailySummariesChunked(accessToken, window.startDate, window.endDate),
+        fetchDailySummariesChunked(accessToken, window.startDate, window.endDate, opts?.signal),
       );
       if (sumRes.ok) {
         const wiped = abortedByWipe();
@@ -206,7 +210,7 @@ export async function runGarminSync(
     }
 
     const sleepRes = await settle('Сон', () =>
-      fetchDailySleepSummariesChunked(accessToken, window.startDate, window.endDate),
+      fetchDailySleepSummariesChunked(accessToken, window.startDate, window.endDate, opts?.signal),
     );
     if (sleepRes.ok) {
       const wiped = abortedByWipe();
@@ -241,9 +245,9 @@ export async function runGarminSync(
     // Activities: full unbounded list on full sync; dated window on incremental.
     const activitiesRes = await settle('Тренировки', async () => {
       if (mode === 'full') {
-        return fetchAllActivities(accessToken, { pageSize: 100, maxPages: 100 });
+        return fetchAllActivities(accessToken, { signal: opts?.signal, pageSize: 100, maxPages: 100 });
       }
-      return fetchAllActivities(accessToken, {
+      return fetchAllActivities(accessToken, { signal: opts?.signal,
         startDate: window.startDate,
         endDate: window.endDate,
         pageSize: 100,
@@ -256,7 +260,7 @@ export async function runGarminSync(
       if (wiped) return wiped;
       let mapped = mapGarminActivitiesResponse(activitiesRes.value);
       const ids = mapped.map((m) => m.activityId);
-      const details = await fetchActivityDetailsBatched(accessToken, ids, 3);
+      const details = await fetchActivityDetailsBatched(accessToken, ids, 3, opts?.signal);
       mapped = mapped.map((m) => {
         const d = details.get(m.activityId);
         return d ? mergeGarminActivityDetail(m, d) : m;
@@ -328,6 +332,7 @@ export async function runGarminSync(
   } catch (e) {
     const wiped = abortedByWipe();
     if (wiped) return wiped;
+    if (e instanceof GarminClientError && e.statusCode === 401) await clearBearerCache();
     const error = errorMessage(e);
     repo.setGarminSyncState({ lastAttemptAt: attemptAt, lastError: error });
     return { ...empty, error };

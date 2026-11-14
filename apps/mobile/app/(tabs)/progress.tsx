@@ -410,9 +410,6 @@ export default function ProgressScreen() {
                 }
               />
 
-              <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
-              {weights.length > 0 ? <AppText variant="caption" tone="secondary">Последние {weights.length} замеров · точки идут в порядке записей</AppText> : null}
-
               <View style={styles.weightForm}>
                 <View style={styles.weightField}>
                   <Field
@@ -464,6 +461,9 @@ export default function ProgressScreen() {
                 </AppText>
               ) : null}
             </AppCard>
+
+              <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
+              {weights.length > 0 ? <AppText variant="caption" tone="secondary">Последние {weights.length} замеров · точки идут в порядке записей</AppText> : null}
 
             {weights.length > 0 ? (
               <>

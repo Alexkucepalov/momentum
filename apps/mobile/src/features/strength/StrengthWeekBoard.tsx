@@ -70,7 +70,7 @@ export function StrengthWeekBoard({ days, selectedDate, todayDate, onSelectDate,
       </View>
       <View style={styles.metrics}>
         <View style={styles.metric}><AppText variant="label" tone="secondary">В плане</AppText><AppText style={styles.metricValue}>{count}</AppText></View>
-        <View style={styles.metric}><AppText variant="label" tone="secondary">Силовых записано</AppText><AppText style={styles.metricValue}>{completed.length || '—'}</AppText></View>
+        <View style={styles.metric}><AppText variant="label" tone="secondary">Силовых записано</AppText><AppText style={styles.metricValue}>{completed.length}</AppText></View>
         <View style={styles.metric}><AppText variant="label" tone="secondary">Вело, км</AppText><AppText style={styles.metricValue}>{cyclingKm == null ? '—' : cyclingKm.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}</AppText></View>
       </View>
       <View style={styles.summary}><AppText variant="caption" tone="secondary">{count === 0 ? 'Пока без запланированных тренировок' : `Тренировок в плане · ${count}`}</AppText>{onOpenTemplates ? <Pressable onPress={onOpenTemplates} accessibilityRole="button" accessibilityLabel="Шаблоны и редактор" testID="strength-open-templates" style={styles.templateLink}><AppText variant="caption">Шаблоны</AppText><Ionicons name="arrow-forward" size={14} color={colors.ink} /></Pressable> : null}</View>

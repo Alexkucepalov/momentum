@@ -1,9 +1,9 @@
+import { allocateCookedConsumption, cloneFoodEntry, cloneConsumption, validateCookedConsumption, mergeConsumption, planConsumptionChange } from '../domain/cookedConsumption';
 import { completedTrainingFacts } from '../domain/completedTraining';
 import { MEALS, resizeEntrySnapshot, type EntryDetails } from '../domain/diaryEntry';
 import { sumActivityKcal } from '../domain/activityEnergy';
 import { buildCookAgainInput, type CookAgainDraft } from '../domain/cookAgain';
 import { mergeCommonFoodCatalog } from '../domain/commonFoodCatalog';
-import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch';
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
@@ -1320,7 +1320,7 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
     ingredients: raw.ingredients ?? [],
-    entries: raw.entries ?? [],
+    entries: (raw.entries ?? []).map(cloneFoodEntry),
     waterEntries: raw.waterEntries ?? [],
     weightEntries: (raw.weightEntries ?? []).map(normalizeWeightEntry),
     habitChecks: raw.habitChecks ?? [],
@@ -1408,7 +1408,7 @@ export function createMemoryFoodRepository(seed?: {
     list.push({ ...ing });
     ingredients.set(ing.recipeId, list);
   }
-  const entries = new Map<string, FoodEntry>((snap?.entries ?? []).map((e) => [e.id, { ...e }]));
+  const entries = new Map<string, FoodEntry>((snap?.entries ?? []).map((e) => [e.id, cloneFoodEntry(e)]));
   const waterEntries = new Map<string, WaterEntry>(
     (snap?.waterEntries ?? []).map((w) => [w.id, { ...w }]),
   );
@@ -1440,16 +1440,24 @@ export function createMemoryFoodRepository(seed?: {
   const cookedBatches = new Map<string, CookedBatch>(
     (snap?.cookedBatches ?? []).map((b) => [b.id, { ...b }]),
   );
-  // Undo is transient UI state; this ledger is deliberately absent from snapshots.
-  const pendingDiaryConsumption = new Map<string, { batchId: string; grams: number }>();
-  function consumeForDiaryEntry(entry: FoodEntry): void {
-    if (!entry.recipeId) return;
-    const batchId = pickFifoBatchId([...cookedBatches.values()].filter(b => b.recipeId === entry.recipeId));
-    const batch = batchId ? cookedBatches.get(batchId) : null;
-    if (!batch || batch.deletedAt) return;
-    const remaining = decreaseCookedRemaining(batch.remainingG, entry.grams);
-    pendingDiaryConsumption.set(entry.id, { batchId: batch.id, grams: batch.remainingG - remaining });
-    batch.remainingG = remaining; batch.updatedAt = nowIso();
+  function checkReceipt(entry: FoodEntry, receipt: NonNullable<FoodEntry['cookedConsumption']>): void {
+    validateCookedConsumption(receipt, entry.grams);
+    for (const part of receipt) {
+      const batch = cookedBatches.get(part.batchId);
+      if (!entry.recipeId || (batch && batch.recipeId !== entry.recipeId)) throw new Error('Партия не относится к рецепту порции');
+    }
+  }
+  function commitStock(changes: Map<string, number>, stock = cookedBatches): void {
+    for (const [id, remainingG] of changes) {
+      const batch = stock.get(id)!; batch.remainingG = remainingG; batch.updatedAt = nowIso();
+    }
+  }
+  function consumeForDiaryEntry(entry: FoodEntry, stock = cookedBatches): void {
+    if (!entry.recipeId) { delete entry.cookedConsumption; return; }
+    const receipt = allocateCookedConsumption([...stock.values()], entry.recipeId, entry.grams);
+    checkReceipt(entry, receipt);
+    const plan = planConsumptionChange([...stock.values()], [], receipt);
+    commitStock(plan, stock); entry.cookedConsumption = receipt;
   }
   const mealPlans = new Map<string, MealPlan>(
     (snap?.mealPlans ?? []).map((p) => [p.id, { ...p }]),
@@ -1665,7 +1673,7 @@ export function createMemoryFoodRepository(seed?: {
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
         ingredients: [...ingredients.values()].flat().map((i) => ({ ...i })),
-        entries: [...entries.values()].map((e) => ({ ...e })),
+        entries: [...entries.values()].map(cloneFoodEntry),
         waterEntries: [...waterEntries.values()].map((w) => ({ ...w })),
         weightEntries: [...weightEntries.values()].map((w) => ({ ...w })),
         habitChecks: [...habitChecks.values()].map((h) => ({ ...h })),
@@ -1891,7 +1899,7 @@ export function createMemoryFoodRepository(seed?: {
     listEntriesForDate(dateLocal) {
       return [...entries.values()]
         .filter((e) => e.dateLocal === dateLocal && e.deletedAt == null)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(cloneFoodEntry);
     },
     listRecentEntries(limit = 20) {
       const sorted = [...entries.values()]
@@ -1908,7 +1916,7 @@ export function createMemoryFoodRepository(seed?: {
         const key = `${link}|${Math.round(e.grams * 10) / 10}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        deduped.push(e);
+        deduped.push(cloneFoodEntry(e));
         if (deduped.length >= limit) break;
       }
       return deduped;
@@ -1958,7 +1966,7 @@ export function createMemoryFoodRepository(seed?: {
       };
       entries.set(entry.id, entry);
       notify();
-      return { ...entry };
+      return cloneFoodEntry(entry);
     },
     addQuickEntry({
       dateLocal,
@@ -1998,7 +2006,7 @@ export function createMemoryFoodRepository(seed?: {
       };
       entries.set(entry.id, entry);
       notify();
-      return { ...entry };
+      return cloneFoodEntry(entry);
     },
     listSavedMeals: () =>
       [...savedMeals.values()]
@@ -2148,10 +2156,10 @@ export function createMemoryFoodRepository(seed?: {
         updatedAt: ts,
         deletedAt: null,
       };
-      entries.set(entry.id, entry);
       consumeForDiaryEntry(entry);
+      entries.set(entry.id, entry);
       notify();
-      return { ...entry };
+      return cloneFoodEntry(entry);
     },
     copyDiaryEntries({ items, dateLocal, meal }) {
       assertLocalDate(dateLocal);
@@ -2167,12 +2175,13 @@ export function createMemoryFoodRepository(seed?: {
         nutritionFromProductFields(details);
         return { ...source, ...details, id: newId(), dateLocal, meal: meal ?? source.meal, createdAt: ts, updatedAt: ts, deletedAt: null };
       });
-      for (const entry of copies) {
-        entries.set(entry.id, entry);
-        consumeForDiaryEntry(entry);
-      }
+      const nextStock = new Map([...cookedBatches].map(([id, batch]) => [id, { ...batch }]));
+      for (const entry of copies) consumeForDiaryEntry(entry, nextStock);
+      const stockChanges = new Map([...nextStock].filter(([id, batch]) => batch.remainingG !== cookedBatches.get(id)!.remainingG).map(([id, batch]) => [id, batch.remainingG]));
+      commitStock(stockChanges);
+      for (const entry of copies) entries.set(entry.id, entry);
       notify();
-      return copies.map(e => ({ ...e }));
+      return copies.map(cloneFoodEntry);
     },
     updateEntryDetails(entryId, patch) {
       const entry = entries.get(entryId);
@@ -2182,8 +2191,18 @@ export function createMemoryFoodRepository(seed?: {
       if (!MEALS.includes(next.meal)) throw new Error('Выбери приём пищи');
       assertNonNegativeFinite(next.grams, 'grams');
       nutritionFromProductFields(next);
+      let receipt = entry.cookedConsumption;
+      if (receipt !== undefined || patch.cookedConsumption !== undefined) {
+        if (patch.cookedConsumption !== undefined) receipt = cloneConsumption(patch.cookedConsumption);
+        else if (next.grams < entry.grams) receipt = receipt!.map(p => ({ ...p, grams: p.grams * (next.grams / entry.grams) })).filter(p => p.grams > 0);
+        else if (next.grams > entry.grams && entry.recipeId) receipt = mergeConsumption(receipt!, allocateCookedConsumption([...cookedBatches.values()], entry.recipeId, next.grams - entry.grams));
+        checkReceipt(next, receipt!);
+        const changes = planConsumptionChange([...cookedBatches.values()], entry.cookedConsumption ?? [], receipt!);
+        commitStock(changes);
+      }
       Object.assign(entry, { dateLocal: next.dateLocal, meal: next.meal, grams: next.grams, energyKcal: next.energyKcal, proteinG: next.proteinG, fatG: next.fatG, carbG: next.carbG, updatedAt: nowIso() });
-      notify(); return { ...entry };
+      if (receipt !== undefined) entry.cookedConsumption = cloneConsumption(receipt);
+      notify(); return cloneFoodEntry(entry);
     },
     updateEntryGrams(entryId, grams) {
       const entry = entries.get(entryId);
@@ -2193,32 +2212,33 @@ export function createMemoryFoodRepository(seed?: {
     softDeleteEntry(entryId) {
       const entry = entries.get(entryId);
       if (!entry) throw new Error('Entry not found');
-      entry.deletedAt = nowIso();
-      entry.updatedAt = entry.deletedAt;
-      notify();
-      return { ...entry };
+      if (entry.deletedAt) return cloneFoodEntry(entry);
+      if (entry.cookedConsumption !== undefined) {
+        checkReceipt(entry, entry.cookedConsumption);
+        commitStock(planConsumptionChange([...cookedBatches.values()], entry.cookedConsumption, []));
+      }
+      entry.deletedAt = nowIso(); entry.updatedAt = entry.deletedAt;
+      notify(); return cloneFoodEntry(entry);
     },
     undoDeleteEntry(entryId) {
       const entry = entries.get(entryId);
       if (!entry) throw new Error('Entry not found');
-      entry.deletedAt = null;
-      entry.updatedAt = nowIso();
-      notify();
-      return { ...entry };
+      if (!entry.deletedAt) return cloneFoodEntry(entry);
+      if (entry.cookedConsumption !== undefined) {
+        checkReceipt(entry, entry.cookedConsumption);
+        commitStock(planConsumptionChange([...cookedBatches.values()], [], entry.cookedConsumption));
+      }
+      entry.deletedAt = null; entry.updatedAt = nowIso();
+      notify(); return cloneFoodEntry(entry);
     },
     undoDiaryAdds(entryIds) {
-      const ts = nowIso();
-      for (const id of new Set(entryIds)) {
-        const entry = entries.get(id); if (!entry) continue;
-        const consumed = pendingDiaryConsumption.get(id);
-        if (consumed) {
-          const batch = cookedBatches.get(consumed.batchId);
-          if (batch && !batch.deletedAt) { batch.remainingG = Math.min(batch.initialYieldG, batch.remainingG + consumed.grams); batch.updatedAt = ts; }
-          pendingDiaryConsumption.delete(id);
-        }
-        entry.deletedAt = ts; entry.updatedAt = ts;
-      }
-      notify();
+      const active = [...new Set(entryIds)].flatMap(id => { const row = entries.get(id); return row && !row.deletedAt ? [row] : []; });
+      for (const entry of active) if (entry.cookedConsumption) checkReceipt(entry, entry.cookedConsumption);
+      const receipt = active.flatMap(e => e.cookedConsumption ?? []);
+      const changes = planConsumptionChange([...cookedBatches.values()], receipt, []);
+      commitStock(changes);
+      const ts = nowIso(); for (const entry of active) { entry.deletedAt = ts; entry.updatedAt = ts; }
+      if (active.length) notify();
     },
     dailyTotals(dateLocal) {
       return computeDailyTotals(api.listEntriesForDate(dateLocal));
@@ -4971,7 +4991,6 @@ export function createMemoryFoodRepository(seed?: {
       recipes.clear();
       ingredients.clear();
       entries.clear();
-      pendingDiaryConsumption.clear();
       waterEntries.clear();
       weightEntries.clear();
       habitChecks.clear();
@@ -5059,7 +5078,6 @@ export function createMemoryFoodRepository(seed?: {
       recipes.clear();
       ingredients.clear();
       entries.clear();
-      pendingDiaryConsumption.clear();
       waterEntries.clear();
       weightEntries.clear();
       habitChecks.clear();

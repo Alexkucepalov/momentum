@@ -183,9 +183,9 @@ export default function ShopScreen() {
             accessibilityRole="radio"
             accessibilityState={{ checked: manualUnit === u }}
             aria-checked={manualUnit === u}
-            accessibilityLabel={u === 'pcs' ? 'шт' : u}
+            accessibilityLabel={u === 'pcs' ? 'шт' : u === 'g' ? 'г' : 'мл'}
           >
-            <Text style={styles.unitChipText}>{u === 'pcs' ? 'шт' : u}</Text>
+            <Text style={styles.unitChipText}>{u === 'pcs' ? 'шт' : u === 'g' ? 'г' : 'мл'}</Text>
           </Pressable>
         ))}
       </View>
