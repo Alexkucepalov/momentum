@@ -41,6 +41,8 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 03e template editor | Add/reorder exercises; seed-safe sync | Done (#215) |
 | 03f Movement IA | Hero + full week board; fact demoted | Done (#219) |
 | 03g simplify | Day focus: plan → start; drop dual nav | Done (#223) |
+| 03h Codex audit stack | Fresh UI + gym/diary/durability land | Done (#239) |
+| 03i neutral polish | Cool gray canvas; no sage chrome | In progress |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)
