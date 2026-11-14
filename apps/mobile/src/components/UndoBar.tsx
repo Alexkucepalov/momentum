@@ -1,23 +1,25 @@
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { ThemedText as Text } from "@/src/design-system/components/ThemedText";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, radius, space, type } from '../theme/tokens';
-import { useData } from '../state/DataContext';
+import { colors, radius, space, type } from "../theme/tokens";
+import { useData } from "../state/DataContext";
 
-const AUTO_DISMISS_MS = 4200;
 /** Approx tab bar content height (icons+label) above system inset. */
 const TAB_BAR_CONTENT = 52;
 
 export function UndoBar() {
   const { undo, performUndo, setUndo } = useData();
   const insets = useSafeAreaInsets();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!undo) return;
-    const t = setTimeout(() => setUndo(null), AUTO_DISMISS_MS);
-    return () => clearTimeout(t);
+    setReady(false);
+    // A second food tap must not activate a toast button appearing under the finger.
+    const arm = setTimeout(() => setReady(true), 500);
+    return () => clearTimeout(arm);
   }, [undo, setUndo]);
 
   if (!undo) return null;
@@ -25,11 +27,16 @@ export function UndoBar() {
   const bottom = TAB_BAR_CONTENT + Math.max(insets.bottom, space.sm) + space.sm;
 
   return (
-    <View style={[styles.wrap, { bottom }]} accessibilityLiveRegion="polite">
+    <View
+      style={[styles.wrap, { bottom }]}
+      accessibilityLiveRegion="polite"
+      testID="diary-undo"
+    >
       <Text style={styles.message} numberOfLines={1}>
         {undo.message}
       </Text>
       <Pressable
+        disabled={!ready}
         onPress={performUndo}
         style={styles.btn}
         accessibilityRole="button"
@@ -39,6 +46,7 @@ export function UndoBar() {
         <Text style={styles.btnText}>Отменить</Text>
       </Pressable>
       <Pressable
+        disabled={!ready}
         onPress={() => setUndo(null)}
         style={styles.dismiss}
         accessibilityRole="button"
@@ -53,12 +61,12 @@ export function UndoBar() {
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'absolute',
+    position: "absolute",
     left: space.lg,
     right: space.lg,
     zIndex: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: space.sm,
     backgroundColor: colors.text,
     borderRadius: radius.md,
@@ -70,24 +78,24 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.primaryButtonText,
     fontSize: type.caption,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   btn: {
     minHeight: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
   },
   btnText: {
     color: colors.primaryButtonText,
-    fontWeight: '800',
+    fontWeight: "800",
     fontSize: type.caption,
   },
   dismiss: {
     minHeight: 48,
     minWidth: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: space.xs,
   },
   dismissText: {

@@ -34,6 +34,7 @@ export function AddFoodTabs({
             onPress={() => onChange(t.id)}
             style={[styles.tab, on && styles.tabOn]}
             accessibilityRole="tab"
+            aria-selected={on}
             accessibilityState={{ selected: on }}
             accessibilityLabel={t.label}
           >

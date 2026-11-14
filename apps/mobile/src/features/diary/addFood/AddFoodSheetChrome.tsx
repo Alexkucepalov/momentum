@@ -17,6 +17,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 type AddFoodSheetChromeProps = {
+  dateLabel: string;
   meal: MealSlot;
   onChangeMeal: (m: MealSlot) => void;
   mealPickerOpen: boolean;
@@ -32,6 +33,7 @@ type AddFoodSheetChromeProps = {
 
 /** Header, meal picker, search, and secondary action chips for AddFoodSheet. */
 export function AddFoodSheetChrome({
+  dateLabel,
   meal,
   onChangeMeal,
   mealPickerOpen,
@@ -58,7 +60,7 @@ export function AddFoodSheetChrome({
             accessibilityLabel={`Приём: ${MEAL_LABELS[meal]}. Нажмите, чтобы сменить`}
           >
             <AppText variant="caption" tone="muted" style={styles.mealContextText}>
-              в {MEAL_LABELS[meal].toLowerCase()}
+              {dateLabel} · {MEAL_LABELS[meal].toLowerCase()}
             </AppText>
             <Ionicons
               name={mealPickerOpen ? 'chevron-up' : 'chevron-down'}

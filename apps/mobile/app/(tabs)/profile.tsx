@@ -220,9 +220,11 @@ export default function ProfileScreen() {
 
   const applyImport = (json: string) => {
     const result = repo.importAll(json);
+    bumpLocalDataWipeEpoch();
+    setUndo(null);
     const tz = repo.getProfile().timezone;
     setDateLocal(localDateKey(new Date(), tz));
-    refresh('profile');
+    refresh('all');
     setPasteOpen(false);
     setPasteRaw('');
     showFlash(`Восстановлено · v${result.version} · ${result.entries} записей`);

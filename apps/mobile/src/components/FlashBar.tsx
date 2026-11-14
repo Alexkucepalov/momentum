@@ -19,7 +19,7 @@ function flashIcon(message: string): keyof typeof Ionicons.glyphMap {
 
 /** Non-destructive toast (save / copy). Sits above the tab bar. */
 export function FlashBar() {
-  const { flash, clearFlash } = useData();
+  const { flash, clearFlash, undo } = useData();
   const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(10)).current;
@@ -46,7 +46,7 @@ export function FlashBar() {
     return () => clearTimeout(hide);
   }, [flash, clearFlash, opacity, translateY]);
 
-  if (!flash) return null;
+  if (!flash || undo) return null;
 
   const icon = flashIcon(flash);
 

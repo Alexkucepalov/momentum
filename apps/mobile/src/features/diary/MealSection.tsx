@@ -1,409 +1,166 @@
-import { useRef } from 'react';
+import { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
-  Animated,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-import { nutritionConsistencyHint } from '../../../../../src/domain/nutritionConsistency';
-import type { FoodEntry, MealSlot } from '../../../../../src/storage/types';
-import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
-
-const MEAL_LABELS: Record<MealSlot, string> = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
-};
-
-const MEAL_ACCENT: Record<MealSlot, string> = {
-  breakfast: colors.mealBreakfast,
-  lunch: colors.mealLunch,
-  dinner: colors.mealDinner,
-  snack: colors.mealSnack,
-};
-
-const REVEAL_X = -132;
-const COMMIT_DX = -72;
-
-function fmtKcal(n: number | null): string {
-  if (n === null) return '— ккал';
-  return `${Math.round(n)} ккал`;
-}
-
-function fmtMacro(n: number | null): string {
-  if (n === null) return '—';
-  return String(Math.round(n));
-}
-
+  entryAmountLabel,
+  MEAL_LABELS,
+} from "../../../../../src/domain/diaryEntry";
+import type { FoodEntry, MealSlot } from "../../../../../src/storage/types";
+import { ActionMenuSheet } from "@/src/components/ActionMenuSheet";
+import { AppText, colors, space, touchMin } from "@/src/design-system";
+const fmt = (n: number | null) =>
+  n == null ? "—" : Math.round(n).toLocaleString("ru-RU");
 export function MealSection({
   meal,
   entries,
-  onDelete,
   onEditGrams,
-  onCopyEntry,
+  onEntryActions,
   onAdd,
   onRepeatMeal,
   onSaveMeal,
 }: {
   meal: MealSlot;
   entries: FoodEntry[];
-  onDelete: (entry: FoodEntry) => void;
   onEditGrams: (entry: FoodEntry) => void;
-  onCopyEntry?: (entry: FoodEntry) => void;
-  onAdd?: () => void;
-  onRepeatMeal?: () => void;
-  onSaveMeal?: () => void;
+  onEntryActions: (entry: FoodEntry) => void;
+  onAdd: () => void;
+  onRepeatMeal: () => void;
+  onSaveMeal: () => void;
 }) {
-  const accent = MEAL_ACCENT[meal];
-  const sectionKcal = entries.some((e) => e.energyKcal === null)
+  const [menu, setMenu] = useState(false);
+  const kcal = entries.some((e) => e.energyKcal == null)
     ? null
-    : entries.reduce((sum, e) => sum + (e.energyKcal as number), 0);
-  const empty = entries.length === 0;
-  const canRepeat =
-    !!onRepeatMeal &&
-    entries.some((e) => e.productId != null || e.recipeId != null);
-  const canSave =
-    !!onSaveMeal &&
-    entries.some((e) => e.productId != null || e.recipeId != null);
-
-  if (empty) {
-    return (
-      <Pressable
-        style={({ pressed }) => [pressed && styles.pressed]}
-        onPress={onAdd}
-        accessibilityRole="button"
-        accessibilityLabel={`${MEAL_LABELS[meal]} — пока пусто. Добавить`}
-        testID={`meal-section-${meal}`}
-      >
-        <AppCard style={[styles.card, styles.emptyCard]}>
-          <View style={styles.compactText}>
-            <AppText variant="body" style={styles.compactLabel}>
-              {MEAL_LABELS[meal]}
-            </AppText>
-            <AppText variant="caption" tone="muted">
-              Добавить продукты
-            </AppText>
-          </View>
-          <View style={styles.compactPlus}>
-            <Ionicons name="add" size={20} color={colors.ink} />
-          </View>
-        </AppCard>
-      </Pressable>
-    );
-  }
-
+    : entries.reduce((sum, e) => sum + e.energyKcal!, 0);
+  const canSave = entries.some((e) => e.productId || e.recipeId);
   return (
-    <AppCard
-      style={styles.card}
-      accessibilityLabel={MEAL_LABELS[meal]}
-      testID={`meal-section-${meal}`}
-    >
+    <View style={styles.section} testID={`meal-section-${meal}`}>
       <View style={styles.head}>
-        <View style={styles.headText}>
-          <AppText variant="body" style={styles.compactLabel}>{MEAL_LABELS[meal]}</AppText>
-          <AppText variant="caption" tone="muted">
-            {sectionKcal === null ? 'ккал частично неизвестны' : fmtKcal(sectionKcal)}
-            {entries.length > 1 ? ` · ${entries.length}` : ''}
+        <View style={styles.heading}>
+          <AppText variant="subtitle">{MEAL_LABELS[meal]}</AppText>
+          <AppText variant="caption" tone="secondary">
+            {entries.length
+              ? `${fmt(kcal)} ккал · ${entries.length} поз.`
+              : "Пока без записей"}
           </AppText>
         </View>
-        {canSave ? (
+        {entries.length ? (
           <Pressable
-            onPress={onSaveMeal}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            style={styles.icon}
+            onPress={() => setMenu(true)}
             accessibilityRole="button"
-            accessibilityLabel={`Сохранить ${MEAL_LABELS[meal]} как шаблон приёма`}
+            accessibilityLabel={`Действия с приёмом ${MEAL_LABELS[meal]}`}
           >
-            <Ionicons name="bookmark-outline" size={18} color={colors.ink} />
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={20}
+              color={colors.textSecondary}
+            />
           </Pressable>
         ) : null}
-        {canRepeat ? (
-          <Pressable
-            onPress={onRepeatMeal}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`Повторить ${MEAL_LABELS[meal]} в этот же приём`}
-          >
-            <Ionicons name="copy-outline" size={18} color={colors.ink} />
-          </Pressable>
-        ) : null}
-        {onAdd ? (
-          <Pressable
-            onPress={onAdd}
-            style={({ pressed }) => [styles.iconBtn, styles.iconBtnAccent, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`Добавить в ${MEAL_LABELS[meal]}`}
-          >
-            <Ionicons name="add" size={22} color={accent} />
-          </Pressable>
-        ) : null}
+        <Pressable
+          style={styles.icon}
+          onPress={onAdd}
+          accessibilityRole="button"
+          accessibilityLabel={`Добавить в ${MEAL_LABELS[meal]}`}
+          testID={`meal-add-${meal}`}
+        >
+          <Ionicons name="add" size={23} color={colors.ink} />
+        </Pressable>
       </View>
-
       {entries.map((entry) => (
-        <SwipeEntryRow
+        <View
           key={entry.id}
-          entry={entry}
-          accent={accent}
-          onDelete={() => onDelete(entry)}
-          onEdit={() => onEditGrams(entry)}
-          onCopy={onCopyEntry ? () => onCopyEntry(entry) : undefined}
-        />
-      ))}
-    </AppCard>
-  );
-}
-
-function SwipeEntryRow({
-  entry,
-  accent,
-  onDelete,
-  onEdit,
-  onCopy,
-}: {
-  entry: FoodEntry;
-  accent: string;
-  onDelete: () => void;
-  onEdit: () => void;
-  onCopy?: () => void;
-}) {
-  const tx = useRef(new Animated.Value(0)).current;
-  const open = useRef(false);
-  const dragging = useRef(false);
-  const incomplete =
-    entry.energyKcal === null ||
-    entry.proteinG === null ||
-    entry.fatG === null ||
-    entry.carbG === null;
-  const diverge = nutritionConsistencyHint({
-    energyKcal: entry.energyKcal,
-    proteinG: entry.proteinG,
-    fatG: entry.fatG,
-    carbG: entry.carbG,
-  });
-
-  const snapShut = () => {
-    open.current = false;
-    Animated.spring(tx, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 20 }).start();
-  };
-
-  const snapOpen = () => {
-    open.current = true;
-    Animated.spring(tx, {
-      toValue: REVEAL_X,
-      useNativeDriver: true,
-      bounciness: 0,
-      speed: 20,
-    }).start();
-  };
-
-  const commitDelete = () => {
-    Animated.timing(tx, { toValue: -420, duration: 160, useNativeDriver: true }).start(() => {
-      onDelete();
-    });
-  };
-
-  const pan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponderCapture: (_, g) =>
-        g.dx < -12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.15,
-      onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderTerminationRequest: () => !dragging.current && !open.current,
-      onPanResponderGrant: () => {
-        dragging.current = true;
-      },
-      onPanResponderMove: (_, g) => {
-        if (g.dx <= 0) tx.setValue(Math.max(g.dx, -160));
-        else if (open.current) tx.setValue(Math.min(0, REVEAL_X + g.dx));
-      },
-      onPanResponderRelease: (_, g) => {
-        dragging.current = false;
-        const shouldCommit = g.dx < COMMIT_DX || g.vx < -0.85;
-        if (shouldCommit) {
-          commitDelete();
-          return;
-        }
-        if (g.dx < -36 || (open.current && g.dx < 24)) snapOpen();
-        else snapShut();
-      },
-      onPanResponderTerminate: () => {
-        dragging.current = false;
-        if (open.current) snapOpen();
-        else snapShut();
-      },
-    }),
-  ).current;
-
-  return (
-    <View style={styles.swipeWrap} testID="diary-swipe-row">
-      <View style={styles.actionsBehind}>
-        {onCopy ? (
+          style={styles.row}
+          testID={`diary-entry-${entry.id}`}
+        >
           <Pressable
-            onPress={() => {
-              snapShut();
-              onCopy();
-            }}
-            style={styles.copyAction}
+            style={styles.main}
+            onPress={() => onEditGrams(entry)}
             accessibilityRole="button"
-            accessibilityLabel={`Скопировать ${entry.displayName} в этот день`}
+            accessibilityLabel={`${entry.displayName}, ${entryAmountLabel(entry)}, ${fmt(entry.energyKcal)} ккал. Изменить порцию`}
           >
-            <Ionicons name="copy-outline" size={18} color={colors.ink} />
+            <AppText variant="body" numberOfLines={2}>
+              {entry.displayName}
+            </AppText>
+            <AppText variant="caption" tone="secondary">
+              {entryAmountLabel(entry)} · Б {fmt(entry.proteinG)} · Ж{" "}
+              {fmt(entry.fatG)} · У {fmt(entry.carbG)}
+            </AppText>
           </Pressable>
-        ) : null}
-        <Pressable
-          onPress={commitDelete}
-          style={styles.deleteAction}
-          accessibilityRole="button"
-          accessibilityLabel={`Удалить ${entry.displayName}`}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.primaryButtonText} />
-        </Pressable>
-      </View>
-      <Animated.View
-        style={[styles.rowFront, { transform: [{ translateX: tx }] }]}
-        {...pan.panHandlers}
-      >
-        <Pressable
-          style={({ pressed }) => [styles.main, pressed && styles.pressed]}
-          onPress={() => {
-            if (open.current) {
-              snapShut();
-              return;
-            }
-            onEdit();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`${entry.displayName}, ${entry.grams} грамм, ${fmtKcal(entry.energyKcal)}. Изменить граммы`}
-        >
-          <AppText variant="body" style={styles.name} numberOfLines={1}>
-            {entry.displayName}
-          </AppText>
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
-            {entry.grams} г · Б {fmtMacro(entry.proteinG)} · Ж {fmtMacro(entry.fatG)} · У{' '}
-            {fmtMacro(entry.carbG)}
-            {incomplete ? ' · неполно' : ''}
-            {diverge ? ' · ккал≠БЖУ' : ''}
-          </AppText>
-        </Pressable>
-        <AppText variant="caption" style={[styles.kcal, { color: accent }]}>
-          {fmtKcal(entry.energyKcal)}
-        </AppText>
-      </Animated.View>
+          <View style={styles.energy}>
+            <AppText variant="body">{fmt(entry.energyKcal)}</AppText>
+            <AppText variant="label" tone="muted">
+              ккал
+            </AppText>
+          </View>
+          <Pressable
+            style={styles.icon}
+            onPress={() => onEntryActions(entry)}
+            accessibilityRole="button"
+            accessibilityLabel={`Действия: ${entry.displayName}`}
+            testID={`entry-menu-${entry.id}`}
+          >
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={19}
+              color={colors.textSecondary}
+            />
+          </Pressable>
+        </View>
+      ))}
+      <ActionMenuSheet
+        visible={menu}
+        onClose={() => setMenu(false)}
+        title={MEAL_LABELS[meal]}
+        actions={[
+          {
+            id: "repeat-meal",
+            label: "Повторить этот приём",
+            detail: "Сохранённые порции и КБЖУ",
+            onPress: onRepeatMeal,
+          },
+          ...(canSave
+            ? [
+                {
+                  id: "save-meal",
+                  label: "Сохранить как мой приём",
+                  detail: "Продукты и рецепты для следующих добавлений",
+                  onPress: onSaveMeal,
+                },
+              ]
+            : []),
+        ]}
+      />
     </View>
   );
 }
-
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: 0,
-    overflow: 'hidden',
+  section: {
     paddingVertical: space.md,
-    paddingHorizontal: 0,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  emptyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    minHeight: touchMin + 16,
-  },
-  compactText: { flex: 1, gap: 0, minWidth: 0 },
-  compactLabel: {
-    fontWeight: '700',
-  },
-  compactPlus: {
-    width: 36,
-    height: 36,
-    flexShrink: 0,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-    gap: space.sm,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    flexShrink: 0,
-  },
-  headText: { flex: 1, gap: 0, minWidth: 0 },
-  iconBtn: {
+  head: { flexDirection: "row", alignItems: "center", gap: space.xs },
+  heading: { flex: 1, minWidth: 0, gap: space.xs },
+  icon: {
     width: touchMin,
-    height: touchMin,
-    flexShrink: 0,
-    borderRadius: radius.pill,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconBtnAccent: {
-    backgroundColor: 'transparent',
-  },
-  swipeWrap: {
-    marginTop: space.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    overflow: 'hidden',
-  },
-  actionsBehind: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    backgroundColor: colors.canvas,
-  },
-  copyAction: {
-    minWidth: 48,
     minHeight: touchMin,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  deleteAction: {
-    minWidth: 64,
-    minHeight: touchMin,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.danger,
-  },
-  rowFront: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.canvas,
-    minHeight: touchMin,
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
     paddingVertical: space.xs,
-    gap: space.xs,
   },
   main: {
     flex: 1,
     minWidth: 0,
-    paddingRight: space.sm,
+    minHeight: touchMin,
+    justifyContent: "center",
+    gap: space.xs,
+    paddingVertical: space.sm,
   },
-  name: {
-    fontWeight: '600',
-  },
-  kcal: {
-    fontWeight: '700',
-    marginRight: space.xs,
-    minWidth: 56,
-    flexShrink: 0,
-    textAlign: 'right',
-  },
-  pressed: { opacity: 0.75 },
+  energy: { alignItems: "flex-end", gap: 2 },
 });

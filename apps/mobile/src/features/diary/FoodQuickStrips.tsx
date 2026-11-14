@@ -1,16 +1,24 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-import type { FoodEntry, SavedMeal } from '../../../../../src/storage/types';
-import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
-
-type RailTab = 'saved' | 'recent';
-
-/**
- * Quiet “Повторить” panel below meal sections.
- * Segment + simple rows (no horizontal chip clutter).
- */
+import { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import type {
+  FoodEntry,
+  SavedMeal,
+  MealSlot,
+} from "../../../../../src/storage/types";
+import {
+  MEALS,
+  MEAL_LABELS,
+  entryAmountLabel,
+} from "../../../../../src/domain/diaryEntry";
+import { ActionMenuSheet } from "@/src/components/ActionMenuSheet";
+import {
+  AppText,
+  SegmentedControl,
+  colors,
+  space,
+  touchMin,
+} from "@/src/design-system";
 export function FoodQuickStrips({
   savedMeals,
   recent,
@@ -18,265 +26,208 @@ export function FoodQuickStrips({
   onRecentConfirm,
   onRecentQuick,
   onOpenSavedInSheet,
-  onFirstAdd,
+  onOpenRecentInSheet,
+  maxItems = 3,
+  compact = false,
+  meal,
+  onPickMeal,
 }: {
   savedMeals: SavedMeal[];
   recent: FoodEntry[];
-  /** @deprecated kept optional for call-site compatibility */
-  favorites?: unknown;
-  lastGramsFor?: (productId: string) => number;
   onLogSaved: (meal: SavedMeal) => void;
   onRecentConfirm: (entry: FoodEntry) => void;
   onRecentQuick: (entry: FoodEntry) => void;
-  onFavoriteConfirm?: (product: never, grams: number) => void;
-  onFavoriteQuick?: (product: never, grams: number) => void;
   onOpenSavedInSheet: () => void;
-  /** Empty history: one clear first-add action instead of a hollow «Повторить» block. */
-  onFirstAdd?: () => void;
+  onOpenRecentInSheet: () => void;
+  maxItems?: number;
+  compact?: boolean;
+  meal?: MealSlot;
+  onPickMeal?: (meal: MealSlot) => void;
 }) {
-  const saved = savedMeals.slice(0, 5);
-  const recentItems = recent.slice(0, 5);
-  const defaultTab: RailTab = saved.length > 0 ? 'saved' : 'recent';
-  const [tab, setTab] = useState<RailTab>(defaultTab);
-
-  if (saved.length === 0 && recentItems.length === 0) {
-    return (
-      <Pressable
-        onPress={onFirstAdd ?? onOpenSavedInSheet}
-        style={({ pressed }) => [styles.empty, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Добавить первую запись"
-        testID="food-quick-strips"
-      >
-        <AppText variant="caption" tone="secondary">
-          Добавить первую запись — потом повторы появятся здесь
-        </AppText>
-      </Pressable>
-    );
-  }
-
-  const activeTab: RailTab =
-    tab === 'saved' && saved.length === 0
-      ? 'recent'
-      : tab === 'recent' && recentItems.length === 0
-        ? 'saved'
-        : tab;
-
+  const [mealOpen, setMealOpen] = useState(false);
+  const [tab, setTab] = useState<"recent" | "saved">("recent");
+  if (!savedMeals.length && !recent.length) return null;
+  const active =
+    compact && recent.length
+      ? "recent"
+      : tab === "saved" && !savedMeals.length
+        ? "recent"
+        : tab === "recent" && !recent.length
+          ? "saved"
+          : tab;
   return (
     <View style={styles.wrap} testID="food-quick-strips">
       <View style={styles.head}>
-        <AppText variant="subtitle" style={styles.headTitle}>
-          Повторить
-        </AppText>
-        {saved.length > 0 ? (
-          <Pressable
-            onPress={onOpenSavedInSheet}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Все сохранённые приёмы"
-          >
-            <AppText variant="caption" tone="secondary">
-              все шаблоны
-            </AppText>
-          </Pressable>
-        ) : null}
-      </View>
-
-      <View style={styles.segment} accessibilityRole="tablist">
+        <AppText variant="subtitle">Быстрый повтор</AppText>
         <Pressable
-          style={[styles.segBtn, activeTab === 'saved' && styles.segBtnOn]}
-          onPress={() => setTab('saved')}
-          disabled={saved.length === 0}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'saved', disabled: saved.length === 0 }}
-          accessibilityLabel="Мои приёмы"
+          style={styles.more}
+          onPress={
+            meal && onPickMeal
+              ? () => setMealOpen(true)
+              : active === "saved"
+                ? onOpenSavedInSheet
+                : onOpenRecentInSheet
+          }
+          accessibilityRole="button"
+          accessibilityLabel={
+            meal && onPickMeal
+              ? `Приём для повтора: ${MEAL_LABELS[meal]}`
+              : active === "saved"
+                ? "Все сохранённые приёмы"
+                : "Все недавние записи"
+          }
+          testID={meal ? "quick-meal-context" : undefined}
         >
-          <AppText
-            variant="caption"
-            tone={activeTab === 'saved' ? 'inverse' : saved.length === 0 ? 'muted' : 'ink'}
-            style={styles.segLabel}
-          >
-            Мои приёмы
+          <AppText variant="caption" tone="secondary">
+            {meal && onPickMeal ? MEAL_LABELS[meal] : "Все"}
           </AppText>
-        </Pressable>
-        <Pressable
-          style={[styles.segBtn, activeTab === 'recent' && styles.segBtnOn]}
-          onPress={() => setTab('recent')}
-          disabled={recentItems.length === 0}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'recent', disabled: recentItems.length === 0 }}
-          accessibilityLabel="Недавние"
-        >
-          <AppText
-            variant="caption"
-            tone={activeTab === 'recent' ? 'inverse' : recentItems.length === 0 ? 'muted' : 'ink'}
-            style={styles.segLabel}
-          >
-            Недавние
-          </AppText>
+          <Ionicons
+            name={meal && onPickMeal ? "chevron-down" : "arrow-forward"}
+            size={16}
+            color={colors.textSecondary}
+          />
         </Pressable>
       </View>
-
-      <View style={styles.list}>
-        {activeTab === 'saved'
-          ? saved.map((m, i) => (
+      {!compact && savedMeals.length > 0 && recent.length > 0 ? (
+        <SegmentedControl
+          value={active}
+          onChange={setTab}
+          accessibilityLabel="Источник повтора"
+          options={[
+            { id: "recent", label: "Недавние" },
+            { id: "saved", label: "Мои приёмы" },
+          ]}
+        />
+      ) : null}
+      <View>
+        {active === "saved"
+          ? savedMeals.slice(0, maxItems).map((m) => (
               <Pressable
                 key={m.id}
+                style={styles.row}
                 onPress={() => onLogSaved(m)}
-                style={({ pressed }) => [
-                  styles.row,
-                  i === saved.length - 1 && styles.rowLast,
-                  pressed && styles.pressed,
-                ]}
                 accessibilityRole="button"
                 accessibilityLabel={`Добавить приём ${m.name}`}
               >
-                <View style={styles.rowIcon}>
-                  <Ionicons name="bookmark-outline" size={16} color={colors.ink} />
-                </View>
-                <View style={styles.rowBody}>
-                  <AppText variant="body" style={styles.rowTitle} numberOfLines={1}>
+                <Ionicons
+                  name="bookmark-outline"
+                  size={18}
+                  color={colors.ink}
+                />
+                <View style={styles.copy}>
+                  <AppText variant="body" numberOfLines={2}>
                     {m.name}
                   </AppText>
-                  <AppText variant="caption" tone="muted">
-                    {m.items.length} поз. · тап — в дневник
+                  <AppText variant="caption" tone="secondary">
+                    {m.items.length} поз. · в выбранный приём
                   </AppText>
                 </View>
-                <View style={styles.rowAdd}>
-                  <Ionicons name="add" size={18} color={colors.onAccent} />
-                </View>
+                <Ionicons name="add" size={20} color={colors.ink} />
               </Pressable>
             ))
-          : recentItems.map((e, i) => {
-              const canQuick = e.productId != null || e.recipeId != null;
-              return (
-                <View
-                  key={e.id}
-                  style={[styles.row, i === recentItems.length - 1 && styles.rowLast]}
+          : recent.slice(0, maxItems).map((e) => (
+              <View key={e.id} style={styles.row}>
+                <Pressable
+                  style={styles.main}
+                  onPress={() => onRecentConfirm(e)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Повторить с другой порцией: ${e.displayName}`}
+                  testID={`recent-portion-${e.id}`}
                 >
-                  <Pressable
-                    onPress={() => onRecentConfirm(e)}
-                    style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${e.displayName}, выбрать порцию`}
-                  >
-                    <View style={styles.rowIcon}>
-                      <Ionicons name="time-outline" size={16} color={colors.ink} />
-                    </View>
-                    <View style={styles.rowBody}>
-                      <AppText variant="body" style={styles.rowTitle} numberOfLines={1}>
-                        {e.displayName}
-                      </AppText>
-                      <AppText variant="caption" tone="muted">
-                        {e.grams} г
-                      </AppText>
-                    </View>
-                  </Pressable>
-                  {canQuick ? (
-                    <Pressable
-                      onPress={() => onRecentQuick(e)}
-                      style={({ pressed }) => [styles.rowAdd, pressed && styles.pressed]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Быстро добавить ${e.displayName}`}
-                    >
-                      <Ionicons name="add" size={18} color={colors.onAccent} />
-                    </Pressable>
-                  ) : null}
-                </View>
-              );
-            })}
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <View style={styles.copy}>
+                    <AppText variant="body" numberOfLines={2}>
+                      {e.displayName}
+                    </AppText>
+                    <AppText variant="caption" tone="secondary">
+                      {entryAmountLabel(e)} ·{" "}
+                      {e.energyKcal == null ? "—" : Math.round(e.energyKcal)}{" "}
+                      ккал
+                    </AppText>
+                  </View>
+                </Pressable>
+                <Pressable
+                  style={styles.add}
+                  onPress={() => onRecentQuick(e)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Быстро добавить ${e.displayName}`}
+                  testID={`recent-quick-${e.id}`}
+                >
+                  <Ionicons name="add" size={21} color={colors.ink} />
+                </Pressable>
+              </View>
+            ))}
       </View>
+      <AppText variant="caption" tone="muted">
+        «+» — та же порция. Нажми на название, чтобы изменить её.
+      </AppText>
+      {meal && onPickMeal ? (
+        <>
+          <Pressable
+            style={styles.more}
+            onPress={
+              active === "saved" ? onOpenSavedInSheet : onOpenRecentInSheet
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Все варианты быстрого повтора"
+          >
+            <AppText variant="caption">Все варианты</AppText>
+            <Ionicons name="arrow-forward" size={16} color={colors.ink} />
+          </Pressable>
+          <ActionMenuSheet
+            visible={mealOpen}
+            onClose={() => setMealOpen(false)}
+            title="Добавить в"
+            actions={MEALS.map((m) => ({
+              id: `meal-${m}`,
+              label: MEAL_LABELS[m],
+              onPress: () => onPickMeal(m),
+            }))}
+          />
+        </>
+      ) : null}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
-  wrap: {
-    marginTop: space.lg,
-    paddingTop: space.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    gap: space.md,
-  },
+  wrap: { gap: space.sm, paddingVertical: space.md },
   head: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: space.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space.sm,
   },
-  headTitle: { fontWeight: '700' },
-  segment: {
-    flexDirection: 'row',
-    padding: 3,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
-    gap: 2,
-  },
-  segBtn: {
-    flex: 1,
+  more: {
     minHeight: touchMin,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.md,
-  },
-  segBtnOn: {
-    backgroundColor: colors.ink,
-  },
-  segLabel: { fontWeight: '700' },
-  list: {
-    gap: 2,
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: touchMin,
-    paddingLeft: space.md,
-    paddingRight: space.sm,
-    gap: space.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    minHeight: 64,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  rowLast: { borderBottomWidth: 0 },
-  rowMain: {
+  main: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
+    minHeight: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    paddingVertical: space.sm,
+  },
+  copy: { flex: 1, gap: space.xs, minWidth: 0 },
+  add: {
     minHeight: touchMin,
-    minWidth: 0,
+    minWidth: touchMin,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  rowIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowBody: { flex: 1, gap: 1, minWidth: 0, paddingVertical: space.sm },
-  rowTitle: { fontWeight: '600' },
-  rowAdd: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  empty: {
-    marginTop: space.lg,
-    paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    minHeight: touchMin,
-    justifyContent: 'center',
-  },
-  pressed: { opacity: 0.85 },
 });

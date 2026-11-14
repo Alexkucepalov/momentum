@@ -46,7 +46,7 @@ Screen padding20; base spacing4/8/12/16/20/24/32; section break28. Card radius22
 - `SegmentedControl`: text tabs with a thin selected underline; no heavy track around every group.
 - `DayStrip`: week navigation separated from the seven date targets, keeping date selection readable on narrow screens.
 - `KcalRing`: open day summary with a thin ring only when an energy target exists. Labeled macro values and optional goal tracks; null values stay unknown. Exercise energy does not change the food target.
-- `MealSection`: four stable meal sections, compact empty rows, accessible add actions, existing copy/edit/delete/undo behavior. The established meal-before-repeat order is retained.
+- `MealSection`: four stable meal sections, compact empty rows, accessible add actions, existing copy/edit/delete/undo behavior. A compact quick-repeat section now appears before the meal list (#230), with an explicit destination meal. Each diary row has a visible actions menu; resizing scales the stored snapshot.
 - `TodayTrainingCard`: one sage action for the day's plan or the active session, backed by repository data.
 - `StrengthWeekBoard`: all seven days, planned cards, actual workout rows, direct manipulation and menu fallback. Completed facts have no drag handles.
 - `SetLogRow`: one prominent current approach, compact saved/queued rows, optional expansion of later sets. Recording still calls the existing validated repository operation.
@@ -54,7 +54,7 @@ Screen padding20; base spacing4/8/12/16/20/24/32; section break28. Card radius22
 
 ## Screen structure
 
-Today prioritizes the recorded day, a food action and the current training plan; steps, sleep and water are compact rows. Food keeps diary/catalog separation and four meal slots. Movement leads with the week; Garmin facts remain tied to the imported date. Progress uses charts and metric summaries, with report copying secondary. Profile leads with a compact goals summary; editing expands on demand or opens directly through `?section=goals`.
+Today prioritizes the recorded day, a direct diary link, compact food repeat with a visible destination meal, then the current training plan. Steps, sleep and water are compact rows; water can be corrected and quantitative habits accept a daily value. Food keeps diary/catalog separation and four meal slots. The catalog uses compact date context to leave room for search results; the diary keeps the full week selector. Empty food totals use a dash rather than a measured zero. Movement leads with the week; Garmin facts remain tied to the imported date. Progress uses charts and metric summaries, with report copying secondary. Profile leads with a compact goals summary; editing expands on demand or opens directly through `?section=goals`.
 
 Planner, recipes, Garmin and strength stacks share the same font, headers, control and surface contracts. Existing functionality and import/restore confirmation remain available.
 
@@ -64,4 +64,4 @@ Dragging changes planned cards only. `swapPlannedActivities` validates both card
 
 The browser evidence uses the repository's explicitly synthetic fixture, shifted to the QA week. Expo-web screenshots are not an Android device Pass. Device force-stop, TalkBack, large text, keyboard and drag behavior still need physical Android verification before updating device baselines.
 
-Implementation notes and evidence: [fresh-utility/README.md](quality/fresh-utility/README.md), [followup-228/README.md](quality/followup-228/README.md).
+Implementation notes and evidence: [fresh-utility/README.md](quality/fresh-utility/README.md), [followup-228/README.md](quality/followup-228/README.md), [today-food-230/README.md](quality/today-food-230/README.md).

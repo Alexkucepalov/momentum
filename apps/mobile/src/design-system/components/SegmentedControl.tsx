@@ -39,6 +39,7 @@ export function SegmentedControl<T extends string>({
             onPress={() => onChange(opt.id)}
             style={({ pressed }) => [styles.seg, on && styles.segOn, pressed && styles.pressed]}
             accessibilityRole="tab"
+            aria-selected={on}
             accessibilityState={{ selected: on }}
             accessibilityLabel={opt.label}
           >
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   },
   seg: {
     flex: 1,
-    minHeight: touchMin - 8,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.xs,

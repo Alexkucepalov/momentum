@@ -33,6 +33,7 @@ export function Chip({
         disabled && styles.disabled,
       ]}
       accessibilityRole="button"
+      aria-pressed={selected}
       accessibilityState={{ selected, disabled: !!disabled }}
       accessibilityLabel={accessibilityLabel ?? label}
     >

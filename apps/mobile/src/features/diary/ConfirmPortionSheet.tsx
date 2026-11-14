@@ -179,11 +179,12 @@ export function ConfirmPortionSheet({
   const title = target.kind === 'product' ? target.product.name : target.recipe.name;
   const source =
     target.kind === 'product'
-      ? `Источник: ${target.product.source}`
+      ? `Источник: ${{user:'введено вручную',label:'с этикетки',catalog:target.product.brand==='Справочник'?'справочник':'каталог',recipe:'рецепт',missing:'не указан'}[target.product.source]}`
       : `Рецепт · выход ${target.recipe.cookedYieldG} г`;
 
   const submit = () => {
     try {
+      if (!Number.isFinite(grams) || grams <= 0) throw new Error('Укажи порцию больше нуля');
       const per100g = {
         energyKcal: parseOptionalField(kcal),
         proteinG: parseOptionalField(protein),

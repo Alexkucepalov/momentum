@@ -1,0 +1,24 @@
+{
+  "platform": "Expo web / Chromium",
+  "date": "2026-11-13 (test clock)",
+  "widths": [
+    360,
+    390,
+    430
+  ],
+  "flows": [
+    "Today quick repeat/double tap/changed portion/Undo",
+    "water custom amount/delete/Undo/reload",
+    "checkbox and quantitative habits react immediately/Undo",
+    "historical entry resize ignores changed catalog",
+    "invalid date blocks move; valid move/copy/delete support Undo",
+    "Quick Add displays portions and can repeat/resize with null macros",
+    "catalog last grams/favorite Undo/search empty state",
+    "Today opens diary even after catalog was last active",
+    "reload preserves entries; offline repeat",
+    "empty/filled/unknown UI"
+  ],
+  "page_errors": [],
+  "console_errors": [],
+  "native_device_pass": false
+}

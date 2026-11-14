@@ -1,3 +1,4 @@
+import { entryAmountLabel } from '../../../../../src/domain/diaryEntry';
 import { useMemo } from 'react';
 import {
   FlatList,
@@ -136,8 +137,8 @@ export function FoodCatalogList({
   const filters: Array<{ id: CatalogFilter; label: string; count: number }> = [
     { id: 'all', label: 'Все', count: products.length + recipes.length },
     { id: 'frequent', label: 'Частые', count: frequent.length },
-    { id: 'favorites', label: 'Избр.', count: favoriteCount },
-    { id: 'recent', label: 'Недавн.', count: recentUnique.length },
+    { id: 'favorites', label: 'Избранное', count: favoriteCount },
+    { id: 'recent', label: 'Недавние', count: recentUnique.length },
     { id: 'recipes', label: 'Рецепты', count: recipes.length },
   ];
 
@@ -292,7 +293,7 @@ export function FoodCatalogList({
                 style={({ pressed }) => [styles.recentCard, pressed && styles.pressed]}
                 onPress={() => onRepeatEntry(e)}
                 accessibilityRole="button"
-                accessibilityLabel={`Повторить ${e.displayName}, ${e.grams} грамм`}
+                accessibilityLabel={`Повторить ${e.displayName}, ${entryAmountLabel(e)}`}
               >
                 <View style={styles.recentIcon}>
                   <Ionicons name="refresh" size={16} color={colors.ink} />
@@ -301,7 +302,7 @@ export function FoodCatalogList({
                   {e.displayName}
                 </AppText>
                 <AppText variant="caption" tone="muted">
-                  {e.grams} г · {e.energyKcal === null ? '—' : `${Math.round(e.energyKcal)} ккал`}
+                  {entryAmountLabel(e)} · {e.energyKcal === null ? '—' : `${Math.round(e.energyKcal)} ккал`}
                 </AppText>
                 <AppText variant="caption" tone="accent">
                   + в дневник

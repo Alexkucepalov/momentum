@@ -1,3 +1,4 @@
+import { MEALS, resizeEntrySnapshot, type EntryDetails } from '../domain/diaryEntry';
 import { sumActivityKcal } from '../domain/activityEnergy';
 import { buildCookAgainInput, type CookAgainDraft } from '../domain/cookAgain';
 import { mergeCommonFoodCatalog } from '../domain/commonFoodCatalog';
@@ -240,9 +241,14 @@ export type FoodRepository = {
   createSavedMealFromEntries(name: string, entries: FoodEntry[], defaultMeal?: MealSlot | null): SavedMeal;
   logSavedMeal(args: { savedMealId: string; dateLocal: string; meal: MealSlot }): FoodEntry[];
   softDeleteSavedMeal(savedMealId: string): SavedMeal;
+  /** Atomic repeat from saved snapshots; supports deleted catalog cards and Quick Add. */
+  copyDiaryEntries(args: { items: { entryId: string; grams?: number }[]; dateLocal: string; meal?: MealSlot }): FoodEntry[];
+  updateEntryDetails(entryId: string, patch: Partial<EntryDetails>): FoodEntry;
   updateEntryGrams(entryId: string, grams: number): FoodEntry;
   softDeleteEntry(entryId: string): FoodEntry;
   undoDeleteEntry(entryId: string): FoodEntry;
+  /** Undo fresh adds, including their exact cooked-batch consumption in this runtime. */
+  undoDiaryAdds(entryIds: string[]): void;
   dailyTotals(dateLocal: string): DailyTotals;
   listRecipes(): Recipe[];
   getRecipe(recipeId: string): Recipe | null;
@@ -270,6 +276,8 @@ export type FoodRepository = {
   addWater(dateLocal: string, ml: number): WaterEntry;
   waterMlForDate(dateLocal: string): number;
   listWaterForDate(dateLocal: string): WaterEntry[];
+  removeWater(entryId: string): WaterEntry | null;
+  restoreWater(entry: WaterEntry): void;
   addWeight(kg: number, weighedAt?: string): WeightEntry;
   listWeights(limit?: number): WeightEntry[];
   /** Weights from an integration (e.g. Garmin), newest first. */
@@ -541,6 +549,7 @@ export type FoodRepository = {
     source?: 'manual' | 'auto',
   ): FlexibleHabitEvent;
   unlogFlexibleHabit(habitId: string, dateLocal: string): void;
+  setFlexibleHabitDayValue(habitId: string, dateLocal: string, value: number): void;
   isFlexibleHabitLogged(habitId: string, dateLocal: string): boolean;
   /** Measured value for the day; 0 if not logged. */
   flexibleHabitDayValue(habitId: string, dateLocal: string): number;
@@ -1419,6 +1428,17 @@ export function createMemoryFoodRepository(seed?: {
   const cookedBatches = new Map<string, CookedBatch>(
     (snap?.cookedBatches ?? []).map((b) => [b.id, { ...b }]),
   );
+  // Undo is transient UI state; this ledger is deliberately absent from snapshots.
+  const pendingDiaryConsumption = new Map<string, { batchId: string; grams: number }>();
+  function consumeForDiaryEntry(entry: FoodEntry): void {
+    if (!entry.recipeId) return;
+    const batchId = pickFifoBatchId([...cookedBatches.values()].filter(b => b.recipeId === entry.recipeId));
+    const batch = batchId ? cookedBatches.get(batchId) : null;
+    if (!batch || batch.deletedAt) return;
+    const remaining = decreaseCookedRemaining(batch.remainingG, entry.grams);
+    pendingDiaryConsumption.set(entry.id, { batchId: batch.id, grams: batch.remainingG - remaining });
+    batch.remainingG = remaining; batch.updatedAt = nowIso();
+  }
   const mealPlans = new Map<string, MealPlan>(
     (snap?.mealPlans ?? []).map((p) => [p.id, { ...p }]),
   );
@@ -1894,6 +1914,7 @@ export function createMemoryFoodRepository(seed?: {
       return hit ? hit.grams : null;
     },
     addEntryFromProduct({ productId, dateLocal, meal, grams }) {
+      assertLocalDate(dateLocal); if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
       assertNonNegativeFinite(grams, 'grams');
       const product = products.get(productId);
       if (!product || product.deletedAt) throw new Error('Product not found');
@@ -1906,6 +1927,7 @@ export function createMemoryFoodRepository(seed?: {
         },
         grams,
       );
+      nutritionFromProductFields({energyKcal:snapN.kcal,proteinG:snapN.protein,fatG:snapN.fat,carbG:snapN.carbs});
       const ts = nowIso();
       const entry: FoodEntry = {
         id: newId(),
@@ -1937,6 +1959,7 @@ export function createMemoryFoodRepository(seed?: {
       fatG = null,
       carbG = null,
     }) {
+      assertLocalDate(dateLocal); if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
       nutritionFromProductFields({
         energyKcal,
         proteinG: proteinG ?? null,
@@ -2030,6 +2053,16 @@ export function createMemoryFoodRepository(seed?: {
     logSavedMeal({ savedMealId, dateLocal, meal }) {
       const saved = savedMeals.get(savedMealId);
       if (!saved || saved.deletedAt) throw new Error('Saved meal not found');
+      assertLocalDate(dateLocal);
+      if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
+      for (const item of saved.items) {
+        assertNonNegativeFinite(item.grams, 'grams');
+        const product = item.productId ? products.get(item.productId) : null;
+        const recipe = item.recipeId ? api.getRecipe(item.recipeId) : null;
+        if (item.productId ? !product || product.deletedAt : !recipe) throw new Error('В шаблоне есть удалённый продукт или рецепт. Обнови шаблон перед добавлением.');
+        const n = product ? portion(nutritionFromProductFields(product), item.grams) : nutritionForRecipePortion(recipe!, ingredients.get(recipe!.id) ?? [], item.grams);
+        nutritionFromProductFields({energyKcal:n.kcal,proteinG:n.protein,fatG:n.fat,carbG:n.carbs});
+      }
       const created: FoodEntry[] = [];
       for (const item of saved.items) {
         if (item.productId) {
@@ -2068,6 +2101,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...m, items: m.items.map((i) => ({ ...i })) };
     },
     addEntryFromRecipe({ recipeId, dateLocal, meal, grams, nutritionSnapshot }) {
+      assertLocalDate(dateLocal); if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
       assertNonNegativeFinite(grams, 'grams');
       const recipe = recipes.get(recipeId);
       if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
@@ -2105,59 +2139,46 @@ export function createMemoryFoodRepository(seed?: {
         deletedAt: null,
       };
       entries.set(entry.id, entry);
-      const batchId = pickFifoBatchId([...cookedBatches.values()].filter((b) => b.recipeId === recipeId));
-      if (batchId) {
-        const batch = cookedBatches.get(batchId);
-        if (batch && !batch.deletedAt) {
-          batch.remainingG = decreaseCookedRemaining(batch.remainingG, grams);
-          batch.updatedAt = ts;
-        }
-      }
+      consumeForDiaryEntry(entry);
       notify();
       return { ...entry };
     },
-    updateEntryGrams(entryId, grams) {
-      assertNonNegativeFinite(grams, 'grams');
-      const entry = entries.get(entryId);
-      if (!entry || entry.deletedAt) throw new Error('Entry not found');
-      let snapN: Nutrition;
-      if (entry.productId) {
-        const product = products.get(entry.productId);
-        if (!product) throw new Error('Product missing for entry');
-        snapN = portion(
-          {
-            kcal: product.energyKcal,
-            protein: product.proteinG,
-            fat: product.fatG,
-            carbs: product.carbG,
-          },
-          grams,
-        );
-      } else if (entry.recipeId) {
-        const recipe = recipes.get(entry.recipeId);
-        if (!recipe) throw new Error('Recipe missing for entry');
-        snapN = nutritionForRecipePortion(
-          recipe,
-          ingredients.get(entry.recipeId) ?? [],
-          grams,
-        );
-      } else {
-        const factor = entry.grams === 0 ? 0 : grams / entry.grams;
-        snapN = {
-          kcal: entry.energyKcal === null ? null : entry.energyKcal * factor,
-          protein: entry.proteinG === null ? null : entry.proteinG * factor,
-          fat: entry.fatG === null ? null : entry.fatG * factor,
-          carbs: entry.carbG === null ? null : entry.carbG * factor,
-        };
+    copyDiaryEntries({ items, dateLocal, meal }) {
+      assertLocalDate(dateLocal);
+      if (meal != null && !MEALS.includes(meal)) throw new Error('Выбери приём пищи');
+      if (!items.length) throw new Error('Нет записей для повтора');
+      const ts = nowIso();
+      // Validate every source before creating any entry or consuming a cooked batch.
+      const copies = items.map(item => {
+        const source = entries.get(item.entryId);
+        if (!source || source.deletedAt) throw new Error('Запись для повтора не найдена');
+        if (!MEALS.includes(meal ?? source.meal)) throw new Error('Некорректный приём у исходной записи');
+        const details = resizeEntrySnapshot(source, item.grams ?? source.grams);
+        nutritionFromProductFields(details);
+        return { ...source, ...details, id: newId(), dateLocal, meal: meal ?? source.meal, createdAt: ts, updatedAt: ts, deletedAt: null };
+      });
+      for (const entry of copies) {
+        entries.set(entry.id, entry);
+        consumeForDiaryEntry(entry);
       }
-      entry.grams = grams;
-      entry.energyKcal = snapN.kcal;
-      entry.proteinG = snapN.protein;
-      entry.fatG = snapN.fat;
-      entry.carbG = snapN.carbs;
-      entry.updatedAt = nowIso();
       notify();
-      return { ...entry };
+      return copies.map(e => ({ ...e }));
+    },
+    updateEntryDetails(entryId, patch) {
+      const entry = entries.get(entryId);
+      if (!entry || entry.deletedAt) throw new Error('Запись не найдена');
+      const next = { ...entry, ...patch };
+      assertLocalDate(next.dateLocal);
+      if (!MEALS.includes(next.meal)) throw new Error('Выбери приём пищи');
+      assertNonNegativeFinite(next.grams, 'grams');
+      nutritionFromProductFields(next);
+      Object.assign(entry, { dateLocal: next.dateLocal, meal: next.meal, grams: next.grams, energyKcal: next.energyKcal, proteinG: next.proteinG, fatG: next.fatG, carbG: next.carbG, updatedAt: nowIso() });
+      notify(); return { ...entry };
+    },
+    updateEntryGrams(entryId, grams) {
+      const entry = entries.get(entryId);
+      if (!entry || entry.deletedAt) throw new Error('Запись не найдена');
+      return api.updateEntryDetails(entryId, resizeEntrySnapshot(entry, grams));
     },
     softDeleteEntry(entryId) {
       const entry = entries.get(entryId);
@@ -2174,6 +2195,20 @@ export function createMemoryFoodRepository(seed?: {
       entry.updatedAt = nowIso();
       notify();
       return { ...entry };
+    },
+    undoDiaryAdds(entryIds) {
+      const ts = nowIso();
+      for (const id of new Set(entryIds)) {
+        const entry = entries.get(id); if (!entry) continue;
+        const consumed = pendingDiaryConsumption.get(id);
+        if (consumed) {
+          const batch = cookedBatches.get(consumed.batchId);
+          if (batch && !batch.deletedAt) { batch.remainingG = Math.min(batch.initialYieldG, batch.remainingG + consumed.grams); batch.updatedAt = ts; }
+          pendingDiaryConsumption.delete(id);
+        }
+        entry.deletedAt = ts; entry.updatedAt = ts;
+      }
+      notify();
     },
     dailyTotals(dateLocal) {
       return computeDailyTotals(api.listEntriesForDate(dateLocal));
@@ -2297,6 +2332,7 @@ export function createMemoryFoodRepository(seed?: {
       return api.createRecipe(input);
     },
     addWater(dateLocal, ml) {
+      assertLocalDate(dateLocal);
       assertPositiveFinite(ml, 'ml');
       const entry: WaterEntry = {
         id: newId(),
@@ -2317,6 +2353,16 @@ export function createMemoryFoodRepository(seed?: {
       return [...waterEntries.values()]
         .filter((w) => w.dateLocal === dateLocal)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    },
+    removeWater(entryId) {
+      const previous = waterEntries.get(entryId);
+      if (!previous) return null;
+      waterEntries.delete(entryId); notify(); return { ...previous };
+    },
+    restoreWater(entry) {
+      assertLocalDate(entry.dateLocal); assertPositiveFinite(entry.ml, 'ml');
+      if (waterEntries.has(entry.id)) throw new Error('Эта запись воды уже восстановлена');
+      waterEntries.set(entry.id, { ...entry }); notify();
     },
     addWeight(kg, weighedAt) {
       assertPositiveFinite(kg, 'kg');
@@ -3497,6 +3543,15 @@ export function createMemoryFoodRepository(seed?: {
       flexibleHabitEvents.set(event.id, event);
       notify();
       return { ...event };
+    },
+    setFlexibleHabitDayValue(habitId, dateLocal, value) {
+      assertLocalDate(dateLocal); assertNonNegativeFinite(value, 'value');
+      const habit = flexibleHabits.get(habitId);
+      if (!habit || !habit.active || habit.deletedAt || habit.pausedAt) throw new Error('Привычка недоступна');
+      const previous = [...flexibleHabitEvents.values()].find(e => e.habitId === habitId && e.dateLocal === dateLocal);
+      if (value === 0) { api.unlogFlexibleHabit(habitId, dateLocal); return; }
+      if (previous) { previous.value = habit.kind === 'quantity' ? value : 1; previous.source = 'manual'; notify(); }
+      else api.logFlexibleHabit(habitId, dateLocal, value);
     },
     unlogFlexibleHabit(habitId, dateLocal) {
       for (const [id, e] of flexibleHabitEvents) {
@@ -4816,6 +4871,7 @@ export function createMemoryFoodRepository(seed?: {
       recipes.clear();
       ingredients.clear();
       entries.clear();
+      pendingDiaryConsumption.clear();
       waterEntries.clear();
       weightEntries.clear();
       habitChecks.clear();
@@ -4903,6 +4959,7 @@ export function createMemoryFoodRepository(seed?: {
       recipes.clear();
       ingredients.clear();
       entries.clear();
+      pendingDiaryConsumption.clear();
       waterEntries.clear();
       weightEntries.clear();
       habitChecks.clear();

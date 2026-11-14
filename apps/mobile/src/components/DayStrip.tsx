@@ -28,7 +28,7 @@ export function DayStrip({ selected, today, onSelect, onOpenCalendar }: {
         {days.map((date, i) => {
           const active = date === selected;
           return (
-            <Pressable key={date} onPress={() => onSelect(date)} style={({ pressed }) => [styles.day, active && styles.active, pressed && styles.pressed]} accessibilityRole="tab" accessibilityState={{ selected: active }} accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(date)}${date === today ? ', сегодня' : ''}`}>
+            <Pressable key={date} onPress={() => onSelect(date)} style={({ pressed }) => [styles.day, active && styles.active, pressed && styles.pressed]} accessibilityRole="tab" aria-selected={active} accessibilityState={{ selected: active }} accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(date)}${date === today ? ', сегодня' : ''}`}>
               <AppText variant="label" tone={active ? 'inverse' : 'muted'}>{WEEKDAY_SHORT_RU_CAP[i]}</AppText>
               <AppText variant="body" tone={active ? 'inverse' : 'ink'} style={styles.number}>{dayNumber(date)}</AppText>
               <View style={[styles.dot, { opacity: date === today ? 1 : 0, backgroundColor: active ? colors.onPrimary : colors.sageInk }]} />

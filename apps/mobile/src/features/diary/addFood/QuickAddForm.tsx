@@ -176,6 +176,7 @@ function ModeChip({
       onPress={onPress}
       style={[styles.modeChip, active && styles.modeChipOn]}
       accessibilityRole="tab"
+      aria-selected={active}
       accessibilityState={{ selected: active }}
       accessibilityLabel={label}
     >
