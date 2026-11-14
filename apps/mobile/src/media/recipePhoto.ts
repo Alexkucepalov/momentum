@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
+import { getLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
 
 async function ensureRecipesDir(): Promise<string | null> {
   const base = FileSystem.documentDirectory;
@@ -16,12 +17,17 @@ async function ensureRecipesDir(): Promise<string | null> {
 
 /** Copy picked image into app documents so it survives cache cleanup. */
 export async function persistRecipePhoto(sourceUri: string, recipeKey: string): Promise<string> {
+  const epoch = getLocalDataWipeEpoch();
   if (Platform.OS === 'web') return sourceUri;
   const dir = await ensureRecipesDir();
-  if (!dir) return sourceUri;
+  if (!dir) throw new Error('Не удалось сохранить фото. Повтори попытку или убери фото.');
   const safe = recipeKey.replace(/[^a-zA-Z0-9_-]/g, '_');
   const dest = `${dir}${safe}-${Date.now()}.jpg`;
   await FileSystem.copyAsync({ from: sourceUri, to: dest });
+  if (epoch !== getLocalDataWipeEpoch()) {
+    await FileSystem.deleteAsync(dest, { idempotent: true });
+    throw new Error('Данные изменились. Открой рецепт заново.');
+  }
   return dest;
 }
 
@@ -52,4 +58,12 @@ export async function takeRecipePhoto(): Promise<string | null> {
   });
   if (result.canceled || !result.assets[0]?.uri) return null;
   return result.assets[0].uri;
+}
+
+/** Only app-owned copies; gallery originals are never removed. */
+export async function clearRecipePhotos(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const base = FileSystem.documentDirectory;
+  if (!base) throw new Error('Каталог фото недоступен');
+  await FileSystem.deleteAsync(`${base}recipes/`, { idempotent: true });
 }

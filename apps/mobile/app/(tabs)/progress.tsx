@@ -1,5 +1,9 @@
+import type { WeightEntry } from '../../../../src/storage/types';
+import { confirmAction } from '@/src/utils/confirmAction';
+import { WeightValueSheet } from '@/src/features/progress/WeightValueSheet';
+import { completedTrainingFacts } from '../../../../src/domain/completedTraining';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -12,7 +16,6 @@ import {
 } from '../../../../src/domain/monthOverview';
 import { buildWeekNutrition } from '../../../../src/domain/weekNutrition';
 import { collectWeeklyInsightStats } from '../../../../src/domain/weeklyInsight';
-import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { WeekBarChart } from '@/src/components/WeekBarChart';
 import { WeekNutritionStrip } from '@/src/components/WeekNutritionStrip';
@@ -52,26 +55,30 @@ const TABS: { id: ProgressTab; label: string }[] = [
 
 function fmtSleepHours(sec: number | null): string {
   if (sec == null || !Number.isFinite(sec) || sec < 0) return '—';
-  const h = Math.floor(sec / 3600);
-  const m = Math.round((sec % 3600) / 60);
+  const minutes = Math.round(sec / 60);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
 export default function ProgressScreen() {
-  const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
+  const { repo, dateLocal, setDateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
-  void revision;
   const [tab, setTab] = useState<ProgressTab>('overview');
   const [lastExport, setLastExport] = useState<string | null>(null);
+  const [editingWeight, setEditingWeight] = useState<WeightEntry | null>(null);
   const [kgRaw, setKgRaw] = useState('');
   const [weekExtraOpen, setWeekExtraOpen] = useState(false);
   const [bmiNoteOpen, setBmiNoteOpen] = useState(false);
   const [challengesOpen, setChallengesOpen] = useState(false);
+  const [historyLimit, setHistoryLimit] = useState(30);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const profile = repo.getProfile();
   const latest = repo.latestWeight();
-  const weights = repo.listWeights(30);
+  const allWeights = repo.listWeights(Number.MAX_SAFE_INTEGER);
+  const weights = allWeights.slice(0, 30);
+  const historyWeights = allWeights.slice(0, historyLimit);
 
   const weekDays = useMemo(
     () =>
@@ -83,7 +90,7 @@ export default function ProgressScreen() {
           return { energyKcal: t.energyKcal, entryCount: t.entryCount };
         },
       }),
-    [repo, dateLocal, profile.dailyEnergyKcal],
+    [repo, dateLocal, profile.dailyEnergyKcal, revision],
   );
 
   const weekInsight = useMemo(
@@ -92,7 +99,7 @@ export default function ProgressScreen() {
         endDateLocal: dateLocal,
         dailyTotals: (d) => repo.dailyTotals(d),
         activityMinutesForDate: (d) => repo.activityMinutesForDate(d),
-        workoutsForDate: (d) => repo.listWorkoutsForDate(d).length,
+        workoutsForDate: (d) => completedTrainingFacts(repo.listWorkoutsForDate(d), repo.listWorkoutSessionsForDate(d)).length,
         habitWeekStats: () =>
           repo.listFlexibleHabits().map((h) => {
             const s = repo.flexibleHabitWeekStats(h.id, dateLocal);
@@ -100,7 +107,7 @@ export default function ProgressScreen() {
           }),
         challenges: () => repo.listChallenges().map((c) => ({ status: c.status })),
       }),
-    [repo, dateLocal],
+    [repo, dateLocal, revision],
   );
 
   const sportWeekMinutes = useMemo(() => {
@@ -108,10 +115,10 @@ export default function ProgressScreen() {
     let count = 0;
     for (const day of weekDays) {
       mins += repo.activityMinutesForDate(day.dateLocal);
-      count += repo.listWorkoutsForDate(day.dateLocal).length;
+      count += completedTrainingFacts(repo.listWorkoutsForDate(day.dateLocal), repo.listWorkoutSessionsForDate(day.dateLocal)).length;
     }
     return { mins, count };
-  }, [repo, weekDays]);
+  }, [repo, weekDays, revision]);
 
   const stepsWeek = useMemo(() => {
     const start = weekStartMonday(dateLocal);
@@ -131,7 +138,7 @@ export default function ProgressScreen() {
       days,
       knownDays: days.filter((d) => d.steps != null).length,
     };
-  }, [repo, dateLocal]);
+  }, [repo, dateLocal, revision]);
 
   const todayKey = localDateKey(new Date(), profile.timezone);
 
@@ -175,7 +182,7 @@ export default function ProgressScreen() {
       avgHours: known.length === 0 ? null : sumSec / known.length / 3600,
       avgScore,
     };
-  }, [repo, dateLocal]);
+  }, [repo, dateLocal, revision]);
 
   const foodDaysLogged = useMemo(
     () => weekDays.filter((d) => d.entryCount > 0).length,
@@ -194,7 +201,7 @@ export default function ProgressScreen() {
         sleepSec: repo.getSleepForDate(d)?.sleepSec ?? null,
       };
     });
-    const monthWeights = repo.listWeights(90);
+    const monthWeights = repo.listWeights(Number.MAX_SAFE_INTEGER);
     const inWindow = monthWeights.filter((w) => {
       const key = localDateKey(new Date(w.weighedAt), profile.timezone);
       return key >= dates[0]! && key <= dates[dates.length - 1]!;
@@ -206,7 +213,7 @@ export default function ProgressScreen() {
       weightOldestKg: oldest,
       weightNewestKg: newest,
     });
-  }, [repo, dateLocal, profile.timezone]);
+  }, [repo, dateLocal, profile.timezone, revision]);
 
   const onExport = async () => {
     const json = repo.exportAll();
@@ -215,7 +222,7 @@ export default function ProgressScreen() {
       await Clipboard.setStringAsync(json);
       showFlash('Экспорт скопирован в буфер');
     } catch {
-      Alert.alert('Экспорт', 'JSON готов ниже. Скопируй вручную, если буфер недоступен.');
+      showFlash('JSON готов ниже. Скопируй вручную, если буфер недоступен.');
     }
   };
 
@@ -225,28 +232,34 @@ export default function ProgressScreen() {
       await Clipboard.setStringAsync(text);
       showFlash('Отчёт за день скопирован — вставь в ChatGPT');
     } catch (e) {
-      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
+      showFlash(e instanceof Error ? e.message : 'Не удалось скопировать');
     }
   };
 
   const onSaveWeight = () => {
     const kg = Number(kgRaw.replace(',', '.'));
     if (!Number.isFinite(kg) || kg <= 0) {
-      Alert.alert('Вес', 'Введи положительное число в кг');
+      showFlash('Введи положительное число в кг');
       return;
     }
     try {
-      repo.addWeight(kg);
+      const entry = repo.addWeight(kg);
       setKgRaw('');
       refresh();
-      showFlash(`Вес сохранён: ${kg} кг`);
+      setUndo({ message: `Вес сохранён: ${kg} кг`, scope: 'all', action: () => repo.removeManualWeight(entry.id) });
     } catch (e) {
-      Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не сохранено');
+      showFlash(e instanceof Error ? e.message : 'Не сохранено');
     }
   };
 
   return (
     <View style={styles.root}>
+      <WeightValueSheet entry={editingWeight} timezone={profile.timezone} onClose={() => setEditingWeight(null)} onSave={kg => {
+        if (!editingWeight) return;
+        const previous = { ...editingWeight };
+        repo.updateManualWeight(previous.id, kg); refresh('all');
+        setUndo({ message: 'Замер изменён', scope: 'all', action: () => repo.updateManualWeight(previous.id, previous.kg) });
+      }} />
       <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.tabs}>
           <SegmentedControl<ProgressTab>
@@ -329,7 +342,7 @@ export default function ProgressScreen() {
               selectedDate={dateLocal}
               todayDate={todayKey}
               onSelectDate={setDateLocal}
-              footnote="Пустой столбик — нет импорта Garmin, не «ноль часов»."
+              footnote="Пустой столбик — нет записи сна, не «ноль часов»."
               days={sleepWeek.days.map((d) => ({
                 dateLocal: d.date,
                 weekdayIndex: d.weekdayIndex,
@@ -343,7 +356,7 @@ export default function ProgressScreen() {
                 label="Тренировки"
                 value={sportWeekMinutes.count}
                 unit="шт"
-                meta={`${sportWeekMinutes.mins} мин · MET не вычитается из еды`}
+                meta={`${sportWeekMinutes.mins} мин · силовые по времени сессии, включая отдых`}
               />
             </AppCard>
 
@@ -391,17 +404,20 @@ export default function ProgressScreen() {
                         month: 'short',
                         hour: '2-digit',
                         minute: '2-digit',
+                        timeZone: profile.timezone,
                       })
                     : 'добавь первый замер'
                 }
               />
 
               <WeightSparkline weightsNewestFirst={weights.map((w) => w.kg)} />
+              {weights.length > 0 ? <AppText variant="caption" tone="secondary">Последние {weights.length} замеров · точки идут в порядке записей</AppText> : null}
 
               <View style={styles.weightForm}>
                 <View style={styles.weightField}>
                   <Field
-                    label="Новый замер, кг"
+                    label="Новый замер сегодня, кг"
+                    helper={todayKey}
                     value={kgRaw}
                     onChangeText={setKgRaw}
                     keyboardType="decimal-pad"
@@ -461,7 +477,7 @@ export default function ProgressScreen() {
                     История
                   </AppText>
                   <AppText variant="caption" tone="muted" style={styles.moreMeta}>
-                    {weights.length} зам.
+                    {allWeights.length} зам.
                   </AppText>
                   <Ionicons
                     name={historyOpen ? 'chevron-up' : 'chevron-down'}
@@ -471,19 +487,27 @@ export default function ProgressScreen() {
                 </Pressable>
                 {historyOpen ? (
                   <View style={styles.sheet}>
-                    {weights.map((w, i) => (
+                    {historyWeights.map((w, i) => (
                       <View
                         key={w.id}
-                        style={[styles.weightRow, i < weights.length - 1 && styles.weightRowBorder]}
+                        style={[styles.weightRow, i < historyWeights.length - 1 && styles.weightRowBorder]}
                       >
                         <AppText variant="body" style={styles.weightKg}>
-                          {w.kg} кг{w.source === 'garmin' ? ' · Garmin' : ''}
+                          {w.kg} кг{w.source === 'garmin' ? ' · Garmin' : w.source === 'zepp' ? ' · Zepp' : ''}
                         </AppText>
                         <AppText variant="caption" tone="secondary">
-                          {new Date(w.weighedAt).toLocaleDateString('ru-RU')}
+                          {new Date(w.weighedAt).toLocaleDateString('ru-RU', { timeZone: profile.timezone })}
                         </AppText>
+                        {w.source === 'user' ? <View style={styles.weightActions}>
+                          <Pressable style={styles.weightAction} accessibilityRole="button" accessibilityLabel={`Изменить замер ${w.kg} кг`} onPress={() => setEditingWeight(w)}><Ionicons name="create-outline" size={18} color={colors.ink} /></Pressable>
+                          <Pressable style={styles.weightAction} accessibilityRole="button" accessibilityLabel={`Удалить замер ${w.kg} кг`} onPress={() => confirmAction('Удалить замер?', `${w.kg} кг · ручная запись`, { destructive: true, confirmLabel: 'Удалить', onConfirm: () => {
+                            const removed = repo.removeManualWeight(w.id); refresh('all');
+                            setUndo({ message: 'Замер удалён', scope: 'all', action: () => repo.restoreManualWeight(removed) });
+                          } })}><Ionicons name="trash-outline" size={18} color={colors.danger} /></Pressable>
+                        </View> : null}
                       </View>
                     ))}
+                    {historyWeights.length < allWeights.length ? <AppButton variant="ghost" label="Ещё 30 замеров" onPress={() => setHistoryLimit(n => n + 30)} /> : null}
                   </View>
                 ) : null}
               </>
@@ -562,7 +586,7 @@ export default function ProgressScreen() {
           </>
         ) : null}
       </FormScrollView>
-      <FlashBar />
+
     </View>
   );
 }
@@ -705,6 +729,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
+  weightActions: { flexDirection: 'row', marginLeft: 'auto' },
+  weightAction: { minWidth: touchMin, minHeight: touchMin, justifyContent: 'center', alignItems: 'center' },
   weightKg: { fontWeight: '700' },
   habitsLead: { lineHeight: 18, marginBottom: space.xs },
   reportDayCard: { gap: space.sm, padding: space.lg },

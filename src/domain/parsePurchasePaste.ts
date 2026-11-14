@@ -139,7 +139,7 @@ export function parsePurchaseLine(rawLine: string): ParsedPurchaseLineDraft | nu
       unit = applied.unit;
       packageSizeText = applied.packageSizeText;
       unitPriceRub = price;
-      lineTotalRub = applied.unit === 'pcs' ? price * applied.quantity : price;
+      lineTotalRub = price * (parseNumber(mult[2]) ?? 0);
       working = applied.displayName;
     }
   }

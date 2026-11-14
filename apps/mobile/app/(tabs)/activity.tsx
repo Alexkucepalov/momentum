@@ -7,10 +7,8 @@ import { buildStrengthWeekDays } from '../../../../src/domain/strength';
 import type { PlannedActivity } from '../../../../src/domain/strength/types';
 import type { WorkoutType } from '../../../../src/storage/types';
 import { localDateKey } from '../../../../src/storage/validation';
-import { getLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
 import { DaySwipeArea } from '@/src/components/DaySwipeArea';
 import { ActionMenuSheet, type MenuAction } from '@/src/components/ActionMenuSheet';
-import { FlashBar } from '@/src/components/FlashBar';
 import { WorkoutFormSheet } from '@/src/features/activity/WorkoutFormSheet';
 import { WorkoutRow } from '@/src/features/activity/WorkoutRow';
 import { DayCalendarSheet } from '@/src/features/calendar/DayCalendarSheet';
@@ -31,7 +29,7 @@ export default function MovementScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const params = useLocalSearchParams<{ segment?: string }>();
-  const { repo, dateLocal, setDateLocal, refresh, showFlash } = useData();
+  const { repo, dateLocal, setDateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useActivityRevision();
   const [segment, setSegment] = useState<MovementTab>(params.segment === 'sleep' ? 'sleep' : 'activity');
   const [formOpen, setFormOpen] = useState(false);
@@ -43,7 +41,6 @@ export default function MovementScreen() {
   const [cycleOpen, setCycleOpen] = useState(false);
   const [linking, setLinking] = useState<PlannedActivity | null>(null);
   const [draggingPlan, setDraggingPlan] = useState(false);
-  const [notice, setNotice] = useState<{ message: string; undo: () => void } | null>(null);
   const [moveCopy, setMoveCopy] = useState<{ activity: PlannedActivity; mode: 'move' | 'copy' } | null>(null);
   const scroll = useRef<ScrollView>(null);
   const scrollViewport = useRef<View>(null);
@@ -51,7 +48,6 @@ export default function MovementScreen() {
   const scrollBox = useRef({ top: 0, bottom: 0, max: 0 });
   const contentHeight = useRef(0);
   const viewportHeight = useRef(0);
-  useEffect(() => { if (!notice) return; const t = setTimeout(() => setNotice(null), 6500); return () => clearTimeout(t); }, [notice]);
   useEffect(() => { if (params.segment === 'sleep' || params.segment === 'activity') setSegment(params.segment); }, [params.segment]);
   useEffect(() => { repo.ensureStrengthCatalog(); }, [repo]);
   const profile = repo.getProfile();
@@ -75,8 +71,7 @@ export default function MovementScreen() {
   const todayKey = localDateKey(new Date(), profile.timezone);
   const options = weekDates.map((d, i) => ({ dateLocal: d, label: `${HABIT_WEEKDAY_LABELS_RU[i]} ${Number(d.slice(8, 10))}` }));
   const feedback = (message: string, undo: () => void) => {
-    const epoch = getLocalDataWipeEpoch();
-    setNotice({ message, undo: () => { if (getLocalDataWipeEpoch() !== epoch) throw new Error('После очистки данных отмена недоступна'); undo(); } });
+    setUndo({ message, action: undo, scope: 'activity' });
     refresh('activity');
   };
   const attempt = (action: () => void) => { try { action(); } catch (e) { showFlash(e instanceof Error ? e.message : 'Не удалось выполнить действие'); } };
@@ -184,8 +179,7 @@ export default function MovementScreen() {
       else { const copy = repo.copyPlannedActivity(previous.id, { dateLocal: targetDate }); feedback('План скопирован', () => { repo.softDeletePlannedActivity(copy.id); }); }
       setMoveCopy(null); setDateLocal(targetDate);
     })} />
-    <FlashBar />
-    {notice ? <View style={styles.notice} accessibilityLiveRegion="polite"><AppText variant="caption" tone="inverse" style={styles.noticeText}>{notice.message}</AppText><Pressable accessibilityRole="button" accessibilityLabel="Отменить изменение тренировки или сна" onPress={() => { attempt(() => { notice.undo(); refresh('activity'); }); setNotice(null); }} style={styles.undoButton}><AppText variant="caption" tone="inverse">Отменить</AppText></Pressable></View> : null}
+
   </View>;
 }
 const styles = StyleSheet.create({
@@ -193,5 +187,4 @@ const styles = StyleSheet.create({
   headerBtn: { minWidth: touchMin, minHeight: touchMin, alignItems: 'center', justifyContent: 'center', marginRight: space.sm },
   logSection: { gap: space.sm, paddingTop: space.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }, logHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logAdd: { minHeight: touchMin, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.md }, garminLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touchMin },
-  notice: { position: 'absolute', left: space.screen, right: space.screen, bottom: space.md, paddingLeft: space.lg, paddingRight: space.sm, borderRadius: radius.lg, backgroundColor: colors.ink, flexDirection: 'row', alignItems: 'center', gap: space.sm }, noticeText: { flex: 1, paddingVertical: space.sm }, undoButton: { minHeight: touchMin, paddingHorizontal: space.sm, justifyContent: 'center' },
 });

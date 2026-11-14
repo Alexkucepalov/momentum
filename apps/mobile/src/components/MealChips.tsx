@@ -39,7 +39,7 @@ export function MealChips({
               pressed && styles.pressed,
             ]}
             accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
+            accessibilityState={{ selected: on }} aria-selected={on}
             accessibilityLabel={m.label}
           >
             <Text style={[styles.label, compact && styles.labelCompact, on && styles.labelOn]}>

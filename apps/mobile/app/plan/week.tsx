@@ -12,7 +12,6 @@ import {
   nutritionForPlannedMeal,
 } from '../../../../src/domain/plannedDayNutrition';
 import type { MealSlot, PlannedMeal } from '../../../../src/storage/types';
-import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { AddPlannedMealSheet, type AddPick } from '@/src/features/plan/AddPlannedMealSheet';
 import { EditPlannedGramsSheet } from '@/src/features/plan/EditPlannedGramsSheet';
@@ -20,7 +19,7 @@ import { MEAL_SLOTS } from '@/src/features/plan/mealBoardLabels';
 import { MovePlannedMealSheet } from '@/src/features/plan/MovePlannedMealSheet';
 import { PlanNotDiaryNote } from '@/src/features/plan/PlanNotDiaryNote';
 import { WeekBoard, type WeekBoardDay } from '@/src/features/plan/WeekBoard';
-import { useData, usePlanRevision } from '@/src/state/DataContext';
+import { useData, useAnyRevision } from '@/src/state/DataContext';
 import { confirmAction } from '@/src/utils/confirmAction';
 import { AppButton, AppText, colors, space } from '@/src/design-system';
 
@@ -30,9 +29,8 @@ function emptySlots(): Record<MealSlot, PlannedMeal[]> {
 
 export default function WeekPlanScreen() {
   const router = useRouter();
-  const { repo, dateLocal, refresh, showFlash } = useData();
-  const planRevision = usePlanRevision();
-  void planRevision;
+  const { repo, dateLocal, refresh, showFlash, setUndo } = useData();
+  const planRevision = useAnyRevision();
 
   const profile = repo.getProfile();
   const weekStart = weekStartMonday(dateLocal);
@@ -53,13 +51,13 @@ export default function WeekPlanScreen() {
   const plan = planId ? repo.getMealPlan(planId) : null;
   const allMeals = useMemo(
     () => (planId ? repo.listPlannedMeals(planId) : []),
-    [repo, planId],
+    [repo, planId, planRevision],
   );
 
   const productById = useMemo(() => {
     const map = new Map(repo.listProducts().map((p) => [p.id, p]));
     return map;
-  }, [repo]);
+  }, [repo, planRevision]);
 
   const lookup = useMemo(
     () => ({
@@ -123,7 +121,7 @@ export default function WeekPlanScreen() {
         .listRecipes()
         .map((r) => ({ id: r.id, name: r.name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
-    [repo],
+    [repo, planRevision],
   );
   const products = useMemo(
     () =>
@@ -131,7 +129,7 @@ export default function WeekPlanScreen() {
         .listProducts()
         .map((p) => ({ id: p.id, name: p.name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
-    [repo],
+    [repo, planRevision],
   );
 
   const moveDays = weekDates.map((d, i) => ({
@@ -142,7 +140,7 @@ export default function WeekPlanScreen() {
   const onAddConfirm = (pick: AddPick, grams: number) => {
     if (!addTarget) return;
     repo.ensureWeekDraftPlan(weekStart);
-    repo.addPlannedMeal({
+    const created = repo.addPlannedMeal({
       dateLocal: addTarget.dateLocal,
       meal: addTarget.slot,
       displayName: pick.name,
@@ -151,7 +149,7 @@ export default function WeekPlanScreen() {
       productId: pick.kind === 'product' ? pick.id : null,
     });
     refresh('plan');
-    showFlash(`В план: ${pick.name}`);
+    setUndo({ message: `В план: ${pick.name}`, scope: 'plan', action: () => repo.softDeletePlannedMeal(created.id) });
     setAddTarget(null);
   };
 
@@ -162,7 +160,7 @@ export default function WeekPlanScreen() {
       onConfirm: () => {
         repo.softDeletePlannedMeal(m.id);
         refresh('plan');
-        showFlash('Убрано с доски');
+        setUndo({ message: 'Убрано с доски', scope: 'plan', action: () => repo.restorePlannedMeal(m.id) });
       },
     });
   };
@@ -226,7 +224,8 @@ export default function WeekPlanScreen() {
           if (!moveMeal) return;
           repo.movePlannedMeal(moveMeal.id, { dateLocal: dateLocalDay, meal: slot });
           refresh('plan');
-          showFlash('Перенесено');
+          const previous = moveMeal;
+          setUndo({ message: 'Перенесено', scope: 'plan', action: () => repo.movePlannedMeal(previous.id, { dateLocal: previous.dateLocal, meal: previous.meal }) });
           setMoveMeal(null);
         }}
       />
@@ -240,10 +239,11 @@ export default function WeekPlanScreen() {
           if (!editMeal) return;
           repo.updatePlannedMealGrams(editMeal.id, grams);
           refresh('plan');
-          showFlash(`Порция: ${grams} г`);
+          const previous = editMeal;
+          setUndo({ message: `Порция: ${grams} г`, scope: 'plan', action: () => repo.updatePlannedMealGrams(previous.id, previous.grams) });
         }}
       />
-      <FlashBar />
+
     </View>
   );
 }

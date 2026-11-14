@@ -19,11 +19,11 @@ export default function GarminDataScreen() {
   void revision;
 
   const sync = repo.getGarminSyncState();
-  const weights = useMemo(() => repo.listIntegratedWeights('garmin', 2000), [repo]);
-  const workouts = useMemo(() => repo.listIntegratedWorkouts('garmin', 2000), [repo]);
+  const weights = useMemo(() => repo.listIntegratedWeights('garmin', 2000), [repo, revision]);
+  const workouts = useMemo(() => repo.listIntegratedWorkouts('garmin', 2000), [repo, revision]);
   const days = useMemo(
     () => repo.listIntegratedDailyActivityStats('garmin', 2000),
-    [repo],
+    [repo, revision],
   );
 
   const empty = weights.length === 0 && workouts.length === 0 && days.length === 0;

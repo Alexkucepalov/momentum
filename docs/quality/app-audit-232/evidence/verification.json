@@ -1,0 +1,70 @@
+{
+  "audited_at_utc": "2026-11-14T08:15:20.268357+00:00",
+  "branch": "feat/232-app-quality-audit",
+  "base_sha": "1decfb9c5b78fd6844af4d224970964c4506b772",
+  "source_patch_sha256": "9170b3e9bc4b75cd5cdd9d9b8c338e03d64207d766abf2586ff4fdffbc1b5f28",
+  "verify": {
+    "command": "npm run verify",
+    "exit_code": 0,
+    "tests": 378,
+    "passed": 378,
+    "failed": 0
+  },
+  "android_export": {
+    "command": "EXPO_NO_TELEMETRY=1 npx expo export --platform android",
+    "exit_code": 0,
+    "bundle": "_expo/static/js/android/entry-15d829f33d2c7bbb2966bb2900bf1aac.hbc",
+    "bytes": 7507243,
+    "sha256": "c4935d8203272495f7e20464d8562ecfd43ace354826fe442ff4135439e1ac9f",
+    "installed_apk_tested": false
+  },
+  "privacy_config": {
+    "allowBackup": false,
+    "blockedPermissions": [
+      "android.permission.RECORD_AUDIO"
+    ],
+    "actual_new_apk_manifest_tested": false
+  },
+  "browser": {
+    "engine": "Chromium / Expo web",
+    "responsive_captures": 63,
+    "details_captures": 27,
+    "image_files": 102,
+    "widths": [
+      360,
+      390,
+      430
+    ],
+    "javascript_errors": [],
+    "horizontal_overflow": false,
+    "axe_core": "4.10.3",
+    "axe_checked_states": 48,
+    "axe_violations": 0
+  },
+  "native_device": {
+    "status": "pending",
+    "force_stop_pass": false,
+    "live_garmin_pass": false,
+    "ocr_pass": false,
+    "talkback_pass": false,
+    "performance_device_pass": false
+  },
+  "dependencies": {
+    "root": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "mobile": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  }
+}

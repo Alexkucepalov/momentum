@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -94,7 +94,7 @@ export function FlexibleReportPanel() {
         };
         const w = g.open?.('', '_blank');
         if (!w) {
-          Alert.alert('Отчёт', 'Разреши всплывающие окна или сформируй PDF на Android.');
+          showFlash('Разреши всплывающие окна или сформируй PDF на Android.');
           return;
         }
         w.document.write(html);
@@ -113,7 +113,7 @@ export function FlexibleReportPanel() {
         showFlash('PDF сохранён в кэше приложения');
       }
     } catch (e) {
-      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось сформировать');
+      showFlash(e instanceof Error ? e.message : 'Не удалось сформировать');
     } finally {
       setBusy(false);
     }
@@ -127,7 +127,7 @@ export function FlexibleReportPanel() {
       await Clipboard.setStringAsync(text);
       showFlash('Текст отчёта скопирован — вставь в ChatGPT');
     } catch (e) {
-      Alert.alert('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
+      showFlash(e instanceof Error ? e.message : 'Не удалось скопировать');
     } finally {
       setBusy(false);
     }

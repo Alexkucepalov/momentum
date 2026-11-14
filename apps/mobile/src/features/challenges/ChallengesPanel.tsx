@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { ChallengeMetric } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
+import { confirmAction } from '@/src/utils/confirmAction';
 import { useData, useAnyRevision } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { AppButton } from '@/src/design-system';
@@ -89,18 +90,7 @@ export function ChallengesPanel() {
   };
 
   const abandon = (id: string, title: string) => {
-    Alert.alert('Снять челлендж?', `«${title}» останется в истории как отменённый.`, [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Снять',
-        style: 'destructive',
-        onPress: () => {
-          repo.abandonChallenge(id);
-          refresh();
-          showFlash(`Снят: ${title}`);
-        },
-      },
-    ]);
+    confirmAction('Снять челлендж?', `«${title}» останется в истории как отменённый.`, { confirmLabel: 'Снять', destructive: true, onConfirm: () => { repo.abandonChallenge(id); refresh(); showFlash(`Снят: ${title}`);  } });
   };
 
   return (

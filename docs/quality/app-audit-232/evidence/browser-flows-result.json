@@ -1,0 +1,16 @@
+{
+  "passed": [
+    "Mounted Progress updates after food add and Undo across tabs",
+    "Sleep add refreshes mounted Progress and shared Undo restores absence",
+    "Recipe edit preserves entered kcal instead of recalculating on mount",
+    "Blank ingredient mass blocks commit; rapid submit creates one recipe",
+    "Recipe delete confirmation and Undo work after navigation to list",
+    "Invalid item creates no stray list; saving unchanged shown price preserves it",
+    "Blank expense is blocked; valid expense has shared Undo",
+    "Receipt preview changes nothing; explicit confirm writes pantry and expense once",
+    "Browser persistence survives reload"
+  ],
+  "errors": [],
+  "platform": "Chromium / Expo web",
+  "native_device_pass": false
+}

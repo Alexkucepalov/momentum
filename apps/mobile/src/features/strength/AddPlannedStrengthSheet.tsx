@@ -49,9 +49,9 @@ export function AddPlannedStrengthSheet({ visible, dateLabel, templates, activit
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.head}><View style={styles.heading}><AppText variant="title">{activity ? 'Изменить план' : 'Новая тренировка'}</AppText><AppText variant="caption" tone="secondary">{dateLabel} · план на день</AppText></View><Pressable onPress={onClose} style={styles.close} accessibilityRole="button" accessibilityLabel="Закрыть планирование"><Ionicons name="close" size={22} color={colors.ink} /></Pressable></View>
       {!activity ? <SegmentedControl<PlannedActivityKind> value={kind} onChange={chooseKind} accessibilityLabel="Вид тренировки" options={[{ id: 'strength', label: 'Силовая' }, { id: 'cardio', label: 'Вело' }, { id: 'rest', label: 'Отдых' }]} /> : null}
-      {kind === 'strength' ? <View style={styles.templates}>
+      {kind === 'strength' ? <View style={styles.templates} accessibilityRole="radiogroup" accessibilityLabel="Шаблон силовой тренировки">
         <AppText variant="label" tone="muted">Шаблон упражнений</AppText>
-        {templates.map(t => <Pressable key={t.id} onPress={() => { setTemplateId(t.id); setTitle(t.name); setNote(t.subtitle ?? ''); }} accessibilityRole="radio" accessibilityState={{ checked: templateId === t.id }} accessibilityLabel={t.name} style={[styles.template, templateId === t.id && styles.selected]}>
+        {templates.map(t => <Pressable key={t.id} onPress={() => { setTemplateId(t.id); setTitle(t.name); setNote(t.subtitle ?? ''); }} accessibilityRole="radio" accessibilityState={{ checked: templateId === t.id }} aria-checked={templateId === t.id} accessibilityLabel={t.name} style={[styles.template, templateId === t.id && styles.selected]}>
           <AppText variant="body" style={styles.templateName}>{t.name}</AppText><Ionicons name={templateId === t.id ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={templateId === t.id ? colors.sageInk : colors.textMuted} />
         </Pressable>)}
       </View> : null}

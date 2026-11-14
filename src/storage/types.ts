@@ -431,6 +431,8 @@ export type ShoppingItem = {
 
 /** User-observed price for a shopping key (never shown as live «сегодня» alone). */
 export type ProductPrice = {
+  /** Price for this many normalized units (g / ml / pcs). Missing in legacy data = ambiguous. */
+  basisQuantity?: number | null;
   id: string;
   productKey: string;
   storeId: string | null;

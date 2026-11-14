@@ -86,7 +86,7 @@ function pantryAmount(p: PantryCoverageInput, unit: ShoppingUnit): number {
 export function aggregateShopping(
   ingredients: ShoppingIngredientInput[],
   pantry: PantryCoverageInput[] = [],
-  prices?: Map<string, { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }>,
+  prices?: Map<string, { priceRub: number; basisQuantity?: number | null; priceAsOf: string; priceSource: ShoppingPriceSource }>,
 ): ShoppingLine[] {
   const merged = new Map<string, { displayName: string; quantity: number; unit: ShoppingUnit; productIds: Set<string> }>();
 
@@ -121,6 +121,8 @@ export function aggregateShopping(
     if (!Number.isFinite(covered) || covered < 0) covered = 0;
     const needToBuy = Math.max(0, cur.quantity - covered);
     const price = prices?.get(key) ?? null;
+    const linePrice = price?.basisQuantity != null && price.basisQuantity > 0
+      ? price.priceRub * (needToBuy / price.basisQuantity) : null;
     lines.push({
       key,
       displayName: cur.displayName,
@@ -128,7 +130,7 @@ export function aggregateShopping(
       unit: cur.unit,
       coveredByPantry: covered,
       needToBuy,
-      priceRub: price?.priceRub ?? null,
+      priceRub: linePrice != null && Number.isFinite(linePrice) ? linePrice : null,
       priceAsOf: price?.priceAsOf ?? null,
       priceSource: price?.priceSource ?? null,
     });

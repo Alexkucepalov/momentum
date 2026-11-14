@@ -28,6 +28,7 @@ export type UndoState = {
   entryIds?: string[];
   action?: () => void;
   wipeEpoch?: number;
+  scope?: DataRefreshScope | "all";
 } | null;
 
 /** Narrow re-render fan-out: screens subscribe via use*Revision hooks. */
@@ -55,6 +56,7 @@ type DataContextValue = {
   performUndo: () => void;
   allowFoodAdd: () => boolean;
   flash: string | null;
+  flashId: number;
   showFlash: (message: string) => void;
   clearFlash: () => void;
 };
@@ -87,6 +89,7 @@ export function DataProvider({
       ),
     [],
   );
+  const [flashId, setFlashId] = useState(0);
   const [flash, setFlash] = useState<string | null>(null);
   // One expiry owner: hidden tab instances must not clear a newer screen's Undo.
   useEffect(() => {
@@ -109,7 +112,11 @@ export function DataProvider({
     });
   }, []);
 
-  const showFlash = useCallback((message: string) => setFlash(message), []);
+  const showFlash = useCallback((message: string) => {
+    setUndo(null);
+    setFlash(message);
+    setFlashId(id => id + 1);
+  }, [setUndo]);
   const clearFlash = useCallback(() => setFlash(null), []);
 
   const setDateLocalWithFeedback = useCallback((d: string) => {
@@ -129,7 +136,7 @@ export function DataProvider({
       else if (undo.entryId) repo.undoDeleteEntry(undo.entryId);
       setUndo(null);
       clearFlash();
-      refresh("diary");
+      refresh(undo.scope ?? "diary");
     } catch (e) {
       setUndo(null);
       showFlash(e instanceof Error ? e.message : "Не удалось отменить");
@@ -149,6 +156,7 @@ export function DataProvider({
       performUndo,
       allowFoodAdd,
       flash,
+      flashId,
       showFlash,
       clearFlash,
     }),
@@ -162,6 +170,7 @@ export function DataProvider({
       performUndo,
       allowFoodAdd,
       flash,
+      flashId,
       showFlash,
       clearFlash,
     ],
@@ -173,7 +182,7 @@ export function DataProvider({
         <ActivityRevisionContext.Provider value={areas.activity}>
           <ProfileRevisionContext.Provider value={areas.profile}>
             <PlanRevisionContext.Provider value={areas.plan}>
-              {children}
+              <React.Fragment key={getLocalDataWipeEpoch()}>{children}</React.Fragment>
             </PlanRevisionContext.Provider>
           </ProfileRevisionContext.Provider>
         </ActivityRevisionContext.Provider>

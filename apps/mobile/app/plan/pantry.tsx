@@ -38,7 +38,7 @@ function locLabel(id: PantryLocation): string {
 
 export default function PantryScreen() {
   const router = useRouter();
-  const { repo, refresh, showFlash } = useData();
+  const { repo, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   void revision;
 
@@ -55,7 +55,7 @@ export default function PantryScreen() {
 
   const items = repo.listPantryItems();
   const batches = repo.listCookedBatches({ onlyRemaining: true });
-  const recipes = useMemo(() => repo.listRecipes(), [repo]);
+  const recipes = useMemo(() => repo.listRecipes(), [repo, revision]);
 
   const productSuggestions = useMemo(() => {
     const q = normalizeShoppingName(name);
@@ -64,7 +64,7 @@ export default function PantryScreen() {
       .listProducts()
       .filter((p) => !p.deletedAt && normalizeShoppingName(p.name).includes(q))
       .slice(0, 6);
-  }, [name, repo]);
+  }, [name, repo, revision]);
 
   const grouped = useMemo(() => {
     const map: Record<PantryLocation, typeof items> = { fridge: [], freezer: [], pantry: [] };
@@ -248,7 +248,7 @@ export default function PantryScreen() {
                         onPress={() => {
                           repo.softDeletePantryItem(item.id);
                           refresh();
-                          showFlash('Удалено из запасов');
+                          setUndo({ message: 'Удалено из запасов', action: () => repo.restorePantryItem(item.id) });
                         }}
                         accessibilityRole="button"
                         accessibilityLabel={`Удалить ${item.displayName}`}

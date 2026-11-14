@@ -1,3 +1,4 @@
+import { validateSnapshotPayload } from './snapshotValidation';
 import type { StoreSnapshot, StoreSnapshotAny } from '../storage/types';
 
 export type ParseExportResult =
@@ -32,6 +33,11 @@ export function parseExportJson(raw: string): ParseExportResult {
   }
   if (!Array.isArray(obj.products) || !Array.isArray(obj.entries) || !Array.isArray(obj.recipes)) {
     return { ok: false, error: 'В экспорте нет списков products / recipes / entries' };
+  }
+  try {
+    validateSnapshotPayload(obj);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Некорректный экспорт' };
   }
   const exportedAt = typeof obj.exportedAt === 'string' ? obj.exportedAt : null;
   return {

@@ -17,10 +17,11 @@ export function EditPlannedGramsSheet({
   onClose: () => void;
   onSave: (grams: number) => void;
 }) {
+  const [error, setError] = useState<string | null>(null);
   const [raw, setRaw] = useState(String(grams));
 
   useEffect(() => {
-    if (visible) setRaw(String(grams));
+    if (visible) { setRaw(String(grams)); setError(null); }
   }, [visible, grams]);
 
   return (
@@ -39,13 +40,16 @@ export function EditPlannedGramsSheet({
           keyboardType="decimal-pad"
           autoFocus
         />
+        {error ? <AppText tone="danger" accessibilityRole="alert">{error}</AppText> : null}
         <AppButton
           label="Сохранить"
           onPress={() => {
-            const n = Number(raw.replace(',', '.'));
-            if (!Number.isFinite(n) || n <= 0) return;
-            onSave(n);
-            onClose();
+            try {
+              const n = Number(raw.replace(',', '.'));
+              if (!raw.trim() || !Number.isFinite(n) || n <= 0) throw new Error('Укажи порцию больше нуля');
+              onSave(n);
+              onClose();
+            } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить'); }
           }}
         />
       </View>

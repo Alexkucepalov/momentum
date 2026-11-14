@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -296,19 +296,7 @@ export default function TemplateEditorScreen() {
           label="Удалить шаблон"
           variant="ghost"
           onPress={() => {
-            Alert.alert('Удалить шаблон?', 'План на неделе и история сессий не сотрутся.', [
-              { text: 'Отмена', style: 'cancel' },
-              {
-                text: 'Удалить',
-                style: 'destructive',
-                onPress: () => {
-                  repo.softDeleteWorkoutTemplate(template.id);
-                  refresh('activity');
-                  showFlash('Шаблон удалён');
-                  router.back();
-                },
-              },
-            ]);
+            confirmAction('Удалить шаблон?', 'План на неделе и история сессий не сотрутся.', { confirmLabel: 'Удалить', destructive: true, onConfirm: () => { repo.softDeleteWorkoutTemplate(template.id); refresh('activity'); showFlash('Шаблон удалён'); router.back(); } });
           }}
         />
       </ScrollView>

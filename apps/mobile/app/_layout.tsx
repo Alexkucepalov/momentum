@@ -14,6 +14,7 @@ import {
   readRecoveryPayload,
 } from "@/src/storage/expoFoodStore";
 import { saveRecoveryCopy } from "@/src/storage/recoveryCopy";
+import { FeedbackHost } from "@/src/components/FeedbackHost";
 import { DataProvider } from "@/src/state/DataContext";
 import { AppButton, AppText, colors, space } from "@/src/design-system";
 
@@ -154,6 +155,7 @@ export default function RootLayout() {
               <Stack.Screen name="garmin" options={{ headerShown: false }} />
               <Stack.Screen name="strength" options={{ headerShown: false }} />
             </Stack>
+            <FeedbackHost />
           </DataProvider>
         )}
       </View>
