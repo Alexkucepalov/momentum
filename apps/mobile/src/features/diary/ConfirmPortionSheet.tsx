@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { portion, type Nutrition } from '../../../../../src/domain/nutrition';
@@ -178,11 +179,12 @@ export function ConfirmPortionSheet({
   const title = target.kind === 'product' ? target.product.name : target.recipe.name;
   const source =
     target.kind === 'product'
-      ? `Источник: ${target.product.source}`
+      ? `Источник: ${{user:'введено вручную',label:'с этикетки',catalog:target.product.brand==='Справочник'?'справочник':'каталог',recipe:'рецепт',missing:'не указан'}[target.product.source]}`
       : `Рецепт · выход ${target.recipe.cookedYieldG} г`;
 
   const submit = () => {
     try {
+      if (!Number.isFinite(grams) || grams <= 0) throw new Error('Укажи порцию больше нуля');
       const per100g = {
         energyKcal: parseOptionalField(kcal),
         proteinG: parseOptionalField(protein),
@@ -383,7 +385,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fieldInput: {
-    minHeight: 44,
+    minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,

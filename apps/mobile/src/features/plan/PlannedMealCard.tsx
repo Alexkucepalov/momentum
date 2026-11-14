@@ -75,14 +75,14 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2, minWidth: 0, justifyContent: 'center' },
   name: { fontWeight: '600' },
   action: {
-    minHeight: touchMin - 8,
+    minHeight: touchMin,
     justifyContent: 'center',
     paddingHorizontal: space.xs,
   },
   actionText: { fontWeight: '700' },
   delete: {
-    minWidth: 28,
-    minHeight: 28,
+    minWidth: touchMin,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
   },

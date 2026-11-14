@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 
-import { colors, radius, space } from '../tokens';
-import { AppText } from './AppText';
+import { colors, radius, space } from "../tokens";
+import { AppText } from "./AppText";
 
 type ChartFrameProps = {
   title: string;
@@ -13,12 +13,16 @@ type ChartFrameProps = {
 };
 
 /** Shared chrome for week bars, sleep stages, sparklines. */
-export function ChartFrame({ title, subtitle, footnote, children, testID }: ChartFrameProps) {
+export function ChartFrame({
+  title,
+  subtitle,
+  footnote,
+  children,
+  testID,
+}: ChartFrameProps) {
   return (
     <View style={styles.wrap} testID={testID} accessibilityLabel={title}>
-      <AppText variant="label" tone="muted">
-        {title}
-      </AppText>
+      <AppText variant="subtitle">{title}</AppText>
       {subtitle ? (
         <AppText variant="caption" tone="secondary" style={styles.sub}>
           {subtitle}

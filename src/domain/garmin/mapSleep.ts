@@ -135,7 +135,7 @@ export function mapGarminSleepItem(raw: unknown): MappedGarminSleep | null {
   // Reconstruct overnight total from stages when total missing (exclude awake; do not invent naps).
   if (sleepSec == null) {
     const parts = [deepSec, lightSec, remSec].filter((n): n is number => n != null);
-    if (parts.length > 0) sleepSec = parts.reduce((a, b) => a + b, 0);
+    if (parts.length === 3) sleepSec = parts.reduce((a, b) => a + b, 0);
   }
 
   // Prefer GMT / true epoch. Local-first double-shifts when UI formats with profile TZ (MSK).
@@ -184,9 +184,9 @@ export function mapGarminSleepItem(raw: unknown): MappedGarminSleep | null {
     awakeSec,
     startAt,
     endAt,
-    avgSpo2,
+    avgSpo2: avgSpo2 != null && avgSpo2 <= 100 ? avgSpo2 : null,
     avgRespiration,
-    sleepScore: sleepScore == null ? null : Math.round(sleepScore),
+    sleepScore: sleepScore == null || sleepScore > 100 ? null : Math.round(sleepScore),
     externalId: `garmin-sleep:${dateLocal}`,
   };
 }

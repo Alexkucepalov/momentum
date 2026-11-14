@@ -39,7 +39,7 @@ export function MealChips({
               pressed && styles.pressed,
             ]}
             accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
+            accessibilityState={{ selected: on }} aria-selected={on}
             accessibilityLabel={m.label}
           >
             <Text style={[styles.label, compact && styles.labelCompact, on && styles.labelOn]}>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: space.md,
-    minHeight: touchMin - 4,
+    minHeight: touchMin,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipCompact: {
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
   },
   chipOn: {

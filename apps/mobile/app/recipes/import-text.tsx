@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -221,11 +222,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+
+
+
+
+
   },
   pasteBtnText: { fontWeight: '700', fontSize: type.body, color: colors.text },
   input: {
@@ -238,11 +239,11 @@ const styles = StyleSheet.create({
     fontSize: type.body,
     color: colors.text,
     lineHeight: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
+
+
+
+
+
   },
   preview: {
     borderWidth: 1,
@@ -251,11 +252,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     padding: space.lg,
     gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
+
+
+
+
+
   },
   previewTitle: {
     fontSize: type.subtitle,

@@ -1,7 +1,7 @@
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
 
-import { colors, fonts, radius, space, touchMin, type } from '../tokens';
-import { AppText } from './AppText';
+import { colors, fonts, radius, space, touchMin, type } from "../tokens";
+import { AppText } from "./AppText";
 
 type FieldProps = TextInputProps & {
   label: string;
@@ -11,10 +11,17 @@ type FieldProps = TextInputProps & {
 };
 
 /** Labeled text field — Premium Minimal Utility. */
-export function Field({ label, error, helper, style, testID, ...rest }: FieldProps) {
+export function Field({
+  label,
+  error,
+  helper,
+  style,
+  testID,
+  ...rest
+}: FieldProps) {
   return (
     <View style={styles.wrap} testID={testID}>
-      <AppText variant="label" tone="muted" style={styles.label}>
+      <AppText variant="caption" tone="muted" style={styles.label}>
         {label}
       </AppText>
       <TextInput
@@ -22,9 +29,18 @@ export function Field({ label, error, helper, style, testID, ...rest }: FieldPro
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error ? styles.inputError : null, style]}
         accessibilityLabel={label}
+        accessibilityHint={
+          error ?? helper ?? rest.accessibilityHint ?? undefined
+        }
       />
       {error ? (
-        <AppText variant="caption" tone="danger" style={styles.meta}>
+        <AppText
+          variant="caption"
+          tone="danger"
+          style={styles.meta}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
           {error}
         </AppText>
       ) : helper ? (

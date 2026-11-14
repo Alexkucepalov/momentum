@@ -1,33 +1,47 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
-import { useRouter } from 'expo-router';
+import { MEAL_LABELS } from "../../../../src/domain/diaryEntry";
+import { formatDateRu } from "../../../../src/domain/dateFormatRu";
+import { portion } from "../../../../src/domain/nutrition";
+import {
+  ConfirmPortionSheet,
+  type PortionTarget,
+} from "@/src/features/diary/ConfirmPortionSheet";
+import { useAddGuard } from "@/src/hooks/useAddGuard";
+import { useMemo, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { ThemedTextInput as TextInput } from "@/src/design-system/components/ThemedTextInput";
+import { ThemedText as Text } from "@/src/design-system/components/ThemedText";
+import { Ionicons } from "@expo/vector-icons";
 
-import { normalizeShoppingName } from '../../../../src/domain/aggregateShopping';
-import type { FoodProduct, PantryLocation, PantryUnit } from '../../../../src/storage/types';
-import { EmptyState } from '@/src/components/EmptyState';
-import { FormScrollView } from '@/src/components/FormScrollView';
-import { useData, useAnyRevision } from '@/src/state/DataContext';
-import { colors, radius, space, touchMin, type } from '@/src/theme/tokens';
-import { AppButton } from '@/src/design-system';
+import { normalizeShoppingName } from "../../../../src/domain/aggregateShopping";
+import type {
+  FoodProduct,
+  PantryLocation,
+  PantryUnit,
+} from "../../../../src/storage/types";
+import { EmptyState } from "@/src/components/EmptyState";
+import { FormScrollView } from "@/src/components/FormScrollView";
+import { useData, useAnyRevision } from "@/src/state/DataContext";
+import { colors, radius, space, touchMin, type } from "@/src/theme/tokens";
+import { AppButton } from "@/src/design-system";
 
 const LOCATIONS: { id: PantryLocation; label: string }[] = [
-  { id: 'fridge', label: 'Холодильник' },
-  { id: 'freezer', label: 'Морозилка' },
-  { id: 'pantry', label: 'Шкаф' },
+  { id: "fridge", label: "Холодильник" },
+  { id: "freezer", label: "Морозилка" },
+  { id: "pantry", label: "Шкаф" },
 ];
 
 const UNITS: { id: PantryUnit; label: string }[] = [
-  { id: 'g', label: 'г' },
-  { id: 'ml', label: 'мл' },
-  { id: 'pcs', label: 'шт' },
+  { id: "g", label: "г" },
+  { id: "ml", label: "мл" },
+  { id: "pcs", label: "шт" },
 ];
 
 function parseOptionalQty(raw: string): number | null {
   const t = raw.trim();
   if (!t) return null;
-  const n = Number(t.replace(',', '.'));
-  if (!Number.isFinite(n) || n < 0) throw new Error('Количество: число ≥ 0 или пусто');
+  const n = Number(t.replace(",", "."));
+  if (!Number.isFinite(n) || n < 0)
+    throw new Error("Количество: число ≥ 0 или пусто");
   return n;
 }
 
@@ -36,25 +50,44 @@ function locLabel(id: PantryLocation): string {
 }
 
 export default function PantryScreen() {
-  const router = useRouter();
-  const { repo, refresh, showFlash } = useData();
+  const { repo, dateLocal, meal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   void revision;
 
-  const [name, setName] = useState('');
-  const [qty, setQty] = useState('');
-  const [location, setLocation] = useState<PantryLocation>('fridge');
-  const [unit, setUnit] = useState<PantryUnit>('g');
+  const allowFoodAdd = useAddGuard();
+  const allowCook = useAddGuard(600);
+  const [stockTarget, setStockTarget] = useState<{
+    target: PortionTarget;
+    grams: number;
+  } | null>(null);
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState("");
+  const [location, setLocation] = useState<PantryLocation>("fridge");
+  const [unit, setUnit] = useState<PantryUnit>("g");
   const [linkedProduct, setLinkedProduct] = useState<FoodProduct | null>(null);
-  const [batchYield, setBatchYield] = useState('');
+  const [batchYield, setBatchYield] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editQty, setEditQty] = useState('');
+  const [editQty, setEditQty] = useState("");
   const [addOpen, setAddOpen] = useState(false);
 
   const items = repo.listPantryItems();
   const batches = repo.listCookedBatches({ onlyRemaining: true });
-  const recipes = useMemo(() => repo.listRecipes(), [repo]);
+  const prepared = new Map<
+    string,
+    { recipeId: string; remainingG: number; count: number }
+  >();
+  for (const batch of batches) {
+    const row = prepared.get(batch.recipeId) ?? {
+      recipeId: batch.recipeId,
+      remainingG: 0,
+      count: 0,
+    };
+    row.remainingG += batch.remainingG;
+    row.count++;
+    prepared.set(batch.recipeId, row);
+  }
+  const recipes = useMemo(() => repo.listRecipes(), [repo, revision]);
 
   const productSuggestions = useMemo(() => {
     const q = normalizeShoppingName(name);
@@ -63,10 +96,14 @@ export default function PantryScreen() {
       .listProducts()
       .filter((p) => !p.deletedAt && normalizeShoppingName(p.name).includes(q))
       .slice(0, 6);
-  }, [name, repo]);
+  }, [name, repo, revision]);
 
   const grouped = useMemo(() => {
-    const map: Record<PantryLocation, typeof items> = { fridge: [], freezer: [], pantry: [] };
+    const map: Record<PantryLocation, typeof items> = {
+      fridge: [],
+      freezer: [],
+      pantry: [],
+    };
     for (const i of items) map[i.location].push(i);
     return map;
   }, [items]);
@@ -81,17 +118,21 @@ export default function PantryScreen() {
         productId: linkedProduct?.id ?? null,
         location,
         unit,
-        quantityG: unit === 'pcs' ? null : quantity,
-        quantityCount: unit === 'pcs' ? quantity : null,
+        quantityG: unit === "pcs" ? null : quantity,
+        quantityCount: unit === "pcs" ? quantity : null,
       });
-      setName('');
-      setQty('');
+      setName("");
+      setQty("");
       setLinkedProduct(null);
       refresh();
-      showFlash(linkedProduct ? `В запасах: ${linkedProduct.name}` : 'Добавлено в запасы');
+      showFlash(
+        linkedProduct
+          ? `В запасах: ${linkedProduct.name}`
+          : "Добавлено в запасы",
+      );
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+      setError(e instanceof Error ? e.message : "Не удалось сохранить");
       return false;
     }
   };
@@ -108,15 +149,15 @@ export default function PantryScreen() {
         productId: item.productId,
         location: item.location,
         unit: item.unit,
-        quantityG: item.unit === 'pcs' ? null : quantity,
-        quantityCount: item.unit === 'pcs' ? quantity : null,
+        quantityG: item.unit === "pcs" ? null : quantity,
+        quantityCount: item.unit === "pcs" ? quantity : null,
         expiresOn: item.expiresOn,
       });
       setEditingId(null);
       refresh();
-      showFlash('Количество обновлено');
+      showFlash("Количество обновлено");
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось обновить');
+      setError(e instanceof Error ? e.message : "Не удалось обновить");
     }
   };
 
@@ -124,28 +165,76 @@ export default function PantryScreen() {
     setError(null);
     try {
       const recipe = repo.getRecipe(recipeId);
-      if (!recipe) throw new Error('Рецепт не найден');
+      if (!recipe) throw new Error("Рецепт не найден");
       let yieldG: number | undefined;
       if (batchYield.trim()) {
-        const n = Number(batchYield.replace(',', '.'));
-        if (!Number.isFinite(n) || n <= 0) throw new Error('Выход партии: число > 0');
+        const n = Number(batchYield.replace(",", "."));
+        if (!Number.isFinite(n) || n <= 0)
+          throw new Error("Выход партии: число > 0");
         yieldG = n;
       }
-      repo.createCookedBatch({ recipeId, initialYieldG: yieldG });
-      setBatchYield('');
+      if (!allowCook()) return;
+      const created = repo.createCookedBatch({
+        recipeId,
+        initialYieldG: yieldG,
+      });
+      setBatchYield("");
       refresh();
-      showFlash(`Партия: ${recipe.name}`);
+      setUndo({
+        message: `Приготовлено: ${recipe.name}`,
+        scope: "all",
+        action: () => repo.softDeleteCookedBatch(created.id),
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось создать партию');
+      setError(e instanceof Error ? e.message : "Не удалось создать партию");
     }
   };
 
   return (
     <FormScrollView contentContainerStyle={styles.content}>
+      <ConfirmPortionSheet
+        visible={stockTarget != null}
+        target={stockTarget?.target ?? null}
+        meal={meal}
+        mealLabel={`${formatDateRu(dateLocal)} · ${MEAL_LABELS[meal]}`}
+        initialGrams={stockTarget?.grams}
+        onClose={() => setStockTarget(null)}
+        onConfirm={(result) => {
+          if (stockTarget?.target.kind !== "recipe" || !allowFoodAdd()) return;
+          const value = portion(
+            {
+              kcal: result.per100g.energyKcal,
+              protein: result.per100g.proteinG,
+              fat: result.per100g.fatG,
+              carbs: result.per100g.carbG,
+            },
+            result.grams,
+          );
+          const created = repo.addEntryFromRecipe({
+            recipeId: stockTarget.target.recipe.id,
+            dateLocal,
+            meal,
+            grams: result.grams,
+            nutritionSnapshot: {
+              energyKcal: value.kcal,
+              proteinG: value.protein,
+              fatG: value.fat,
+              carbG: value.carbs,
+            },
+          });
+          refresh("all");
+          setUndo({
+            message: `В дневник: ${created.displayName}`,
+            entryIds: [created.id],
+            scope: "all",
+          });
+          setStockTarget(null);
+        }}
+      />
       <Text style={styles.section}>
-        Дома {items.length > 0 ? `· ${items.length}` : ''}
+        Дома {items.length > 0 ? `· ${items.length}` : ""}
       </Text>
-      {items.length === 0 ? (
+      {items.length === 0 && batches.length === 0 && !addOpen ? (
         <EmptyState
           compact
           icon="cube-outline"
@@ -155,19 +244,19 @@ export default function PantryScreen() {
           onAction={() => setAddOpen(true)}
         />
       ) : (
-        (['fridge', 'freezer', 'pantry'] as PantryLocation[]).map((loc) =>
+        (["fridge", "freezer", "pantry"] as PantryLocation[]).map((loc) =>
           grouped[loc].length === 0 ? null : (
             <View key={loc} style={styles.group}>
               <Text style={styles.groupTitle}>{locLabel(loc)}</Text>
               {grouped[loc].map((item) => {
                 const qtyLabel =
-                  item.unit === 'pcs'
+                  item.unit === "pcs"
                     ? item.quantityCount === null
-                      ? 'кол-во неизвестно'
+                      ? "кол-во неизвестно"
                       : `${item.quantityCount} шт`
                     : item.quantityG === null
-                      ? 'масса неизвестна'
-                      : `${Math.round(item.quantityG)} ${item.unit}`;
+                      ? "масса неизвестна"
+                      : `${Math.round(item.quantityG)} ${item.unit === "ml" ? "мл" : "г"}`;
                 const editing = editingId === item.id;
                 return (
                   <View key={item.id} style={styles.card}>
@@ -175,7 +264,7 @@ export default function PantryScreen() {
                       <Text style={styles.cardTitle}>{item.displayName}</Text>
                       <Text style={styles.cardSub}>
                         {qtyLabel}
-                        {item.productId ? ' · в каталоге' : ''}
+                        {item.productId ? " · в каталоге" : ""}
                       </Text>
                       <View style={styles.row}>
                         {LOCATIONS.map((l) => (
@@ -193,9 +282,14 @@ export default function PantryScreen() {
                               });
                               refresh();
                             }}
-                            style={[styles.miniChip, item.location === l.id && styles.chipOn]}
+                            style={[
+                              styles.miniChip,
+                              item.location === l.id && styles.chipOn,
+                            ]}
                             accessibilityRole="button"
-                            accessibilityState={{ selected: item.location === l.id }}
+                            accessibilityState={{
+                              selected: item.location === l.id,
+                            }}
                             accessibilityLabel={`${item.displayName}: ${l.label}`}
                           >
                             <Text
@@ -218,7 +312,10 @@ export default function PantryScreen() {
                             style={styles.editInput}
                             accessibilityLabel="Новое количество"
                           />
-                          <Pressable onPress={() => saveEdit(item.id)} style={styles.smallBtn}>
+                          <Pressable
+                            onPress={() => saveEdit(item.id)}
+                            style={styles.smallBtn}
+                          >
                             <Text style={styles.smallBtnText}>OK</Text>
                           </Pressable>
                         </View>
@@ -226,16 +323,17 @@ export default function PantryScreen() {
                     </View>
                     <View style={styles.sideActions}>
                       <Pressable
+                        style={styles.sideButton}
                         onPress={() => {
                           setEditingId(item.id);
                           setEditQty(
-                            item.unit === 'pcs'
+                            item.unit === "pcs"
                               ? item.quantityCount != null
                                 ? String(item.quantityCount)
-                                : ''
+                                : ""
                               : item.quantityG != null
                                 ? String(item.quantityG)
-                                : '',
+                                : "",
                           );
                         }}
                         accessibilityRole="button"
@@ -244,10 +342,14 @@ export default function PantryScreen() {
                         <Text style={styles.linkBtn}>Кол-во</Text>
                       </Pressable>
                       <Pressable
+                        style={styles.sideButton}
                         onPress={() => {
                           repo.softDeletePantryItem(item.id);
                           refresh();
-                          showFlash('Удалено из запасов');
+                          setUndo({
+                            message: "Удалено из запасов",
+                            action: () => repo.restorePantryItem(item.id),
+                          });
                         }}
                         accessibilityRole="button"
                         accessibilityLabel={`Удалить ${item.displayName}`}
@@ -263,15 +365,21 @@ export default function PantryScreen() {
         )
       )}
 
-      <Pressable
-        onPress={() => setAddOpen((v) => !v)}
-        style={styles.addToggle}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: addOpen }}
-        accessibilityLabel={addOpen ? 'Скрыть форму добавления' : 'Добавить запас'}
-      >
-        <Text style={styles.addToggleText}>{addOpen ? 'Скрыть форму' : '+ Добавить запас'}</Text>
-      </Pressable>
+      {items.length > 0 || batches.length > 0 || addOpen ? (
+        <Pressable
+          onPress={() => setAddOpen((v) => !v)}
+          style={styles.addToggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: addOpen }}
+          accessibilityLabel={
+            addOpen ? "Скрыть форму добавления" : "Добавить запас"
+          }
+        >
+          <Text style={styles.addToggleText}>
+            {addOpen ? "Скрыть форму" : "+ Добавить запас"}
+          </Text>
+        </Pressable>
+      ) : null}
 
       {addOpen ? (
         <View style={styles.addPanel}>
@@ -295,7 +403,10 @@ export default function PantryScreen() {
                     setLinkedProduct(p);
                     setName(p.name);
                   }}
-                  style={[styles.suggestChip, linkedProduct?.id === p.id && styles.suggestOn]}
+                  style={[
+                    styles.suggestChip,
+                    linkedProduct?.id === p.id && styles.suggestOn,
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel={`Связать с ${p.name}`}
                 >
@@ -326,7 +437,12 @@ export default function PantryScreen() {
                 accessibilityState={{ selected: location === l.id }}
                 accessibilityLabel={l.label}
               >
-                <Text style={[styles.chipText, location === l.id && styles.chipTextOn]}>
+                <Text
+                  style={[
+                    styles.chipText,
+                    location === l.id && styles.chipTextOn,
+                  ]}
+                >
                   {l.label}
                 </Text>
               </Pressable>
@@ -342,11 +458,15 @@ export default function PantryScreen() {
                 accessibilityState={{ selected: unit === u.id }}
                 accessibilityLabel={`Единица ${u.label}`}
               >
-                <Text style={[styles.chipText, unit === u.id && styles.chipTextOn]}>{u.label}</Text>
+                <Text
+                  style={[styles.chipText, unit === u.id && styles.chipTextOn]}
+                >
+                  {u.label}
+                </Text>
               </Pressable>
             ))}
           </View>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+
           <AppButton
             label="Сохранить в запасы"
             onPress={() => {
@@ -356,9 +476,16 @@ export default function PantryScreen() {
         </View>
       ) : null}
 
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
       <Text style={styles.section}>Приготовленные партии</Text>
       <Text style={styles.hint}>
-        Укажи фактический выход (г), если отличается от рецепта — иначе возьмём выход рецепта.
+        Укажи фактический выход, если он отличается от рецепта. Порции дневника
+        сначала списываются из самой ранней партии; изменение и удаление новых
+        порций обновляет остатки.
       </Text>
       <TextInput
         value={batchYield}
@@ -370,23 +497,43 @@ export default function PantryScreen() {
         accessibilityLabel="Выход готовой партии в граммах"
       />
       {batches.length === 0 ? (
-        <Text style={styles.hint}>Нет остатков. Отметь готовку — потом лог порции спишет граммы.</Text>
+        <Text style={styles.hint}>
+          Нет остатков. Отметь готовку — потом лог порции спишет граммы.
+        </Text>
       ) : (
         <View style={styles.list}>
-          {batches.map((b) => {
+          {[...prepared.values()].map((b) => {
             const recipe = repo.getRecipe(b.recipeId);
             return (
-              <View key={b.id} style={styles.card}>
+              <View key={b.recipeId} style={styles.card}>
                 <View style={styles.cardMain}>
-                  <Text style={styles.cardTitle}>{recipe?.name ?? 'Рецепт'}</Text>
+                  <Text style={styles.cardTitle}>
+                    {recipe?.name ?? "Рецепт недоступен"}
+                  </Text>
                   <Text style={styles.cardSub}>
-                    Остаток {Math.round(b.remainingG)} г из {Math.round(b.initialYieldG)} г
+                    Остаток{" "}
+                    {Number.isFinite(b.remainingG)
+                      ? `${Math.round(b.remainingG)} г`
+                      : "—"}{" "}
+                    · партий: {b.count}
                   </Text>
                 </View>
                 <Pressable
-                  onPress={() => router.push('/plan/eat-now')}
+                  onPress={() => {
+                    if (recipe)
+                      setStockTarget({
+                        target: {
+                          kind: "recipe",
+                          recipe,
+                          ingredients: repo.getRecipeIngredients(recipe.id),
+                        },
+                        grams: Math.min(200, b.remainingG),
+                      });
+                  }}
+                  disabled={!recipe}
+                  style={styles.eatButton}
                   accessibilityRole="button"
-                  accessibilityLabel="Что съесть из партии"
+                  accessibilityLabel={`Записать порцию: ${recipe?.name ?? "Рецепт недоступен"}`}
                 >
                   <Text style={styles.linkBtn}>Съесть</Text>
                 </Pressable>
@@ -404,14 +551,20 @@ export default function PantryScreen() {
               <Pressable
                 key={r.id}
                 onPress={() => markCooked(r.id)}
-                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.card,
+                  pressed && styles.pressed,
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel={`Отметить приготовленным: ${r.name}`}
               >
-                <Text style={styles.cardTitle}>{r.name}</Text>
-                <Text style={styles.cardSub}>
-                  По умолчанию {Math.round(r.cookedYieldG)} г · создать партию
-                </Text>
+                <View style={styles.cardMain}>
+                  <Text style={styles.cardTitle}>{r.name}</Text>
+                  <Text style={styles.cardSub}>
+                    Новая партия · {Math.round(r.cookedYieldG)} г
+                  </Text>
+                </View>
+                <Ionicons name="add-outline" size={24} color={colors.text} />
               </Pressable>
             ))}
           </View>
@@ -426,13 +579,13 @@ const styles = StyleSheet.create({
   lead: { fontSize: type.body, color: colors.textSecondary, lineHeight: 22 },
   addToggle: {
     minHeight: touchMin,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: space.sm,
   },
-  addToggleText: { fontSize: type.body, fontWeight: '800', color: colors.text },
+  addToggleText: { fontSize: type.body, fontWeight: "800", color: colors.text },
   addPanel: { gap: space.sm },
   miniChip: {
-    minHeight: 28,
+    minHeight: touchMin,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -440,10 +593,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  miniChipText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  miniChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.textSecondary,
+  },
   section: {
     fontSize: type.caption,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.textSecondary,
     marginTop: space.sm,
   },
@@ -457,9 +614,9 @@ const styles = StyleSheet.create({
     fontSize: type.body,
     color: colors.text,
   },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   chip: {
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
@@ -468,9 +625,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { fontSize: type.caption, fontWeight: '700', color: colors.text },
+  chipText: { fontSize: type.caption, fontWeight: "700", color: colors.text },
   chipTextOn: { color: colors.primaryButtonText },
-  suggest: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  suggest: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   suggestChip: {
     paddingHorizontal: space.md,
     paddingVertical: 8,
@@ -480,15 +637,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
   },
   suggestOn: { borderColor: colors.accent, backgroundColor: colors.surface },
-  suggestText: { fontSize: type.caption, fontWeight: '600', color: colors.text },
-  linkOk: { fontSize: type.caption, color: colors.success, fontWeight: '600' },
+  suggestText: {
+    fontSize: type.caption,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  linkOk: { fontSize: type.caption, color: colors.success, fontWeight: "600" },
   error: { color: colors.danger, fontSize: type.caption },
   group: { gap: space.sm },
-  groupTitle: { fontSize: type.subtitle, fontWeight: '800', color: colors.text },
+  groupTitle: {
+    fontSize: type.subtitle,
+    fontWeight: "800",
+    color: colors.text,
+  },
   list: { gap: space.sm },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: space.md,
     padding: space.lg,
     backgroundColor: colors.surface,
@@ -499,16 +664,26 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9 },
   cardMain: { flex: 1, gap: 2 },
-  cardTitle: { fontSize: type.subtitle, fontWeight: '700', color: colors.text },
+  cardTitle: { fontSize: type.subtitle, fontWeight: "700", color: colors.text },
   cardSub: { fontSize: type.caption, color: colors.textSecondary },
-  sideActions: { gap: space.sm, alignItems: 'flex-end' },
-  linkBtn: { fontSize: type.caption, fontWeight: '800', color: colors.text },
-  deleteText: { fontSize: type.caption, fontWeight: '700', color: colors.danger },
+  sideButton: { minHeight: touchMin, justifyContent: "center" },
+  sideActions: { gap: space.sm, alignItems: "flex-end" },
+  eatButton: {
+    minHeight: touchMin,
+    paddingHorizontal: space.sm,
+    justifyContent: "center",
+  },
+  linkBtn: { fontSize: type.caption, fontWeight: "800", color: colors.text },
+  deleteText: {
+    fontSize: type.caption,
+    fontWeight: "700",
+    color: colors.danger,
+  },
   hint: { fontSize: type.caption, color: colors.textMuted, lineHeight: 18 },
-  editRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
+  editRow: { flexDirection: "row", gap: space.sm, marginTop: space.sm },
   editInput: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -516,12 +691,12 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   smallBtn: {
-    minHeight: 40,
+    minHeight: touchMin,
     paddingHorizontal: space.lg,
     borderRadius: radius.md,
     backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  smallBtnText: { color: colors.primaryButtonText, fontWeight: '800' },
+  smallBtnText: { color: colors.primaryButtonText, fontWeight: "800" },
 });

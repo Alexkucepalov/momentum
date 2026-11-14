@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Image, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Image, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

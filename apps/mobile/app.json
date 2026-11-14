@@ -13,6 +13,8 @@
     },
     "android": {
       "package": "app.nffit.dogfood",
+      "allowBackup": false,
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {

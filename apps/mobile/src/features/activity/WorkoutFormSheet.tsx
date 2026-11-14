@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 40,
+    minHeight: touchMin,
   },
   typeChipOn: {
     backgroundColor: colors.primaryButton,
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
   presets: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
   preset: {
     flex: 1,
-    minHeight: 44,
+    minHeight: touchMin,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,

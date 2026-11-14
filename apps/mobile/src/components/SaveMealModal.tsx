@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { CenteredFormModal } from './CenteredFormModal';
@@ -9,11 +10,13 @@ import { AppButton } from '@/src/design-system';
 export function SaveMealModal({
   visible,
   defaultName,
+  hint,
   onClose,
   onSave,
 }: {
   visible: boolean;
   defaultName: string;
+  hint?: string;
   onClose: () => void;
   onSave: (name: string) => void;
 }) {
@@ -33,8 +36,7 @@ export function SaveMealModal({
       setError('Введи название');
       return;
     }
-    onSave(t);
-    onClose();
+    try {onSave(t);onClose();} catch(e) {setError(e instanceof Error ? e.message : 'Не удалось сохранить приём');}
   };
 
   return (
@@ -42,7 +44,7 @@ export function SaveMealModal({
       <Text style={styles.title} accessibilityRole="header">
         Сохранить приём
       </Text>
-      <Text style={styles.hint}>Потом добавишь все позиции одним тапом.</Text>
+      <Text style={styles.hint}>{hint ?? 'Потом добавишь все позиции одним тапом.'}</Text>
       <TextInput
         value={name}
         onChangeText={setName}

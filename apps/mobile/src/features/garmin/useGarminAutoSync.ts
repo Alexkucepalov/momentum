@@ -10,6 +10,7 @@ const MIN_INTERVAL_MS = 15 * 60 * 1000;
 export type GarminAutoSyncStatus = {
   running: boolean;
   lastNote: string | null;
+  lastWasError: boolean;
 };
 
 /**
@@ -22,26 +23,34 @@ export function useGarminAutoSync(
 ): GarminAutoSyncStatus {
   const [running, setRunning] = useState(false);
   const [lastNote, setLastNote] = useState<string | null>(null);
+  const [lastWasError, setLastWasError] = useState(false);
   const lastAttemptRef = useRef(0);
   const inFlightRef = useRef(false);
+  const pending = useRef<AbortController | null>(null);
+  const mounted = useRef(false);
 
   const tick = useCallback(async () => {
     if (inFlightRef.current) return;
     const now = Date.now();
     if (now - lastAttemptRef.current < MIN_INTERVAL_MS) return;
     const key = await getGarminApiKey();
-    if (!key) return;
+    if (!key || !mounted.current || inFlightRef.current) return;
 
     inFlightRef.current = true;
     lastAttemptRef.current = now;
+    const controller = new AbortController();
+    pending.current = controller;
     setRunning(true);
     try {
-      const result = await runGarminSync(repo, { mode: 'incremental' });
+      const result = await runGarminSync(repo, { mode: 'incremental', signal: controller.signal });
+      if (!mounted.current || controller.signal.aborted) return;
       refresh();
       if (!result.ok) {
+        setLastWasError(true);
         setLastNote(result.error ?? 'Garmin sync не удался');
         return;
       }
+      setLastWasError(false);
       const parts = [
         result.workoutsUpserted > 0 ? `тр. ${result.workoutsUpserted}` : null,
         result.stepsUpserted > 0 ? `шаги ${result.stepsUpserted}` : null,
@@ -54,21 +63,25 @@ export function useGarminAutoSync(
           : 'Garmin: новых записей нет',
       );
     } catch (e) {
+      if (!mounted.current || controller.signal.aborted) return;
+      setLastWasError(true);
       setLastNote(e instanceof Error ? e.message : 'Garmin sync ошибка');
     } finally {
       inFlightRef.current = false;
-      setRunning(false);
+      pending.current = null;
+      if (mounted.current) setRunning(false);
     }
   }, [repo, refresh]);
 
   useEffect(() => {
+    mounted.current = true;
     void tick();
     const onChange = (state: AppStateStatus) => {
       if (state === 'active') void tick();
     };
     const sub = AppState.addEventListener('change', onChange);
-    return () => sub.remove();
+    return () => { mounted.current = false; pending.current?.abort(); sub.remove(); };
   }, [tick]);
 
-  return { running, lastNote };
+  return { running, lastNote, lastWasError };
 }

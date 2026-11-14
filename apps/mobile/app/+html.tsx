@@ -1,9 +1,10 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { ReactNode } from 'react';
+import { colors } from '@/src/design-system/tokens';
 
 export default function Root({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" style={{ height: '100%' }}>
+    <html lang="ru" style={{ height: '100%' }}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -24,7 +25,7 @@ html, body, #root {
   padding: 0;
 }
 body {
-  background-color: #F7F8F6;
+  background-color: ${colors.canvas};
   overflow: hidden;
 }
 #root > div {

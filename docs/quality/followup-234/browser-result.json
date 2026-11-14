@@ -1,0 +1,12 @@
+{
+  "passed": [
+    "Recipe FIFO spans batches and edit/delete/Undo updates stock after browser reload",
+    "Prepared stock does not show an empty inventory hero",
+    "Prepared-stock portion targets the actual dish; cooking validates inline, blocks rapid duplicate and supports Undo",
+    "Budget expense remains functional after form moves above analytics",
+    "Sleep empty state omits placeholder charts; actual sleep restores chart and averages"
+  ],
+  "errors": [],
+  "platform": "Chromium / Expo web",
+  "native_device_pass": false
+}

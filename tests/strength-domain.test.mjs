@@ -15,7 +15,7 @@ describe('strength domain (snapshot v19)', () => {
   it('seeds RU templates and exercises on empty store', () => {
     const repo = createMemoryFoodRepository({ timezone: 'UTC' });
     const snap = repo.toSnapshot();
-    assert.equal(snap.version, 19);
+    assert.equal(snap.version, 20);
     assert.ok(repo.listStrengthExercises().length >= 8);
     const templates = repo.listWorkoutTemplates();
     assert.ok(templates.some((t) => t.name === 'Верх A'));
@@ -172,7 +172,7 @@ describe('strength domain (snapshot v19)', () => {
     assert.equal(workingWeightFromSets([{ weightKg: null, reps: 8, completed: true }]), null);
   });
 
-  it('export/import round-trips strength arrays; parse accepts v19 rejects v20', () => {
+  it('export/import round-trips strength arrays; parse accepts v19/v20 rejects v21', () => {
     const repo = createMemoryFoodRepository({ timezone: 'UTC' });
     repo.addPlannedActivity({
       dateLocal: '2026-11-11',
@@ -192,7 +192,7 @@ describe('strength domain (snapshot v19)', () => {
     const json = repo.exportAll();
     const parsed = parseExportJson(json);
     assert.equal(parsed.ok, true);
-    assert.equal(parsed.snapshot.version, 19);
+    assert.equal(parsed.snapshot.version, 20);
     assert.ok(parsed.snapshot.workoutSessions.length >= 1);
 
     repo.deleteAllUserData();
@@ -201,7 +201,7 @@ describe('strength domain (snapshot v19)', () => {
     assert.ok(repo.listWorkoutTemplates().some((t) => t.id === 'tmpl-upper-a'));
 
     const summary = repo.importAll(json);
-    assert.equal(summary.version, 19);
+    assert.equal(summary.version, 20);
     const restored = repo.listWorkoutSessionsForDate('2026-11-11');
     assert.equal(restored.length, 1);
     assert.equal(restored[0].status, 'completed');
@@ -217,7 +217,7 @@ describe('strength domain (snapshot v19)', () => {
     };
     assert.equal(parseExportJson(JSON.stringify(base)).ok, true);
     assert.equal(parseExportJson(JSON.stringify({ ...base, version: 18 })).ok, true);
-    assert.equal(parseExportJson(JSON.stringify({ ...base, version: 20 })).ok, false);
+    assert.equal(parseExportJson(JSON.stringify({ ...base, version: 21 })).ok, false);
   });
 
   it('seed materializers are deterministic for dogfood ids', () => {

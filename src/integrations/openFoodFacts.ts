@@ -147,9 +147,12 @@ export function normalizeOffProduct(barcode: string, payload: unknown): OffLooku
     proteinG,
     fatG,
     carbG,
-    sourceUpdatedAt: product.last_updated_t
-      ? new Date(Number(product.last_updated_t) * 1000).toISOString()
-      : null,
+    sourceUpdatedAt: (() => {
+      if (product.last_updated_t == null || product.last_updated_t === '') return null;
+      const seconds = Number(product.last_updated_t);
+      const date = new Date(seconds * 1000);
+      return Number.isFinite(seconds) && Number.isFinite(date.getTime()) ? date.toISOString() : null;
+    })(),
     attribution: 'Open Food Facts',
   };
 }

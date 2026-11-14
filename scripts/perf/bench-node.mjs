@@ -7,6 +7,7 @@ import { loadSrcModules } from '../../tests/loadTsModules.mjs';
 
 const mods = loadSrcModules();
 const { createMemoryFoodRepository } = mods['storage/foodRepository'];
+const { parseExportJson } = mods['domain/importExport'];
 const { unifiedFoodSearch } = mods['domain/unifiedFoodSearch'];
 
 function percentile(sorted, p) {
@@ -76,6 +77,11 @@ for (const { entries, products, tag } of [
   results.rows.push(build);
   const repo = seedRepo(entries, products);
   const snap = repo.toSnapshot();
+  const rawSnapshot = JSON.stringify(snap);
+  results.rows.push(bench(`parse+validate ${tag}`, 10, () => {
+    const parsed = parseExportJson(rawSnapshot);
+    if (!parsed.ok) throw new Error(parsed.error);
+  }));
   results.rows.push(
     bench(`serialize ${tag}`, 20, () => JSON.stringify(snap)),
   );

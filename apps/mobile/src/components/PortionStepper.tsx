@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
+import { useEffect, useRef, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { ThemedTextInput as TextInput } from "@/src/design-system/components/ThemedTextInput";
+import { ThemedText as Text } from "@/src/design-system/components/ThemedText";
 
-import { colors, radius, space, touchMin, type } from '../theme/tokens';
+import { colors, radius, space, touchMin, type } from "../theme/tokens";
 
 const PRESETS = [50, 100, 150, 200, 250] as const;
 const STEP = 10;
@@ -30,7 +31,7 @@ export function PortionStepper({
   const focusedRef = useRef(false);
 
   useEffect(() => {
-    if (focusedRef.current) return;
+    if (focusedRef.current || !Number.isFinite(grams)) return;
     setRaw(formatGrams(grams));
   }, [grams]);
 
@@ -42,14 +43,14 @@ export function PortionStepper({
   };
 
   const commitRaw = () => {
-    const t = raw.trim().replace(',', '.');
-    if (t === '' || t === '.') {
-      setRaw(formatGrams(grams));
+    const t = raw.trim().replace(",", ".");
+    if (t === "" || t === ".") {
+      onChange(Number.NaN);
       return;
     }
     const n = Number(t);
     if (!Number.isFinite(n) || n < 0) {
-      setRaw(formatGrams(grams));
+      onChange(Number.NaN);
       return;
     }
     setSafe(n);
@@ -75,9 +76,14 @@ export function PortionStepper({
         <TextInput
           value={raw}
           onChangeText={(t) => {
-            const normalized = t.replace(',', '.');
-            if (normalized !== '' && !/^\d*\.?\d*$/.test(normalized)) return;
+            const normalized = t.replace(",", ".");
+            if (normalized !== "" && !/^\d*\.?\d*$/.test(normalized)) return;
             setRaw(normalized);
+            onChange(
+              normalized === "" || normalized === "."
+                ? Number.NaN
+                : Number(normalized),
+            );
           }}
           onFocus={() => {
             focusedRef.current = true;
@@ -105,12 +111,19 @@ export function PortionStepper({
       <View style={styles.presets}>
         {last != null ? (
           <Pressable
-            style={[styles.preset, styles.presetLast, grams === last && styles.presetOn]}
+            style={[
+              styles.preset,
+              styles.presetLast,
+              grams === last && styles.presetOn,
+            ]}
             onPress={() => setSafe(last)}
             accessibilityRole="button"
             accessibilityLabel={`Последняя порция ${last} грамм`}
           >
-            <Text style={[styles.presetText, grams === last && styles.presetTextOn]} numberOfLines={1}>
+            <Text
+              style={[styles.presetText, grams === last && styles.presetTextOn]}
+              numberOfLines={1}
+            >
               Было {last} г
             </Text>
           </Pressable>
@@ -123,7 +136,11 @@ export function PortionStepper({
             accessibilityRole="button"
             accessibilityLabel={`${s} грамм`}
           >
-            <Text style={[styles.presetText, grams === s && styles.presetTextOn]}>{s}</Text>
+            <Text
+              style={[styles.presetText, grams === s && styles.presetTextOn]}
+            >
+              {s}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -134,20 +151,20 @@ export function PortionStepper({
 const styles = StyleSheet.create({
   wrap: {
     marginBottom: space.md,
-    width: '100%',
-    maxWidth: '100%',
+    width: "100%",
+    maxWidth: "100%",
   },
   label: {
     fontSize: type.caption,
     color: colors.textSecondary,
     marginBottom: space.sm,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: space.sm,
-    width: '100%',
+    width: "100%",
   },
   stepBtn: {
     width: touchMin,
@@ -155,12 +172,12 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   stepBtnText: {
     fontSize: 28,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     lineHeight: 32,
   },
@@ -172,9 +189,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: type.title,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
     paddingHorizontal: space.sm,
   },
@@ -182,14 +199,14 @@ const styles = StyleSheet.create({
     marginTop: space.xs,
     fontSize: type.micro,
     color: colors.textMuted,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   presets: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: space.sm,
     marginTop: space.sm,
-    width: '100%',
+    width: "100%",
   },
   preset: {
     paddingHorizontal: space.md,
@@ -198,9 +215,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 36,
-    maxWidth: '100%',
-    justifyContent: 'center',
+    minHeight: touchMin,
+    maxWidth: "100%",
+    justifyContent: "center",
   },
   presetLast: {
     borderColor: colors.text,
@@ -211,7 +228,7 @@ const styles = StyleSheet.create({
   },
   presetText: {
     fontSize: type.caption,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   presetTextOn: {

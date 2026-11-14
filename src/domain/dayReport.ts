@@ -12,7 +12,7 @@ export type DayReportSleep = {
 
 export type DayReportWorkout = {
   type: string;
-  durationMin: number;
+  durationMin: number | null;
   calories: number | null;
   notes: string | null;
 };
@@ -50,8 +50,9 @@ function fmt(n: number | null, digits = 0): string {
 
 function fmtHours(sec: number | null): string {
   if (sec == null || !Number.isFinite(sec) || sec < 0) return '—';
-  const h = Math.floor(sec / 3600);
-  const m = Math.round((sec % 3600) / 60);
+  const minutes = Math.round(sec / 60);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
   return `${h} ч ${m} мин`;
 }
 
@@ -108,7 +109,7 @@ export function buildDayReportText(input: DayReportInput): string {
     for (const w of input.workouts) {
       const kcal = w.calories == null ? '' : ` · ${fmt(w.calories)} ккал`;
       const note = w.notes ? ` · ${w.notes}` : '';
-      lines.push(`- ${w.type}: ${w.durationMin} мин${kcal}${note}`);
+      lines.push(`- ${w.type}: ${fmt(w.durationMin)} мин${kcal}${note}`);
     }
   }
   lines.push('');

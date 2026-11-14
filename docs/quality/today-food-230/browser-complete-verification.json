@@ -1,0 +1,12 @@
+{
+  "platform": "Expo web / Chromium",
+  "width": 360,
+  "flows": [
+    "long synthetic names fit Today and Food without horizontal overflow",
+    "correcting invalid date clears the validation message",
+    "manual product creation and portion confirmation preserve unknown macros",
+    "Undo removes the manually logged entry"
+  ],
+  "page_errors": [],
+  "native_device_pass": false
+}

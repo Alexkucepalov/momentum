@@ -1,0 +1,12 @@
+{
+  "platform": "Expo web / Chromium",
+  "flows": [
+    "Today opens linked Garmin result and shows completed state",
+    "cycle editor initial overview",
+    "four-week fill preserves existing weeks and clears fact links",
+    "fill Undo restores only added plans; Garmin history unchanged"
+  ],
+  "created_plans": 15,
+  "page_errors": [],
+  "device_pass": false
+}

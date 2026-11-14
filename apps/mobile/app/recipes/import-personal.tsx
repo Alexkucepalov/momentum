@@ -49,7 +49,7 @@ export default function ImportPersonalRecipesScreen() {
     return new Set(
       repo.listRecipes().filter((r) => r.id.startsWith('import:')).map((r) => r.id),
     );
-  }, [repo]);
+  }, [repo, revision]);
 
   const [selected, setSelected] = useState<Set<string>>(() => {
     const next = new Set<string>();
@@ -153,7 +153,7 @@ export default function ImportPersonalRecipesScreen() {
                 onPress={() => setScope(s.id)}
                 style={[styles.scopeChip, on && styles.scopeChipOn]}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
+                accessibilityState={{ selected: on }} aria-selected={on}
                 accessibilityLabel={s.label}
               >
                 <Ionicons
@@ -240,7 +240,7 @@ export default function ImportPersonalRecipesScreen() {
                   pressed && styles.pressed,
                 ]}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: on, disabled: blocked }}
+                accessibilityState={{ checked: on, disabled: blocked }} aria-checked={on}
                 accessibilityLabel={`${p.title}. ${statusLabel(p.status, p.verifiedByUser)}${
                   blocked ? '. Нельзя импортировать без грамм' : ''
                 }`}
@@ -358,11 +358,11 @@ const styles = StyleSheet.create({
     padding: space.xl,
     marginBottom: space.lg,
     alignItems: 'flex-start',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+
+
+
+
+
   },
   heroIcon: {
     width: 56,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 36,
+    minHeight: touchMin,
   },
   scopeChipOn: {
     backgroundColor: colors.primaryButton,
@@ -411,11 +411,11 @@ const styles = StyleSheet.create({
     padding: space.lg,
     marginBottom: space.lg,
     gap: space.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+
+
+
+
+
   },
   statsRow: {
     flexDirection: 'row',
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     borderRadius: radius.pill,
     borderWidth: 1,
@@ -452,11 +452,11 @@ const styles = StyleSheet.create({
     padding: space.lg,
     marginBottom: space.md,
     gap: space.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+
+
+
+
+
   },
   cardOn: { borderColor: colors.accent, borderWidth: 2, backgroundColor: colors.accentSoft },
   cardBlocked: { opacity: 0.62 },

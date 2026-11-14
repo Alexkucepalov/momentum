@@ -5,6 +5,7 @@ import type {
   WorkoutSet,
   WorkoutTemplate,
   WorkoutTemplateExercise,
+  TrainingCycle,
 } from '../domain/strength/types';
 
 export type {
@@ -118,7 +119,10 @@ export type RecipeIngredient = {
   carbG: number | null;
 };
 
+export type CookedConsumption = { batchId: string; grams: number };
 export type FoodEntry = {
+  /** undefined = legacy provenance unknown; [] = tracked portion without stock consumed. */
+  cookedConsumption?: CookedConsumption[];
   id: string;
   dateLocal: string;
   meal: MealSlot;
@@ -430,6 +434,8 @@ export type ShoppingItem = {
 
 /** User-observed price for a shopping key (never shown as live «сегодня» alone). */
 export type ProductPrice = {
+  /** Price for this many normalized units (g / ml / pcs). Missing in legacy data = ambiguous. */
+  basisQuantity?: number | null;
   id: string;
   productKey: string;
   storeId: string | null;
@@ -539,9 +545,10 @@ export type StorePreference = {
 };
 
 /** Current on-disk / export snapshot schema. */
-export const STORE_SNAPSHOT_VERSION = 19 as const;
+export const STORE_SNAPSHOT_VERSION = 20 as const;
 
 export type StoreSnapshot = {
+  trainingCycle: TrainingCycle | null;
   version: typeof STORE_SNAPSHOT_VERSION;
   profile: Profile;
   products: FoodProduct[];
@@ -661,6 +668,7 @@ type LegacyWorkout = Omit<
 
 /** Accept older snapshots from prior installs (normalized up to STORE_SNAPSHOT_VERSION). */
 export type StoreSnapshotAny = {
+  trainingCycle?: TrainingCycle | null;
   version:
     | 1
     | 2
@@ -680,7 +688,8 @@ export type StoreSnapshotAny = {
     | 16
     | 17
     | 18
-    | 19;
+    | 19
+    | 20;
   profile: Omit<
     Profile,
     | 'waterTargetMl'

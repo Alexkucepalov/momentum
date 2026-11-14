@@ -1,0 +1,20 @@
+{
+  "passed": [
+    "Missing/external imported photos display an explicit fallback in list/detail/editor",
+    "No remote image URL is requested"
+  ],
+  "states": [
+    {
+      "route": "/recipes",
+      "violations": []
+    },
+    {
+      "route": "/recipes/fix-r-bowl",
+      "violations": []
+    },
+    {
+      "route": "/recipes/edit/fix-r-bowl",
+      "violations": []
+    }
+  ]
+}

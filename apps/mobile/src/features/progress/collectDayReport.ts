@@ -1,3 +1,4 @@
+import { completedTrainingFacts } from '../../../../../src/domain/completedTraining';
 import { buildDayReportText } from '../../../../../src/domain/dayReport';
 import type { FoodRepository } from '../../../../../src/storage/foodRepository';
 import { localDateKey } from '../../../../../src/storage/validation';
@@ -19,9 +20,9 @@ export function collectDayReportText(
   const profile = repo.getProfile();
   const totals = repo.dailyTotals(dateLocal);
   const sleep = repo.getSleepForDate(dateLocal);
-  const workouts = repo.listWorkoutsForDate(dateLocal);
+  const workouts = completedTrainingFacts(repo.listWorkoutsForDate(dateLocal), repo.listWorkoutSessionsForDate(dateLocal));
   const steps = repo.getDailyActivityStats(dateLocal)?.steps ?? null;
-  const weights = repo.listWeights(30);
+  const weights = repo.listWeights(Number.MAX_SAFE_INTEGER);
   let weightKg: number | null = null;
   for (const w of weights) {
     if (localDateKey(new Date(w.weighedAt), profile.timezone) === dateLocal) {
@@ -46,8 +47,8 @@ export function collectDayReportText(
     activityMinutes: repo.activityMinutesForDate(dateLocal),
     steps,
     workouts: workouts.map((w) => ({
-      type: WORKOUT_TYPE_RU[w.type] ?? w.type,
-      durationMin: Math.max(1, Math.round(w.durationSec / 60)),
+      type: `${WORKOUT_TYPE_RU[w.type] ?? w.type}${w.title ? ` · ${w.title} (время сессии)` : ''}`,
+      durationMin: w.durationSec == null ? null : Math.round(w.durationSec / 60),
       calories: w.calories,
       notes: w.notes,
     })),

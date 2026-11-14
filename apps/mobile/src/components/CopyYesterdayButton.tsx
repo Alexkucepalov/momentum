@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import {
-  repeatableDayFromEntries,
   shiftDateLocal,
 } from '../../../../src/domain/repeatMeal';
+import { localDateKey } from '../../../../src/storage/validation';
 import { useAddGuard } from '../hooks/useAddGuard';
 import { useData, useDiaryRevision } from '../state/DataContext';
 import { AppText, colors, radius, space, touchMin } from '../design-system';
@@ -24,31 +24,10 @@ export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: st
 
   const onCopy = () => {
     if (!allowAdd()) return;
-    const items = repeatableDayFromEntries(repo.listEntriesForDate(yesterday));
-    if (items.length === 0) {
-      showFlash('Вчерашние записи без продукта/рецепта — повторить нельзя');
-      return;
-    }
-    const createdIds: string[] = [];
-    for (const item of items) {
-      if (item.kind === 'product') {
-        const e = repo.addEntryFromProduct({
-          productId: item.productId,
-          dateLocal,
-          meal: item.meal,
-          grams: item.grams,
-        });
-        createdIds.push(e.id);
-      } else {
-        const e = repo.addEntryFromRecipe({
-          recipeId: item.recipeId,
-          dateLocal,
-          meal: item.meal,
-          grams: item.grams,
-        });
-        createdIds.push(e.id);
-      }
-    }
+    let createdIds: string[];
+    try {
+      createdIds = repo.copyDiaryEntries({ items: repo.listEntriesForDate(yesterday).map(e => ({ entryId: e.id })), dateLocal }).map(e => e.id);
+    } catch (e) { showFlash(e instanceof Error ? e.message : 'Не удалось повторить день'); return; }
     refresh('diary');
     showFlash(`Повторили вчера · ${createdIds.length}`);
     setUndo({
@@ -63,7 +42,7 @@ export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: st
       style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       onPress={onCopy}
       accessibilityRole="button"
-      accessibilityLabel={`Повторить вчерашний рацион, ${sourceCount} записей`}
+      accessibilityLabel={`Повторить предыдущий день, ${sourceCount} записей`}
       accessibilityHint="Добавит в выбранный день те же приёмы и порции. Можно отменить."
     >
       <View style={styles.iconWrap}>
@@ -71,7 +50,7 @@ export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: st
       </View>
       <View style={styles.textCol}>
         <AppText variant="body" style={styles.label}>
-          Повторить вчера
+          {dateLocal === localDateKey(new Date(), repo.getProfile().timezone) ? 'Повторить вчера' : 'Повторить предыдущий день'}
         </AppText>
         <AppText variant="caption" tone="secondary">
           {sourceCount} зап. · те же порции

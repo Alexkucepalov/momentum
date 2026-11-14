@@ -1,3 +1,4 @@
+import { validateSnapshotPayload } from './snapshotValidation';
 import type { StoreSnapshot, StoreSnapshotAny } from '../storage/types';
 
 export type ParseExportResult =
@@ -24,7 +25,7 @@ export function parseExportJson(raw: string): ParseExportResult {
   if (typeof obj.version !== 'number') {
     return { ok: false, error: 'Нет поля version — это не экспорт Momentum' };
   }
-  if (obj.version < 1 || obj.version > 19) {
+  if (!Number.isInteger(obj.version) || obj.version < 1 || obj.version > 20) {
     return { ok: false, error: `Неподдерживаемая версия снимка: ${obj.version}` };
   }
   if (!obj.profile || typeof obj.profile !== 'object') {
@@ -32,6 +33,11 @@ export function parseExportJson(raw: string): ParseExportResult {
   }
   if (!Array.isArray(obj.products) || !Array.isArray(obj.entries) || !Array.isArray(obj.recipes)) {
     return { ok: false, error: 'В экспорте нет списков products / recipes / entries' };
+  }
+  try {
+    validateSnapshotPayload(obj);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Некорректный экспорт' };
   }
   const exportedAt = typeof obj.exportedAt === 'string' ? obj.exportedAt : null;
   return {

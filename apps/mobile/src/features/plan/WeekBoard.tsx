@@ -54,6 +54,7 @@ export function WeekBoard({
               style={({ pressed }) => [styles.dayChip, on && styles.dayChipOn, pressed && styles.pressed]}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
+              aria-selected={on}
               accessibilityLabel={`${HABIT_WEEKDAY_LABELS_RU[d.weekdayIndex]} ${d.dayNumber}`}
               testID={`week-day-chip-${d.dateLocal}`}
             >

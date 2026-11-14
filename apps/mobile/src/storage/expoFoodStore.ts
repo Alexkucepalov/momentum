@@ -4,27 +4,27 @@ import {
   type FoodRepository,
 } from '../../../../src/storage/foodRepository';
 import type { StoreSnapshot, StoreSnapshotAny } from '../../../../src/storage/types';
+import { parseExportJson } from '../../../../src/domain/importExport';
 
 const WEB_SNAPSHOT_KEY = 'momentum.web.store_snapshot.v1';
 
+/** Raw recovery reads never normalize or overwrite the original payload. */
+export function readRecoveryPayload(): string | null {
+  return globalThis.localStorage?.getItem(WEB_SNAPSHOT_KEY) ?? null;
+}
+
 function readWebSnapshot(): StoreSnapshotAny | undefined {
-  try {
-    if (typeof globalThis.localStorage === 'undefined') return undefined;
-    const raw = globalThis.localStorage.getItem(WEB_SNAPSHOT_KEY);
-    if (!raw) return undefined;
-    return JSON.parse(raw) as StoreSnapshotAny;
-  } catch {
-    return undefined;
-  }
+  if (typeof globalThis.localStorage === 'undefined') return undefined;
+  const raw = globalThis.localStorage.getItem(WEB_SNAPSHOT_KEY);
+  if (!raw) return undefined;
+  const parsed = parseExportJson(raw);
+  if (!parsed.ok) throw new Error('Локальный снимок данных не удалось прочитать');
+  return parsed.snapshot;
 }
 
 function writeWebSnapshot(snap: StoreSnapshot): void {
-  try {
-    if (typeof globalThis.localStorage === 'undefined') return;
-    globalThis.localStorage.setItem(WEB_SNAPSHOT_KEY, JSON.stringify(snap));
-  } catch {
-    // Quota / private mode — keep in-memory only.
-  }
+  if (typeof globalThis.localStorage === 'undefined') throw new Error('Хранилище недоступно');
+  globalThis.localStorage.setItem(WEB_SNAPSHOT_KEY, JSON.stringify(snap));
 }
 
 /**

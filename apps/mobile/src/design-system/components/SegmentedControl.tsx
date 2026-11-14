@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { colors, space, touchMin } from '../tokens';
-import { AppText } from './AppText';
+import { colors, radius, space, touchMin } from "../tokens";
+import { AppText } from "./AppText";
 
 export type SegmentOption<T extends string> = {
   id: T;
@@ -37,12 +37,21 @@ export function SegmentedControl<T extends string>({
           <Pressable
             key={opt.id}
             onPress={() => onChange(opt.id)}
-            style={({ pressed }) => [styles.seg, on && styles.segOn, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.seg,
+              on && styles.segOn,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="tab"
+            aria-selected={on}
             accessibilityState={{ selected: on }}
             accessibilityLabel={opt.label}
           >
-            <AppText variant="caption" tone={on ? 'ink' : 'secondary'} style={styles.label}>
+            <AppText
+              variant="caption"
+              tone={on ? "ink" : "secondary"}
+              style={styles.label}
+            >
               {opt.label}
             </AppText>
           </Pressable>
@@ -54,25 +63,26 @@ export function SegmentedControl<T extends string>({
 
 const styles = StyleSheet.create({
   track: {
-    flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: space.lg,
-    minHeight: touchMin,
+    flexDirection: "row",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.pill,
+    padding: space.xs,
+    gap: space.xs,
+    minHeight: touchMin + space.sm,
   },
   seg: {
     flex: 1,
-    minHeight: touchMin - 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    minWidth: 0,
+    minHeight: touchMin,
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: space.xs,
     paddingVertical: space.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "transparent",
   },
-  segOn: {
-    borderBottomColor: colors.ink,
-  },
-  label: { fontWeight: '500', textAlign: 'center' },
+  segOn: { backgroundColor: colors.surface, borderColor: colors.border },
+  label: { fontWeight: "500", textAlign: "center" },
   pressed: { opacity: 0.88 },
 });

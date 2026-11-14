@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { MealSlot } from '../../../../../../src/storage/types';
@@ -16,6 +17,7 @@ const MEAL_LABELS: Record<MealSlot, string> = {
 const MEALS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 type AddFoodSheetChromeProps = {
+  dateLabel: string;
   meal: MealSlot;
   onChangeMeal: (m: MealSlot) => void;
   mealPickerOpen: boolean;
@@ -31,6 +33,7 @@ type AddFoodSheetChromeProps = {
 
 /** Header, meal picker, search, and secondary action chips for AddFoodSheet. */
 export function AddFoodSheetChrome({
+  dateLabel,
   meal,
   onChangeMeal,
   mealPickerOpen,
@@ -57,7 +60,7 @@ export function AddFoodSheetChrome({
             accessibilityLabel={`Приём: ${MEAL_LABELS[meal]}. Нажмите, чтобы сменить`}
           >
             <AppText variant="caption" tone="muted" style={styles.mealContextText}>
-              в {MEAL_LABELS[meal].toLowerCase()}
+              {dateLabel} · {MEAL_LABELS[meal].toLowerCase()}
             </AppText>
             <Ionicons
               name={mealPickerOpen ? 'chevron-up' : 'chevron-down'}
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
     alignSelf: 'flex-start',
-    minHeight: 28,
+    minHeight: touchMin,
   },
   mealContextText: { fontWeight: '600' },
   closeBtn: {

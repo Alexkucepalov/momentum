@@ -160,7 +160,7 @@ test('Phase 3 UI uses nf-fit design system; no shame copy', () => {
   // Stage 4.1 fold: KcalRing + StatCards (water/activity); TodayStatusSummary kept as module.
   assert.ok(today.includes('KcalRing'));
   assert.ok(today.includes('StatCards'));
-  assert.ok(today.includes('FoodLogStreakCard'), 'gentle food-log streak on Today');
+  // #230 prioritizes the diary/repeat path over a separate streak card on Today.
   assert.ok(!today.includes('TodayRecentStrip'), 'recent strip stays on Food, not Today hub');
   assert.ok(today.includes('CopyYesterdayButton'), 'copy yesterday on Today for fast day replay');
 

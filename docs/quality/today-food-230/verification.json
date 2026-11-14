@@ -1,0 +1,30 @@
+{
+  "report_date": "2026-11-14",
+  "issue": 230,
+  "base_commit": "cc16e8299f5114b53af147e3c8a47fa35e48bb04",
+  "verify": {
+    "command": "RNET_SKIP_DOWNLOAD=1 npm run verify",
+    "tests_pass": 362,
+    "tests_fail": 0,
+    "root_mobile_typecheck": "pass",
+    "security_scan": "pass",
+    "mobile_dependency_compatibility": "pass"
+  },
+  "additional_mobile_typecheck": "pass",
+  "snapshot_version": 20,
+  "sqlite_schema_changed": false,
+  "native_device_pass": false,
+  "browser_files": [
+    "browser-verification.json",
+    "browser-extra-verification.json",
+    "browser-complete-verification.json"
+  ],
+  "android_js_export": {
+    "command": "EXPO_NO_TELEMETRY=1 npx expo export --platform android --no-bytecode",
+    "result": "pass",
+    "bundle_bytes": 5707474,
+    "bundle_sha256": "08f80053ec0f50cec93ef9655e9836924741bc36484c889ea18c40db167c4321",
+    "native_apk_or_device_test": false
+  },
+  "screenshots": 22
+}

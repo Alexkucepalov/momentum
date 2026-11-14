@@ -1,0 +1,12 @@
+{
+  "platform": "Expo web / Chromium",
+  "flows": [
+    "blank grams stays invalid and does not log stale amount",
+    "recipe add Undo restores exact cooked batch remaining",
+    "saved meal honors selected meal instead of its default",
+    "previous day copy supports orphan product snapshots and Quick Add",
+    "missing saved-meal ingredient prevents partial logging"
+  ],
+  "page_errors": [],
+  "native_device_pass": false
+}

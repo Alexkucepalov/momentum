@@ -1,0 +1,47 @@
+{
+  "platform": "Expo web / Chromium",
+  "widths": [
+    360,
+    390,
+    430
+  ],
+  "routes": [
+    "/",
+    "/food",
+    "/activity",
+    "/progress",
+    "/profile",
+    "/plan",
+    "/plan/eat-now",
+    "/plan/pantry",
+    "/plan/week",
+    "/plan/shop",
+    "/plan/budget",
+    "/plan/stores",
+    "/plan/receipt",
+    "/recipes",
+    "/recipes/new",
+    "/recipes/import-text",
+    "/recipes/import-personal",
+    "/garmin",
+    "/garmin/data",
+    "/strength",
+    "/strength/template/tmpl-upper-a",
+    "/garmin/workout/synthetic-garmin-ride",
+    "/recipes/fix-r-bowl",
+    "/recipes/edit/fix-r-bowl",
+    "/sleep",
+    "/_qa-not-found"
+  ],
+  "flows": [
+    "cycling plan with time/duration",
+    "cross-week move and Undo",
+    "manual sleep + reactive week average + reload",
+    "strength record + rest + finish without rating preserves note + readonly history",
+    "explicit Garmin ride link leaves history unchanged",
+    "cycle save and application preserve independent weeks",
+    "corrupt storage retained and explicit recovery download matches raw payload"
+  ],
+  "page_errors": [],
+  "device_pass": false
+}

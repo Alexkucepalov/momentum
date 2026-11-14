@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    minHeight: 44,
+    minHeight: touchMin,
     marginTop: space.xs,
     borderRadius: radius.md,
     borderWidth: 1,

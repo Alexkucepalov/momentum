@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { DayCalendarSheet } from "@/src/features/calendar/DayCalendarSheet";
+import { useEffect, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { ThemedTextInput as TextInput } from "@/src/design-system/components/ThemedTextInput";
 
-import { monthKeyFromDateLocal } from '../../../../src/domain/foodBudget';
-import type { FoodExpenseCategory } from '../../../../src/storage/types';
-import { FormScrollView } from '@/src/components/FormScrollView';
-import { useData, useAnyRevision } from '@/src/state/DataContext';
+import { monthKeyFromDateLocal } from "../../../../src/domain/foodBudget";
+import type { FoodExpenseCategory } from "../../../../src/storage/types";
+import { FormScrollView } from "@/src/components/FormScrollView";
+import { useData, useAnyRevision } from "@/src/state/DataContext";
 import {
   AppButton,
   AppCard,
@@ -15,20 +17,20 @@ import {
   space,
   touchMin,
   type,
-} from '@/src/design-system';
+} from "@/src/design-system";
 
 const CATS: { id: FoodExpenseCategory; label: string }[] = [
-  { id: 'groceries', label: 'Продукты' },
-  { id: 'cafe', label: 'Кафе' },
-  { id: 'office', label: 'Офис / обед' },
-  { id: 'delivery', label: 'Доставка' },
+  { id: "groceries", label: "Продукты" },
+  { id: "cafe", label: "Кафе" },
+  { id: "office", label: "Офис / обед" },
+  { id: "delivery", label: "Доставка" },
 ];
 
 /**
  * Budget: plan / fact / cart estimate / eaten estimate — never live store prices (N8/N9/N12).
  */
 export default function BudgetScreen() {
-  const { repo, dateLocal, refresh, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   void revision;
 
@@ -38,13 +40,19 @@ export default function BudgetScreen() {
   const projected = repo.openShoppingProjection();
   const expenses = repo.listFoodExpenses(month);
 
-  const [limit, setLimit] = useState(snap.limitRub != null ? String(Math.round(snap.limitRub)) : '');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<FoodExpenseCategory>('groceries');
+  const [limit, setLimit] = useState(
+    snap.limitRub != null ? String(Math.round(snap.limitRub)) : "",
+  );
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<FoodExpenseCategory>("groceries");
   const [error, setError] = useState<string | null>(null);
+  const [limitError, setLimitError] = useState<string | null>(null);
+  const [explanationOpen, setExplanationOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
-    setLimit(snap.limitRub != null ? String(Math.round(snap.limitRub)) : '');
+    setLimit(snap.limitRub != null ? String(Math.round(snap.limitRub)) : "");
+    setLimitError(null);
   }, [month, snap.limitRub]);
 
   const byCat = useMemo(() => {
@@ -59,56 +67,112 @@ export default function BudgetScreen() {
   }, [expenses]);
 
   const saveLimit = () => {
-    setError(null);
+    setLimitError(null);
     try {
-      const n = Number(limit.replace(',', '.'));
-      if (!Number.isFinite(n) || n <= 0) throw new Error('Лимит: число > 0');
+      const n = Number(limit.replace(",", "."));
+      if (!Number.isFinite(n) || n <= 0) throw new Error("Лимит: число > 0");
       repo.setFoodBudget(month, n);
       refresh();
       showFlash(`Лимит ${month}: ${Math.round(n)} ₽`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setLimitError(e instanceof Error ? e.message : "Ошибка");
     }
   };
 
   const addExpense = () => {
     setError(null);
     try {
-      const n = Number(amount.replace(',', '.'));
-      if (!Number.isFinite(n) || n < 0) throw new Error('Сумма: число ≥ 0');
-      repo.addFoodExpense({
+      if (!amount.trim()) throw new Error("Укажи сумму расхода");
+      const n = Number(amount.replace(",", "."));
+      if (!Number.isFinite(n) || n < 0) throw new Error("Сумма: число ≥ 0");
+      const expense = repo.addFoodExpense({
         amountRub: n,
         category,
         spentOn: dateLocal,
       });
-      setAmount('');
+      setAmount("");
       refresh();
-      showFlash('Расход записан');
+      setUndo({
+        message: "Расход записан",
+        action: () => repo.softDeleteFoodExpense(expense.id),
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : "Ошибка");
     }
   };
 
   return (
     <FormScrollView contentContainerStyle={styles.content} testID="plan-budget">
-      <AppText variant="body" tone="secondary" style={styles.lead}>
-        Четыре разных числа: план (лимит), факт (твои расходы), корзина (оценка списка), съеденное
-        (оценка по твоим ценам). Live-цен магазинов нет.
+      <DayCalendarSheet
+        visible={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+      />
+      <AppText variant="title" style={styles.month}>
+        {new Date(`${month}-01T12:00:00Z`).toLocaleDateString("ru-RU", {
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        })}
       </AppText>
 
-      <AppText variant="title" style={styles.month}>
-        {month}
-      </AppText>
+      <AppCard style={styles.quickExpense}>
+        <AppText variant="label" tone="secondary" style={styles.section}>
+          Новый расход
+        </AppText>
+        <AppButton
+          variant="ghost"
+          label={`Дата: ${new Date(`${dateLocal}T12:00:00Z`).toLocaleDateString("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" })}`}
+          onPress={() => setCalendarOpen(true)}
+          testID="budget-date"
+        />
+        <View style={styles.row}>
+          {CATS.map((c) => (
+            <Chip
+              key={c.id}
+              label={c.label}
+              selected={category === c.id}
+              onPress={() => setCategory(c.id)}
+              accessibilityLabel={c.label}
+            />
+          ))}
+        </View>
+        <TextInput
+          value={amount}
+          onChangeText={(value) => {
+            setAmount(value);
+            setError(null);
+          }}
+          placeholder="Сумма ₽"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="decimal-pad"
+          style={styles.input}
+          accessibilityLabel="Сумма расхода"
+        />
+        {error ? (
+          <AppText variant="caption" tone="danger" accessibilityRole="alert">
+            {error}
+          </AppText>
+        ) : null}
+        <AppButton label="Записать расход" onPress={addExpense} />
+      </AppCard>
 
       <AppCard style={styles.hero} accessibilityLabel="Сводка бюджета месяца">
         <Metric
           label="План (лимит месяца)"
-          value={snap.limitRub != null ? `${Math.round(snap.limitRub)} ₽` : 'не задан'}
+          value={
+            snap.limitRub != null
+              ? `${Math.round(snap.limitRub)} ₽`
+              : "не задан"
+          }
           strong
         />
         <Metric
           label="Факт (чеки / расходы)"
-          value={snap.spentRub != null ? `${Math.round(snap.spentRub)} ₽` : 'неизвестно'}
+          value={
+            snap.spentRub != null
+              ? `${Math.round(snap.spentRub)} ₽`
+              : "неизвестно"
+          }
         />
         <Metric
           label="Корзина (открытые списки)"
@@ -117,7 +181,7 @@ export default function BudgetScreen() {
               ? `${Math.round(projected.totalRub)} ₽`
               : projected.knownSumRub != null
                 ? `частично ~${Math.round(projected.knownSumRub)} ₽`
-                : '—'
+                : "—"
           }
           hint={projected.label}
         />
@@ -129,25 +193,29 @@ export default function BudgetScreen() {
               : eaten.knownSumRub != null
                 ? `частично ~${Math.round(eaten.knownSumRub)} ₽ (${eaten.knownCount}/${eaten.totalCount})`
                 : eaten.totalCount === 0
-                  ? 'нет записей'
-                  : 'нужны цены в покупках'
+                  ? "нет записей"
+                  : "нужны цены в покупках"
           }
         />
         <Metric
           label="Осталось к лимиту"
-          value={snap.remainingRub != null ? `${Math.round(snap.remainingRub)} ₽` : '—'}
+          value={
+            snap.remainingRub != null
+              ? `${Math.round(snap.remainingRub)} ₽`
+              : "—"
+          }
         />
         <AppText variant="caption" tone="muted" style={styles.hint}>
-          Прогноз до конца месяца:{' '}
+          Прогноз до конца месяца:{" "}
           {snap.forecastRub != null
             ? `~${Math.round(snap.forecastRub)} ₽`
-            : 'Недостаточно данных'}
-          {' · '}день {snap.daysElapsed} из {snap.daysInMonth}
+            : "Недостаточно данных"}
+          {" · "}день {snap.daysElapsed} из {snap.daysInMonth}
           {snap.forecastRub == null
             ? snap.daysElapsed < 7
-              ? ' · нужно ≥7 дней и хотя бы один расход'
-              : ' · добавь расход, чтобы считать прогноз'
-            : ''}
+              ? " · нужно ≥7 дней и хотя бы один расход"
+              : " · добавь расход, чтобы считать прогноз"
+            : ""}
         </AppText>
       </AppCard>
 
@@ -156,7 +224,10 @@ export default function BudgetScreen() {
       </AppText>
       <TextInput
         value={limit}
-        onChangeText={setLimit}
+        onChangeText={(value) => {
+          setLimit(value);
+          setLimitError(null);
+        }}
         keyboardType="number-pad"
         placeholder="не задан — не путать с 0"
         placeholderTextColor={colors.textMuted}
@@ -164,40 +235,31 @@ export default function BudgetScreen() {
         accessibilityLabel="Лимит бюджета питания"
       />
       <AppText variant="caption" tone="muted" style={styles.hint}>
-        Пустое поле = лимит не задан. Ноль как лимит не сохраняется — нужно число &gt; 0.
+        Пустое поле = лимит не задан. Ноль как лимит не сохраняется — нужно
+        число &gt; 0.
       </AppText>
-      <AppButton label="Сохранить лимит" onPress={saveLimit} />
-
-      <AppText variant="label" tone="secondary" style={styles.section}>
-        Добавить расход
-      </AppText>
-      <View style={styles.row}>
-        {CATS.map((c) => (
-          <Chip
-            key={c.id}
-            label={c.label}
-            selected={category === c.id}
-            onPress={() => setCategory(c.id)}
-            accessibilityLabel={c.label}
-          />
-        ))}
-      </View>
-      <TextInput
-        value={amount}
-        onChangeText={setAmount}
-        placeholder="Сумма ₽"
-        placeholderTextColor={colors.textMuted}
-        keyboardType="decimal-pad"
-        style={styles.input}
-        accessibilityLabel="Сумма расхода"
-      />
-      {error ? (
-        <AppText variant="caption" tone="danger">
-          {error}
+      {limitError ? (
+        <AppText tone="danger" variant="caption" accessibilityRole="alert">
+          {limitError}
         </AppText>
       ) : null}
-      <AppButton label="Записать расход" onPress={addExpense} />
+      <AppButton label="Сохранить лимит" onPress={saveLimit} />
 
+      <AppButton
+        variant="ghost"
+        label={explanationOpen ? "Скрыть пояснение" : "Как считаем суммы"}
+        onPress={() => setExplanationOpen((v) => !v)}
+      />
+      {explanationOpen ? (
+        <View>
+          <AppText variant="body" tone="secondary" style={styles.lead}>
+            Четыре разных числа: план (лимит), факт (твои расходы), корзина
+            (оценка списка), съеденное (оценка по твоим ценам). Live-цен
+            магазинов нет. Для оценки съеденного нужны цены с известной
+            единицей; граммы не переводим в мл или штуки.
+          </AppText>
+        </View>
+      ) : null}
       <AppText variant="label" tone="secondary" style={styles.section}>
         По категориям
       </AppText>
@@ -219,7 +281,8 @@ export default function BudgetScreen() {
           <AppCard key={e.id} style={styles.card}>
             <View style={styles.cardMain}>
               <AppText variant="body" style={styles.cardTitle}>
-                {Math.round(e.amountRub)} ₽ · {CATS.find((c) => c.id === e.category)?.label}
+                {Math.round(e.amountRub)} ₽ ·{" "}
+                {CATS.find((c) => c.id === e.category)?.label}
               </AppText>
               <AppText variant="caption" tone="secondary">
                 {e.spentOn}
@@ -231,7 +294,10 @@ export default function BudgetScreen() {
               onPress={() => {
                 repo.softDeleteFoodExpense(e.id);
                 refresh();
-                showFlash('Расход удалён');
+                setUndo({
+                  message: "Расход удалён",
+                  action: () => repo.restoreFoodExpense(e.id),
+                });
               }}
             />
           </AppCard>
@@ -257,7 +323,10 @@ function Metric({
       <AppText variant="label" tone="secondary">
         {label}
       </AppText>
-      <AppText variant={strong ? 'metric' : 'subtitle'} style={styles.metricValue}>
+      <AppText
+        variant={strong ? "metric" : "subtitle"}
+        style={styles.metricValue}
+      >
         {value}
       </AppText>
       {hint ? (
@@ -272,10 +341,11 @@ function Metric({
 const styles = StyleSheet.create({
   content: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
   lead: { lineHeight: 22 },
-  month: { fontWeight: '800' },
+  month: { fontWeight: "800" },
+  quickExpense: { gap: space.md },
   hero: { gap: space.md },
   metric: { gap: 2 },
-  metricValue: { fontWeight: '700' },
+  metricValue: { fontWeight: "700" },
   section: { marginTop: space.sm },
   input: {
     minHeight: touchMin,
@@ -287,14 +357,14 @@ const styles = StyleSheet.create({
     fontSize: type.body,
     color: colors.ink,
   },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   hint: { lineHeight: 18 },
-  catLine: { fontWeight: '600' },
+  catLine: { fontWeight: "600" },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: space.md,
   },
   cardMain: { flex: 1, gap: 2 },
-  cardTitle: { fontWeight: '700' },
+  cardTitle: { fontWeight: "700" },
 });

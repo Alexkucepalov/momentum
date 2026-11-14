@@ -10,6 +10,7 @@ export {
   elevation,
   fonts,
   TAB_SHELL,
+  HEART_RATE_ZONE_COLORS,
 } from '../../../../src/design-system/tokens';
 
 export type { TabShellId } from '../../../../src/design-system/tokens';

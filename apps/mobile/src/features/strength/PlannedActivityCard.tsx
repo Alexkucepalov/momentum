@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   startBtn: {
-    minHeight: touchMin - 8,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     justifyContent: 'center',
     borderRadius: radius.pill,
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
   },
   startLabel: { fontWeight: '700' },
   iconBtn: {
-    minWidth: touchMin - 8,
-    minHeight: touchMin - 8,
+    minWidth: touchMin,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,

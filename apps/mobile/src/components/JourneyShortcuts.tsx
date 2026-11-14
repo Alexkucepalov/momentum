@@ -3,7 +3,7 @@ import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { colors, radius, space, type } from '../theme/tokens';
+import { colors, radius, space, type, touchMin } from '../theme/tokens';
 
 type Shortcut = {
   key: string;
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: space.md,
     paddingVertical: 8,
-    minHeight: 36,
+    minHeight: touchMin,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,

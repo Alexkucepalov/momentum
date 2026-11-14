@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.4)',
-    minHeight: 40,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     justifyContent: 'center',
   },

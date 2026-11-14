@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -7,7 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
 import { localDateKey } from '../../../../src/storage/validation';
-import { FlashBar } from '@/src/components/FlashBar';
+import { asPersistable } from '../../../../src/storage/foodRepository';
+import { clearRecoveryCopies } from '@/src/storage/recoveryCopy';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
 import { collectDayReportText } from '@/src/features/progress/collectDayReport';
@@ -25,6 +27,7 @@ import {
 } from '@/src/design-system';
 import { bumpLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
 import { clearGarminApiKey, getGarminApiKey } from '@/src/features/garmin/secureKeyStore';
+import { clearRecipePhotos } from '@/src/media/recipePhoto';
 import { clearTodayWidgetPayload } from '@/src/widgets/syncTodayWidget';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
@@ -76,7 +79,7 @@ export default function ProfileScreen() {
   const params = useLocalSearchParams<{ section?: string }>();
   const [goalsOpen, setGoalsOpen] = useState(params.section === 'goals');
   useEffect(() => { if (params.section === 'goals') setGoalsOpen(true); }, [params.section]);
-  const { repo, refresh, showFlash, setDateLocal, dateLocal } = useData();
+  const { repo, refresh, showFlash, setDateLocal, dateLocal, setUndo } = useData();
   const profileRevision = useProfileRevision();
   const insets = useSafeAreaInsets();
   const profile = repo.getProfile();
@@ -217,9 +220,11 @@ export default function ProfileScreen() {
 
   const applyImport = (json: string) => {
     const result = repo.importAll(json);
+    bumpLocalDataWipeEpoch();
+    setUndo(null);
     const tz = repo.getProfile().timezone;
     setDateLocal(localDateKey(new Date(), tz));
-    refresh('profile');
+    refresh('all');
     setPasteOpen(false);
     setPasteRaw('');
     showFlash(`Восстановлено · v${result.version} · ${result.entries} записей`);
@@ -293,11 +298,21 @@ export default function ProfileScreen() {
         onConfirm: () => {
           void (async () => {
             bumpLocalDataWipeEpoch();
-            repo.deleteAllUserData();
-            await clearGarminApiKey();
-            await clearTodayWidgetPayload();
-            refresh('all');
-            showFlash('Локальные данные и ключ Garmin очищены');
+            setUndo(null);
+            try {
+              repo.deleteAllUserData();
+              setDateLocal(localDateKey(new Date(), repo.getProfile().timezone));
+              refresh('all');
+              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload(), clearRecoveryCopies(), clearRecipePhotos()]);
+              asPersistable(repo).flushPersist();
+              router.replace('/');
+              refresh('all');
+              if (cleanup.some(result => result.status === 'rejected')) showFlash('Часть локальных файлов или ключ Garmin удалить не удалось. Повтори удаление.');
+              else showFlash('Локальные данные и ключ Garmin очищены');
+            } catch {
+              refresh('all');
+              showFlash('Удаление не завершилось. Повтори попытку; сохранение может быть недоступно.');
+            }
           })();
         },
       },
@@ -561,7 +576,8 @@ export default function ProfileScreen() {
           />
           {privacyOpen ? (
             <View style={styles.privacyBody}>
-              <PrivacyLine text="Дневник, вес и привычки — только на этом устройстве." />
+              <PrivacyLine text="Дневник, вес и привычки хранятся на устройстве. В Android автоматическое резервное копирование приложения отключено." />
+              <PrivacyLine text="Для переноса используй экспорт JSON. Фото рецептов в JSON не входят." />
               <PrivacyLine text="Штрихкод: в сеть уходит только код (Open Food Facts)." />
               <PrivacyLine text="Garmin-ключ в SecureStore, не попадает в экспорт." />
               <PrivacyLine text="Нет аккаунта, нет обязательного AI, нет рассылки." />
@@ -618,7 +634,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      <FlashBar />
     </View>
   );
 }
@@ -790,7 +805,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.canvas,
-    minHeight: 36,
+    minHeight: touchMin,
     justifyContent: 'center',
   },
   presetOn: {

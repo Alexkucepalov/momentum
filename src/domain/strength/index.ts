@@ -30,7 +30,7 @@ export {
   workingWeightFromSets,
   type PreviousSetHint,
 } from './previousPerformance';
-export { parseOptionalNonNegativeNumber } from './parseSetInput';
+export { parseOptionalNonNegativeNumber, parseOptionalRepetitions } from './parseSetInput';
 export { buildStrengthWeekDays, type StrengthWeekDay } from './weekBoard';
 export {
   resolveNextTrainingTarget,

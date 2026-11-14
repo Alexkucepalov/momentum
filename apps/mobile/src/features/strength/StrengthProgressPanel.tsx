@@ -1,15 +1,25 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
-import { datesInWeekFromStart, weekStartMonday } from '../../../../../src/domain/habitWeek';
+import {
+  datesInWeekFromStart,
+  weekStartMonday,
+} from "../../../../../src/domain/habitWeek";
 import {
   exerciseWorkingWeightSeries,
   personalRecordsByExercise,
   weekStrengthSummary,
-} from '../../../../../src/domain/strength';
-import type { FoodRepository } from '../../../../../src/storage/foodRepository';
-import { AppCard, AppText, colors, radius, space, touchMin } from '@/src/design-system';
-import { useAnyRevision, useData } from '@/src/state/DataContext';
+} from "../../../../../src/domain/strength";
+import type { FoodRepository } from "../../../../../src/storage/foodRepository";
+import {
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+} from "@/src/design-system";
+import { useAnyRevision, useData } from "@/src/state/DataContext";
 
 export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
   const { dateLocal } = useData();
@@ -20,7 +30,10 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
   }, [repo, revision]);
   const [exerciseId, setExerciseId] = useState<string | null>(null);
   const activeId =
-    exerciseId ?? exercises.find((e) => e.id === 'ex-chest-press')?.id ?? exercises[0]?.id ?? null;
+    exerciseId ??
+    exercises.find((e) => e.id === "ex-chest-press")?.id ??
+    exercises[0]?.id ??
+    null;
 
   const weekStart = weekStartMonday(dateLocal);
   const weekDates = useMemo(() => datesInWeekFromStart(weekStart), [weekStart]);
@@ -29,7 +42,7 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
     const snap = repo.toSnapshot();
     const plannedStrength = repo
       .listPlannedActivitiesInWeek(weekStart)
-      .filter((a) => a.kind === 'strength').length;
+      .filter((a) => a.kind === "strength").length;
     const summary = weekStrengthSummary({
       weekStart,
       weekDates,
@@ -54,8 +67,10 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
 
   const selected = exercises.find((e) => e.id === activeId) ?? null;
   const last =
-    snapMeta.series.length > 0 ? snapMeta.series[snapMeta.series.length - 1] : null;
-  const pr = activeId ? snapMeta.prs.get(activeId) ?? null : null;
+    snapMeta.series.length > 0
+      ? snapMeta.series[snapMeta.series.length - 1]
+      : null;
+  const pr = activeId ? (snapMeta.prs.get(activeId) ?? null) : null;
   const maxKg = snapMeta.series.reduce<number | null>((acc, p) => {
     if (p.workingWeightKg == null) return acc;
     if (acc == null || p.workingWeightKg > acc) return p.workingWeightKg;
@@ -65,20 +80,26 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
   const { summary } = snapMeta;
 
   return (
-    <AppCard style={styles.card} testID="strength-progress-panel" accessibilityLabel="Прогресс силовых">
+    <AppCard
+      style={styles.card}
+      testID="strength-progress-panel"
+      accessibilityLabel="Прогресс силовых"
+    >
       <AppText variant="label" tone="muted">
         Силовые · неделя
       </AppText>
       <AppText variant="body">
         Сессии: {summary.completedSessions}
-        {summary.plannedStrength > 0 ? ` / план ${summary.plannedStrength}` : ''}
+        {summary.plannedStrength > 0
+          ? ` / план ${summary.plannedStrength}`
+          : ""}
       </AppText>
       <AppText variant="caption" tone="secondary">
-        Объём:{' '}
+        Объём:{" "}
         {summary.tonnageKg == null
-          ? '—'
+          ? "—"
           : `${Math.round(summary.tonnageKg)} кг·повт.`}
-        {summary.incompleteTonnage ? ' · часть подходов без веса' : ''}
+        {summary.incompleteTonnage ? " · часть подходов без веса" : ""}
       </AppText>
 
       <AppText variant="label" tone="muted" style={styles.section}>
@@ -88,25 +109,38 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
         Без стыда за пропуск — пустая точка не равна 0 кг
       </AppText>
 
-      <View style={styles.chips}>
-        {exercises.slice(0, 8).map((e) => {
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+        accessibilityLabel="Выбрать упражнение для анализа"
+      >
+        {exercises.map((e) => {
           const on = e.id === activeId;
           return (
             <Pressable
               key={e.id}
               onPress={() => setExerciseId(e.id)}
-              style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.chip,
+                on && styles.chipOn,
+                pressed && styles.pressed,
+              ]}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
               accessibilityLabel={e.name}
             >
-              <AppText variant="caption" tone={on ? 'inverse' : 'ink'} numberOfLines={1}>
+              <AppText
+                variant="caption"
+                tone={on ? "inverse" : "ink"}
+                numberOfLines={1}
+              >
                 {e.name}
               </AppText>
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {selected ? (
         <AppText variant="subtitle">{selected.name}</AppText>
@@ -129,7 +163,7 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
       {last?.workingWeightKg != null ? (
         <AppText variant="body">
           Последний: {last.workingWeightKg} кг
-          {last.topReps != null ? ` × ${last.topReps}` : ''}
+          {last.topReps != null ? ` × ${last.topReps}` : ""}
         </AppText>
       ) : (
         <AppText variant="caption" tone="muted">
@@ -178,20 +212,19 @@ const styles = StyleSheet.create({
   card: { gap: space.sm },
   section: { marginTop: space.xs },
   chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
     gap: space.xs,
   },
   chip: {
-    maxWidth: '48%',
-    minHeight: touchMin - 12,
+    maxWidth: 220,
+    minHeight: touchMin,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
     borderRadius: radius.pill,
     backgroundColor: colors.surfaceMuted,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   chipOn: {
     backgroundColor: colors.ink,
@@ -199,18 +232,18 @@ const styles = StyleSheet.create({
   },
   bars: {
     minHeight: 80,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: 4,
     paddingHorizontal: space.xs,
   },
   barCol: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   bar: {
-    width: '80%',
+    width: "80%",
     borderRadius: 4,
     backgroundColor: colors.chartFill,
     minHeight: 4,

@@ -107,7 +107,7 @@ test('Phase 1 diary vertical slice: catalog, snapshot, edit, undo, recent, favor
   assert.equal(entry.energyKcal, expected.kcal);
   assert.equal(entry.proteinG, expected.protein);
 
-  // Historical entry snapshot survives product nutrition change until grams edit
+  // Historical entry snapshot survives catalog changes and scales from the saved portion on edit
   repo.updateProductNutrition(oats.id, {
     energyKcal: 999,
     proteinG: 99,
@@ -117,11 +117,11 @@ test('Phase 1 diary vertical slice: catalog, snapshot, edit, undo, recent, favor
   const still = repo.listEntriesForDate(dateLocal).find((e) => e.id === entry.id);
   assert.equal(still.energyKcal, expected.kcal);
 
-  // Grams edit re-snapshots from current product (deterministic portion)
+  // Gram edits scale the historical snapshot, not the mutable catalog card.
   repo.updateEntryGrams(entry.id, 100);
   const resized = repo.listEntriesForDate(dateLocal).find((e) => e.id === entry.id);
   assert.equal(resized.grams, 100);
-  assert.equal(resized.energyKcal, 999);
+  assert.equal(resized.energyKcal, 370);
 
   const unknownEntry = repo.addEntryFromProduct({
     productId: mystery.id,
@@ -152,7 +152,7 @@ test('Phase 1 diary vertical slice: catalog, snapshot, edit, undo, recent, favor
   const restoredOats = restored.listProducts().find((p) => p.id === oats.id);
   assert.equal(restoredOats.energyKcal, 999);
   const restoredEntry = restored.listEntriesForDate(dateLocal).find((e) => e.id === entry.id);
-  assert.equal(restoredEntry.energyKcal, 999);
+  assert.equal(restoredEntry.energyKcal, 370);
 });
 
 test('Phase 1 UI files use nf-fit design system', () => {
@@ -178,7 +178,7 @@ test('Phase 1 UI files use nf-fit design system', () => {
   );
   assert.ok(meal.includes('@/src/design-system'));
   assert.ok(meal.includes('AppText'));
-  assert.ok(meal.includes('пока пусто') || meal.includes('нажми, чтобы добавить'));
+  // Empty-state copy is verified through the running Food screen (#230), not exact source text.
   assert.ok(!/shame|стыдно|провал|неудачник/i.test(meal));
 
   const summary = readFileSync(

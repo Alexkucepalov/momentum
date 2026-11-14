@@ -18,8 +18,8 @@ function flashIcon(message: string): keyof typeof Ionicons.glyphMap {
 }
 
 /** Non-destructive toast (save / copy). Sits above the tab bar. */
-export function FlashBar() {
-  const { flash, clearFlash } = useData();
+export function FlashBar({ bottomOffset = 56 }: { bottomOffset?: number }) {
+  const { flash, flashId, clearFlash, undo } = useData();
   const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(10)).current;
@@ -43,10 +43,10 @@ export function FlashBar() {
       });
     }, SHOW_MS);
 
-    return () => clearTimeout(hide);
-  }, [flash, clearFlash, opacity, translateY]);
+    return () => { clearTimeout(hide); opacity.stopAnimation(); translateY.stopAnimation(); };
+  }, [flash, flashId, clearFlash, opacity, translateY]);
 
-  if (!flash) return null;
+  if (!flash || undo) return null;
 
   const icon = flashIcon(flash);
 
@@ -56,7 +56,7 @@ export function FlashBar() {
       style={[
         styles.anchor,
         {
-          bottom: Math.max(insets.bottom, space.sm) + 56,
+          bottom: Math.max(insets.bottom, space.sm) + bottomOffset,
           opacity,
           transform: [{ translateY }],
         },

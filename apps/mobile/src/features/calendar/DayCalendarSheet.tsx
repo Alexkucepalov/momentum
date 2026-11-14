@@ -1,3 +1,4 @@
+import { completedTrainingFacts, type CompletedTrainingFact } from '../../../../../src/domain/completedTraining';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
@@ -67,7 +68,7 @@ export function DayCalendarSheet({
   const { y, m0 } = parseDateLocal(cursor);
   const cells = useMemo(() => buildMonthCells(y, m0), [y, m0]);
 
-  const weights = useMemo(() => repo.listWeights(200), [repo]);
+  const weights = useMemo(() => repo.listWeights(Number.MAX_SAFE_INTEGER), [repo, revision]);
 
   const markers = useMemo(() => {
     const map = new Map<
@@ -83,15 +84,15 @@ export function DayCalendarSheet({
       );
       map.set(iso, {
         hasFood: entries.length > 0,
-        hasActivity: workouts.length > 0,
+        hasActivity: workouts.length > 0 || repo.listWorkoutSessionsForDate(iso).some(s => s.status === 'completed'),
         hasWeight: kg != null,
       });
     }
     return map;
-  }, [cells, repo, weights, profile.timezone]);
+  }, [cells, repo, weights, profile.timezone, revision]);
 
   const dayEntries = repo.listEntriesForDate(preview);
-  const dayWorkouts = repo.listWorkoutsForDate(preview);
+  const dayWorkouts = completedTrainingFacts(repo.listWorkoutsForDate(preview), repo.listWorkoutSessionsForDate(preview));
   const daySteps = repo.getDailyActivityStats(preview)?.steps ?? null;
   const dayWeight = weightKgForDateLocal(weights, preview, (instant) =>
     localDateKey(new Date(instant), profile.timezone),
@@ -264,7 +265,7 @@ function DayDetail({
   today: string;
   totals: { energyKcal: number | null; entryCount: number; hasUnknownFields: boolean };
   mealGroups: Record<MealSlot, FoodEntry[]>;
-  workouts: Workout[];
+  workouts: CompletedTrainingFact[];
   steps: number | null;
   weightKg: number | null;
 }) {
@@ -324,9 +325,9 @@ function DayDetail({
         <Text style={styles.emptyLine}>Тренировок нет</Text>
       ) : (
         workouts.map((w) => (
-          <Text key={w.id} style={styles.mealLine}>
+          <Text key={`${w.source}:${w.id}`} style={styles.mealLine}>
             {WORKOUT_LABEL[w.type]}
-            {w.source === 'garmin' ? ' · Garmin' : ''} · {Math.round(w.durationSec / 60)} мин
+            {w.title ? ` · ${w.title}` : ''}{w.origin === 'garmin' ? ' · Garmin' : ''} · {w.durationSec == null ? '—' : Math.round(w.durationSec / 60)} мин{w.source === 'strength_session' ? ' (время сессии)' : ''}
             {w.distanceM != null ? ` · ${(w.distanceM / 1000).toFixed(1)} км` : ''}
             {w.calories != null ? ` · ${Math.round(w.calories)} ккал` : ''}
             {w.notes?.trim() ? ` · ${w.notes.trim()}` : ''}

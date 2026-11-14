@@ -12,3 +12,11 @@ export function parseOptionalNonNegativeNumber(raw: string):
   if (n < 0) return { ok: false, error: 'Не может быть меньше 0' };
   return { ok: true, value: n };
 }
+
+export function parseOptionalRepetitions(raw: string): ReturnType<typeof parseOptionalNonNegativeNumber> {
+  const result = parseOptionalNonNegativeNumber(raw);
+  if (result.ok && result.value != null && !Number.isInteger(result.value)) {
+    return { ok: false, error: 'Повторения — целое число' };
+  }
+  return result;
+}

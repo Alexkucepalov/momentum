@@ -28,7 +28,7 @@ export function DayStrip({ selected, today, onSelect, onOpenCalendar }: {
         {days.map((date, i) => {
           const active = date === selected;
           return (
-            <Pressable key={date} onPress={() => onSelect(date)} style={({ pressed }) => [styles.day, active && styles.active, pressed && styles.pressed]} accessibilityRole="tab" accessibilityState={{ selected: active }} accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(date)}${date === today ? ', сегодня' : ''}`}>
+            <Pressable key={date} onPress={() => onSelect(date)} style={({ pressed }) => [styles.day, active && styles.active, pressed && styles.pressed]} accessibilityRole="tab" aria-selected={active} accessibilityState={{ selected: active }} accessibilityLabel={`${WEEKDAY_SHORT_RU_CAP[i]} ${dayNumber(date)}${date === today ? ', сегодня' : ''}`}>
               <AppText variant="label" tone={active ? 'inverse' : 'muted'}>{WEEKDAY_SHORT_RU_CAP[i]}</AppText>
               <AppText variant="body" tone={active ? 'inverse' : 'ink'} style={styles.number}>{dayNumber(date)}</AppText>
               <View style={[styles.dot, { opacity: date === today ? 1 : 0, backgroundColor: active ? colors.onPrimary : colors.sageInk }]} />
@@ -41,7 +41,7 @@ export function DayStrip({ selected, today, onSelect, onOpenCalendar }: {
 }
 const styles = StyleSheet.create({
   wrap: { marginBottom: space.sm }, head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  range: { flex: 1 }, controls: { flexDirection: 'row' }, control: { width: touchMin - 8, height: touchMin, alignItems: 'center', justifyContent: 'center' },
+  range: { flex: 1 }, controls: { flexDirection: 'row' }, control: { width: touchMin, height: touchMin, alignItems: 'center', justifyContent: 'center' },
   days: { flexDirection: 'row', marginHorizontal: -space.sm }, day: { flex: 1, minWidth: 0, minHeight: 64, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', gap: space.xs, paddingVertical: space.sm },
   active: { backgroundColor: colors.ink }, number: { fontWeight: '600' }, dot: { width: 3, height: 3, borderRadius: 2 }, pressed: { opacity: 0.75 },
 });

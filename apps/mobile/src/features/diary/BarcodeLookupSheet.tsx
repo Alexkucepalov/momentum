@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,9 +38,11 @@ const RESCAN_UNLOCK_MS = 2000;
 export function BarcodeLookupSheet({
   visible,
   onClose,
+  onAdded,
 }: {
   visible: boolean;
   onClose: () => void;
+  onAdded?: () => void;
 }) {
   const { repo, dateLocal, meal, refresh, showFlash, setUndo } = useData();
   const revision = useDiaryRevision();
@@ -501,7 +504,7 @@ export function BarcodeLookupSheet({
         visible={confirm && product != null}
         target={product ? { kind: 'product', product } : null}
         meal={meal}
-        mealLabel={MEAL_LABELS[meal]}
+        mealLabel={`${MEAL_LABELS[meal]} · ${dateLocal}`}
         initialGrams={confirmGrams}
         onClose={() => {
           setConfirm(false);
@@ -535,6 +538,7 @@ export function BarcodeLookupSheet({
             `${line}${sourceNote ? `\n${sourceNote}` : ''}\nМожно сканировать следующий продукт.`,
           );
           scheduleRescanUnlock(product.barcode ?? code);
+          if (onAdded) {closeAll();onAdded();}
         }}
       />
     </>

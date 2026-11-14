@@ -350,7 +350,7 @@ describe('garmin sync helpers', () => {
 describe('garmin repository upsert', () => {
   it('upserts garmin weight/workout/steps idempotently without touching user rows', () => {
     const repo = createMemoryFoodRepository({ timezone: 'UTC' });
-    assert.equal(repo.toSnapshot().version, 19);
+    assert.equal(repo.toSnapshot().version, 20);
 
     const manual = repo.addWeight(80, '2026-08-01T10:00:00.000Z');
     assert.equal(manual.source, 'user');

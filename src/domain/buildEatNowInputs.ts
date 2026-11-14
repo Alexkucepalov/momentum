@@ -28,7 +28,7 @@ export function eatNowInputsFromRecipes(
   ingredientsByRecipeId: (recipeId: string) => RecipeIngredient[],
   opts?: { defaultPrepMinutes?: number | null; atHome?: boolean },
 ): EatNowCandidateInput[] {
-  const prep = opts?.defaultPrepMinutes ?? 20;
+  const prep = opts?.defaultPrepMinutes ?? null;
   const atHome = opts?.atHome ?? true;
   const out: EatNowCandidateInput[] = [];
   for (const r of recipes) {
@@ -68,7 +68,7 @@ export function eatNowInputsFromProducts(
       kind: 'product',
       title: p.brand ? `${p.name} · ${p.brand}` : p.name,
       per100,
-      prepMinutes: 2,
+      prepMinutes: null,
       atHome,
     });
   }
@@ -100,7 +100,7 @@ export function eatNowInputsFromCookedBatches(
       kind: 'cooked_batch',
       title: `${recipe.name} · остаток ${Math.round(b.remainingG)} г`,
       per100,
-      prepMinutes: 5,
+      prepMinutes: null,
       atHome: true,
     });
   }

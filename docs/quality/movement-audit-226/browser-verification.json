@@ -1,0 +1,40 @@
+{
+  "platform": "Expo web / Chromium",
+  "widths": [
+    360,
+    390,
+    430
+  ],
+  "routes": [
+    "/",
+    "/food",
+    "/activity",
+    "/progress",
+    "/profile",
+    "/plan",
+    "/plan/eat-now",
+    "/plan/pantry",
+    "/plan/week",
+    "/plan/shop",
+    "/plan/budget",
+    "/plan/stores",
+    "/plan/receipt",
+    "/recipes",
+    "/recipes/new",
+    "/recipes/import-text",
+    "/recipes/import-personal",
+    "/garmin",
+    "/garmin/data",
+    "/strength",
+    "/strength/template/tmpl-upper-a"
+  ],
+  "flows": [
+    "cycling plan with time/duration",
+    "cross-week move and Undo",
+    "manual sleep + reactive week average + reload",
+    "strength record + rest + finish without rating preserves note + readonly history",
+    "corrupt storage retained without memory fallback"
+  ],
+  "page_errors": [],
+  "device_pass": false
+}

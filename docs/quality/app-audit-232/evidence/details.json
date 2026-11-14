@@ -1,0 +1,169 @@
+{
+  "pages": [
+    {
+      "screen": "progress-body-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 23
+    },
+    {
+      "screen": "progress-habits-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 21
+    },
+    {
+      "screen": "progress-reports-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 23
+    },
+    {
+      "screen": "recipe-detail-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 22
+    },
+    {
+      "screen": "recipe-edit-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "strength-template-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "strength-session-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "garmin-ride-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 22
+    },
+    {
+      "screen": "plan-budget-360",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "progress-body-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 23
+    },
+    {
+      "screen": "progress-habits-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 21
+    },
+    {
+      "screen": "progress-reports-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 23
+    },
+    {
+      "screen": "recipe-detail-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 22
+    },
+    {
+      "screen": "recipe-edit-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "strength-template-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "strength-session-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "garmin-ride-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 22
+    },
+    {
+      "screen": "plan-budget-390",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "progress-body-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 23
+    },
+    {
+      "screen": "progress-habits-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 21
+    },
+    {
+      "screen": "progress-reports-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 23
+    },
+    {
+      "screen": "recipe-detail-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 22
+    },
+    {
+      "screen": "recipe-edit-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "strength-template-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "strength-session-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    },
+    {
+      "screen": "garmin-ride-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 22
+    },
+    {
+      "screen": "plan-budget-430",
+      "overflow": false,
+      "violations": [],
+      "passes": 25
+    }
+  ],
+  "errors": [],
+  "platform": "Chromium / Expo web",
+  "native_device_pass": false
+}

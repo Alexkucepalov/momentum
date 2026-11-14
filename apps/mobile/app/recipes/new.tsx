@@ -1,3 +1,4 @@
+import { getLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -43,30 +44,17 @@ export default function NewRecipeScreen() {
         key={fromImport ? 'imported' : 'blank'}
         initial={initial}
         submitLabel="Сохранить рецепт"
-        onSubmit={(values) => {
-          void (async () => {
-            const recipe = repo.createRecipe({
-              name: values.name,
-              cookedYieldG: values.cookedYieldG,
-              description: values.description,
-              instructions: values.instructions,
-              photoUri: null,
-              nutritionPer100g: values.nutritionPer100g,
-              ingredients: values.ingredients,
-            });
-            let photoUri = values.photoUri;
-            if (photoUri) {
-              try {
-                photoUri = await persistRecipePhoto(photoUri, recipe.id);
-                repo.updateRecipe(recipe.id, { photoUri });
-              } catch {
-                repo.updateRecipe(recipe.id, { photoUri: values.photoUri });
-              }
-            }
-            refresh();
-            showFlash(`Рецепт сохранён: ${recipe.name}`);
-            router.replace(`/recipes/${recipe.id}`);
-          })();
+        onSubmit={async (values) => {
+          const epoch = getLocalDataWipeEpoch();
+          // Persist optional media before committing the recipe. A failed copy leaves the form intact.
+          const photoUri = values.photoUri
+            ? await persistRecipePhoto(values.photoUri, `recipe-${Date.now()}`)
+            : null;
+          if (epoch !== getLocalDataWipeEpoch()) throw new Error('Данные изменились. Открой рецепт заново.');
+          const recipe = repo.createRecipe({ ...values, photoUri });
+          refresh();
+          showFlash(`Рецепт сохранён: ${recipe.name}`);
+          router.replace(`/recipes/${recipe.id}`);
         }}
       />
     </FormScrollView>

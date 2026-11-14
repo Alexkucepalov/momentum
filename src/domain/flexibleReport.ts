@@ -29,7 +29,7 @@ export type ReportDayNutrition = {
 export type ReportWorkoutRow = {
   dateLocal: string;
   type: string;
-  durationMin: number;
+  durationMin: number | null;
   distanceM: number | null;
   notes: string | null;
 };
@@ -246,18 +246,19 @@ function buildKpis(input: FlexibleReportInput, cats: ReportCategory[]): ReportKp
   }
 
   if (cats.includes('activity')) {
-    const mins = input.workouts.reduce((s, x) => s + x.durationMin, 0);
+    const known = input.workouts.filter(x => x.durationMin != null);
+    const mins = known.length ? known.reduce((s, x) => s + x.durationMin!, 0) : null;
     kpis.push({
       label: 'Тренировки',
       value: String(input.workouts.length),
-      hint: input.workouts.length === 0 ? 'В периоде нет' : `${mins} мин суммарно`,
+      hint: input.workouts.length === 0 ? 'В периоде нет' : `${fmtNum(mins)} мин${known.length < input.workouts.length ? ' · длительность известна не у всех' : ' суммарно'}`,
     });
     if (input.workouts.length > 0) {
-      const avgMin = mean(input.workouts.map((w) => w.durationMin));
+      const avgMin = mean(input.workouts.flatMap((w) => w.durationMin == null ? [] : [w.durationMin]));
       kpis.push({
         label: 'Средняя тренировка',
         value: `${fmtNum(avgMin)} мин`,
-        hint: `${fmtNum(mins / dayCount, 1)} мин/день периода`,
+        hint: `${fmtNum(mins == null ? null : mins / dayCount, 1)} мин/день периода`,
       });
     }
     const knownSteps = (input.stepsDays ?? [])
@@ -369,13 +370,14 @@ export function buildFlexibleReport(input: FlexibleReportInput): FlexibleReport 
 
   if (cats.includes('activity')) {
     const w = input.workouts;
-    const mins = w.reduce((s, x) => s + x.durationMin, 0);
+    const known = w.filter(x => x.durationMin != null);
+    const mins = known.length ? known.reduce((s, x) => s + x.durationMin!, 0) : null;
     const stepsDays = input.stepsDays ?? [];
     const knownSteps = stepsDays.filter((d) => d.steps != null);
     const stepsSum = knownSteps.reduce((s, d) => s + (d.steps as number), 0);
     const summary = [
       `Тренировок: ${w.length}`,
-      `Минут суммарно: ${mins}`,
+      `Минут по известным длительностям: ${fmtNum(mins)}`,
       knownSteps.length === 0
         ? 'Шаги: нет данных Garmin'
         : `Шаги: ${fmtNum(stepsSum)} суммарно · ${knownSteps.length} дн. · ср. ${fmtNum(mean(knownSteps.map((d) => d.steps as number)))}`,
@@ -396,7 +398,7 @@ export function buildFlexibleReport(input: FlexibleReportInput): FlexibleReport 
         row.distanceM == null ? '' : ` · ${(row.distanceM / 1000).toFixed(2)} км`;
       const note = row.notes ? ` · ${row.notes}` : '';
       details.push(
-        `${formatDateRu(row.dateLocal)}: ${row.type} · ${row.durationMin} мин${dist}${note}`,
+        `${formatDateRu(row.dateLocal)}: ${row.type} · ${row.durationMin == null ? '—' : row.durationMin} мин${dist}${note}`,
       );
     }
     if (w.length > 80) details.push(`… и ещё ${w.length - 80} тренировок`);

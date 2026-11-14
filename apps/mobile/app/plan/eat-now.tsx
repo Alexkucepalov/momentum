@@ -38,8 +38,6 @@ const FILTERS: { id: EatNowFilterId; label: string }[] = [
   { id: 'all', label: 'Подходящие' },
   { id: 'at_home', label: 'Дома' },
   { id: 'to_buy', label: 'Купить' },
-  { id: 'no_cook', label: 'Без готовки' },
-  { id: 'quick_15', label: 'До 15 мин' },
   { id: 'more_protein', label: 'Больше белка' },
 ];
 
@@ -153,7 +151,7 @@ export default function EatNowScreen() {
     });
 
     const recipeInputs = eatNowInputsFromRecipes(recipes, (id) => repo.getRecipeIngredients(id), {
-      defaultPrepMinutes: 25,
+      defaultPrepMinutes: null,
       atHome: false,
     }).map((c) => {
       const fromBatch = recipeAtHome(c.id, batchRecipeIds);
@@ -165,7 +163,7 @@ export default function EatNowScreen() {
         ...c,
         atHome: home,
         toBuy: !home,
-        prepMinutes: fromBatch ? 8 : home ? 15 : 25,
+        prepMinutes: null,
         pantryRatio: coverage.ratio,
         coverageHint: badge,
       };
@@ -178,7 +176,7 @@ export default function EatNowScreen() {
     const buyInputs = eatNowInputsFromProducts(buyProducts, { atHome: false }).map((c) => ({
       ...c,
       toBuy: true,
-      prepMinutes: 5,
+      prepMinutes: null,
     }));
 
     const batchInputs = eatNowInputsFromCookedBatches(
@@ -204,7 +202,7 @@ export default function EatNowScreen() {
     });
 
     return scoreEatNow(deduped, remaining, [filter]).slice(0, 20);
-  }, [repo, remaining, filter]);
+  }, [repo, remaining, filter, revision]);
 
   const openCandidate = (c: EatNowCandidate) => {
     if (c.kind === 'cooked_batch') {
@@ -270,7 +268,7 @@ export default function EatNowScreen() {
                 onPress={() => setFilter(f.id)}
                 style={[styles.chip, active && styles.chipActive]}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
+                accessibilityState={{ selected: active }} aria-selected={active}
                 accessibilityLabel={f.label}
               >
                 <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
@@ -469,7 +467,7 @@ const styles = StyleSheet.create({
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
-    minHeight: 36,
+    minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: 8,
     borderRadius: radius.pill,
@@ -499,7 +497,7 @@ const styles = StyleSheet.create({
   ctaRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
   ctaPrimary: {
     flex: 1,
-    minHeight: 40,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,
@@ -508,7 +506,7 @@ const styles = StyleSheet.create({
   },
   ctaPrimaryText: { fontSize: type.caption, fontWeight: '800', color: colors.primaryButtonText },
   ctaSecondary: {
-    minHeight: 40,
+    minHeight: touchMin,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,

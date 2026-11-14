@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   Animated,
   Dimensions,
@@ -7,11 +7,11 @@ import {
   Pressable,
   StyleSheet,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
-import { colors, radius, space } from '../theme/tokens';
+import { useKeyboardBottomInset } from "../hooks/useKeyboardBottomInset";
+import { colors, radius, space, touchMin } from "../theme/tokens";
 
 const DISMISS_DY = 96;
 const DISMISS_VY = 0.85;
@@ -37,7 +37,7 @@ export function SwipeToDismissSheet({
   const insets = useSafeAreaInsets();
   const keyboardInset = useKeyboardBottomInset();
   const translateY = useRef(new Animated.Value(0)).current;
-  const screenH = Dimensions.get('window').height;
+  const screenH = Dimensions.get("window").height;
   const availableH = Math.max(240, screenH - keyboardInset);
 
   useEffect(() => {
@@ -53,6 +53,10 @@ export function SwipeToDismissSheet({
           if (g.dy > 0) translateY.setValue(g.dy);
         },
         onPanResponderRelease: (_, g) => {
+          if (Math.abs(g.dx) < 5 && Math.abs(g.dy) < 5) {
+            onClose();
+            return;
+          }
           if (g.dy > DISMISS_DY || g.vy > DISMISS_VY) {
             Animated.timing(translateY, {
               toValue: screenH,
@@ -82,7 +86,6 @@ export function SwipeToDismissSheet({
       transparent
       animationType="fade"
       onRequestClose={onClose}
-      accessibilityViewIsModal
       statusBarTranslucent
     >
       <View style={styles.root} testID={testID}>
@@ -93,6 +96,9 @@ export function SwipeToDismissSheet({
           accessibilityLabel="Закрыть"
         />
         <Animated.View
+          role="dialog"
+          accessibilityViewIsModal
+          accessibilityLabel="Панель действий"
           style={[
             styles.sheet,
             {
@@ -103,14 +109,17 @@ export function SwipeToDismissSheet({
             },
           ]}
         >
-          <View
+          <Pressable
+            onPress={onClose}
+            onAccessibilityTap={onClose}
             style={styles.handleHit}
             {...pan.panHandlers}
-            accessibilityRole="adjustable"
-            accessibilityLabel="Потяните вниз, чтобы закрыть"
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть панель"
+            accessibilityHint="Также можно потянуть вниз"
           >
             <View style={styles.handle} />
-          </View>
+          </Pressable>
           <View style={styles.content}>{children}</View>
         </Animated.View>
       </View>
@@ -121,25 +130,27 @@ export function SwipeToDismissSheet({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
     backgroundColor: colors.overlay,
   },
   backdrop: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
   },
   sheet: {
-    width: '100%',
+    width: "100%",
     backgroundColor: colors.background,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   handleHit: {
-    alignItems: 'center',
+    minHeight: touchMin,
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: space.sm,
     paddingBottom: space.sm,
   },

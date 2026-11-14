@@ -4,6 +4,8 @@ import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { entryAmountLabel } from '../../../../../src/domain/diaryEntry';
+import { EntryAmountSheet } from './EntryAmountSheet';
 import { portion } from '../../../../../src/domain/nutrition';
 import type { FoodEntry, FoodProduct, MealSlot, Recipe } from '../../../../../src/storage/types';
 import { FormScrollView } from '../../components/FormScrollView';
@@ -59,6 +61,7 @@ export function AddFoodSheet({
   const [carbs, setCarbs] = useState('');
   const [grams, setGrams] = useState('100');
   const [error, setError] = useState<string | null>(null);
+  const [repeat, setRepeat] = useState<FoodEntry | null>(null);
   const [confirm, setConfirm] = useState<{
     target: PortionTarget;
     initialGrams: number;
@@ -85,6 +88,7 @@ export function AddFoodSheet({
       return;
     }
     setQuery('');
+    setConfirm(null);setRepeat(null);setPendingManual(null);setScanOpen(false);
     setTab('recent');
     setMealPickerOpen(false);
     setError(null);
@@ -122,48 +126,33 @@ export function AddFoodSheet({
 
   const quickAddEntry = (e: FoodEntry) => {
     if (!allowAdd()) return;
-    if (e.productId) {
-      const created = repo.addEntryFromProduct({
-        productId: e.productId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-      finishQuick(`Добавлено: ${e.displayName}`, [created.id]);
-      return;
-    }
-    if (e.recipeId) {
-      const created = repo.addEntryFromRecipe({
-        recipeId: e.recipeId,
-        dateLocal,
-        meal,
-        grams: e.grams,
-      });
-      finishQuick(`Добавлено: ${e.displayName}`, [created.id]);
-    }
+    try { const created = repo.copyDiaryEntries({ items: [{ entryId: e.id }], dateLocal, meal }); finishQuick(`Добавлено: ${e.displayName}`, created.map(row => row.id)); }
+    catch(e) { setError(e instanceof Error ? e.message : 'Не удалось повторить'); }
   };
 
   const quickAddProduct = (p: FoodProduct, g = 100) => {
     if (!allowAdd()) return;
-    const created = repo.addEntryFromProduct({
+    try { const created = repo.addEntryFromProduct({
       productId: p.id,
       dateLocal,
       meal,
       grams: g,
     });
     finishQuick(`Добавлено: ${p.name}`, [created.id]);
+    } catch(e) {setError(e instanceof Error ? e.message : 'Не удалось добавить');}
   };
 
   const quickAddRecipe = (r: Recipe) => {
     if (!allowAdd()) return;
     const g = Math.min(200, r.cookedYieldG);
-    const created = repo.addEntryFromRecipe({
+    try { const created = repo.addEntryFromRecipe({
       recipeId: r.id,
       dateLocal,
       meal,
       grams: g,
     });
     finishQuick(`Добавлено: ${r.name}`, [created.id]);
+    } catch(e) {setError(e instanceof Error ? e.message : 'Не удалось добавить');}
   };
 
   const openProductConfirm = (product: FoodProduct, initialGrams = 100) => {
@@ -178,17 +167,7 @@ export function AddFoodSheet({
     });
   };
 
-  const openRecentConfirm = (e: FoodEntry) => {
-    if (e.productId) {
-      const product = repo.listProducts().find((p) => p.id === e.productId);
-      if (product) openProductConfirm(product, e.grams);
-      return;
-    }
-    if (e.recipeId) {
-      const recipe = recipes.find((r) => r.id === e.recipeId);
-      if (recipe) openRecipeConfirm(recipe, e.grams);
-    }
-  };
+  const openRecentConfirm = (e: FoodEntry) => setRepeat(e);
 
   const saveManual = () => {
     try {
@@ -234,9 +213,10 @@ export function AddFoodSheet({
 
   return (
     <>
-      <SwipeToDismissSheet visible={visible && !confirm} onClose={onClose} maxHeightRatio={0.94}>
+      <SwipeToDismissSheet visible={visible && !confirm && !repeat && !scanOpen} onClose={onClose} maxHeightRatio={0.94}>
         <View style={styles.sheet}>
           <AddFoodSheetChrome
+            dateLabel={new Date(dateLocal+'T12:00:00Z').toLocaleDateString('ru-RU',{day:'numeric',month:'long',timeZone:'UTC'})}
             meal={meal}
             onChangeMeal={(m) => {
               setMeal(m);
@@ -290,12 +270,10 @@ export function AddFoodSheet({
                         <FoodPickRow
                           key={`r-${e.id}`}
                           title={e.displayName}
-                          meta={`Последняя порция · ${e.grams} г · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
+                          meta={`Последняя порция · ${entryAmountLabel(e)} · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
                           icon={e.recipeId ? 'restaurant-outline' : 'time-outline'}
                           onPress={() => openRecentConfirm(e)}
-                          onQuickAdd={
-                            e.productId || e.recipeId ? () => quickAddEntry(e) : undefined
-                          }
+                          onQuickAdd={() => quickAddEntry(e)}
                           accessibilityLabel={`Выбрать порцию ${e.displayName}`}
                         />
                       );
@@ -351,12 +329,10 @@ export function AddFoodSheet({
                     <FoodPickRow
                       key={e.id}
                       title={e.displayName}
-                      meta={`Последняя порция · ${e.grams} г · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
+                      meta={`Последняя порция · ${entryAmountLabel(e)} · ${e.energyKcal === null ? '— ккал' : `${Math.round(e.energyKcal)} ккал`}`}
                       icon={e.recipeId ? 'restaurant-outline' : 'nutrition-outline'}
                       onPress={() => openRecentConfirm(e)}
-                      onQuickAdd={
-                        e.productId || e.recipeId ? () => quickAddEntry(e) : undefined
-                      }
+                      onQuickAdd={() => quickAddEntry(e)}
                       accessibilityLabel={`Выбрать порцию ${e.displayName}`}
                     />
                   ))}
@@ -526,13 +502,14 @@ export function AddFoodSheet({
         </View>
       </SwipeToDismissSheet>
 
-      <BarcodeLookupSheet visible={scanOpen} onClose={() => setScanOpen(false)} />
+      <BarcodeLookupSheet visible={scanOpen} onClose={() => setScanOpen(false)} onAdded={onClose} />
+      <EntryAmountSheet entry={repeat} mode="repeat" context={`${MEAL_LABELS[meal]} · ${dateLocal}`} onClose={() => setRepeat(null)} onSave={amount => {if (!repeat || !allowAdd()) return;const created=repo.copyDiaryEntries({items:[{entryId:repeat.id,grams:amount}],dateLocal,meal});setRepeat(null);finishQuick(`Добавлено: ${repeat.displayName}`,created.map(e=>e.id));}}/>
 
       <ConfirmPortionSheet
         visible={confirm != null}
         target={confirm?.target ?? null}
         meal={meal}
-        mealLabel={MEAL_LABELS[meal]}
+        mealLabel={`${MEAL_LABELS[meal]} · ${dateLocal}`}
         initialGrams={confirm?.initialGrams}
         onClose={() => {
           setConfirm(null);

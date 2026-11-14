@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   title: { fontWeight: '800' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginBottom: space.sm },
   chip: {
-    minHeight: touchMin - 12,
+    minHeight: touchMin,
     paddingHorizontal: space.sm,
     justifyContent: 'center',
     borderRadius: radius.pill,

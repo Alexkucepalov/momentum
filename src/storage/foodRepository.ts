@@ -1,7 +1,10 @@
+import { cloneWorkoutSession, validateExercisePlan } from '../domain/strength/sessionReview';
+import { allocateCookedConsumption, cloneFoodEntry, cloneConsumption, validateCookedConsumption, mergeConsumption, planConsumptionChange } from '../domain/cookedConsumption';
+import { completedTrainingFacts } from '../domain/completedTraining';
+import { MEALS, resizeEntrySnapshot, type EntryDetails } from '../domain/diaryEntry';
 import { sumActivityKcal } from '../domain/activityEnergy';
 import { buildCookAgainInput, type CookAgainDraft } from '../domain/cookAgain';
 import { mergeCommonFoodCatalog } from '../domain/commonFoodCatalog';
-import { decreaseCookedRemaining, pickFifoBatchId } from '../domain/cookedBatch';
 import { dogfoodStatus, type DogfoodStatus } from '../domain/dogfood';
 import { parseExportJson, summarizeSnapshot, type ImportSummary } from '../domain/importExport';
 import {
@@ -21,6 +24,7 @@ import type {
   WorkoutSet,
   WorkoutTemplate,
   WorkoutTemplateExercise,
+  TrainingCycle,
 } from '../domain/strength/types';
 import {
   aggregateShopping,
@@ -58,8 +62,11 @@ import { suggestPantryLocation } from '../domain/suggestPantryLocation';
 import { reconcileShoppingWithPurchaseLines } from '../domain/shoppingReconcile';
 import { computeDailyTotals } from './dailyTotals';
 import {
+  assertLocalDate,
+  assertLocalTime,
   assertNonNegativeFinite,
   assertPositiveFinite,
+  assertRepetitions,
   nutritionFromProductFields,
 } from './validation';
 import type {
@@ -236,9 +243,14 @@ export type FoodRepository = {
   createSavedMealFromEntries(name: string, entries: FoodEntry[], defaultMeal?: MealSlot | null): SavedMeal;
   logSavedMeal(args: { savedMealId: string; dateLocal: string; meal: MealSlot }): FoodEntry[];
   softDeleteSavedMeal(savedMealId: string): SavedMeal;
+  /** Atomic repeat from saved snapshots; supports deleted catalog cards and Quick Add. */
+  copyDiaryEntries(args: { items: { entryId: string; grams?: number }[]; dateLocal: string; meal?: MealSlot }): FoodEntry[];
+  updateEntryDetails(entryId: string, patch: Partial<EntryDetails>): FoodEntry;
   updateEntryGrams(entryId: string, grams: number): FoodEntry;
   softDeleteEntry(entryId: string): FoodEntry;
   undoDeleteEntry(entryId: string): FoodEntry;
+  /** Undo fresh adds, including their exact cooked-batch consumption in this runtime. */
+  undoDiaryAdds(entryIds: string[]): void;
   dailyTotals(dateLocal: string): DailyTotals;
   listRecipes(): Recipe[];
   getRecipe(recipeId: string): Recipe | null;
@@ -254,6 +266,7 @@ export type FoodRepository = {
   ): { recipe: Recipe; created: boolean };
   updateRecipe(recipeId: string, input: UpdateRecipeInput): Recipe;
   softDeleteRecipe(recipeId: string): Recipe;
+  restoreRecipe(id: string): Recipe;
   /**
    * Clone recipe as a cook batch with actual finished weight (and optional ingredient tweaks).
    * Does not mutate the source recipe — diary history stays valid.
@@ -266,7 +279,12 @@ export type FoodRepository = {
   addWater(dateLocal: string, ml: number): WaterEntry;
   waterMlForDate(dateLocal: string): number;
   listWaterForDate(dateLocal: string): WaterEntry[];
+  removeWater(entryId: string): WaterEntry | null;
+  restoreWater(entry: WaterEntry): void;
   addWeight(kg: number, weighedAt?: string): WeightEntry;
+  updateManualWeight(id: string, kg: number): WeightEntry;
+  removeManualWeight(id: string): WeightEntry;
+  restoreManualWeight(entry: WeightEntry): void;
   listWeights(limit?: number): WeightEntry[];
   /** Weights from an integration (e.g. Garmin), newest first. */
   listIntegratedWeights(source: IntegrationSource, limit?: number): WeightEntry[];
@@ -323,6 +341,7 @@ export type FoodRepository = {
   /** Workouts from an integration across dates, newest first. */
   listIntegratedWorkouts(source: IntegrationSource, limit?: number): Workout[];
   softDeleteWorkout(workoutId: string): Workout;
+  restoreWorkout(workoutId: string): Workout;
   upsertDailyActivityStats(input: {
     dateLocal: string;
     steps?: number | null;
@@ -351,6 +370,9 @@ export type FoodRepository = {
   }): SleepNight;
   getSleepForDate(dateLocal: string): SleepNight | null;
   listSleepNights(limit?: number): SleepNight[];
+  /** Manual duration entry; imported nights remain separate and untouched. */
+  removeManualSleepNight(dateLocal: string): SleepNight | null;
+  restoreManualSleepNight(night: SleepNight): void;
   getGarminSyncState(): GarminSyncState;
   setGarminSyncState(patch: Partial<GarminSyncState>): GarminSyncState;
   /**
@@ -367,6 +389,13 @@ export type FoodRepository = {
     weekStartMonday: string,
     opts?: { replace?: boolean },
   ): { created: number };
+  repeatTrainingWeek(sourceMonday: string, targetMonday: string): PlannedActivity[];
+  getTrainingCycle(): TrainingCycle | null;
+  saveTrainingCycle(input: Omit<TrainingCycle, 'updatedAt'>): TrainingCycle;
+  restoreTrainingCycle(previous: TrainingCycle | null): void;
+  applyTrainingCycleWeek(monday: string, opts?: { replace?: boolean }): { created: number };
+  fillTrainingCycleWeeks(monday: string, weeks: number): { createdIds: string[]; skippedWeeks: number };
+  linkPlannedCycling(activityId: string, workoutId: string | null): PlannedActivity;
   listStrengthExercises(): StrengthExercise[];
   getStrengthExercise(exerciseId: string): StrengthExercise | null;
   createStrengthExercise(input: {
@@ -393,7 +422,7 @@ export type FoodRepository = {
   }): WorkoutTemplate;
   updateWorkoutTemplate(
     templateId: string,
-    fields: { name?: string; subtitle?: string | null },
+    fields: { name?: string; subtitle?: string | null; notes?: string | null },
   ): WorkoutTemplate;
   softDeleteWorkoutTemplate(templateId: string): WorkoutTemplate;
   setTemplateExercises(
@@ -452,6 +481,7 @@ export type FoodRepository = {
     args: { dateLocal: string; timeLocal?: string | null },
   ): PlannedActivity;
   softDeletePlannedActivity(activityId: string): PlannedActivity;
+  restorePlannedActivity(activityId: string): PlannedActivity;
   startWorkoutSession(input: {
     dateLocal: string;
     title: string;
@@ -459,6 +489,7 @@ export type FoodRepository = {
     plannedActivityId?: string | null;
   }): WorkoutSession;
   getWorkoutSession(sessionId: string): WorkoutSession | null;
+  getWorkoutSessionForPlan(activityId: string): WorkoutSession | null;
   listWorkoutSessionsForDate(dateLocal: string): WorkoutSession[];
   listInProgressWorkoutSessions(): WorkoutSession[];
   completeWorkoutSession(
@@ -466,6 +497,7 @@ export type FoodRepository = {
     opts?: { feelingRpe?: number | null; feelingNote?: string | null },
   ): WorkoutSession;
   abandonWorkoutSession(sessionId: string): WorkoutSession;
+  getStrengthHistory(): { sessions: WorkoutSession[]; sets: WorkoutSet[] };
   listWorkoutSets(sessionId: string): WorkoutSet[];
   /**
    * Upsert a set row. weightKg/reps may be null (unknown ≠ 0).
@@ -485,6 +517,9 @@ export type FoodRepository = {
     setId: string,
     args: { weightKg: number | null; reps: number | null },
   ): WorkoutSet;
+  saveWorkoutSetDraft(setId: string, input: { weight: string; reps: string }): WorkoutSet;
+  restoreWorkoutSet(previous: WorkoutSet): WorkoutSet;
+  setSessionRestDeadline(sessionId: string, until: string | null): WorkoutSession;
   softDeleteWorkoutSet(setId: string): WorkoutSet;
   previousSetsForExercise(
     exerciseId: string,
@@ -517,6 +552,7 @@ export type FoodRepository = {
     },
   ): FlexibleHabit;
   softDeleteFlexibleHabit(habitId: string): void;
+  restoreFlexibleHabit(habitId: string): void;
   logFlexibleHabit(
     habitId: string,
     dateLocal: string,
@@ -524,6 +560,7 @@ export type FoodRepository = {
     source?: 'manual' | 'auto',
   ): FlexibleHabitEvent;
   unlogFlexibleHabit(habitId: string, dateLocal: string): void;
+  setFlexibleHabitDayValue(habitId: string, dateLocal: string, value: number): void;
   isFlexibleHabitLogged(habitId: string, dateLocal: string): boolean;
   /** Measured value for the day; 0 if not logged. */
   flexibleHabitDayValue(habitId: string, dateLocal: string): number;
@@ -564,6 +601,7 @@ export type FoodRepository = {
     source?: PantrySource;
   }): PantryItem;
   softDeletePantryItem(pantryItemId: string): PantryItem;
+  restorePantryItem(id: string): PantryItem;
   listPurchases(): Purchase[];
   listPurchaseLines(purchaseId: string): PurchaseLine[];
   findPurchaseByFingerprint(fingerprint: string): Purchase | null;
@@ -645,6 +683,8 @@ export type FoodRepository = {
     },
   ): PlannedMeal;
   softDeletePlannedMeal(plannedMealId: string): PlannedMeal;
+  restorePlannedMeal(id: string): PlannedMeal;
+  undoPlannedMealLog(id: string, entryId: string): void;
   /**
    * Add a planned meal for a calendar day (never diary). Uses draft/active plan
    * covering the date, or creates an empty 1-day draft.
@@ -693,6 +733,7 @@ export type FoodRepository = {
   /** Projected spend from open shopping lists (user prices only — never live shelf). */
   openShoppingProjection(): ProjectedShoppingSpend;
   upsertProductPrice(input: {
+    basisQuantity?: number;
     productKey: string;
     priceRub: number;
     unit: PantryUnit;
@@ -710,6 +751,7 @@ export type FoodRepository = {
     note?: string | null;
   }): FoodExpense;
   softDeleteFoodExpense(expenseId: string): FoodExpense;
+  restoreFoodExpense(id: string): FoodExpense;
   monthBudgetSnapshot(month: string, asOfDateLocal: string): MonthBudgetSnapshot;
   /**
    * Amortized cost of diary entries in month using latest user product prices.
@@ -749,7 +791,7 @@ function normalizeProfile(raw: StoreSnapshotAny['profile']): Profile {
     timezone: raw.timezone,
     locale: raw.locale,
     units: 'metric',
-    waterTargetMl: raw.waterTargetMl ?? 2000,
+    waterTargetMl: raw.waterTargetMl === undefined ? 2000 : raw.waterTargetMl,
     dogfoodStartedOn: raw.dogfoodStartedOn ?? null,
     heightCm: raw.heightCm ?? null,
     dailyEnergyKcal: raw.dailyEnergyKcal ?? null,
@@ -986,6 +1028,7 @@ function normalizeProductPrice(raw: ProductPrice): ProductPrice {
   const source: ShoppingPriceSource =
     raw.source === 'receipt' || raw.source === 'estimate' ? raw.source : 'user';
   return {
+    basisQuantity: raw.basisQuantity ?? null,
     id: raw.id,
     productKey: raw.productKey,
     storeId: raw.storeId ?? null,
@@ -1183,6 +1226,7 @@ function normalizeStrengthExercise(raw: StrengthExercise): StrengthExercise {
 
 function normalizeWorkoutTemplate(raw: WorkoutTemplate): WorkoutTemplate {
   return {
+    ...(raw.notes === undefined ? {} : { notes: raw.notes }),
     id: raw.id,
     name: raw.name,
     subtitle: raw.subtitle ?? null,
@@ -1206,8 +1250,21 @@ function normalizeWorkoutTemplateExercise(raw: WorkoutTemplateExercise): Workout
   };
 }
 
+function cloneTrainingCycle(raw: TrainingCycle): TrainingCycle {
+  if (!raw || typeof raw.name !== 'string' || !raw.name.trim() || !Array.isArray(raw.slots) || raw.slots.length > 100) throw new Error('Некорректный шаблон недели');
+  const slots = raw.slots.map((slot, index) => {
+    if (!slot || !Number.isInteger(slot.weekdayIndex) || slot.weekdayIndex < 0 || slot.weekdayIndex > 6 || !['strength', 'cardio', 'rest'].includes(slot.kind) || typeof slot.title !== 'string' || !slot.title.trim()) throw new Error('Некорректный день в шаблоне');
+    assertLocalTime(slot.timeLocal ?? null);
+    if (slot.cardioMinutes != null) assertNonNegativeFinite(slot.cardioMinutes, 'cardioMinutes');
+    if (slot.kind === 'strength' && !slot.templateId) throw new Error('Выбери шаблон упражнений для силовой');
+    return { weekdayIndex: slot.weekdayIndex, kind: slot.kind, title: slot.title.trim(), subtitle: slot.subtitle?.trim() || null, templateId: slot.kind === 'strength' ? slot.templateId : null, timeLocal: slot.timeLocal ?? null, cardioMinutes: slot.kind === 'cardio' ? slot.cardioMinutes ?? null : null, sortOrder: Number.isInteger(slot.sortOrder) && slot.sortOrder >= 0 ? slot.sortOrder : index };
+  });
+  return { name: raw.name.trim(), slots, updatedAt: raw.updatedAt };
+}
+
 function normalizePlannedActivity(raw: PlannedActivity): PlannedActivity {
   return {
+    linkedWorkoutId: raw.linkedWorkoutId ?? null,
     id: raw.id,
     dateLocal: raw.dateLocal,
     timeLocal: raw.timeLocal ?? null,
@@ -1226,6 +1283,9 @@ function normalizeWorkoutSession(
   raw: WorkoutSession & { feelingRpe?: number | null; feelingNote?: string | null },
 ): WorkoutSession {
   return {
+    ...(raw.exercisePlan === undefined ? {} : { exercisePlan: cloneWorkoutSession(raw).exercisePlan }),
+    ...(raw.planNotes === undefined ? {} : { planNotes: raw.planNotes }),
+    ...(raw.restUntilAt === undefined ? {} : { restUntilAt: raw.restUntilAt }),
     id: raw.id,
     dateLocal: raw.dateLocal,
     templateId: raw.templateId ?? null,
@@ -1243,6 +1303,8 @@ function normalizeWorkoutSession(
 
 function normalizeWorkoutSet(raw: WorkoutSet): WorkoutSet {
   return {
+    ...(raw.draftWeightText === undefined ? {} : { draftWeightText: raw.draftWeightText }),
+    ...(raw.draftRepsText === undefined ? {} : { draftRepsText: raw.draftRepsText }),
     id: raw.id,
     sessionId: raw.sessionId,
     exerciseId: raw.exerciseId,
@@ -1263,12 +1325,13 @@ function normalizeSnapshot(raw?: StoreSnapshotAny): StoreSnapshot | undefined {
   const ts = nowIso();
   const prefs = (raw.storePreferences ?? []).map(normalizeStorePreference);
   return {
+    trainingCycle: raw.trainingCycle ? cloneTrainingCycle(raw.trainingCycle) : null,
     version: STORE_SNAPSHOT_VERSION,
     profile: normalizeProfile(raw.profile),
     products: raw.products ?? [],
     recipes: (raw.recipes ?? []).map(normalizeRecipe),
     ingredients: raw.ingredients ?? [],
-    entries: raw.entries ?? [],
+    entries: (raw.entries ?? []).map(cloneFoodEntry),
     waterEntries: raw.waterEntries ?? [],
     weightEntries: (raw.weightEntries ?? []).map(normalizeWeightEntry),
     habitChecks: raw.habitChecks ?? [],
@@ -1329,6 +1392,7 @@ export function createMemoryFoodRepository(seed?: {
   snapshot?: StoreSnapshotAny;
 }): FoodRepository {
   const snap = normalizeSnapshot(seed?.snapshot);
+  let trainingCycle: TrainingCycle | null = snap?.trainingCycle ?? null;
   const profile: Profile = snap?.profile
     ? { ...snap.profile }
     : {
@@ -1355,7 +1419,7 @@ export function createMemoryFoodRepository(seed?: {
     list.push({ ...ing });
     ingredients.set(ing.recipeId, list);
   }
-  const entries = new Map<string, FoodEntry>((snap?.entries ?? []).map((e) => [e.id, { ...e }]));
+  const entries = new Map<string, FoodEntry>((snap?.entries ?? []).map((e) => [e.id, cloneFoodEntry(e)]));
   const waterEntries = new Map<string, WaterEntry>(
     (snap?.waterEntries ?? []).map((w) => [w.id, { ...w }]),
   );
@@ -1387,6 +1451,25 @@ export function createMemoryFoodRepository(seed?: {
   const cookedBatches = new Map<string, CookedBatch>(
     (snap?.cookedBatches ?? []).map((b) => [b.id, { ...b }]),
   );
+  function checkReceipt(entry: FoodEntry, receipt: NonNullable<FoodEntry['cookedConsumption']>): void {
+    validateCookedConsumption(receipt, entry.grams);
+    for (const part of receipt) {
+      const batch = cookedBatches.get(part.batchId);
+      if (!entry.recipeId || (batch && batch.recipeId !== entry.recipeId)) throw new Error('Партия не относится к рецепту порции');
+    }
+  }
+  function commitStock(changes: Map<string, number>, stock = cookedBatches): void {
+    for (const [id, remainingG] of changes) {
+      const batch = stock.get(id)!; batch.remainingG = remainingG; batch.updatedAt = nowIso();
+    }
+  }
+  function consumeForDiaryEntry(entry: FoodEntry, stock = cookedBatches): void {
+    if (!entry.recipeId) { delete entry.cookedConsumption; return; }
+    const receipt = allocateCookedConsumption([...stock.values()], entry.recipeId, entry.grams);
+    checkReceipt(entry, receipt);
+    const plan = planConsumptionChange([...stock.values()], [], receipt);
+    commitStock(plan, stock); entry.cookedConsumption = receipt;
+  }
   const mealPlans = new Map<string, MealPlan>(
     (snap?.mealPlans ?? []).map((p) => [p.id, { ...p }]),
   );
@@ -1441,7 +1524,7 @@ export function createMemoryFoodRepository(seed?: {
     (snap?.plannedActivities ?? []).map((a) => [a.id, { ...a }]),
   );
   const workoutSessions = new Map<string, WorkoutSession>(
-    (snap?.workoutSessions ?? []).map((s) => [s.id, { ...s }]),
+    (snap?.workoutSessions ?? []).map((s) => [s.id, cloneWorkoutSession(s)]),
   );
   const workoutSets = new Map<string, WorkoutSet>(
     (snap?.workoutSets ?? []).map((s) => [s.id, { ...s }]),
@@ -1484,10 +1567,20 @@ export function createMemoryFoodRepository(seed?: {
   let persistHook: ((snap: StoreSnapshot) => void) | null = null;
   /** Coalesce burst writes (e.g. copy-yesterday) into one snapshot persist. */
   let persistQueued = false;
+  let persistError: Error | null = null;
+  let persistStatusListener: ((error: Error | null) => void) | null = null;
 
   const flushPersist = () => {
     persistQueued = false;
-    if (persistHook) persistHook(api.toSnapshot());
+    if (!persistHook) return;
+    try {
+      persistHook(api.toSnapshot());
+      if (persistError) { persistError = null; persistStatusListener?.(null); }
+    } catch (error) {
+      persistError = error instanceof Error ? error : new Error('Сохранение недоступно');
+      persistStatusListener?.(persistError);
+      throw persistError;
+    }
   };
 
   const notify = () => {
@@ -1498,7 +1591,7 @@ export function createMemoryFoodRepository(seed?: {
     Promise.resolve().then(() => {
       // Skip if flushPersist() already drained this generation.
       if (!persistQueued) return;
-      flushPersist();
+      try { flushPersist(); } catch { /* Status is surfaced to the app; memory remains retryable. */ }
     });
   };
 
@@ -1571,6 +1664,7 @@ export function createMemoryFoodRepository(seed?: {
   const api: FoodRepository & {
     setPersistHook(fn: (snap: StoreSnapshot) => void): void;
     flushPersist(): void;
+    setPersistStatusListener(fn: ((error: Error | null) => void) | null): void;
   } = {
     setPersistHook(fn) {
       persistHook = fn;
@@ -1578,14 +1672,19 @@ export function createMemoryFoodRepository(seed?: {
     flushPersist() {
       flushPersist();
     },
+    setPersistStatusListener(fn) {
+      persistStatusListener = fn;
+      fn?.(persistError);
+    },
     toSnapshot(): StoreSnapshot {
       return {
+        trainingCycle: trainingCycle ? cloneTrainingCycle(trainingCycle) : null,
         version: STORE_SNAPSHOT_VERSION,
         profile: { ...profile },
         products: [...products.values()].map((p) => ({ ...p })),
         recipes: [...recipes.values()].map((r) => ({ ...r })),
         ingredients: [...ingredients.values()].flat().map((i) => ({ ...i })),
-        entries: [...entries.values()].map((e) => ({ ...e })),
+        entries: [...entries.values()].map(cloneFoodEntry),
         waterEntries: [...waterEntries.values()].map((w) => ({ ...w })),
         weightEntries: [...weightEntries.values()].map((w) => ({ ...w })),
         habitChecks: [...habitChecks.values()].map((h) => ({ ...h })),
@@ -1620,7 +1719,7 @@ export function createMemoryFoodRepository(seed?: {
         workoutTemplates: [...workoutTemplates.values()].map((t) => ({ ...t })),
         workoutTemplateExercises: [...workoutTemplateExercises.values()].map((l) => ({ ...l })),
         plannedActivities: [...plannedActivities.values()].map((a) => ({ ...a })),
-        workoutSessions: [...workoutSessions.values()].map((s) => ({ ...s })),
+        workoutSessions: [...workoutSessions.values()].map(cloneWorkoutSession),
         workoutSets: [...workoutSets.values()].map((s) => ({ ...s })),
       };
     },
@@ -1656,9 +1755,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...profile };
     },
     startDogfood(dateLocal) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(dateLocal);
       if (!profile.dogfoodStartedOn) {
         profile.dogfoodStartedOn = dateLocal;
         notify();
@@ -1813,7 +1910,7 @@ export function createMemoryFoodRepository(seed?: {
     listEntriesForDate(dateLocal) {
       return [...entries.values()]
         .filter((e) => e.dateLocal === dateLocal && e.deletedAt == null)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(cloneFoodEntry);
     },
     listRecentEntries(limit = 20) {
       const sorted = [...entries.values()]
@@ -1830,7 +1927,7 @@ export function createMemoryFoodRepository(seed?: {
         const key = `${link}|${Math.round(e.grams * 10) / 10}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        deduped.push(e);
+        deduped.push(cloneFoodEntry(e));
         if (deduped.length >= limit) break;
       }
       return deduped;
@@ -1846,6 +1943,7 @@ export function createMemoryFoodRepository(seed?: {
       return hit ? hit.grams : null;
     },
     addEntryFromProduct({ productId, dateLocal, meal, grams }) {
+      assertLocalDate(dateLocal); if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
       assertNonNegativeFinite(grams, 'grams');
       const product = products.get(productId);
       if (!product || product.deletedAt) throw new Error('Product not found');
@@ -1858,6 +1956,7 @@ export function createMemoryFoodRepository(seed?: {
         },
         grams,
       );
+      nutritionFromProductFields({energyKcal:snapN.kcal,proteinG:snapN.protein,fatG:snapN.fat,carbG:snapN.carbs});
       const ts = nowIso();
       const entry: FoodEntry = {
         id: newId(),
@@ -1878,7 +1977,7 @@ export function createMemoryFoodRepository(seed?: {
       };
       entries.set(entry.id, entry);
       notify();
-      return { ...entry };
+      return cloneFoodEntry(entry);
     },
     addQuickEntry({
       dateLocal,
@@ -1889,6 +1988,7 @@ export function createMemoryFoodRepository(seed?: {
       fatG = null,
       carbG = null,
     }) {
+      assertLocalDate(dateLocal); if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
       nutritionFromProductFields({
         energyKcal,
         proteinG: proteinG ?? null,
@@ -1917,7 +2017,7 @@ export function createMemoryFoodRepository(seed?: {
       };
       entries.set(entry.id, entry);
       notify();
-      return { ...entry };
+      return cloneFoodEntry(entry);
     },
     listSavedMeals: () =>
       [...savedMeals.values()]
@@ -1982,6 +2082,16 @@ export function createMemoryFoodRepository(seed?: {
     logSavedMeal({ savedMealId, dateLocal, meal }) {
       const saved = savedMeals.get(savedMealId);
       if (!saved || saved.deletedAt) throw new Error('Saved meal not found');
+      assertLocalDate(dateLocal);
+      if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
+      for (const item of saved.items) {
+        assertNonNegativeFinite(item.grams, 'grams');
+        const product = item.productId ? products.get(item.productId) : null;
+        const recipe = item.recipeId ? api.getRecipe(item.recipeId) : null;
+        if (item.productId ? !product || product.deletedAt : !recipe) throw new Error('В шаблоне есть удалённый продукт или рецепт. Обнови шаблон перед добавлением.');
+        const n = product ? portion(nutritionFromProductFields(product), item.grams) : nutritionForRecipePortion(recipe!, ingredients.get(recipe!.id) ?? [], item.grams);
+        nutritionFromProductFields({energyKcal:n.kcal,proteinG:n.protein,fatG:n.fat,carbG:n.carbs});
+      }
       const created: FoodEntry[] = [];
       for (const item of saved.items) {
         if (item.productId) {
@@ -2020,6 +2130,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...m, items: m.items.map((i) => ({ ...i })) };
     },
     addEntryFromRecipe({ recipeId, dateLocal, meal, grams, nutritionSnapshot }) {
+      assertLocalDate(dateLocal); if (!MEALS.includes(meal)) throw new Error('Выбери приём пищи');
       assertNonNegativeFinite(grams, 'grams');
       const recipe = recipes.get(recipeId);
       if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
@@ -2056,76 +2167,89 @@ export function createMemoryFoodRepository(seed?: {
         updatedAt: ts,
         deletedAt: null,
       };
+      consumeForDiaryEntry(entry);
       entries.set(entry.id, entry);
-      const batchId = pickFifoBatchId([...cookedBatches.values()].filter((b) => b.recipeId === recipeId));
-      if (batchId) {
-        const batch = cookedBatches.get(batchId);
-        if (batch && !batch.deletedAt) {
-          batch.remainingG = decreaseCookedRemaining(batch.remainingG, grams);
-          batch.updatedAt = ts;
-        }
-      }
       notify();
-      return { ...entry };
+      return cloneFoodEntry(entry);
+    },
+    copyDiaryEntries({ items, dateLocal, meal }) {
+      assertLocalDate(dateLocal);
+      if (meal != null && !MEALS.includes(meal)) throw new Error('Выбери приём пищи');
+      if (!items.length) throw new Error('Нет записей для повтора');
+      const ts = nowIso();
+      // Validate every source before creating any entry or consuming a cooked batch.
+      const copies = items.map(item => {
+        const source = entries.get(item.entryId);
+        if (!source || source.deletedAt) throw new Error('Запись для повтора не найдена');
+        if (!MEALS.includes(meal ?? source.meal)) throw new Error('Некорректный приём у исходной записи');
+        const details = resizeEntrySnapshot(source, item.grams ?? source.grams);
+        nutritionFromProductFields(details);
+        return { ...source, ...details, id: newId(), dateLocal, meal: meal ?? source.meal, createdAt: ts, updatedAt: ts, deletedAt: null };
+      });
+      const nextStock = new Map([...cookedBatches].map(([id, batch]) => [id, { ...batch }]));
+      for (const entry of copies) consumeForDiaryEntry(entry, nextStock);
+      const stockChanges = new Map([...nextStock].filter(([id, batch]) => batch.remainingG !== cookedBatches.get(id)!.remainingG).map(([id, batch]) => [id, batch.remainingG]));
+      commitStock(stockChanges);
+      for (const entry of copies) entries.set(entry.id, entry);
+      notify();
+      return copies.map(cloneFoodEntry);
+    },
+    updateEntryDetails(entryId, patch) {
+      const entry = entries.get(entryId);
+      if (!entry || entry.deletedAt) throw new Error('Запись не найдена');
+      const next = { ...entry, ...patch };
+      assertLocalDate(next.dateLocal);
+      if (!MEALS.includes(next.meal)) throw new Error('Выбери приём пищи');
+      assertNonNegativeFinite(next.grams, 'grams');
+      nutritionFromProductFields(next);
+      let receipt = entry.cookedConsumption;
+      if (receipt !== undefined || patch.cookedConsumption !== undefined) {
+        if (patch.cookedConsumption !== undefined) receipt = cloneConsumption(patch.cookedConsumption);
+        else if (next.grams < entry.grams) receipt = receipt!.map(p => ({ ...p, grams: p.grams * (next.grams / entry.grams) })).filter(p => p.grams > 0);
+        else if (next.grams > entry.grams && entry.recipeId) receipt = mergeConsumption(receipt!, allocateCookedConsumption([...cookedBatches.values()], entry.recipeId, next.grams - entry.grams));
+        checkReceipt(next, receipt!);
+        const changes = planConsumptionChange([...cookedBatches.values()], entry.cookedConsumption ?? [], receipt!);
+        commitStock(changes);
+      }
+      Object.assign(entry, { dateLocal: next.dateLocal, meal: next.meal, grams: next.grams, energyKcal: next.energyKcal, proteinG: next.proteinG, fatG: next.fatG, carbG: next.carbG, updatedAt: nowIso() });
+      if (receipt !== undefined) entry.cookedConsumption = cloneConsumption(receipt);
+      notify(); return cloneFoodEntry(entry);
     },
     updateEntryGrams(entryId, grams) {
-      assertNonNegativeFinite(grams, 'grams');
       const entry = entries.get(entryId);
-      if (!entry || entry.deletedAt) throw new Error('Entry not found');
-      let snapN: Nutrition;
-      if (entry.productId) {
-        const product = products.get(entry.productId);
-        if (!product) throw new Error('Product missing for entry');
-        snapN = portion(
-          {
-            kcal: product.energyKcal,
-            protein: product.proteinG,
-            fat: product.fatG,
-            carbs: product.carbG,
-          },
-          grams,
-        );
-      } else if (entry.recipeId) {
-        const recipe = recipes.get(entry.recipeId);
-        if (!recipe) throw new Error('Recipe missing for entry');
-        snapN = nutritionForRecipePortion(
-          recipe,
-          ingredients.get(entry.recipeId) ?? [],
-          grams,
-        );
-      } else {
-        const factor = entry.grams === 0 ? 0 : grams / entry.grams;
-        snapN = {
-          kcal: entry.energyKcal === null ? null : entry.energyKcal * factor,
-          protein: entry.proteinG === null ? null : entry.proteinG * factor,
-          fat: entry.fatG === null ? null : entry.fatG * factor,
-          carbs: entry.carbG === null ? null : entry.carbG * factor,
-        };
-      }
-      entry.grams = grams;
-      entry.energyKcal = snapN.kcal;
-      entry.proteinG = snapN.protein;
-      entry.fatG = snapN.fat;
-      entry.carbG = snapN.carbs;
-      entry.updatedAt = nowIso();
-      notify();
-      return { ...entry };
+      if (!entry || entry.deletedAt) throw new Error('Запись не найдена');
+      return api.updateEntryDetails(entryId, resizeEntrySnapshot(entry, grams));
     },
     softDeleteEntry(entryId) {
       const entry = entries.get(entryId);
       if (!entry) throw new Error('Entry not found');
-      entry.deletedAt = nowIso();
-      entry.updatedAt = entry.deletedAt;
-      notify();
-      return { ...entry };
+      if (entry.deletedAt) return cloneFoodEntry(entry);
+      if (entry.cookedConsumption !== undefined) {
+        checkReceipt(entry, entry.cookedConsumption);
+        commitStock(planConsumptionChange([...cookedBatches.values()], entry.cookedConsumption, []));
+      }
+      entry.deletedAt = nowIso(); entry.updatedAt = entry.deletedAt;
+      notify(); return cloneFoodEntry(entry);
     },
     undoDeleteEntry(entryId) {
       const entry = entries.get(entryId);
       if (!entry) throw new Error('Entry not found');
-      entry.deletedAt = null;
-      entry.updatedAt = nowIso();
-      notify();
-      return { ...entry };
+      if (!entry.deletedAt) return cloneFoodEntry(entry);
+      if (entry.cookedConsumption !== undefined) {
+        checkReceipt(entry, entry.cookedConsumption);
+        commitStock(planConsumptionChange([...cookedBatches.values()], [], entry.cookedConsumption));
+      }
+      entry.deletedAt = null; entry.updatedAt = nowIso();
+      notify(); return cloneFoodEntry(entry);
+    },
+    undoDiaryAdds(entryIds) {
+      const active = [...new Set(entryIds)].flatMap(id => { const row = entries.get(id); return row && !row.deletedAt ? [row] : []; });
+      for (const entry of active) if (entry.cookedConsumption) checkReceipt(entry, entry.cookedConsumption);
+      const receipt = active.flatMap(e => e.cookedConsumption ?? []);
+      const changes = planConsumptionChange([...cookedBatches.values()], receipt, []);
+      commitStock(changes);
+      const ts = nowIso(); for (const entry of active) { entry.deletedAt = ts; entry.updatedAt = ts; }
+      if (active.length) notify();
     },
     dailyTotals(dateLocal) {
       return computeDailyTotals(api.listEntriesForDate(dateLocal));
@@ -2155,8 +2279,10 @@ export function createMemoryFoodRepository(seed?: {
       return createRecipeInternal(id, input);
     },
     updateRecipe(recipeId, input) {
-      const recipe = recipes.get(recipeId);
-      if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
+      const storedRecipe = recipes.get(recipeId);
+      if (!storedRecipe || storedRecipe.deletedAt) throw new Error('Recipe not found');
+      const recipe = { ...storedRecipe };
+      let nextIngredients = ingredients.get(recipe.id) ?? [];
       if (input.name !== undefined) {
         const name = input.name.trim();
         if (!name) throw new Error('Recipe name required');
@@ -2205,9 +2331,7 @@ export function createMemoryFoodRepository(seed?: {
             carbG: ing.nutritionPer100g.carbs,
           });
         }
-        ingredients.set(
-          recipe.id,
-          input.ingredients.map((ing) => ({
+        nextIngredients = input.ingredients.map((ing) => ({
             id: newId(),
             recipeId: recipe.id,
             productId: ing.productId ?? null,
@@ -2217,10 +2341,9 @@ export function createMemoryFoodRepository(seed?: {
             proteinG: ing.nutritionPer100g.protein,
             fatG: ing.nutritionPer100g.fat,
             carbG: ing.nutritionPer100g.carbs,
-          })),
-        );
+          }));
       }
-      const ings = ingredients.get(recipe.id) ?? [];
+      const ings = nextIngredients;
       const hasManual =
         recipe.energyKcalPer100g !== null ||
         recipe.proteinGPer100g !== null ||
@@ -2230,8 +2353,18 @@ export function createMemoryFoodRepository(seed?: {
         throw new Error('Add ingredients or nutrition per 100g');
       }
       recipe.updatedAt = nowIso();
+      recipes.set(recipe.id, recipe);
+      ingredients.set(recipe.id, nextIngredients);
       notify();
       return { ...recipe };
+    },
+    restoreRecipe(id) {
+      const row = recipes.get(id);
+      if (!row) throw new Error('Recipe not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
     },
     softDeleteRecipe(recipeId) {
       const recipe = recipes.get(recipeId);
@@ -2249,6 +2382,7 @@ export function createMemoryFoodRepository(seed?: {
       return api.createRecipe(input);
     },
     addWater(dateLocal, ml) {
+      assertLocalDate(dateLocal);
       assertPositiveFinite(ml, 'ml');
       const entry: WaterEntry = {
         id: newId(),
@@ -2270,9 +2404,21 @@ export function createMemoryFoodRepository(seed?: {
         .filter((w) => w.dateLocal === dateLocal)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     },
+    removeWater(entryId) {
+      const previous = waterEntries.get(entryId);
+      if (!previous) return null;
+      waterEntries.delete(entryId); notify(); return { ...previous };
+    },
+    restoreWater(entry) {
+      assertLocalDate(entry.dateLocal); assertPositiveFinite(entry.ml, 'ml');
+      if (waterEntries.has(entry.id)) throw new Error('Эта запись воды уже восстановлена');
+      waterEntries.set(entry.id, { ...entry }); notify();
+    },
     addWeight(kg, weighedAt) {
       assertPositiveFinite(kg, 'kg');
       const ts = weighedAt ?? nowIso();
+      assertLocalDate(ts.slice(0, 10));
+      if (!Number.isFinite(Date.parse(ts))) throw new Error('Некорректное время замера');
       const entry: WeightEntry = {
         id: newId(),
         weighedAt: ts,
@@ -2285,10 +2431,28 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...entry };
     },
+    updateManualWeight(id, kg) {
+      assertPositiveFinite(kg, 'kg');
+      const row = weightEntries.get(id);
+      if (!row || row.source !== 'user') throw new Error('Можно менять только ручной замер');
+      row.kg = kg; notify(); return { ...row };
+    },
+    removeManualWeight(id) {
+      const row = weightEntries.get(id);
+      if (!row || row.source !== 'user') throw new Error('Можно удалить только ручной замер');
+      weightEntries.delete(id); notify(); return { ...row };
+    },
+    restoreManualWeight(entry) {
+      if (entry.source !== 'user' || weightEntries.has(entry.id)) throw new Error('Замер уже существует или получен из интеграции');
+      assertPositiveFinite(entry.kg, 'kg');
+      if (!Number.isFinite(Date.parse(entry.weighedAt))) throw new Error('Некорректное время замера');
+      weightEntries.set(entry.id, { ...entry }); notify();
+    },
     listWeights(limit = 30) {
       return [...weightEntries.values()]
         .sort((a, b) => b.weighedAt.localeCompare(a.weighedAt))
-        .slice(0, limit);
+        .slice(0, limit)
+        .map(w => ({ ...w }));
     },
     listIntegratedWeights(source, limit = 200) {
       return [...weightEntries.values()]
@@ -2482,10 +2646,15 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...w };
     },
+    restoreWorkout(workoutId) {
+      const w = workouts.get(workoutId);
+      if (!w) throw new Error('Workout not found');
+      w.deletedAt = null;
+      notify();
+      return { ...w };
+    },
     upsertDailyActivityStats(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
       const steps =
         input.steps === undefined || input.steps === null
           ? null
@@ -2540,9 +2709,7 @@ export function createMemoryFoodRepository(seed?: {
         .map((s) => ({ ...s }));
     },
     upsertSleepNight(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
       const optSec = (v: number | null | undefined, label: string): number | null => {
         if (v === undefined || v === null) return null;
         assertNonNegativeFinite(v, label);
@@ -2556,6 +2723,8 @@ export function createMemoryFoodRepository(seed?: {
       const avgSpo2 = optSec(input.avgSpo2, 'avgSpo2');
       const avgRespiration = optSec(input.avgRespiration, 'avgRespiration');
       const sleepScore = optSec(input.sleepScore, 'sleepScore');
+      if (avgSpo2 != null && avgSpo2 > 100) throw new Error('SpO₂ — от 0 до 100');
+      if (sleepScore != null && sleepScore > 100) throw new Error('Оценка сна — от 0 до 100');
       const existing = [...sleepNights.values()].find(
         (s) =>
           (input.externalId && s.externalId === input.externalId) ||
@@ -2611,6 +2780,22 @@ export function createMemoryFoodRepository(seed?: {
         .slice(0, limit)
         .map((s) => ({ ...s }));
     },
+    removeManualSleepNight(dateLocal) {
+      const row = [...sleepNights.values()].find(s => s.source === 'user' && s.dateLocal === dateLocal);
+      if (!row) return null;
+      sleepNights.delete(row.id);
+      notify();
+      return { ...row };
+    },
+    restoreManualSleepNight(night) {
+      if (night.source !== 'user') throw new Error('Можно восстановить только ручную запись');
+      assertLocalDate(night.dateLocal);
+      if ([...sleepNights.values()].some(s => s.source === 'user' && s.dateLocal === night.dateLocal)) {
+        throw new Error('За эту ночь уже есть новая ручная запись');
+      }
+      sleepNights.set(night.id, { ...night });
+      notify();
+    },
     getGarminSyncState() {
       return { ...garminSync };
     },
@@ -2623,10 +2808,11 @@ export function createMemoryFoodRepository(seed?: {
       if (syncBuiltinStrengthProgram()) notify();
     },
     applyStrengthProgramWeek(weekStartMonday, opts) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartMonday)) {
-        throw new Error('weekStartMonday must be YYYY-MM-DD');
-      }
+      assertLocalDate(weekStartMonday);
+      if (new Date(`${weekStartMonday}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Неделя начинается с понедельника');
       api.ensureStrengthCatalog();
+      const drafts = buildPersonalProgramWeekDrafts(weekStartMonday);
+      for (const d of drafts) if (d.templateId && !api.getWorkoutTemplate(d.templateId)) throw new Error('В программе есть удалённый шаблон');
       const replace = opts?.replace === true;
       if (replace) {
         const existing = api.listPlannedActivitiesInWeek(weekStartMonday);
@@ -2635,7 +2821,6 @@ export function createMemoryFoodRepository(seed?: {
           if (row && !row.deletedAt) row.deletedAt = nowIso();
         }
       }
-      const drafts = buildPersonalProgramWeekDrafts(weekStartMonday);
       let created = 0;
       for (const d of drafts) {
         api.addPlannedActivity({
@@ -2651,6 +2836,68 @@ export function createMemoryFoodRepository(seed?: {
         created += 1;
       }
       return { created };
+    },
+    repeatTrainingWeek(sourceMonday, targetMonday) {
+      for (const date of [sourceMonday, targetMonday]) {
+        assertLocalDate(date);
+        if (new Date(`${date}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Неделя начинается с понедельника');
+      }
+      if (sourceMonday === targetMonday) throw new Error('Выбери другую неделю');
+      const source = api.listPlannedActivitiesInWeek(sourceMonday);
+      if (!source.length) throw new Error('В прошлой неделе нет плана для повтора');
+      // Validate the whole operation before creating anything.
+      for (const row of source) {
+        if (row.templateId && !api.getWorkoutTemplate(row.templateId)) throw new Error('В плане есть удалённый шаблон');
+      }
+      const sourceDates = datesInWeek(sourceMonday);
+      const targetDates = datesInWeek(targetMonday);
+      return source.map(row => api.copyPlannedActivity(row.id, {
+        dateLocal: targetDates[sourceDates.indexOf(row.dateLocal)]!,
+      }));
+    },
+    getTrainingCycle() { return trainingCycle ? cloneTrainingCycle(trainingCycle) : null; },
+    restoreTrainingCycle(previous) { trainingCycle = previous ? cloneTrainingCycle(previous) : null; notify(); },
+    saveTrainingCycle(input) {
+      const next = cloneTrainingCycle({ ...input, updatedAt: nowIso() });
+      for (const slot of next.slots) if (slot.templateId && !api.getWorkoutTemplate(slot.templateId)) throw new Error('В шаблоне есть удалённая силовая тренировка');
+      trainingCycle = next; notify(); return cloneTrainingCycle(next);
+    },
+    applyTrainingCycleWeek(monday, opts) {
+      assertLocalDate(monday);
+      if (new Date(`${monday}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Неделя начинается с понедельника');
+      if (!trainingCycle) throw new Error('Сначала сохрани шаблон недели');
+      const cycle = cloneTrainingCycle(trainingCycle);
+      if (!cycle.slots.length) throw new Error('Добавь тренировки или дни отдыха в шаблон');
+      for (const slot of cycle.slots) if (slot.templateId && !api.getWorkoutTemplate(slot.templateId)) throw new Error('В шаблоне есть удалённая силовая тренировка');
+      if (opts?.replace) for (const row of api.listPlannedActivitiesInWeek(monday)) api.softDeletePlannedActivity(row.id);
+      const dates = datesInWeek(monday);
+      for (const slot of cycle.slots) api.addPlannedActivity({ ...slot, dateLocal: dates[slot.weekdayIndex]! });
+      return { created: cycle.slots.length };
+    },
+    linkPlannedCycling(activityId, workoutId) {
+      const row = plannedActivities.get(activityId);
+      if (!row || row.deletedAt || row.kind !== 'cardio') throw new Error('Велоплан не найден');
+      if (workoutId) {
+        const workout = api.getWorkoutById(workoutId);
+        if (!workout || workout.source !== 'garmin' || workout.type !== 'cycling') throw new Error('Выбери выполненную велотренировку Garmin');
+        if ([...plannedActivities.values()].some(a => !a.deletedAt && a.id !== activityId && a.linkedWorkoutId === workoutId)) throw new Error('Эта велотренировка уже связана с другим планом');
+      }
+      row.linkedWorkoutId = workoutId; notify(); return { ...row };
+    },
+    fillTrainingCycleWeeks(monday, weeks) {
+      assertLocalDate(monday);
+      if (!Number.isInteger(weeks) || weeks < 1 || weeks > 12 || new Date(`${monday}T12:00:00Z`).getUTCDay() !== 1) throw new Error('Выбери от 1 до 12 недель с понедельника');
+      if (!trainingCycle) throw new Error('Сначала сохрани шаблон недели');
+      if (!trainingCycle.slots.length) throw new Error('Добавь тренировки или дни отдыха в шаблон');
+      for (const slot of trainingCycle.slots) if (slot.templateId && !api.getWorkoutTemplate(slot.templateId)) throw new Error('В шаблоне есть удалённая силовая тренировка');
+      const starts = Array.from({ length: weeks }, (_, index) => { const d = new Date(`${monday}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + index * 7); const start = d.toISOString().slice(0, 10); assertLocalDate(start); return start; });
+      const createdIds: string[] = []; let skippedWeeks = 0;
+      for (const start of starts) {
+        if (api.listPlannedActivitiesInWeek(start).length) { skippedWeeks++; continue; }
+        api.applyTrainingCycleWeek(start);
+        createdIds.push(...api.listPlannedActivitiesInWeek(start).map(a => a.id));
+      }
+      return { createdIds, skippedWeeks };
     },
     listStrengthExercises() {
       return [...strengthExercises.values()]
@@ -2762,6 +3009,11 @@ export function createMemoryFoodRepository(seed?: {
     updateWorkoutTemplate(templateId, fields) {
       const t = workoutTemplates.get(templateId);
       if (!t || t.deletedAt) throw new Error('Workout template not found');
+      if (
+        fields.notes != null &&
+        (typeof fields.notes !== 'string' || fields.notes.length > 4000)
+      )
+        throw new Error('Описание плана: не больше 4000 символов');
       if (fields.name !== undefined) {
         const name = fields.name.trim();
         if (!name) throw new Error('Template name required');
@@ -2770,6 +3022,7 @@ export function createMemoryFoodRepository(seed?: {
       if (fields.subtitle !== undefined) {
         t.subtitle = fields.subtitle?.trim() ? fields.subtitle.trim() : null;
       }
+      if (fields.notes !== undefined) t.notes = fields.notes?.trim() || null;
       t.updatedAt = nowIso();
       notify();
       return { ...t };
@@ -2786,9 +3039,6 @@ export function createMemoryFoodRepository(seed?: {
     setTemplateExercises(templateId, lines) {
       const t = workoutTemplates.get(templateId);
       if (!t || t.deletedAt) throw new Error('Workout template not found');
-      for (const existing of [...workoutTemplateExercises.values()]) {
-        if (existing.templateId === templateId) workoutTemplateExercises.delete(existing.id);
-      }
       const created: WorkoutTemplateExercise[] = [];
       lines.forEach((line, i) => {
         const ex = strengthExercises.get(line.exerciseId);
@@ -2796,9 +3046,24 @@ export function createMemoryFoodRepository(seed?: {
           throw new Error(`Unknown exercise: ${line.exerciseId}`);
         }
         assertPositiveFinite(line.targetSets, 'targetSets');
-        if (line.targetRepsMin != null) assertNonNegativeFinite(line.targetRepsMin, 'targetRepsMin');
-        if (line.targetRepsMax != null) assertNonNegativeFinite(line.targetRepsMax, 'targetRepsMax');
-        if (line.restSec != null) assertNonNegativeFinite(line.restSec, 'restSec');
+        if (!Number.isInteger(line.targetSets) || line.targetSets > 100)
+          throw new Error('Подходы: целое от 1 до 100');
+        if (created.some((c) => c.exerciseId === line.exerciseId))
+          throw new Error('Упражнение уже есть в шаблоне');
+        assertRepetitions(line.targetRepsMin);
+        assertRepetitions(line.targetRepsMax);
+        if (
+          line.targetRepsMin != null &&
+          line.targetRepsMax != null &&
+          line.targetRepsMin > line.targetRepsMax
+        )
+          throw new Error('Минимум повторений больше максимума');
+        if (line.targetRepsMin != null)
+          assertNonNegativeFinite(line.targetRepsMin, 'targetRepsMin');
+        if (line.targetRepsMax != null)
+          assertNonNegativeFinite(line.targetRepsMax, 'targetRepsMax');
+        if (line.restSec != null)
+          assertNonNegativeFinite(line.restSec, 'restSec');
         const row: WorkoutTemplateExercise = {
           id: newId(),
           templateId,
@@ -2810,9 +3075,13 @@ export function createMemoryFoodRepository(seed?: {
           restSec: line.restSec ?? null,
           notes: line.notes?.trim() ? line.notes.trim() : null,
         };
-        workoutTemplateExercises.set(row.id, row);
         created.push({ ...row });
       });
+      for (const existing of [...workoutTemplateExercises.values()]) {
+        if (existing.templateId === templateId)
+          workoutTemplateExercises.delete(existing.id);
+      }
+      for (const row of created) workoutTemplateExercises.set(row.id, { ...row });
       t.updatedAt = nowIso();
       notify();
       return created;
@@ -2863,12 +3132,11 @@ export function createMemoryFoodRepository(seed?: {
         );
     },
     addPlannedActivity(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
+      assertLocalTime(input.timeLocal ?? null);
       const title = input.title.trim();
       if (!title) throw new Error('Activity title required');
-      if (input.templateId && !workoutTemplates.has(input.templateId)) {
+      if (input.templateId && !api.getWorkoutTemplate(input.templateId)) {
         throw new Error('Workout template not found');
       }
       if (input.cardioMinutes != null) assertNonNegativeFinite(input.cardioMinutes, 'cardioMinutes');
@@ -2878,6 +3146,7 @@ export function createMemoryFoodRepository(seed?: {
       const sortOrder =
         input.sortOrder ?? (sameDay.length === 0 ? 0 : Math.max(...sameDay.map((a) => a.sortOrder)) + 1);
       const row: PlannedActivity = {
+        linkedWorkoutId: null,
         id: newId(),
         dateLocal: input.dateLocal,
         timeLocal: input.timeLocal ?? null,
@@ -2897,6 +3166,10 @@ export function createMemoryFoodRepository(seed?: {
     updatePlannedActivity(activityId, fields) {
       const a = plannedActivities.get(activityId);
       if (!a || a.deletedAt) throw new Error('Planned activity not found');
+      if (fields.timeLocal !== undefined) assertLocalTime(fields.timeLocal);
+      if (fields.templateId && !api.getWorkoutTemplate(fields.templateId)) throw new Error('Workout template not found');
+      if (fields.cardioMinutes != null) assertNonNegativeFinite(fields.cardioMinutes, 'cardioMinutes');
+      // All validation precedes mutation, including optional title/template/duration fields.
       if (fields.title !== undefined) {
         const title = fields.title.trim();
         if (!title) throw new Error('Activity title required');
@@ -2945,8 +3218,12 @@ export function createMemoryFoodRepository(seed?: {
     movePlannedActivity(activityId, args) {
       const a = plannedActivities.get(activityId);
       if (!a || a.deletedAt) throw new Error('Planned activity not found');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(args.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
+      assertLocalDate(args.dateLocal);
+      if (args.timeLocal !== undefined) assertLocalTime(args.timeLocal);
+      if (args.sortOrder != null && (!Number.isInteger(args.sortOrder) || args.sortOrder < 0)) throw new Error('Некорректный порядок');
+      const others = api.listPlannedActivitiesForDate(args.dateLocal).filter(row => row.id !== activityId);
+      if (args.sortOrder === undefined && a.dateLocal !== args.dateLocal) {
+        a.sortOrder = others.length ? Math.max(...others.map(row => row.sortOrder)) + 1 : 0;
       }
       a.dateLocal = args.dateLocal;
       if (args.timeLocal !== undefined) a.timeLocal = args.timeLocal;
@@ -2973,15 +3250,15 @@ export function createMemoryFoodRepository(seed?: {
     copyPlannedActivity(activityId, args) {
       const a = plannedActivities.get(activityId);
       if (!a || a.deletedAt) throw new Error('Planned activity not found');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(args.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(args.dateLocal);
+      if (args.timeLocal !== undefined) assertLocalTime(args.timeLocal);
       const sameDay = [...plannedActivities.values()].filter(
         (x) => !x.deletedAt && x.dateLocal === args.dateLocal,
       );
       const sortOrder = sameDay.length === 0 ? 0 : Math.max(...sameDay.map((x) => x.sortOrder)) + 1;
       const copy: PlannedActivity = {
         ...a,
+        linkedWorkoutId: null,
         id: newId(),
         dateLocal: args.dateLocal,
         timeLocal: args.timeLocal !== undefined ? args.timeLocal : a.timeLocal,
@@ -3000,14 +3277,36 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...a };
     },
+    restorePlannedActivity(activityId) {
+      const a = plannedActivities.get(activityId);
+      if (!a) throw new Error('Planned activity not found');
+      a.deletedAt = null;
+      notify();
+      return { ...a };
+    },
     startWorkoutSession(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
       const title = input.title.trim();
       if (!title) throw new Error('Session title required');
-      if (input.templateId && !workoutTemplates.has(input.templateId)) {
+      if (input.templateId && !api.getWorkoutTemplate(input.templateId)) {
         throw new Error('Workout template not found');
+      }
+      if (input.plannedActivityId) {
+        const planned = plannedActivities.get(input.plannedActivityId);
+        if (!planned || planned.deletedAt || planned.kind !== 'strength')
+          throw new Error('Силовая тренировка не найдена в плане');
+        const existing = api.getWorkoutSessionForPlan(input.plannedActivityId);
+        if (existing) return { ...existing };
+      } else {
+        const draft = [...workoutSessions.values()].find(
+          (s) =>
+            !s.deletedAt &&
+            s.status === 'in_progress' &&
+            s.dateLocal === input.dateLocal &&
+            s.templateId === (input.templateId ?? null) &&
+            s.title === title,
+        );
+        if (draft) return cloneWorkoutSession(draft);
       }
       const ts = nowIso();
       const session: WorkoutSession = {
@@ -3024,6 +3323,28 @@ export function createMemoryFoodRepository(seed?: {
         createdAt: ts,
         deletedAt: null,
       };
+      if (session.templateId) {
+        session.exercisePlan = api
+          .listTemplateExercises(session.templateId)
+          .map((line) => {
+            const exercise = api.getStrengthExercise(line.exerciseId);
+            return {
+              exerciseId: line.exerciseId,
+              name: exercise?.name ?? line.exerciseId,
+              equipment: exercise?.equipment ?? null,
+              primaryMuscles: [...(exercise?.primaryMuscles ?? [])],
+              targetSets: line.targetSets,
+              targetRepsMin: line.targetRepsMin,
+              targetRepsMax: line.targetRepsMax,
+              restSec: line.restSec,
+              notes: line.notes,
+            };
+          });
+        validateExercisePlan(session.exercisePlan);
+        session.planNotes =
+          api.getWorkoutTemplate(session.templateId)?.notes ?? null;
+      }
+      session.restUntilAt = null;
       workoutSessions.set(session.id, session);
 
       // Prefill empty set rows from template — targets only, no invented weights.
@@ -3049,10 +3370,7 @@ export function createMemoryFoodRepository(seed?: {
               completedAt: null,
               targetWeightKg: hint?.weightKg ?? null,
               targetReps:
-                hint?.reps ??
-                line.targetRepsMin ??
-                line.targetRepsMax ??
-                null,
+                hint?.reps ?? line.targetRepsMin ?? line.targetRepsMax ?? null,
               createdAt: ts,
               deletedAt: null,
             };
@@ -3061,23 +3379,37 @@ export function createMemoryFoodRepository(seed?: {
         }
       }
       notify();
-      return { ...session };
+      return cloneWorkoutSession(session);
     },
     getWorkoutSession(sessionId) {
       const s = workoutSessions.get(sessionId);
       if (!s || s.deletedAt) return null;
-      return { ...s };
+      return cloneWorkoutSession(s);
+    },
+    getWorkoutSessionForPlan(activityId) {
+      const rows = [...workoutSessions.values()].filter(
+        (s) =>
+          !s.deletedAt &&
+          s.plannedActivityId === activityId &&
+          s.status !== 'abandoned',
+      );
+      rows.sort(
+        (a, b) =>
+          Number(b.status === 'completed') - Number(a.status === 'completed') ||
+          b.startedAt.localeCompare(a.startedAt),
+      );
+      return rows[0] ? cloneWorkoutSession(rows[0]) : null;
     },
     listWorkoutSessionsForDate(dateLocal) {
       return [...workoutSessions.values()]
         .filter((s) => !s.deletedAt && s.dateLocal === dateLocal)
-        .map((s) => ({ ...s }))
+        .map(cloneWorkoutSession)
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     },
     listInProgressWorkoutSessions() {
       return [...workoutSessions.values()]
         .filter((s) => !s.deletedAt && s.status === 'in_progress')
-        .map((s) => ({ ...s }))
+        .map(cloneWorkoutSession)
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     },
     completeWorkoutSession(sessionId, opts) {
@@ -3085,48 +3417,91 @@ export function createMemoryFoodRepository(seed?: {
       if (!s || s.deletedAt) throw new Error('Workout session not found');
       if (opts?.feelingRpe != null) {
         assertPositiveFinite(opts.feelingRpe, 'feelingRpe');
-        if (!Number.isInteger(opts.feelingRpe) || opts.feelingRpe < 1 || opts.feelingRpe > 10) {
+        if (
+          !Number.isInteger(opts.feelingRpe) ||
+          opts.feelingRpe < 1 ||
+          opts.feelingRpe > 10
+        ) {
           throw new Error('feelingRpe must be an integer 1–10');
         }
-        s.feelingRpe = opts.feelingRpe;
       }
+      if (s.status === 'completed') return cloneWorkoutSession(s);
+      if (s.status !== 'in_progress') throw new Error('Сессия уже закрыта');
+      if (opts?.feelingRpe != null) s.feelingRpe = opts.feelingRpe;
       if (opts?.feelingNote !== undefined) {
         const note = opts.feelingNote?.trim() ? opts.feelingNote.trim() : null;
         s.feelingNote = note;
       }
+      s.restUntilAt = null;
       s.status = 'completed';
       s.completedAt = nowIso();
+      const elapsed =
+        (Date.parse(s.completedAt) - Date.parse(s.startedAt)) / 1000;
+      api.applyWorkoutHabitAutoCredit({
+        dateLocal: s.dateLocal,
+        workoutType: 'strength',
+        durationSec: Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0,
+      });
       notify();
-      return { ...s };
+      return cloneWorkoutSession(s);
     },
     abandonWorkoutSession(sessionId) {
       const s = workoutSessions.get(sessionId);
       if (!s || s.deletedAt) throw new Error('Workout session not found');
+      if (s.status !== 'in_progress') throw new Error('Сессия уже закрыта');
+      s.restUntilAt = null;
       s.status = 'abandoned';
       s.completedAt = nowIso();
       notify();
-      return { ...s };
+      return cloneWorkoutSession(s);
+    },
+    getStrengthHistory() {
+      return {
+        sessions: [...workoutSessions.values()]
+          .filter((s) => !s.deletedAt)
+          .map(cloneWorkoutSession),
+        sets: [...workoutSets.values()]
+          .filter((s) => !s.deletedAt)
+          .map((s) => ({ ...s })),
+      };
     },
     listWorkoutSets(sessionId) {
-      return [...workoutSets.values()]
-        .filter((s) => !s.deletedAt && s.sessionId === sessionId)
+      const rows = [...workoutSets.values()].filter(
+        (s) => !s.deletedAt && s.sessionId === sessionId,
+      );
+      // Map insertion order captures the template at session creation, even if edited later.
+      const exerciseOrder = new Map<string, number>();
+      for (const row of rows)
+        if (!exerciseOrder.has(row.exerciseId))
+          exerciseOrder.set(row.exerciseId, exerciseOrder.size);
+      return rows
         .map((s) => ({ ...s }))
         .sort(
           (a, b) =>
-            a.exerciseId.localeCompare(b.exerciseId) || a.setIndex - b.setIndex || a.id.localeCompare(b.id),
+            exerciseOrder.get(a.exerciseId)! - exerciseOrder.get(b.exerciseId)! ||
+            a.setIndex - b.setIndex,
         );
     },
     upsertWorkoutSet(input) {
       const session = workoutSessions.get(input.sessionId);
-      if (!session || session.deletedAt) throw new Error('Workout session not found');
-      if (!strengthExercises.has(input.exerciseId)) throw new Error('Unknown exercise');
+      if (!session || session.deletedAt)
+        throw new Error('Workout session not found');
+      if (session.status !== 'in_progress')
+        throw new Error('Завершённая сессия доступна только для просмотра');
+      if (!strengthExercises.has(input.exerciseId))
+        throw new Error('Unknown exercise');
       if (!Number.isInteger(input.setIndex) || input.setIndex < 1) {
         throw new Error('setIndex must be a positive integer');
       }
-      if (input.weightKg != null) assertNonNegativeFinite(input.weightKg, 'weightKg');
+      if (input.weightKg != null)
+        assertNonNegativeFinite(input.weightKg, 'weightKg');
       if (input.reps != null) assertNonNegativeFinite(input.reps, 'reps');
-      if (input.targetWeightKg != null) assertNonNegativeFinite(input.targetWeightKg, 'targetWeightKg');
-      if (input.targetReps != null) assertNonNegativeFinite(input.targetReps, 'targetReps');
+      assertRepetitions(input.reps);
+      assertRepetitions(input.targetReps);
+      if (input.targetWeightKg != null)
+        assertNonNegativeFinite(input.targetWeightKg, 'targetWeightKg');
+      if (input.targetReps != null)
+        assertNonNegativeFinite(input.targetReps, 'targetReps');
 
       const existing = [...workoutSets.values()].find(
         (s) =>
@@ -3138,12 +3513,15 @@ export function createMemoryFoodRepository(seed?: {
       const completed = input.completed ?? existing?.completed ?? false;
       const ts = nowIso();
       if (existing) {
-        existing.weightKg = input.weightKg !== undefined ? input.weightKg : existing.weightKg;
+        existing.weightKg =
+          input.weightKg !== undefined ? input.weightKg : existing.weightKg;
         existing.reps = input.reps !== undefined ? input.reps : existing.reps;
         existing.completed = completed;
-        existing.completedAt = completed ? existing.completedAt ?? ts : null;
-        if (input.targetWeightKg !== undefined) existing.targetWeightKg = input.targetWeightKg;
-        if (input.targetReps !== undefined) existing.targetReps = input.targetReps;
+        existing.completedAt = completed ? (existing.completedAt ?? ts) : null;
+        if (input.targetWeightKg !== undefined)
+          existing.targetWeightKg = input.targetWeightKg;
+        if (input.targetReps !== undefined)
+          existing.targetReps = input.targetReps;
         notify();
         return { ...existing };
       }
@@ -3168,18 +3546,90 @@ export function createMemoryFoodRepository(seed?: {
     completeWorkoutSet(setId, args) {
       const s = workoutSets.get(setId);
       if (!s || s.deletedAt) throw new Error('Workout set not found');
-      if (args.weightKg != null) assertNonNegativeFinite(args.weightKg, 'weightKg');
+      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress')
+        throw new Error('Завершённая сессия доступна только для просмотра');
+      if (args.weightKg != null)
+        assertNonNegativeFinite(args.weightKg, 'weightKg');
       if (args.reps != null) assertNonNegativeFinite(args.reps, 'reps');
+      assertRepetitions(args.reps);
+      const wasCompleted = s.completed;
       s.weightKg = args.weightKg;
       s.reps = args.reps;
       s.completed = true;
-      s.completedAt = nowIso();
+      if (!wasCompleted) s.completedAt = nowIso();
+      delete s.draftWeightText;
+      delete s.draftRepsText;
+      if (!wasCompleted) {
+        const session = workoutSessions.get(s.sessionId)!;
+        const rest =
+          session.exercisePlan?.find((p) => p.exerciseId === s.exerciseId)
+            ?.restSec ?? 90;
+        const unfinished = [...workoutSets.values()].some(
+          (row) =>
+            row.sessionId === s.sessionId && !row.deletedAt && !row.completed,
+        );
+        session.restUntilAt =
+          unfinished && rest > 0
+            ? new Date(Date.now() + rest * 1000).toISOString()
+            : null;
+      }
       notify();
       return { ...s };
+    },
+    saveWorkoutSetDraft(setId, input) {
+      const s = workoutSets.get(setId);
+      if (
+        !s ||
+        s.deletedAt ||
+        s.completed ||
+        workoutSessions.get(s.sessionId)?.status !== 'in_progress'
+      )
+        throw new Error('Подход уже закрыт');
+      if (
+        typeof input.weight !== 'string' ||
+        typeof input.reps !== 'string' ||
+        input.weight.length > 32 ||
+        input.reps.length > 32
+      )
+        throw new Error('Слишком длинное значение подхода');
+      s.draftWeightText = input.weight;
+      s.draftRepsText = input.reps;
+      notify();
+      return { ...s };
+    },
+    restoreWorkoutSet(previous) {
+      const s = workoutSets.get(previous.id);
+      if (
+        !s ||
+        s.sessionId !== previous.sessionId ||
+        s.exerciseId !== previous.exerciseId ||
+        s.setIndex !== previous.setIndex ||
+        workoutSessions.get(s.sessionId)?.status !== 'in_progress'
+      )
+        throw new Error('Этот подход уже нельзя изменить');
+      for (const n of [previous.weightKg, previous.targetWeightKg])
+        if (n != null) assertNonNegativeFinite(n, 'weight');
+      assertRepetitions(previous.reps);
+      assertRepetitions(previous.targetReps);
+      workoutSets.set(s.id, { ...previous });
+      notify();
+      return { ...previous };
+    },
+    setSessionRestDeadline(sessionId, until) {
+      const s = workoutSessions.get(sessionId);
+      if (!s || s.deletedAt || s.status !== 'in_progress')
+        throw new Error('Сессия уже закрыта');
+      if (until != null && !Number.isFinite(Date.parse(until)))
+        throw new Error('Некорректный таймер');
+      s.restUntilAt = until;
+      notify();
+      return cloneWorkoutSession(s);
     },
     softDeleteWorkoutSet(setId) {
       const s = workoutSets.get(setId);
       if (!s || s.deletedAt) throw new Error('Workout set not found');
+      if (workoutSessions.get(s.sessionId)?.status !== 'in_progress')
+        throw new Error('Завершённая сессия доступна только для просмотра');
       s.deletedAt = nowIso();
       notify();
       return { ...s };
@@ -3193,9 +3643,8 @@ export function createMemoryFoodRepository(seed?: {
       });
     },
     activityMinutesForDate(dateLocal) {
-      const sec = api
-        .listWorkoutsForDate(dateLocal)
-        .reduce((sum, w) => sum + w.durationSec, 0);
+      const sec = completedTrainingFacts(api.listWorkoutsForDate(dateLocal), api.listWorkoutSessionsForDate(dateLocal))
+        .reduce((sum, w) => sum + (w.durationSec ?? 0), 0);
       return Math.round(sec / 60);
     },
     activityEnergyKcalForDate(dateLocal) {
@@ -3255,8 +3704,9 @@ export function createMemoryFoodRepository(seed?: {
         });
     },
     updateFlexibleHabit(habitId, fields) {
-      const habit = flexibleHabits.get(habitId);
-      if (!habit || habit.deletedAt != null) throw new Error('Привычка не найдена');
+      const stored = flexibleHabits.get(habitId);
+      if (!stored || stored.deletedAt != null) throw new Error('Привычка не найдена');
+      const habit = { ...stored };
       if (fields.name !== undefined) {
         const trimmed = fields.name.trim();
         if (!trimmed) throw new Error('Введи название привычки');
@@ -3279,11 +3729,12 @@ export function createMemoryFoodRepository(seed?: {
       if (fields.paused === true) habit.pausedAt = nowIso();
       if (fields.paused === false) habit.pausedAt = null;
       if (habit.kind === 'quantity') {
-        if (habit.targetValue == null || habit.targetValue <= 0) {
+        if (habit.targetValue == null || !Number.isFinite(habit.targetValue) || habit.targetValue <= 0) {
           throw new Error('Для количественной привычки укажи цель > 0');
         }
         if (!habit.unit) habit.unit = 'раз';
       }
+      flexibleHabits.set(habit.id, habit);
       notify();
       return { ...habit };
     },
@@ -3294,7 +3745,16 @@ export function createMemoryFoodRepository(seed?: {
       habit.deletedAt = nowIso();
       notify();
     },
+    restoreFlexibleHabit(habitId) {
+      const habit = flexibleHabits.get(habitId);
+      if (!habit) throw new Error('Привычка не найдена');
+      habit.deletedAt = null;
+      habit.active = true;
+      notify();
+    },
     logFlexibleHabit(habitId, dateLocal, value, source = 'manual') {
+      assertLocalDate(dateLocal);
+      if (value != null) assertPositiveFinite(value, 'habit value');
       const habit = flexibleHabits.get(habitId);
       if (!habit || !habit.active || habit.deletedAt != null) throw new Error('Habit not found');
       const amount =
@@ -3325,6 +3785,15 @@ export function createMemoryFoodRepository(seed?: {
       flexibleHabitEvents.set(event.id, event);
       notify();
       return { ...event };
+    },
+    setFlexibleHabitDayValue(habitId, dateLocal, value) {
+      assertLocalDate(dateLocal); assertNonNegativeFinite(value, 'value');
+      const habit = flexibleHabits.get(habitId);
+      if (!habit || !habit.active || habit.deletedAt || habit.pausedAt) throw new Error('Привычка недоступна');
+      const previous = [...flexibleHabitEvents.values()].find(e => e.habitId === habitId && e.dateLocal === dateLocal);
+      if (value === 0) { api.unlogFlexibleHabit(habitId, dateLocal); return; }
+      if (previous) { previous.value = habit.kind === 'quantity' ? value : 1; previous.source = 'manual'; notify(); }
+      else api.logFlexibleHabit(habitId, dateLocal, value);
     },
     unlogFlexibleHabit(habitId, dateLocal) {
       for (const [id, e] of flexibleHabitEvents) {
@@ -3371,7 +3840,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     applyWorkoutHabitAutoCredit({ dateLocal, workoutType, durationSec }) {
       const credited: FlexibleHabitEvent[] = [];
-      const mins = Math.max(1, Math.round(durationSec / 60));
+      const mins = Math.max(0, Math.round(durationSec / 60));
       for (const habit of api.listFlexibleHabits()) {
         if (habit.pausedAt) continue;
         const src = habit.autoSource;
@@ -3383,12 +3852,19 @@ export function createMemoryFoodRepository(seed?: {
           (src === 'strength' && workoutType === 'strength');
         if (!match) continue;
         if (api.isFlexibleHabitLogged(habit.id, dateLocal) && habit.kind === 'checkbox') continue;
-        const value = habit.kind === 'quantity' ? mins : 1;
+        const unit = habit.unit?.trim().toLowerCase();
+        const minuteUnit = ['мин', 'мин.', 'минут', 'минуты', 'min'].includes(unit ?? '');
+        const countUnit = ['раз', 'шт', 'шт.', 'тренировки', 'тренировок'].includes(unit ?? '');
+        if (habit.kind === 'quantity' && !minuteUnit && !countUnit) continue;
+        const value = habit.kind === 'quantity' && minuteUnit ? mins : 1;
+        if (!Number.isFinite(value) || value <= 0) continue;
         credited.push(api.logFlexibleHabit(habit.id, dateLocal, value, 'auto'));
       }
       return credited;
     },
     createChallenge(input) {
+      assertLocalDate(input.periodStart);
+      assertLocalDate(input.periodEnd);
       const name = input.name.trim();
       if (!name) throw new Error('Укажи название челленджа');
       if (!Number.isFinite(input.target) || input.target <= 0) {
@@ -3438,18 +3914,15 @@ export function createMemoryFoodRepository(seed?: {
       const c = challenges.get(challengeId);
       if (!c || c.deletedAt) throw new Error('Челлендж не найден');
       let current = 0;
+      const training = completedTrainingFacts([...workouts.values()], [...workoutSessions.values()]);
+      const inPeriod = training.filter(fact => {
+        const date = fact.source === 'workout' ? workouts.get(fact.id)?.dateLocal : workoutSessions.get(fact.id)?.dateLocal;
+        return date != null && date >= c.periodStart && date <= c.periodEnd;
+      });
       if (c.metric === 'workouts_count') {
-        current = [...workouts.values()].filter(
-          (w) =>
-            !w.deletedAt && w.dateLocal >= c.periodStart && w.dateLocal <= c.periodEnd,
-        ).length;
+        current = inPeriod.length;
       } else if (c.metric === 'activity_minutes') {
-        current = [...workouts.values()]
-          .filter(
-            (w) =>
-              !w.deletedAt && w.dateLocal >= c.periodStart && w.dateLocal <= c.periodEnd,
-          )
-          .reduce((s, w) => s + Math.round(w.durationSec / 60), 0);
+        current = inPeriod.reduce((sum, fact) => sum + Math.round((fact.durationSec ?? 0) / 60), 0);
       } else if (c.metric === 'food_log_days') {
         const days = new Set(
           [...entries.values()]
@@ -3483,6 +3956,9 @@ export function createMemoryFoodRepository(seed?: {
         .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
     },
     upsertPantryItem(input) {
+      if (!['fridge', 'freezer', 'pantry'].includes(input.location)) throw new Error('Некорректное место хранения');
+      if (!['g', 'ml', 'pcs'].includes(input.unit)) throw new Error('Некорректная единица');
+      if (input.expiresOn != null) assertLocalDate(input.expiresOn);
       const name = input.displayName.trim();
       if (!name) throw new Error('Pantry name required');
       if (input.quantityG != null) assertNonNegativeFinite(input.quantityG, 'quantityG');
@@ -3512,6 +3988,14 @@ export function createMemoryFoodRepository(seed?: {
       pantryItems.set(item.id, item);
       notify();
       return { ...item };
+    },
+    restorePantryItem(id) {
+      const row = pantryItems.get(id);
+      if (!row) throw new Error('Pantry item not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
     },
     softDeletePantryItem(pantryItemId) {
       const item = pantryItems.get(pantryItemId);
@@ -3543,9 +4027,7 @@ export function createMemoryFoodRepository(seed?: {
       if (!isConfirmablePurchaseStatus(input.status)) {
         throw new Error('Подтверждение только для delivered / fiscal_receipt');
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.purchasedOn)) {
-        throw new Error('purchasedOn must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.purchasedOn);
       if (input.totalRub != null) assertNonNegativeFinite(input.totalRub, 'totalRub');
       if (input.lines.length === 0) throw new Error('Нужна хотя бы одна позиция');
 
@@ -3556,6 +4038,8 @@ export function createMemoryFoodRepository(seed?: {
         if (l.lineTotalRub != null) assertNonNegativeFinite(l.lineTotalRub, 'lineTotalRub');
         if (l.unitPriceRub != null) assertNonNegativeFinite(l.unitPriceRub, 'unitPriceRub');
         if (l.discountRub != null) assertNonNegativeFinite(l.discountRub, 'discountRub');
+        if (l.unit != null && !['g', 'ml', 'pcs'].includes(l.unit)) throw new Error('Некорректная единица');
+        if (l.lineTotalRub != null && l.quantity != null && l.quantity > 0) assertNonNegativeFinite(l.lineTotalRub / l.quantity, 'unitPriceRub');
         return {
           rawName: l.rawName.trim() || displayName,
           displayName,
@@ -3655,7 +4139,7 @@ export function createMemoryFoodRepository(seed?: {
 
         // Price observation only when unit + price known — never invent.
         if (l.isFood && !l.excluded && l.unit) {
-          let unitPrice = l.unitPriceRub;
+          let unitPrice = l.unit === 'pcs' ? l.unitPriceRub : null;
           if (
             unitPrice == null &&
             l.lineTotalRub != null &&
@@ -3668,9 +4152,10 @@ export function createMemoryFoodRepository(seed?: {
             api.upsertProductPrice({
               productKey: shoppingKey(l.displayName, l.unit),
               priceRub: unitPrice,
+              basisQuantity: 1,
               unit: l.unit,
               observedOn: input.purchasedOn,
-              source: 'user',
+              source: 'receipt',
               storeId: input.storePreferenceId ?? null,
             });
           }
@@ -3892,9 +4377,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...plan };
     },
     ensureWeekDraftPlan(weekStartMondayDate) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartMondayDate)) {
-        throw new Error('weekStartMonday must be YYYY-MM-DD');
-      }
+      assertLocalDate(weekStartMondayDate);
       const weekEnd = (() => {
         const [y, m, d] = weekStartMondayDate.split('-').map(Number);
         const dt = new Date(Date.UTC(y!, m! - 1, d! + 6));
@@ -3987,6 +4470,8 @@ export function createMemoryFoodRepository(seed?: {
       return { ...m };
     },
     movePlannedMeal(plannedMealId, args) {
+      assertLocalDate(args.dateLocal);
+      if (!MEALS.includes(args.meal)) throw new Error('Выбери приём пищи');
       const m = plannedMeals.get(plannedMealId);
       if (!m || m.deletedAt) throw new Error('Planned meal not found');
       m.dateLocal = args.dateLocal;
@@ -4010,6 +4495,22 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...m };
     },
+    restorePlannedMeal(id) {
+      const row = plannedMeals.get(id);
+      if (!row) throw new Error('Planned meal not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
+    },
+    undoPlannedMealLog(id, entryId) {
+      const row = plannedMeals.get(id);
+      if (!row || row.deletedAt) throw new Error('Planned meal not found');
+      api.undoDiaryAdds([entryId]);
+      row.status = 'planned';
+      row.updatedAt = nowIso();
+      notify();
+    },
     softDeletePlannedMeal(plannedMealId) {
       const m = plannedMeals.get(plannedMealId);
       if (!m || m.deletedAt) throw new Error('Planned meal not found');
@@ -4019,12 +4520,11 @@ export function createMemoryFoodRepository(seed?: {
       return { ...m };
     },
     addPlannedMeal(input) {
+      if (!MEALS.includes(input.meal)) throw new Error('Выбери приём пищи');
       const name = input.displayName.trim();
       if (!name) throw new Error('Display name required');
       assertPositiveFinite(input.grams, 'grams');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('Invalid dateLocal');
-      }
+      assertLocalDate(input.dateLocal);
       const covering = [...mealPlans.values()]
         .filter(
           (p) =>
@@ -4166,7 +4666,7 @@ export function createMemoryFoodRepository(seed?: {
         }));
       const priceMap = new Map<
         string,
-        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+        { priceRub: number; basisQuantity: number | null; priceAsOf: string; priceSource: ShoppingPriceSource }
       >();
       for (const pp of productPrices.values()) {
         if (pp.deletedAt) continue;
@@ -4174,6 +4674,7 @@ export function createMemoryFoodRepository(seed?: {
         if (!existing || pp.observedOn >= existing.priceAsOf) {
           priceMap.set(pp.productKey, {
             priceRub: pp.priceRub,
+            basisQuantity: pp.basisQuantity ?? null,
             priceAsOf: pp.observedOn,
             priceSource: pp.source,
           });
@@ -4334,7 +4835,7 @@ export function createMemoryFoodRepository(seed?: {
         }));
       const priceMap = new Map<
         string,
-        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+        { priceRub: number; basisQuantity: number | null; priceAsOf: string; priceSource: ShoppingPriceSource }
       >();
       for (const pp of productPrices.values()) {
         if (pp.deletedAt) continue;
@@ -4342,6 +4843,7 @@ export function createMemoryFoodRepository(seed?: {
         if (!existing || pp.observedOn >= existing.priceAsOf) {
           priceMap.set(pp.productKey, {
             priceRub: pp.priceRub,
+            basisQuantity: pp.basisQuantity ?? null,
             priceAsOf: pp.observedOn,
             priceSource: pp.source,
           });
@@ -4392,8 +4894,10 @@ export function createMemoryFoodRepository(seed?: {
       return { ...item };
     },
     setShoppingItemPrice(itemId, args) {
-      const item = shoppingItems.get(itemId);
-      if (!item || item.deletedAt) throw new Error('Shopping item not found');
+      const stored = shoppingItems.get(itemId);
+      if (!stored || stored.deletedAt) throw new Error('Shopping item not found');
+      if (args.priceAsOf != null) assertLocalDate(args.priceAsOf);
+      const item = { ...stored };
       if (args.priceRub !== null) assertNonNegativeFinite(args.priceRub, 'priceRub');
       item.priceRub = args.priceRub;
       item.priceAsOf = args.priceAsOf === undefined ? item.priceAsOf : args.priceAsOf;
@@ -4406,23 +4910,24 @@ export function createMemoryFoodRepository(seed?: {
       if (args.priceRub !== null && !item.priceAsOf) {
         item.priceAsOf = nowIso().slice(0, 10);
       }
-      if (args.priceRub !== null) {
+      if (args.priceRub !== null && item.needToBuy > 0) {
         item.priceSource = item.priceSource ?? 'user';
         const key = shoppingKey(item.displayName, item.unit);
         // Persist ₽/kg (or ₽/L) for eaten-cost amortization; line price stays on item.
         let catalogPrice = args.priceRub;
-        if ((item.unit === 'g' || item.unit === 'ml') && item.needToBuy > 0) {
-          catalogPrice = (args.priceRub / item.needToBuy) * 1000;
-        }
+        const basisQuantity = item.unit === 'pcs' ? 1 : 1000;
+        catalogPrice = (args.priceRub / item.needToBuy) * basisQuantity;
         api.upsertProductPrice({
           productKey: key,
           priceRub: catalogPrice,
+          basisQuantity,
           unit: item.unit,
           observedOn: item.priceAsOf ?? nowIso().slice(0, 10),
           source: item.priceSource ?? 'user',
         });
       }
       item.updatedAt = nowIso();
+      shoppingItems.set(item.id, item);
       notify();
       return { ...item };
     },
@@ -4472,6 +4977,9 @@ export function createMemoryFoodRepository(seed?: {
       return estimateBasketTotal(items);
     },
     upsertProductPrice(input) {
+      const basisQuantity = input.basisQuantity ?? (input.unit === 'pcs' ? 1 : 1000);
+      assertPositiveFinite(basisQuantity, 'basisQuantity');
+      assertLocalDate(input.observedOn);
       assertNonNegativeFinite(input.priceRub, 'priceRub');
       const key = input.productKey.trim();
       if (!key) throw new Error('productKey required');
@@ -4481,6 +4989,7 @@ export function createMemoryFoodRepository(seed?: {
       );
       if (existing) {
         existing.priceRub = input.priceRub;
+        existing.basisQuantity = basisQuantity;
         existing.unit = input.unit;
         existing.observedOn = input.observedOn;
         existing.source = input.source ?? 'user';
@@ -4489,6 +4998,7 @@ export function createMemoryFoodRepository(seed?: {
         return { ...existing };
       }
       const row: ProductPrice = {
+        basisQuantity,
         id: newId(),
         productKey: key,
         storeId: input.storeId ?? null,
@@ -4510,7 +5020,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     setFoodBudget(month, limitRub) {
       assertPositiveFinite(limitRub, 'limitRub');
-      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('month must be YYYY-MM');
       const ts = nowIso();
       const existing = [...foodBudgets.values()].find((x) => !x.deletedAt && x.month === month);
       if (existing) {
@@ -4538,6 +5048,8 @@ export function createMemoryFoodRepository(seed?: {
         .sort((a, b) => b.spentOn.localeCompare(a.spentOn));
     },
     addFoodExpense(input) {
+      assertLocalDate(input.spentOn);
+      if (!['groceries', 'cafe', 'office', 'delivery'].includes(input.category)) throw new Error('Некорректная категория');
       assertNonNegativeFinite(input.amountRub, 'amountRub');
       const ts = nowIso();
       const row: FoodExpense = {
@@ -4551,6 +5063,14 @@ export function createMemoryFoodRepository(seed?: {
         deletedAt: null,
       };
       foodExpenses.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    restoreFoodExpense(id) {
+      const row = foodExpenses.get(id);
+      if (!row) throw new Error('Expense not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
       notify();
       return { ...row };
     },
@@ -4573,7 +5093,7 @@ export function createMemoryFoodRepository(seed?: {
       });
     },
     monthEatenCostEstimate(month) {
-      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('month must be YYYY-MM');
       const priceByKey = new Map<string, ProductPrice>();
       for (const pp of productPrices.values()) {
         if (pp.deletedAt) continue;
@@ -4587,16 +5107,16 @@ export function createMemoryFoodRepository(seed?: {
         const keyG = shoppingKey(e.displayName, 'g');
         const keyMl = shoppingKey(e.displayName, 'ml');
         const keyPcs = shoppingKey(e.displayName, 'pcs');
-        const pp = priceByKey.get(keyG) ?? priceByKey.get(keyMl) ?? priceByKey.get(keyPcs) ?? null;
+        const pp = priceByKey.get(keyG) ?? null;
         if (!pp) return null;
-        if (pp.unit === 'pcs') {
+        if (pp.unit !== 'g' || pp.basisQuantity == null) {
           // Diary is grams — cannot amortize piece price honestly.
           return null;
         }
         return estimateEatenCostRub({
           grams: e.grams,
           priceRub: pp.priceRub,
-          pricePerUnitG: 1000,
+          pricePerUnitG: pp.basisQuantity,
         });
       });
       const summed = sumEatenCost(estimates);
@@ -4675,6 +5195,7 @@ export function createMemoryFoodRepository(seed?: {
 
       Object.assign(profile, next.profile);
       garminSync = normalizeGarminSync(next.garminSync);
+      trainingCycle = next.trainingCycle ? cloneTrainingCycle(next.trainingCycle) : null;
       for (const p of next.products) products.set(p.id, { ...p });
       mergeCommonFoodCatalog(products);
       for (const r of next.recipes) recipes.set(r.id, { ...r });
@@ -4718,7 +5239,7 @@ export function createMemoryFoodRepository(seed?: {
       for (const t of next.workoutTemplates) workoutTemplates.set(t.id, { ...t });
       for (const l of next.workoutTemplateExercises) workoutTemplateExercises.set(l.id, { ...l });
       for (const a of next.plannedActivities) plannedActivities.set(a.id, { ...a });
-      for (const s of next.workoutSessions) workoutSessions.set(s.id, { ...s });
+      for (const s of next.workoutSessions) workoutSessions.set(s.id, cloneWorkoutSession(s));
       for (const s of next.workoutSets) workoutSets.set(s.id, { ...s });
       syncBuiltinStrengthProgram();
 
@@ -4759,6 +5280,7 @@ export function createMemoryFoodRepository(seed?: {
       workoutSessions.clear();
       workoutSets.clear();
       garminSync = emptyGarminSync();
+      trainingCycle = null;
       for (const s of defaultStorePreferences(nowIso())) storePreferences.set(s.id, s);
       profile.dogfoodStartedOn = null;
       profile.heightCm = null;
@@ -4779,6 +5301,8 @@ export function createMemoryFoodRepository(seed?: {
 
 export type PersistableFoodRepository = ReturnType<typeof createMemoryFoodRepository> & {
   setPersistHook(fn: (snap: StoreSnapshot) => void): void;
+  flushPersist(): void;
+  setPersistStatusListener(fn: ((error: Error | null) => void) | null): void;
 };
 
 export function asPersistable(repo: FoodRepository): PersistableFoodRepository {

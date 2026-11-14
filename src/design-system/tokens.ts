@@ -12,8 +12,8 @@ export const colors = {
   ink: '#20251F',
   text: '#20251F',
   textSecondary: '#626B5F',
-  /** Captions / hints — ≥4.5:1 on canvas `#F7F7F2` and white (WCAG AA). */
-  textMuted: '#697166',
+  /** Captions / hints — WCAG AA on canvas, white and the strength surface. */
+  textMuted: '#626B5F',
   /** Selected / active chrome — mono ink (no coloured brand chrome). */
   accent: '#20251F',
   accentSoft: '#EDF0E9',
@@ -64,11 +64,14 @@ export const space = {
   section: 28,
 } as const;
 
+/** Labeled intensity buckets for imported HR data; shared by every Garmin view. */
+export const HEART_RATE_ZONE_COLORS = ['#AEB8AD', '#7F999C', '#6D8B68', '#B78E63', '#AD6657', '#796C84'] as const;
+
 export const radius = {
   sm: 8,
-  md: 14,
-  lg: 16,
-  card: 22,
+  md: 16,
+  lg: 18,
+  card: 24,
   xl: 24,
   pill: 999,
 } as const;

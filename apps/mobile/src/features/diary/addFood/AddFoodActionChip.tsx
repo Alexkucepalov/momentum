@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AppText, colors, radius, space, type } from '@/src/design-system';
+import { AppText, colors, radius, space, type, touchMin } from '@/src/design-system';
 
 export function AddFoodActionChip({
   icon,
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    minHeight: 40,
+    minHeight: touchMin,
   },
   chipOn: {
     backgroundColor: colors.accent,

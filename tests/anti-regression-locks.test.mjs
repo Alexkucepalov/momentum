@@ -17,13 +17,8 @@ function read(rel) {
   return readFileSync(join(root, rel), 'utf8');
 }
 
-test('R3 Food diary: MealSection appears before FoodQuickStrips', () => {
-  const src = read('apps/mobile/app/(tabs)/food.tsx');
-  const meals = src.indexOf('{MEALS.map');
-  const quick = src.indexOf('<FoodQuickStrips');
-  assert.ok(meals > 0 && quick > 0, 'expected both MealSection map and FoodQuickStrips');
-  assert.ok(meals < quick, 'Повторить must stay below meal sections');
-});
+// R3's fixed meal-before-repeat order is superseded by the founder's #230 request.
+// The repeat path and its visibility are exercised in the browser, not source ordering.
 
 test('R4 streak copy must not soft-shame', () => {
   const { formatFoodLogStreakRu } = mods['domain/foodLogStreak'];
