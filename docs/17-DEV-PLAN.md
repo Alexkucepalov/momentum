@@ -45,6 +45,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v20**. Anti-regression locks stay 
 | 03i neutral polish | Cool gray canvas; no sage chrome | Done (#240) |
 | 03j product gaps | Plan→diary, empty CTAs, deep-links | Done (#243) |
 | 03k user paths | Remaining kcal, catalog prefs, report/Сила clarity | Done (#246) |
+| 03l Movement UX | Card-tap edit, no draft strip, session sans timer | Done (#249) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)

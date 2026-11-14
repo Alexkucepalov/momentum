@@ -137,8 +137,13 @@ test('Phase 4 UI uses design system; no shame copy', () => {
   const activity = readFileSync(join(root, 'apps/mobile/app/(tabs)/activity.tsx'), 'utf8');
   assert.ok(activity.includes('StrengthWeekBoard'));
   assert.ok(activity.includes('@/src/design-system'));
+  const weekBoard = readFileSync(
+    join(root, 'apps/mobile/src/features/strength/StrengthWeekBoard.tsx'),
+    'utf8',
+  );
   assert.ok(
     activity.includes('План ≠ факт') ||
+      weekBoard.includes('План ≠ факт') ||
       activity.includes('план выше не меняется') ||
       activity.includes('План выше не меняется'),
   );
