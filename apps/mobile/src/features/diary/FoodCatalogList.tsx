@@ -49,6 +49,7 @@ export function FoodCatalogList({
   onAddRecipe,
   onOpenRecipe,
   onBrowseRecipes,
+  onCreateManual,
   onToggleFavorite,
   onRepeatEntry,
 }: {
@@ -64,6 +65,8 @@ export function FoodCatalogList({
   onAddRecipe: (r: Recipe) => void;
   onOpenRecipe?: (r: Recipe) => void;
   onBrowseRecipes?: () => void;
+  /** Empty catalog / search → create product manually. */
+  onCreateManual?: () => void;
   onToggleFavorite: (p: FoodProduct) => void;
   onRepeatEntry: (e: FoodEntry) => void;
 }) {
@@ -151,6 +154,8 @@ export function FoodCatalogList({
         kind: 'empty',
         title: 'Ничего не найдено',
         body: 'Попробуй другое слово или создай продукт вручную.',
+        actionLabel: onCreateManual ? 'Создать вручную' : undefined,
+        onAction: onCreateManual,
       });
       return out;
     }
@@ -183,6 +188,8 @@ export function FoodCatalogList({
               : {
                   title: 'Каталог пуст',
                   body: 'Создай продукт вручную, через сканер или добавь рецепт.',
+                  actionLabel: onCreateManual ? 'Создать продукт' : undefined,
+                  onAction: onCreateManual,
                 };
         out.push({ key: 'empty-products', kind: 'empty', ...empty });
       } else if (filteredProducts.length > 0) {
@@ -199,6 +206,8 @@ export function FoodCatalogList({
         kind: 'empty',
         title: 'Нет недавних',
         body: 'Записи появятся после добавления еды в дневник.',
+        actionLabel: onCreateManual ? 'Добавить еду' : undefined,
+        onAction: onCreateManual,
       });
     }
 
@@ -224,6 +233,7 @@ export function FoodCatalogList({
     recipeIngredientCounts,
     recentUnique.length,
     onBrowseRecipes,
+    onCreateManual,
   ]);
 
   const header = (

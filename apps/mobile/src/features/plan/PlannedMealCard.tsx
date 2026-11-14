@@ -8,15 +8,19 @@ export function PlannedMealCard({
   meal,
   kcal,
   onPress,
+  onLog,
   onMove,
   onDelete,
 }: {
   meal: PlannedMeal;
   kcal: number | null;
   onPress: () => void;
+  /** Explicit plan → diary. Only for status === planned. */
+  onLog?: () => void;
   onMove: () => void;
   onDelete: () => void;
 }) {
+  const logged = meal.status === 'logged';
   return (
     <View style={styles.card} testID={`planned-meal-${meal.id}`}>
       <Pressable
@@ -30,8 +34,23 @@ export function PlannedMealCard({
         </AppText>
         <AppText variant="caption" tone="muted">
           {Math.round(meal.grams)} г · {formatPlannedKcal(kcal)}
+          {logged ? ' · в дневнике' : ''}
         </AppText>
       </Pressable>
+      {onLog && meal.status === 'planned' ? (
+        <Pressable
+          onPress={onLog}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`В дневник ${meal.displayName}`}
+          style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+          testID={`planned-meal-log-${meal.id}`}
+        >
+          <AppText variant="caption" tone="ink" style={styles.actionText}>
+            В дневник
+          </AppText>
+        </Pressable>
+      ) : null}
       <Pressable
         onPress={onMove}
         hitSlop={8}

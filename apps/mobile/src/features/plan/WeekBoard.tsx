@@ -26,6 +26,7 @@ export function WeekBoard({
   kcalForMeal,
   onAdd,
   onPressMeal,
+  onLogMeal,
   onMoveMeal,
   onDeleteMeal,
 }: {
@@ -36,6 +37,7 @@ export function WeekBoard({
   kcalForMeal: (m: PlannedMeal) => number | null;
   onAdd: (dateLocal: string, slot: MealSlot) => void;
   onPressMeal: (m: PlannedMeal) => void;
+  onLogMeal?: (m: PlannedMeal) => void;
   onMoveMeal: (m: PlannedMeal) => void;
   onDeleteMeal: (m: PlannedMeal) => void;
 }) {
@@ -84,6 +86,7 @@ export function WeekBoard({
           kcalForMeal={kcalForMeal}
           onAdd={(slot) => onAdd(selected.dateLocal, slot)}
           onPressMeal={onPressMeal}
+          onLogMeal={onLogMeal}
           onMoveMeal={onMoveMeal}
           onDeleteMeal={onDeleteMeal}
         />

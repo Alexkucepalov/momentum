@@ -11,7 +11,9 @@ import {
   weekStrengthSummary,
 } from "../../../../../src/domain/strength";
 import type { FoodRepository } from "../../../../../src/storage/foodRepository";
+import { useRouter, type Href } from "expo-router";
 import {
+  AppButton,
   AppCard,
   AppText,
   colors,
@@ -22,6 +24,7 @@ import {
 import { useAnyRevision, useData } from "@/src/state/DataContext";
 
 export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
+  const router = useRouter();
   const { dateLocal } = useData();
   const revision = useAnyRevision();
   const exercises = useMemo(() => {
@@ -173,9 +176,17 @@ export function StrengthProgressPanel({ repo }: { repo: FoodRepository }) {
 
       <View style={styles.bars} accessibilityLabel="Рабочий вес по сессиям">
         {snapMeta.series.length === 0 ? (
-          <AppText variant="caption" tone="muted" style={styles.emptyChart}>
-            Запиши силовую — появится ряд
-          </AppText>
+          <View style={styles.emptyChart}>
+            <AppText variant="caption" tone="muted">
+              Запиши силовую — появится ряд
+            </AppText>
+            <AppButton
+              label="К тренировкам"
+              variant="secondary"
+              onPress={() => router.push("/(tabs)/activity" as Href)}
+              testID="strength-progress-open-movement"
+            />
+          </View>
         ) : (
           snapMeta.series.map((p) => {
             const h =
@@ -253,6 +264,7 @@ const styles = StyleSheet.create({
   },
   emptyChart: {
     padding: space.md,
+    gap: space.sm,
   },
   pressed: { opacity: 0.85 },
 });

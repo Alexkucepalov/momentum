@@ -407,9 +407,26 @@ export default function StrengthSessionScreen() {
             </View>
           </>
         ) : (
-          <AppText variant="body" tone="secondary">
-            В этой сессии нет упражнений. Можно завершить её без записей.
-          </AppText>
+          <View style={styles.emptySession} testID="session-empty-exercises">
+            <AppText variant="body" tone="secondary">
+              В этой сессии нет упражнений.
+            </AppText>
+            {session.templateId ? (
+              <AppButton
+                label="Добавить в шаблон"
+                onPress={() =>
+                  router.push(`/strength/template/${session.templateId}`)
+                }
+                testID="session-edit-template"
+              />
+            ) : (
+              <AppButton
+                label="К шаблонам"
+                variant="secondary"
+                onPress={() => router.push("/strength")}
+              />
+            )}
+          </View>
         )}
         <AppButton
           label="Завершить тренировку"
@@ -532,6 +549,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: { padding: space.screen, gap: space.md },
   rest: { paddingHorizontal: space.screen, paddingTop: space.sm },
+  emptySession: { gap: space.sm },
   flex: { flex: 1, minWidth: 0, gap: space.xs },
   progressHead: { flexDirection: "row", alignItems: "center", gap: space.sm },
   progressTrack: {

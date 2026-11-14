@@ -35,6 +35,12 @@ export default function StrengthHubScreen() {
       showFlash("Шаблон не найден");
       return;
     }
+    const lines = repo.listTemplateExercises(tmpl.id);
+    if (lines.length === 0) {
+      showFlash("Сначала добавь упражнения в шаблон");
+      router.push(strengthTemplateHref(tmpl.id));
+      return;
+    }
     try {
       const session = repo.startWorkoutSession({
         dateLocal,
@@ -127,8 +133,12 @@ export default function StrengthHubScreen() {
               </AppText>
               <View style={styles.actions}>
                 <AppButton
-                  label="Начать"
-                  onPress={() => startTemplate(t.id)}
+                  label={lines.length === 0 ? "Добавить упражнения" : "Начать"}
+                  onPress={() =>
+                    lines.length === 0
+                      ? router.push(strengthTemplateHref(t.id))
+                      : startTemplate(t.id)
+                  }
                   testID={`hub-start-${t.id}`}
                 />
                 <AppButton
