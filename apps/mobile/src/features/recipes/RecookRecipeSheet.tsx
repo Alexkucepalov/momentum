@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { nutritionForRecipePortion } from '../../../../../src/domain/recipeNutrition';
 import type { Recipe, RecipeIngredient } from '../../../../../src/storage/types';

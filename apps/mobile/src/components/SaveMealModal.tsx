@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import { CenteredFormModal } from './CenteredFormModal';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';

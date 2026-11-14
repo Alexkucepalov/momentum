@@ -56,9 +56,9 @@ export function AddPlannedStrengthSheet({
             onPress={onAddCardio}
             style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel="Добавить кардио"
+            accessibilityLabel="Добавить велотренировку"
           >
-            <AppText variant="body">Кардио 30 мин</AppText>
+            <AppText variant="body">Вело · 30 мин</AppText>
           </Pressable>
           <Pressable
             onPress={onAddRest}

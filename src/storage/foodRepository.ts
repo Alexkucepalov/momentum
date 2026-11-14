@@ -445,6 +445,8 @@ export type FoodRepository = {
     activityId: string,
     args: { dateLocal: string; timeLocal?: string | null; sortOrder?: number },
   ): PlannedActivity;
+  /** Atomically exchange plan dates/order; source times and completed history stay intact. */
+  swapPlannedActivities(firstId: string, secondId: string): [PlannedActivity, PlannedActivity];
   copyPlannedActivity(
     activityId: string,
     args: { dateLocal: string; timeLocal?: string | null },
@@ -2951,6 +2953,22 @@ export function createMemoryFoodRepository(seed?: {
       if (args.sortOrder !== undefined) a.sortOrder = args.sortOrder;
       notify();
       return { ...a };
+    },
+    swapPlannedActivities(firstId, secondId) {
+      const first = plannedActivities.get(firstId);
+      const second = plannedActivities.get(secondId);
+      if (!first || first.deletedAt || !second || second.deletedAt) {
+        throw new Error('Planned activity not found');
+      }
+      if (firstId === secondId) return [{ ...first }, { ...second }];
+      const firstDate = first.dateLocal;
+      const firstOrder = first.sortOrder;
+      first.dateLocal = second.dateLocal;
+      first.sortOrder = second.sortOrder;
+      second.dateLocal = firstDate;
+      second.sortOrder = firstOrder;
+      notify();
+      return [{ ...first }, { ...second }];
     },
     copyPlannedActivity(activityId, args) {
       const a = plannedActivities.get(activityId);

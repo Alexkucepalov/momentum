@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, space, type } from '../theme/tokens';

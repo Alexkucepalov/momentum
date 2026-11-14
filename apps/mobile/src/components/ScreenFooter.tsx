@@ -25,10 +25,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingTop: space.sm,
     backgroundColor: colors.background,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
   },
 });

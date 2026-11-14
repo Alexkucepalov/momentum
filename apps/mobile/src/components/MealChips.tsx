@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import type { MealSlot } from '../../../../src/storage/types';
 import { colors, radius, space, touchMin, type } from '../theme/tokens';

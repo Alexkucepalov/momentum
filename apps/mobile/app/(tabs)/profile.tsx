@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/importExport';
@@ -73,6 +73,9 @@ function profileToFields(profile: {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ section?: string }>();
+  const [goalsOpen, setGoalsOpen] = useState(params.section === 'goals');
+  useEffect(() => { if (params.section === 'goals') setGoalsOpen(true); }, [params.section]);
   const { repo, refresh, showFlash, setDateLocal, dateLocal } = useData();
   const profileRevision = useProfileRevision();
   const insets = useSafeAreaInsets();
@@ -304,8 +307,11 @@ export default function ProfileScreen() {
   return (
     <View style={styles.root}>
       <FormScrollView contentContainerStyle={styles.content} testID="profile-screen">
-        <GroupLabel tight>Цели</GroupLabel>
         <AppCard style={styles.goalsCard} testID="profile-goals">
+          <Pressable onPress={() => setGoalsOpen(v => !v)} accessibilityRole="button" accessibilityLabel="Изменить ориентиры" accessibilityState={{ expanded: goalsOpen }} style={styles.goalsHead}>
+            <AppText variant="subtitle">Ориентиры</AppText>
+            <Ionicons name={goalsOpen ? 'chevron-up' : 'arrow-forward'} size={18} color={colors.ink} />
+          </Pressable>
           <View
             style={styles.glanceRow}
             testID="profile-hero"
@@ -327,6 +333,7 @@ export default function ProfileScreen() {
             />
           </View>
 
+          {goalsOpen ? <View>
           <Field
             label="Килокалории в день"
             value={kcalRaw}
@@ -466,9 +473,11 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
+          <AppButton label="Готово" variant="secondary" onPress={() => setGoalsOpen(false)} />
+          </View> : null}
         </AppCard>
 
-        <GroupLabel>Связки</GroupLabel>
+        <GroupLabel>Подключения</GroupLabel>
         <View style={styles.sheet} testID="profile-links">
           <LinkRow
             icon="watch-outline"
@@ -709,7 +718,7 @@ function PrivacyLine({ text, last }: { text: string; last?: boolean }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
   content: {
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingTop: space.sm,
     paddingBottom: space.xxl,
     gap: space.sm,
@@ -717,25 +726,24 @@ const styles = StyleSheet.create({
   glanceRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    backgroundColor: colors.canvas,
-    borderRadius: radius.md,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
     paddingVertical: space.md,
     paddingHorizontal: space.xs,
     marginBottom: space.md,
   },
   glanceCell: {
     flex: 1,
-    alignItems: 'center',
-    gap: 2,
+    alignItems: 'flex-start',
+    paddingLeft: space.sm,
+    gap: space.xs,
   },
   glanceLabel: {
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     fontWeight: '700',
   },
-  glanceValue: {
-    fontWeight: '800',
-  },
+  glanceValue: { fontSize: 25, fontWeight: '500', letterSpacing: -0.7 },
   glanceRule: {
     width: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
@@ -752,6 +760,7 @@ const styles = StyleSheet.create({
   groupLabelTight: {
     marginTop: 0,
   },
+  goalsHead: { minHeight: touchMin, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   goalsCard: {
     padding: space.lg,
     gap: 0,
@@ -793,18 +802,16 @@ const styles = StyleSheet.create({
   twoCol: { flexDirection: 'row', gap: space.sm },
   twoColItem: { flex: 1 },
   sheet: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
     overflow: 'hidden',
   },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    minHeight: touchMin + 4,
-    paddingHorizontal: space.lg,
+    minHeight: touchMin + 12,
+    paddingHorizontal: 0,
     paddingVertical: space.md,
   },
   linkRowBorder: {
@@ -815,7 +822,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -828,7 +835,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.canvas,
   },
   privacyBody: {
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
     paddingBottom: space.md,
     paddingTop: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -868,7 +875,7 @@ const styles = StyleSheet.create({
   pasteSheet: {
     flex: 1,
     backgroundColor: colors.canvas,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.screen,
   },
   pasteHead: {
     flexDirection: 'row',

@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 
 import {
   kcalFromCompleteMacros,

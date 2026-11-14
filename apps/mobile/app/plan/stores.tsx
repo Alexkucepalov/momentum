@@ -1,4 +1,5 @@
-import { StyleSheet, Text, Pressable, View } from 'react-native';
+import { StyleSheet, Pressable, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useRouter } from 'expo-router';
 
 import { createStoreCatalogAdapter } from '../../../../src/domain/storeCatalogAdapter';

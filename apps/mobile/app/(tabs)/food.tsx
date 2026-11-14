@@ -39,6 +39,7 @@ import {
   AppButton,
   AppText,
   colors,
+  fonts,
   radius,
   space,
   touchMin,
@@ -293,7 +294,7 @@ export default function FoodScreen() {
               targets={dailyTargets}
               activityKcal={repo.activityEnergyKcalForDate(dateLocal)}
               activityMinutes={repo.activityMinutesForDate(dateLocal)}
-              onSetTarget={() => router.push('/profile')}
+              onSetTarget={() => router.push('/profile?section=goals')}
             />
 
             <CopyYesterdayButton />
@@ -357,7 +358,7 @@ export default function FoodScreen() {
                   onChangeText={setQuery}
                   placeholder="Яйцо, овсянка, рецепт…"
                   placeholderTextColor={colors.textMuted}
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { fontFamily: fonts.regular }]}
                   accessibilityLabel="Поиск продукта или рецепта"
                   returnKeyType="search"
                 />

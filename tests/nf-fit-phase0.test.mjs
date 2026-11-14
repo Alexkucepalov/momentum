@@ -7,17 +7,17 @@ import { loadSrcModules } from './loadTsModules.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-test('nf-fit tokens: Premium Minimal Utility contract', () => {
+test('nf-fit tokens: Fresh Utility contract', () => {
   const { colors, radius, type, TAB_SHELL, touchMin } = loadSrcModules()['design-system/tokens'];
-  assert.equal(colors.canvas, '#F2F3F5');
+  assert.equal(colors.canvas, '#F7F7F2');
   assert.equal(colors.surface, '#FFFFFF');
-  assert.equal(colors.ink, '#0A0A0A');
-  assert.equal(colors.primary, '#0A0A0A');
-  assert.equal(colors.primaryButton, '#0A0A0A');
-  assert.equal(colors.surfaceMuted, '#EBEDF0');
+  assert.equal(colors.ink, '#20251F');
+  assert.equal(colors.primary, '#20251F');
+  assert.equal(colors.primaryButton, '#20251F');
+  assert.equal(colors.surfaceMuted, '#EDF0E9');
   assert.ok(radius.card >= 12 && radius.card <= 24);
   assert.equal(radius.pill, 999);
-  assert.equal(type.metric, 36);
+  assert.equal(type.metric, 46);
   assert.equal(touchMin, 48);
   // Target shell after Stage 3 (Movement). Temporary 6th Sleep tab may still exist in UI.
   assert.deepEqual([...TAB_SHELL], ['today', 'food', 'movement', 'progress', 'profile']);

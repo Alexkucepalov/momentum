@@ -9,4 +9,5 @@ export {
   touchMin,
   type,
   elevation,
+  fonts,
 } from '../design-system/tokens';

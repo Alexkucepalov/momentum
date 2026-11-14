@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { useRouter } from 'expo-router';
 
 import { parsePurchasePaste, type ParsedPurchaseLineDraft } from '../../../../src/domain/parsePurchasePaste';

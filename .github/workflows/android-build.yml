@@ -1,26 +1,132 @@
-name: Android staging build (manual)
+name: Android dogfood APK (manual)
 on:
   workflow_dispatch:
+    inputs:
+      publish_run_id:
+        description: 'Existing successful APK run to upload (leave empty to build a new APK)'
+        type: string
+        default: ''
+      release_tag:
+        description: 'New prerelease tag for the APK commit (upload mode only)'
+        type: string
+        default: ''
 permissions:
   contents: read
 jobs:
   android:
+    if: ${{ inputs.publish_run_id == '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      RNET_TARGET: android-arm64-v8a
+      DOGFOOD_ABI: arm64-v8a
+      GRADLE_OPTS: -Dorg.gradle.workers.max=2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify mobile project exists
-        run: test -f apps/mobile/eas.json || (echo 'Bootstrap Expo and EAS first: see README' && exit 1)
-      - uses: expo/expo-github-action@v8
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/mobile/package-lock.json
+      - uses: actions/setup-java@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install root dependencies
+        run: npm ci --no-audit --no-fund
       - name: Install mobile dependencies
         working-directory: apps/mobile
-        run: npm ci
-      - name: Trigger EAS Android preview build
+        run: npm ci --no-audit --no-fund
+      - name: Build standalone dogfood APK
         working-directory: apps/mobile
-        run: eas build --platform android --profile preview --non-interactive --no-wait
+        run: npm run build:apk:local
+      - name: Verify APK and record provenance
+        working-directory: apps/mobile
+        run: |
+          cp dist/momentum-dogfood.apk dist/nf-fit-redesign-arm64.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose dist/nf-fit-redesign-arm64.apk
+          unzip -p dist/nf-fit-redesign-arm64.apk assets/index.android.bundle > /dev/null
+          cd dist
+          sha256sum nf-fit-redesign-arm64.apk > SHA256SUMS.txt
+          printf 'commit: %s\nbuild: %s\npackage: app.nffit.dogfood\nabi: arm64-v8a\nchannel: dogfood (test signing; no Metro required)\n' \
+            "$GITHUB_SHA" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > BUILD-INFO.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nf-fit-redesign-arm64
+          path: |
+            apps/mobile/dist/nf-fit-redesign-arm64.apk
+            apps/mobile/dist/SHA256SUMS.txt
+            apps/mobile/dist/BUILD-INFO.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  publish:
+    if: ${{ inputs.publish_run_id != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APK_RUN_ID: ${{ inputs.publish_run_id }}
+      APK_RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - name: Validate upload request
+        id: source
+        run: |
+          [[ "$APK_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$APK_RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$APK_RUN_ID" > "$RUNNER_TEMP/apk-run.json"
+          python - <<'PY'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          run = json.loads((root / 'apk-run.json').read_text())
+          assert run['conclusion'] == 'success', 'Source build must succeed'
+          assert run['path'] == '.github/workflows/android-build.yml', 'Expected a dogfood APK build'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"sha={run['head_sha']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: nf-fit-redesign-arm64
+          path: apk
+          run-id: ${{ inputs.publish_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify and publish existing APK as a prerelease
+        run: |
+          cd apk
+          sha256sum --check SHA256SUMS.txt
+          python - <<'PY'
+          import json, os, pathlib
+          run = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'apk-run.json').read_text())
+          info = pathlib.Path('BUILD-INFO.txt').read_text()
+          assert f"commit: {run['head_sha']}\n" in info, 'APK provenance must match source build'
+          assert 'package: app.nffit.dogfood\n' in info, 'Unexpected application package'
+          PY
+          apk_source_sha="$(python -c 'import json, os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "apk-run.json")))["head_sha"])')"
+          if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$APK_RELEASE_TAG" > "$RUNNER_TEMP/apk-tag.json"; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f "ref=refs/tags/$APK_RELEASE_TAG" -f "sha=$apk_source_sha" > "$RUNNER_TEMP/apk-tag.json"
+          fi
+          python - <<'PY'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          tag = json.loads((root / 'apk-tag.json').read_text())
+          run = json.loads((root / 'apk-run.json').read_text())
+          assert tag['object']['type'] == 'commit', 'Expected a commit tag'
+          assert tag['object']['sha'] == run['head_sha'], 'Release tag must match source build'
+          PY
+          printf 'Standalone dogfood APK (Android ARM64), commit %s.\n\nBuild: %s/%s/actions/runs/%s\n\nPhysical-device verification is pending.\n' \
+            "$apk_source_sha" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$APK_RUN_ID" > RELEASE-NOTES.txt
+          gh release create "$APK_RELEASE_TAG" nf-fit-redesign-arm64.apk SHA256SUMS.txt BUILD-INFO.txt \
+            ../apps/mobile/assets/fonts/OFL-Manrope.txt --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title 'nf-fit — редизайн, тестовый APK' --prerelease --latest=false --notes-file RELEASE-NOTES.txt

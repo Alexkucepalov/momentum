@@ -1,4 +1,5 @@
-import { StyleSheet, Text, type StyleProp, type TextProps, type TextStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type TextProps, type TextStyle } from 'react-native';
+import { ThemedText as Text } from './ThemedText';
 
 import { colors, type as typeScale } from '../tokens';
 
@@ -54,18 +55,19 @@ const styles = StyleSheet.create({
   },
   metric: {
     fontSize: typeScale.metric,
-    fontWeight: '700',
+    fontWeight: '500',
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
   },
   hero: {
     fontSize: typeScale.hero,
-    fontWeight: '700',
+    fontWeight: '500',
     letterSpacing: -0.4,
   },
   title: {
     fontSize: typeScale.title,
-    fontWeight: '700',
+    fontWeight: '500',
+    letterSpacing: -0.9,
   },
   subtitle: {
     fontSize: typeScale.subtitle,
@@ -74,6 +76,7 @@ const styles = StyleSheet.create({
   body: {
     fontSize: typeScale.body,
     fontWeight: '400',
+    lineHeight: 21,
   },
   caption: {
     fontSize: typeScale.caption,
@@ -82,7 +85,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: typeScale.label,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.3,
   },
 });

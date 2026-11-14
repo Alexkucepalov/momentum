@@ -60,17 +60,17 @@ export default function PlanHubScreen() {
         testID="plan-hub-eat-now"
       >
         <View style={styles.heroIcon}>
-          <Ionicons name="flash" size={22} color={colors.onAccent} />
+          <Ionicons name="flash" size={22} color={colors.ink} />
         </View>
         <View style={styles.heroText}>
-          <AppText variant="title" tone="inverse" style={styles.heroTitle}>
+          <AppText variant="title" tone="ink" style={styles.heroTitle}>
             Что съесть сейчас
           </AppText>
-          <AppText variant="caption" tone="inverse" style={styles.heroSub}>
+          <AppText variant="caption" tone="ink" style={styles.heroSub}>
             По остатку КБЖУ · запасы и рецепты
           </AppText>
         </View>
-        <Ionicons name="arrow-forward" size={20} color={colors.onAccent} />
+        <Ionicons name="arrow-forward" size={20} color={colors.ink} />
       </Pressable>
 
       <PlanNotDiaryNote style={styles.disclaimer} />
@@ -102,7 +102,7 @@ export default function PlanHubScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    padding: space.lg,
+    padding: space.screen,
     paddingBottom: space.xxl,
     gap: space.lg,
     backgroundColor: colors.canvas,
@@ -115,18 +115,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.lg,
     borderRadius: radius.xl,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.trainingStrength,
   },
   heroIcon: {
     width: 44,
     height: 44,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroText: { flex: 1, gap: 4, minWidth: 0 },
-  heroTitle: { fontWeight: '800' },
+  heroTitle: { fontWeight: '500', fontSize: 22, letterSpacing: -0.6 },
   heroSub: { opacity: 0.75 },
   disclaimer: {
     marginTop: -space.sm,
@@ -140,18 +140,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xs,
   },
   sheet: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
     overflow: 'hidden',
   },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    minHeight: touchMin + 4,
-    paddingHorizontal: space.lg,
+    minHeight: touchMin + 12,
+    paddingHorizontal: 0,
     paddingVertical: space.md,
   },
   linkRowBorder: {
@@ -162,7 +160,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },

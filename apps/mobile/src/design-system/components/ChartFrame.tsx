@@ -37,10 +37,8 @@ export function ChartFrame({ title, subtitle, footnote, children, testID }: Char
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    padding: space.lg,
+    borderRadius: radius.card,
+    padding: space.screen,
     marginBottom: space.md,
     gap: space.sm,
   },

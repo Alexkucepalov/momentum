@@ -1,0 +1,60 @@
+{
+  "platform": "Expo web / Chromium, not Android",
+  "source": "Bundled synthetic fixture, shifted to QA week; synthetic training plan",
+  "root_screens": 5,
+  "routes_checked": [
+    "/food",
+    "/activity",
+    "/progress",
+    "/profile",
+    "/plan",
+    "/plan/eat-now",
+    "/plan/pantry",
+    "/plan/week",
+    "/plan/shop",
+    "/plan/budget",
+    "/plan/stores",
+    "/plan/receipt",
+    "/recipes",
+    "/recipes/new",
+    "/recipes/import-text",
+    "/recipes/import-personal",
+    "/garmin",
+    "/garmin/data",
+    "/strength",
+    "/strength/template/tmpl-upper-a",
+    "/activity?segment=sleep",
+    "/profile?section=goals",
+    "/recipes/fix-r-bowl",
+    "/recipes/edit/fix-r-bowl"
+  ],
+  "viewport_widths": [
+    360,
+    390,
+    430
+  ],
+  "flows": [
+    "portion -> diary -> Undo -> reload",
+    "native PanResponder drag and atomic swap -> Undo",
+    "completed workout history unchanged",
+    "decimal weight -> complete set -> reload"
+  ],
+  "page_errors": [],
+  "console_errors": [],
+  "device_pass": false,
+  "verification": {
+    "command": "npm run verify",
+    "result": "passed",
+    "node_tests": 338,
+    "node_failures": 0,
+    "root_typecheck": "passed",
+    "mobile_typecheck": "passed",
+    "security_scan": "passed"
+  },
+  "native_bundle": {
+    "command": "expo export --platform android --no-bytecode",
+    "result": "passed",
+    "apk_built": false,
+    "physical_device_tested": false
+  }
+}

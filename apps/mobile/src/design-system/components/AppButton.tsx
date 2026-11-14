@@ -82,6 +82,8 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   label: {
-    fontWeight: '700',
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingVertical: 2,
   },
 });

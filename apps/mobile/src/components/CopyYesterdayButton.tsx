@@ -74,7 +74,7 @@ export function CopyYesterdayButton({ testID = 'copy-yesterday' }: { testID?: st
           Повторить вчера
         </AppText>
         <AppText variant="caption" tone="secondary">
-          {sourceCount} зап. · те же приёмы · ≤10 с
+          {sourceCount} зап. · те же порции
         </AppText>
       </View>
       <Ionicons name="arrow-forward" size={18} color={colors.textMuted} />
@@ -89,22 +89,20 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: touchMin + 4,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceMuted,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     marginBottom: space.sm,
   },
   pressed: { opacity: 0.88 },
   iconWrap: {
-    width: 36,
-    height: 36,
+    width: 28,
+    height: 28,
     borderRadius: 18,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   textCol: { flex: 1 },
-  label: { fontWeight: '700' },
+  label: { fontWeight: '500' },
 });
