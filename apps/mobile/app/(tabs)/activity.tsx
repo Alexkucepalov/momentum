@@ -161,7 +161,7 @@ export default function MovementScreen() {
         </>}
       </ScrollView>
     </DaySwipeArea>
-    <WorkoutFormSheet visible={formOpen} initialType={formType} onClose={() => setFormOpen(false)} onSave={input => attempt(() => { const row = repo.addWorkout({ dateLocal, type: input.type, durationSec: input.durationSec, distanceM: input.distanceM, notes: input.notes }); feedback('Активность записана', () => { repo.softDeleteWorkout(row.id); }); })} />
+    <WorkoutFormSheet visible={formOpen} initialType={formType} onClose={() => setFormOpen(false)} onOpenStrengthHub={() => router.push(strengthHubHref())} onSave={input => attempt(() => { const row = repo.addWorkout({ dateLocal, type: input.type, durationSec: input.durationSec, distanceM: input.distanceM, notes: input.notes }); feedback('Активность записана', () => { repo.softDeleteWorkout(row.id); }); })} />
     <DayCalendarSheet visible={calendarOpen} onClose={() => setCalendarOpen(false)} />
     <AddPlannedStrengthSheet visible={editor != null} activity={editor?.activity} dateLabel={new Date(`${editor?.date ?? dateLocal}T12:00:00Z`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'UTC' })} templates={templates} onClose={() => setEditor(null)} onSave={input => {
       if (!editor) return;

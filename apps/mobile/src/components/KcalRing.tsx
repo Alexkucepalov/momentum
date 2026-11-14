@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
 import { energyProgressRatio } from "../../../../src/domain/energyProgress";
+import { remainingField } from "../../../../src/domain/remainingMacros";
 import type {
   DailyNutritionTargets,
   DailyTotals,
@@ -23,7 +24,7 @@ const C = Math.PI * 2 * R;
 const fmt = (n: number | null) =>
   n == null ? "—" : Math.round(n).toLocaleString("ru-RU");
 
-/** Editorial day summary. An unset target never produces an invented progress ring. */
+/** Editorial day summary. Hero prefers remaining when target is known. */
 export function KcalRing({
   totals,
   targets,
@@ -33,36 +34,60 @@ export function KcalRing({
   const target = targets?.energyKcal ?? null;
   const hasTarget = target != null && target > 0;
   const empty = totals.entryCount === 0;
+  /** Empty day with target → full remaining; unknown food energy stays null. */
+  const eatenForRemain =
+    empty && hasTarget
+      ? 0
+      : totals.energyKcal;
+  const remaining = hasTarget
+    ? remainingField(target, eatenForRemain)
+    : null;
+  const overshoot = remaining != null && remaining < 0;
   const ratio = energyProgressRatio(totals.energyKcal, target);
+  const heroValue =
+    hasTarget && remaining != null
+      ? fmt(Math.abs(remaining))
+      : empty
+        ? "—"
+        : fmt(totals.energyKcal);
+  const heroEyebrow = !hasTarget
+    ? "Записано за день"
+    : overshoot
+      ? "Перебор"
+      : "Осталось";
+  const heroCaption = !hasTarget
+    ? empty
+      ? "Пока нет записей еды"
+      : "ккал · без ориентира"
+    : empty
+      ? `из ${fmt(target)} ккал ориентира`
+      : `съедено ${fmt(totals.energyKcal)} из ${fmt(target)} ккал`;
+
   return (
     <View
       style={styles.wrap}
       accessibilityRole="summary"
       accessibilityLabel={
-        empty
+        empty && !hasTarget
           ? "Нет записей еды за выбранный день."
-          : `Записано ${fmt(totals.energyKcal)} килокалорий. Белки ${fmt(totals.proteinG)}, жиры ${fmt(totals.fatG)}, углеводы ${fmt(totals.carbG)} грамм.${totals.hasUnknownFields ? " Часть значений неизвестна." : ""}`
+          : hasTarget && remaining != null
+            ? `${overshoot ? "Перебор" : "Осталось"} ${fmt(Math.abs(remaining))} килокалорий. Съедено ${fmt(totals.energyKcal)} из ${fmt(target)}. Белки ${fmt(totals.proteinG)}, жиры ${fmt(totals.fatG)}, углеводы ${fmt(totals.carbG)} грамм.${totals.hasUnknownFields ? " Часть значений неизвестна." : ""}`
+            : `Записано ${fmt(totals.energyKcal)} килокалорий. Белки ${fmt(totals.proteinG)}, жиры ${fmt(totals.fatG)}, углеводы ${fmt(totals.carbG)} грамм.${totals.hasUnknownFields ? " Часть значений неизвестна." : ""}`
       }
     >
       <View style={styles.hero}>
         <View style={styles.main}>
           <AppText variant="label" tone="muted" style={styles.eyebrow}>
-            Записано за день
+            {heroEyebrow}
           </AppText>
           <AppText
             variant="metric"
             style={[styles.value, variant === "compact" && styles.compactValue]}
           >
-            {empty ? "—" : fmt(totals.energyKcal)}
+            {heroValue}
           </AppText>
           <AppText variant="caption" tone="secondary">
-            {empty
-              ? "Пока нет записей еды"
-              : hasTarget
-                ? `из ${fmt(target)} ккал`
-                : totals.entryCount > 0
-                  ? "ккал · без ориентира"
-                  : "ккал · пока нет записей"}
+            {heroCaption}
           </AppText>
         </View>
         {hasTarget && !empty ? (
@@ -96,7 +121,7 @@ export function KcalRing({
                   : `${Math.round((totals.energyKcal / target!) * 100)}%`}
               </AppText>
               <AppText variant="label" tone="muted" style={styles.ringLabel}>
-                ориентира
+                съедено
               </AppText>
             </View>
           </View>

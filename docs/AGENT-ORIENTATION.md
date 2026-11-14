@@ -188,5 +188,6 @@ mindmap
 | #225–#239 | Codex Fresh Utility + gym/diary/durability stack |
 | #240 | Cool gray palette (без sage) |
 | #243 | Product gaps: plan→diary, empty CTAs |
+| #246 | Remaining kcal, catalog prefs, report/Сила paths |
 
 Обновляй таблицу при крупных merge, не раздувай changelog.

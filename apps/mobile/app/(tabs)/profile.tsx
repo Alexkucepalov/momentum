@@ -12,8 +12,8 @@ import { asPersistable } from '../../../../src/storage/foodRepository';
 import { clearRecoveryCopies } from '@/src/storage/recoveryCopy';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
-import { collectDayReportText } from '@/src/features/progress/collectDayReport';
 import { useData, useProfileRevision } from '@/src/state/DataContext';
+import { clearUiPrefs } from '@/src/storage/uiPrefs';
 import {
   AppButton,
   AppCard,
@@ -274,16 +274,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const onCopyDayReport = async () => {
-    try {
-      const text = collectDayReportText(repo, dateLocal);
-      await Clipboard.setStringAsync(text);
-      showFlash('Отчёт за день скопирован — вставь в ChatGPT');
-    } catch (e) {
-      alertMessage('Отчёт', e instanceof Error ? e.message : 'Не удалось скопировать');
-    }
-  };
-
   const onImportPaste = () => {
     confirmAndImport(pasteRaw, 'Вставленный JSON');
   };
@@ -303,7 +293,7 @@ export default function ProfileScreen() {
               repo.deleteAllUserData();
               setDateLocal(localDateKey(new Date(), repo.getProfile().timezone));
               refresh('all');
-              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload(), clearRecoveryCopies(), clearRecipePhotos()]);
+              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload(), clearRecoveryCopies(), clearRecipePhotos(), clearUiPrefs()]);
               asPersistable(repo).flushPersist();
               router.replace('/');
               refresh('all');
@@ -546,9 +536,9 @@ export default function ProfileScreen() {
           />
           <LinkRow
             icon="chatbubble-ellipses-outline"
-            title="Отчёт за день"
-            meta="Текст для ChatGPT"
-            onPress={() => void onCopyDayReport()}
+            title="Отчёты и день для ChatGPT"
+            meta="Раздел Прогресс → Отчёты"
+            onPress={() => router.push('/progress?segment=reports' as Href)}
             last
           />
         </View>

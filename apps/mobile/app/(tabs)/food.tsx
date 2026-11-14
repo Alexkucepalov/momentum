@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -41,6 +41,10 @@ import {
   type CatalogFilter,
 } from "@/src/features/diary/FoodCatalogList";
 import { FoodQuickStrips } from "@/src/features/diary/FoodQuickStrips";
+import {
+  loadCatalogFilter,
+  saveCatalogFilter,
+} from "@/src/storage/uiPrefs";
 import {
   FoodSegmentTabs,
   type FoodSegment,
@@ -93,6 +97,19 @@ export default function FoodScreen() {
   );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CatalogFilter>("all");
+  useEffect(() => {
+    let cancelled = false;
+    void loadCatalogFilter().then((saved) => {
+      if (!cancelled) setFilter(saved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const onCatalogFilterChange = useCallback((next: CatalogFilter) => {
+    setFilter(next);
+    void saveCatalogFilter(next);
+  }, []);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [editing, setEditing] = useState<FoodEntry | null>(null);
@@ -299,7 +316,7 @@ export default function FoodScreen() {
             </View>
             <FoodCatalogList
               filter={filter}
-              onFilterChange={setFilter}
+              onFilterChange={onCatalogFilterChange}
               products={products}
               recipes={recipes}
               recent={recent}

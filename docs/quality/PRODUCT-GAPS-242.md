@@ -21,9 +21,15 @@
 | Strength progress empty | CTA «К тренировкам» |
 | Eat Now | Undo дневник/план; CTA целей |
 
-## Still open (P2 / later)
+## P2 closed (#246)
 
-- KcalRing remaining hero
-- Persist catalog filter
-- Collapse Profile day-report duplicate
-- Manual «Сила» form vs session clarity
+| Gap | Fix |
+| --- | --- |
+| KcalRing remaining hero | Hero = остаток / перебор; ring = % съедено |
+| Persist catalog filter | `uiPrefs` FileSystem + Food tab load/save |
+| Profile day-report duplicate | Profile → `/progress?segment=reports` |
+| Manual «Сила» vs session | Chip «Сила» → strength hub |
+
+## Later / out of scope
+
+- #238 full scenario redesign (open epic; cool-gray landed in #240)
