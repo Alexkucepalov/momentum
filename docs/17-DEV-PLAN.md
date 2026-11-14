@@ -27,7 +27,7 @@ SoT: `docs/PRODUCT-ROADMAP.md` · audit `docs/PRODUCT-OVERHAUL-AUDIT.md` · DS p
 
 ## Epic: Strength module (Movement, ADR-011)
 
-SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay in force.
+SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v20**. Anti-regression locks stay in force.
 
 | Stage | Scope | Status |
 |-------|-------|--------|
@@ -44,6 +44,7 @@ SoT: `docs/23-STRENGTH-MODULE.md`. Snapshot **v19**. Anti-regression locks stay 
 | 03h Codex audit stack | Fresh UI + gym/diary/durability land | Done (#239) |
 | 03i neutral polish | Cool gray canvas; no sage chrome | Done (#240) |
 | 03j product gaps | Plan→diary, empty CTAs, deep-links | Done (#243) |
+| 03k user paths | Remaining kcal, catalog prefs, report/Сила clarity | Done (#246) |
 | 04 calendar | Google Calendar — later ADR | Deferred |
 
 ## Release Lock (Friends Beta)

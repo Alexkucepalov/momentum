@@ -58,6 +58,7 @@ export function WorkoutFormSheet({
   visible,
   onClose,
   onSave,
+  onOpenStrengthHub,
   initialType = 'walking',
 }: {
   visible: boolean;
@@ -68,6 +69,8 @@ export function WorkoutFormSheet({
     distanceM: number | null;
     notes: string | null;
   }) => void;
+  /** Силовая сессия живёт в хабе — не в ручной записи активности. */
+  onOpenStrengthHub?: () => void;
   initialType?: WorkoutType;
 }) {
   const [workoutType, setWorkoutType] = useState<WorkoutType>(initialType);
@@ -83,9 +86,14 @@ export function WorkoutFormSheet({
 
   useEffect(() => {
     if (!visible) return;
-    setWorkoutType(initialType);
+    if (initialType === 'strength' && onOpenStrengthHub) {
+      onClose();
+      onOpenStrengthHub();
+      return;
+    }
+    setWorkoutType(initialType === 'strength' && onOpenStrengthHub ? 'walking' : initialType);
     setError(null);
-  }, [visible, initialType]);
+  }, [visible, initialType, onOpenStrengthHub, onClose]);
 
   const showDistance = workoutType === 'walking' || workoutType === 'cycling';
 
@@ -158,10 +166,21 @@ export function WorkoutFormSheet({
                   on && styles.typeChipOn,
                   pressed && styles.pressed,
                 ]}
-                onPress={() => setWorkoutType(t.type)}
+                onPress={() => {
+                  if (t.type === 'strength' && onOpenStrengthHub) {
+                    onClose();
+                    onOpenStrengthHub();
+                    return;
+                  }
+                  setWorkoutType(t.type);
+                }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={t.label}
+                accessibilityLabel={
+                  t.type === 'strength' && onOpenStrengthHub
+                    ? 'Сила — открыть зал и шаблоны'
+                    : t.label
+                }
               >
                 <Ionicons name={t.icon} size={18} color={on ? colors.primaryButtonText : colors.text} />
                 <Text style={[styles.typeText, on && styles.typeTextOn]}>{t.label}</Text>
