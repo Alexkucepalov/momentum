@@ -163,7 +163,7 @@ export function SetLogRow({
       />
       {!set.completed ? (
         <AppText variant="caption" tone="secondary">
-          Ввод сохраняется как черновик. Подход учитывается после записи.
+          Подход попадёт в итог после «Записать».
         </AppText>
       ) : null}
     </View>

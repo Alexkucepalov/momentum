@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -15,11 +15,9 @@ import {
   repsRangeLabel,
 } from "../../../../../src/domain/strength/sessionReview";
 import type { WorkoutSet } from "../../../../../src/domain/strength/types";
-import { RestTimerBar } from "@/src/features/strength/RestTimerBar";
 import { SessionFinishSheet } from "@/src/features/strength/SessionFinishSheet";
 import { SetLogRow } from "@/src/features/strength/SetLogRow";
 import { SessionReviewPanel } from "@/src/features/strength/SessionReviewPanel";
-import { ExerciseFigure } from "@/src/features/strength/ExerciseFigure";
 import { FormScrollView } from "@/src/components/FormScrollView";
 import { SwipeToDismissSheet } from "@/src/components/SwipeToDismissSheet";
 import {
@@ -39,14 +37,13 @@ export default function StrengthSessionScreen() {
   const router = useRouter();
   const { repo, refresh, showFlash, setUndo, undo } = useData();
   useActivityRevision();
-  const [finishOpen, setFinishOpen] = useState(false),
-    [listOpen, setListOpen] = useState(false),
-    [infoOpen, setInfoOpen] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState<string | null>(null),
-    [editingSet, setEditingSet] = useState<string | null>(null);
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [editingSet, setEditingSet] = useState<string | null>(null);
   const lastAddedAt = useRef(0);
-  const scroll = useRef<ScrollView>(null),
-    lastRecorded = useRef<{ id: string; at: number } | null>(null);
+  const scroll = useRef<ScrollView>(null);
+  const lastRecorded = useRef<{ id: string; at: number } | null>(null);
   const session = id ? repo.getWorkoutSession(String(id)) : null;
   const sets = session ? repo.listWorkoutSets(session.id) : [];
   const snapshot = useMemo(
@@ -78,15 +75,17 @@ export default function StrengthSessionScreen() {
       repo.listStrengthExercises().map((ex) => [ex.id, ex.name]),
     ),
   );
-  const restDeadline = session?.restUntilAt
-    ? Date.parse(session.restUntilAt)
-    : null;
-  const clearRest = useCallback(() => {
-    if (id && repo.getWorkoutSession(String(id))?.status === "in_progress") {
+
+  /** Timer UI removed — clear any leftover rest deadline so it cannot resurrect. */
+  useEffect(() => {
+    if (!id) return;
+    const row = repo.getWorkoutSession(String(id));
+    if (row?.status === "in_progress" && row.restUntilAt) {
       repo.setSessionRestDeadline(String(id), null);
       refresh("activity");
     }
   }, [id, repo, refresh]);
+
   const select = (index: number) => {
     const group = groups[index];
     if (group) {
@@ -96,13 +95,16 @@ export default function StrengthSessionScreen() {
       scroll.current?.scrollTo({ y: 0, animated: false });
     }
   };
-  if (!session || !review)
+
+  if (!session || !review) {
     return (
       <View style={styles.content}>
         <AppText variant="subtitle">Тренировка не найдена</AppText>
         <AppButton label="Назад" onPress={() => router.back()} />
       </View>
     );
+  }
+
   const finish = () => setFinishOpen(true);
   const record = (
     set: WorkoutSet,
@@ -111,32 +113,33 @@ export default function StrengthSessionScreen() {
     if (
       lastRecorded.current?.id === set.id &&
       Date.now() - lastRecorded.current.at < 500
-    )
+    ) {
       return;
+    }
     const before = repo
       .listWorkoutSets(session.id)
       .find((row) => row.id === set.id);
     if (!before) throw new Error("Подход не найден");
-    const restBefore = repo.getWorkoutSession(session.id)?.restUntilAt ?? null;
     repo.completeWorkoutSet(set.id, values);
     lastRecorded.current = { id: set.id, at: Date.now() };
     refresh("activity");
     setEditingSet(null);
-    if (Platform.OS !== "web")
+    if (Platform.OS !== "web") {
       void Haptics.selectionAsync().catch(() => undefined);
+    }
     setUndo({
       message: `${name} · подход ${set.setIndex} записан`,
       ownerId: session.id,
       scope: "activity",
       action: () => {
         repo.restoreWorkoutSet(before);
-        repo.setSessionRestDeadline(session.id, restBefore);
         setSelectedExercise(set.exerciseId);
         setEditingSet(before.completed ? before.id : null);
       },
     });
   };
-  if (!isLive)
+
+  if (!isLive) {
     return (
       <FormScrollView
         contentContainerStyle={styles.content}
@@ -152,14 +155,16 @@ export default function StrengthSessionScreen() {
           </View>
           <AppText variant="label" tone="secondary">
             {session.status === "completed"
-              ? "ТРЕНИРОВКА СОХРАНЕНА"
-              : "ТРЕНИРОВКА ПРЕРВАНА"}
+              ? "СОХРАНЕНО"
+              : "ПРЕРВАНО"}
           </AppText>
           <AppText variant="title">{session.title}</AppText>
           <AppText variant="caption" tone="secondary">
             {review.durationSec == null
               ? "Время неизвестно"
-              : `${review.durationSec < 60 ? `${Math.floor(review.durationSec)} с` : `${Math.floor(review.durationSec / 60)} мин`} · включая отдых`}
+              : review.durationSec < 60
+                ? `${Math.floor(review.durationSec)} с`
+                : `${Math.floor(review.durationSec / 60)} мин`}
             {session.feelingRpe != null
               ? ` · сложность ${session.feelingRpe}/10`
               : ""}
@@ -169,131 +174,80 @@ export default function StrengthSessionScreen() {
         {session.feelingNote ? (
           <AppCard>
             <AppText variant="label" tone="secondary">
-              ТВОЯ ЗАМЕТКА
+              ЗАМЕТКА
             </AppText>
             <AppText variant="body">{session.feelingNote}</AppText>
-          </AppCard>
-        ) : null}
-        {session.planNotes ? (
-          <AppCard>
-            <AppText variant="label" tone="secondary">
-              ОПИСАНИЕ ПЛАНА НА СТАРТЕ
-            </AppText>
-            <AppText variant="body">{session.planNotes}</AppText>
           </AppCard>
         ) : null}
         <AppButton label="Готово" onPress={() => router.back()} />
       </FormScrollView>
     );
+  }
+
+  const progressPct = review.totalSets
+    ? (review.completedSets / review.totalSets) * 100
+    : 0;
+
   return (
     <View style={styles.root}>
-      {restDeadline != null && restDeadline > Date.now() ? (
-        <View style={styles.rest}>
-          <RestTimerBar
-            deadlineMs={restDeadline}
-            onSkip={clearRest}
-            onDone={clearRest}
-            onExtend={() => {
-              repo.setSessionRestDeadline(
-                session.id,
-                new Date(
-                  Math.max(Date.now(), restDeadline) + 30_000,
-                ).toISOString(),
-              );
-              refresh("activity");
-            }}
-          />
-        </View>
-      ) : null}
       <FormScrollView
         ref={scroll}
         contentContainerStyle={styles.content}
         testID="strength-session"
       >
-        <View style={styles.progressHead}>
-          <View style={styles.flex}>
-            <AppText variant="caption" tone="secondary">
-              {session.title}
-            </AppText>
-            <AppText variant="body">
-              {review.completedSets} из {review.totalSets} подходов
-            </AppText>
+        <View style={styles.hero}>
+          <View style={styles.heroTop}>
+            <View style={styles.flex}>
+              <AppText variant="label" tone="muted" style={styles.eyebrow}>
+                {session.title}
+              </AppText>
+              <AppText variant="subtitle">
+                {review.completedSets} / {review.totalSets} подходов
+              </AppText>
+            </View>
+            <Pressable
+              onPress={() => setListOpen(true)}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel="Список упражнений"
+              testID="session-exercise-list"
+            >
+              <Ionicons name="list-outline" size={22} color={colors.ink} />
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => setListOpen(true)}
-            style={styles.iconButton}
-            accessibilityRole="button"
-            accessibilityLabel="Список упражнений"
-            testID="session-exercise-list"
-          >
-            <Ionicons name="list-outline" size={24} color={colors.ink} />
-          </Pressable>
-        </View>
-        <View
-          style={styles.progressTrack}
-          accessibilityRole="progressbar"
-          accessibilityLabel="Прогресс тренировки"
-          accessibilityValue={{
-            min: 0,
-            max: Math.max(1, review.totalSets),
-            now: review.completedSets,
-          }}
-          aria-valuemin={0}
-          aria-valuemax={Math.max(1, review.totalSets)}
-          aria-valuenow={review.completedSets}
-        >
           <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${review.totalSets ? (review.completedSets / review.totalSets) * 100 : 0}%`,
-              },
-            ]}
-          />
+            style={styles.progressTrack}
+            accessibilityRole="progressbar"
+            accessibilityLabel="Прогресс тренировки"
+            accessibilityValue={{
+              min: 0,
+              max: Math.max(1, review.totalSets),
+              now: review.completedSets,
+            }}
+          >
+            <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+          </View>
         </View>
+
         {active ? (
           <>
-            <View style={styles.exerciseHead}>
-              <View style={styles.flex}>
-                <AppText variant="label" tone="secondary">
-                  УПРАЖНЕНИЕ {activeIndex + 1} / {groups.length}
-                </AppText>
-                <AppText variant="title">{name}</AppText>
-              </View>
-              <Pressable
-                onPress={() => setInfoOpen(true)}
-                style={styles.iconButton}
-                accessibilityRole="button"
-                accessibilityLabel="Информация об упражнении и плане"
-              >
-                <Ionicons
-                  name="information-outline"
-                  size={22}
-                  color={colors.ink}
-                />
-              </Pressable>
-            </View>
-            <ExerciseFigure
-              muscles={plan?.primaryMuscles ?? exercise?.primaryMuscles ?? []}
-              equipment={plan?.equipment ?? exercise?.equipment}
-            />
-            <View style={styles.context}>
+            <View style={styles.exerciseBlock}>
+              <AppText variant="caption" tone="secondary">
+                Упражнение {activeIndex + 1} из {groups.length}
+              </AppText>
+              <AppText variant="title" style={styles.exerciseTitle}>
+                {name}
+              </AppText>
               <AppText variant="caption" tone="secondary">
                 {plan
-                  ? `План: ${plan.targetSets} × ${repsRangeLabel(plan)} · отдых ${plan.restSec ?? 90} с`
-                  : "Ориентиры этой сессии не сохранены"}
+                  ? `Ориентир ${plan.targetSets} × ${repsRangeLabel(plan)}`
+                  : "Ориентиры сессии не сохранены"}
+                {active.previous
+                  ? ` · было ${active.previous.sets.map(formatSetPerformance).join(" · ")}`
+                  : " · первая запись"}
               </AppText>
-              {active.previous ? (
-                <AppText variant="caption" tone="secondary">
-                  В прошлый раз:{" "}
-                  {active.previous.sets.map(formatSetPerformance).join(" · ")}
-                </AppText>
-              ) : (
-                <AppText variant="caption" tone="secondary">
-                  Первая запись этого упражнения
-                </AppText>
-              )}
             </View>
+
             {current ? (
               <SetLogRow
                 key={current.id}
@@ -314,10 +268,11 @@ export default function StrengthSessionScreen() {
                 />
                 <AppText variant="subtitle">Упражнение записано</AppText>
                 <AppText variant="caption" tone="secondary">
-                  Можно изменить подход или перейти дальше.
+                  Выбери подход ниже, чтобы поправить, или иди дальше.
                 </AppText>
               </AppCard>
             )}
+
             <View style={styles.sets}>
               {active.sets.map((set) => (
                 <Pressable
@@ -380,6 +335,7 @@ export default function StrengthSessionScreen() {
                 <Ionicons name="add" size={18} color={colors.ink} />
               </Pressable>
             </View>
+
             <View style={styles.navigation}>
               <AppButton
                 label="Назад"
@@ -390,19 +346,14 @@ export default function StrengthSessionScreen() {
               />
               <AppButton
                 label={
-                  activeIndex < groups.length - 1
-                    ? active.completed === active.sets.length
-                      ? "Дальше"
-                      : "Другое упражнение"
-                    : "К итогам"
+                  activeIndex < groups.length - 1 ? "Дальше" : "К итогам"
                 }
-                variant="secondary"
-                style={styles.flex}
                 onPress={() =>
                   activeIndex < groups.length - 1
                     ? select(activeIndex + 1)
                     : finish()
                 }
+                style={styles.flex}
               />
             </View>
           </>
@@ -428,20 +379,22 @@ export default function StrengthSessionScreen() {
             )}
           </View>
         )}
+
         <AppButton
-          label="Завершить тренировку"
+          label="Завершить"
           variant="ghost"
           onPress={finish}
           testID="strength-finish"
         />
       </FormScrollView>
+
       <SwipeToDismissSheet
         visible={listOpen}
         onClose={() => setListOpen(false)}
         testID="session-exercise-sheet"
       >
         <FormScrollView variant="sheet" contentContainerStyle={styles.sheet}>
-          <AppText variant="title">Эта тренировка</AppText>
+          <AppText variant="title">Упражнения</AppText>
           {groups.map((group, index) => (
             <Pressable
               key={group.exerciseId}
@@ -458,7 +411,7 @@ export default function StrengthSessionScreen() {
                   {group.plan?.name ?? names[group.exerciseId] ?? "Упражнение"}
                 </AppText>
                 <AppText variant="caption" tone="secondary">
-                  {group.completed}/{group.sets.length} подходов
+                  {group.completed}/{group.sets.length}
                 </AppText>
               </View>
               <Ionicons name="arrow-forward" size={18} color={colors.ink} />
@@ -479,7 +432,7 @@ export default function StrengthSessionScreen() {
             onPress={() =>
               confirmAction(
                 "Прервать тренировку?",
-                "Записанные подходы останутся в истории. Чтобы продолжить позже, достаточно выйти с экрана.",
+                "Записанные подходы останутся. Продолжить можно с карточки в неделе.",
                 {
                   destructive: true,
                   confirmLabel: "Прервать",
@@ -494,39 +447,9 @@ export default function StrengthSessionScreen() {
               )
             }
           />
-          <AppButton
-            label="Закрыть список"
-            variant="ghost"
-            onPress={() => setListOpen(false)}
-          />
         </FormScrollView>
       </SwipeToDismissSheet>
-      <SwipeToDismissSheet
-        visible={infoOpen}
-        onClose={() => setInfoOpen(false)}
-      >
-        <FormScrollView variant="sheet" contentContainerStyle={styles.sheet}>
-          <AppText variant="title">Ориентиры</AppText>
-          <AppText variant="subtitle">{name}</AppText>
-          <AppText variant="body">
-            {plan
-              ? `${plan.targetSets} подхода · ${repsRangeLabel(plan)} повторений · отдых ${plan.restSec ?? 90} с`
-              : "Для этой сессии нет сохранённого описания плана."}
-          </AppText>
-          {plan?.notes ? <AppText variant="body">{plan.notes}</AppText> : null}
-          {session.planNotes ? (
-            <AppText variant="body">{session.planNotes}</AppText>
-          ) : null}
-          <AppText variant="caption" tone="secondary">
-            План — ориентир. Записывай фактические значения; незаписанный подход
-            не считается выполненным.
-          </AppText>
-          <AppButton
-            label="Вернуться к упражнению"
-            onPress={() => setInfoOpen(false)}
-          />
-        </FormScrollView>
-      </SwipeToDismissSheet>
+
       <SessionFinishSheet
         visible={finishOpen}
         title={session.title}
@@ -545,26 +468,33 @@ export default function StrengthSessionScreen() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  content: { padding: space.screen, gap: space.md },
-  rest: { paddingHorizontal: space.screen, paddingTop: space.sm },
+  content: { padding: space.screen, gap: space.lg, paddingBottom: space.xxl },
   emptySession: { gap: space.sm },
   flex: { flex: 1, minWidth: 0, gap: space.xs },
-  progressHead: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  hero: {
+    gap: space.md,
+    paddingBottom: space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  heroTop: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  eyebrow: {
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontWeight: "600",
+  },
   progressTrack: {
-    height: 4,
+    height: 3,
     borderRadius: radius.pill,
     backgroundColor: colors.border,
     overflow: "hidden",
   },
   progressFill: { height: "100%", backgroundColor: colors.ink },
-  exerciseHead: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: space.sm,
-    marginTop: space.md,
-  },
+  exerciseBlock: { gap: space.xs },
+  exerciseTitle: { letterSpacing: -0.5 },
   iconButton: {
     width: touchMin,
     minHeight: touchMin,
@@ -573,7 +503,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  context: { gap: space.xs },
   sets: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   setPill: {
     minWidth: touchMin,

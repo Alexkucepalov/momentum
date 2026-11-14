@@ -88,15 +88,12 @@ export default function StrengthHubScreen() {
           testID="hub-program"
         />
       </AppCard>
-      {inProgress.map((s) => (
+      {inProgress.slice(0, 1).map((s) => (
         <AppCard key={s.id} style={styles.activeCard}>
           <AppText variant="label" tone="muted">
-            Черновик
+            Незавершённая
           </AppText>
           <AppText variant="subtitle">{s.title}</AppText>
-          <AppText variant="caption" tone="muted">
-            Можно продолжить после перезапуска
-          </AppText>
           <AppButton
             label="Продолжить"
             onPress={() => router.push(strengthSessionHref(s.id))}
