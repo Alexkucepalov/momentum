@@ -8,13 +8,11 @@ import { localDateKey } from "../../../../src/storage/validation";
 import type { FlexibleHabit } from "../../../../src/storage/types";
 import { CopyYesterdayButton } from "@/src/components/CopyYesterdayButton";
 import { DaySwipeArea } from "@/src/components/DaySwipeArea";
-import { FlashBar } from "@/src/components/FlashBar";
 import { FormScrollView } from "@/src/components/FormScrollView";
 import { KcalRing } from "@/src/components/KcalRing";
 import { ScreenFooter } from "@/src/components/ScreenFooter";
 import { StatCards } from "@/src/components/StatCards";
 import { TodayChecklist } from "@/src/components/TodayChecklist";
-import { UndoBar } from "@/src/components/UndoBar";
 import { DayCalendarSheet } from "@/src/features/calendar/DayCalendarSheet";
 import { AddFoodSheet } from "@/src/features/diary/AddFoodSheet";
 import { BarcodeLookupSheet } from "@/src/features/diary/BarcodeLookupSheet";
@@ -22,7 +20,7 @@ import { DiaryDayHeader } from "@/src/features/diary/DiaryDayHeader";
 import { FoodQuickStrips } from "@/src/features/diary/FoodQuickStrips";
 import { EntryAmountSheet } from "@/src/features/diary/EntryAmountSheet";
 import { WaterEntrySheet } from "@/src/features/diary/WaterEntrySheet";
-import { TodayHabitValueSheet } from "@/src/features/diary/TodayHabitValueSheet";
+import { HabitDayValueSheet } from "@/src/features/habits/HabitDayValueSheet";
 import { useQuickFood } from "@/src/features/diary/useQuickFood";
 import type { AddFoodTab } from "@/src/features/diary/addFood/types";
 import { strengthSessionHref } from "@/src/features/strength/StrengthEntryCard";
@@ -315,7 +313,7 @@ export default function TodayScreen() {
           if (quick.repeating) quick.repeat(quick.repeating, amount);
         }}
       />
-      <TodayHabitValueSheet
+      <HabitDayValueSheet
         habit={habit}
         value={habit ? repo.flexibleHabitDayValue(habit.id, dateLocal) : 0}
         onClose={() => setHabit(null)}
@@ -326,8 +324,8 @@ export default function TodayScreen() {
           }
         }}
       />
-      <FlashBar />
-      <UndoBar />
+
+
     </View>
   );
 }

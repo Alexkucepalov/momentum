@@ -95,7 +95,7 @@ export default function StrengthSessionScreen() {
               : `${doneCount} из ${total || '—'} подходов`}
         </AppText>
         {isLive && total > 0 ? (
-          <View style={styles.progressTrack} accessibilityLabel={`Прогресс ${doneCount} из ${total}`}>
+          <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityLabel="Прогресс тренировки" accessibilityValue={{ min: 0, max: total, now: doneCount }} aria-valuemin={0} aria-valuemax={total} aria-valuenow={doneCount}>
             <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
           </View>
         ) : null}

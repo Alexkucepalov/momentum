@@ -1,7 +1,7 @@
+import { RecipeImage } from '@/src/features/recipes/RecipeImage';
 import { useState } from 'react';
 import {
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,9 +15,8 @@ import { ConfirmPortionSheet } from '@/src/features/diary/ConfirmPortionSheet';
 import { RecipeNutritionSummary } from '@/src/features/recipes/RecipeNutritionSummary';
 import { RecookRecipeSheet } from '@/src/features/recipes/RecookRecipeSheet';
 import { useAddGuard } from '@/src/hooks/useAddGuard';
+import { confirmAction } from '@/src/utils/confirmAction';
 import { useData, useAnyRevision } from '@/src/state/DataContext';
-import { FlashBar } from '@/src/components/FlashBar';
-import { UndoBar } from '@/src/components/UndoBar';
 import {
   AppButton,
   AppCard,
@@ -58,29 +57,24 @@ export default function RecipeDetailScreen() {
   }
 
   const onDelete = () => {
-    Alert.alert('Удалить рецепт?', 'Записи дневника с этим рецептом останутся как были.', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить',
-        style: 'destructive',
-        onPress: () => {
-          repo.softDeleteRecipe(recipe.id);
-          refresh();
-          showFlash('Рецепт удалён');
-          router.replace('/recipes');
-        },
+    confirmAction('Удалить рецепт?', 'Записи дневника с этим рецептом останутся как были.', {
+      confirmLabel: 'Удалить', destructive: true, onConfirm: () => {
+        repo.softDeleteRecipe(recipe.id);
+        refresh();
+        setUndo({ message: 'Рецепт удалён', action: () => repo.restoreRecipe(recipe.id) });
+        router.replace('/recipes');
       },
-    ]);
+    });
   };
 
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {recipe.photoUri ? (
-          <Image
-            source={{ uri: recipe.photoUri }}
+          <RecipeImage
+            uri={recipe.photoUri}
             style={styles.hero}
-            accessibilityLabel={`Фото ${recipe.name}`}
+            label={`Фото ${recipe.name}`}
           />
         ) : (
           <View style={[styles.hero, styles.heroEmpty]}>
@@ -230,8 +224,8 @@ export default function RecipeDetailScreen() {
           router.replace(`/recipes/${batch.id}`);
         }}
       />
-      <FlashBar />
-      <UndoBar />
+
+
     </View>
   );
 }

@@ -1,0 +1,131 @@
+{
+  "env": "node",
+  "node": "v24.22.1",
+  "measuredAt": "2026-11-14T08:13:30.665Z",
+  "note": "Not Android emulator or physical device",
+  "rows": [
+    {
+      "label": "seed D100",
+      "n": 3,
+      "p50_ms": 1.865,
+      "p95_ms": 37.081,
+      "max_ms": 37.081
+    },
+    {
+      "label": "parse+validate D100",
+      "n": 10,
+      "p50_ms": 9.121,
+      "p95_ms": 34.211,
+      "max_ms": 34.211
+    },
+    {
+      "label": "serialize D100",
+      "n": 20,
+      "p50_ms": 0.798,
+      "p95_ms": 0.933,
+      "max_ms": 0.949
+    },
+    {
+      "label": "dailyTotals D100",
+      "n": 50,
+      "p50_ms": 0.005,
+      "p95_ms": 0.046,
+      "max_ms": 1.06
+    },
+    {
+      "label": "unifiedSearch \"ов\" D100",
+      "n": 30,
+      "p50_ms": 0.26,
+      "p95_ms": 0.988,
+      "max_ms": 25.64
+    },
+    {
+      "label": "snapshot bytes D100",
+      "bytes": 119228,
+      "entries": 100,
+      "products": 248
+    },
+    {
+      "label": "seed D1k",
+      "n": 3,
+      "p50_ms": 9.093,
+      "p95_ms": 9.266,
+      "max_ms": 9.266
+    },
+    {
+      "label": "parse+validate D1k",
+      "n": 10,
+      "p50_ms": 6.984,
+      "p95_ms": 55.739,
+      "max_ms": 55.739
+    },
+    {
+      "label": "serialize D1k",
+      "n": 20,
+      "p50_ms": 3.151,
+      "p95_ms": 3.366,
+      "max_ms": 32.779
+    },
+    {
+      "label": "dailyTotals D1k",
+      "n": 50,
+      "p50_ms": 0.025,
+      "p95_ms": 0.053,
+      "max_ms": 0.071
+    },
+    {
+      "label": "unifiedSearch \"ов\" D1k",
+      "n": 30,
+      "p50_ms": 0.281,
+      "p95_ms": 0.351,
+      "max_ms": 0.408
+    },
+    {
+      "label": "snapshot bytes D1k",
+      "bytes": 487853,
+      "entries": 1000,
+      "products": 398
+    },
+    {
+      "label": "seed D10k",
+      "n": 3,
+      "p50_ms": 33.799,
+      "p95_ms": 42.775,
+      "max_ms": 42.775
+    },
+    {
+      "label": "parse+validate D10k",
+      "n": 10,
+      "p50_ms": 62.698,
+      "p95_ms": 99.817,
+      "max_ms": 99.817
+    },
+    {
+      "label": "serialize D10k",
+      "n": 20,
+      "p50_ms": 9.961,
+      "p95_ms": 26.022,
+      "max_ms": 34.572
+    },
+    {
+      "label": "dailyTotals D10k",
+      "n": 50,
+      "p50_ms": 0.184,
+      "p95_ms": 0.493,
+      "max_ms": 0.773
+    },
+    {
+      "label": "unifiedSearch \"ов\" D10k",
+      "n": 30,
+      "p50_ms": 0.379,
+      "p95_ms": 0.415,
+      "max_ms": 0.512
+    },
+    {
+      "label": "snapshot bytes D10k",
+      "bytes": 3831890,
+      "entries": 10000,
+      "products": 698
+    }
+  ]
+}

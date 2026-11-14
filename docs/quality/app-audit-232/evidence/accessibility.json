@@ -1,0 +1,193 @@
+{
+  "engine": "axe-core 4.10.3 / Chromium",
+  "pages": [
+    {
+      "route": "/",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 16
+        }
+      ],
+      "passes": 21
+    },
+    {
+      "route": "/food",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 12
+        }
+      ],
+      "passes": 20
+    },
+    {
+      "route": "/activity",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 21
+        }
+      ],
+      "passes": 20
+    },
+    {
+      "route": "/activity?segment=sleep",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 10
+        }
+      ],
+      "passes": 20
+    },
+    {
+      "route": "/progress",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-prohibited-attr",
+          "nodes": 4
+        },
+        {
+          "id": "color-contrast",
+          "nodes": 5
+        }
+      ],
+      "passes": 20
+    },
+    {
+      "route": "/profile",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 20
+        }
+      ],
+      "passes": 20
+    },
+    {
+      "route": "/recipes",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 7
+        }
+      ],
+      "passes": 24
+    },
+    {
+      "route": "/recipes/new",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 2
+        }
+      ],
+      "passes": 25
+    },
+    {
+      "route": "/plan",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 16
+        }
+      ],
+      "passes": 21
+    },
+    {
+      "route": "/plan/week",
+      "violations": [],
+      "incomplete": [],
+      "passes": 23
+    },
+    {
+      "route": "/plan/pantry",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 1
+        }
+      ],
+      "passes": 24
+    },
+    {
+      "route": "/plan/shop",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 1
+        }
+      ],
+      "passes": 26
+    },
+    {
+      "route": "/plan/budget",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-prohibited-attr",
+          "nodes": 1
+        }
+      ],
+      "passes": 25
+    },
+    {
+      "route": "/plan/receipt",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 1
+        }
+      ],
+      "passes": 24
+    },
+    {
+      "route": "/plan/stores",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "nodes": 9
+        }
+      ],
+      "passes": 23
+    },
+    {
+      "route": "/garmin",
+      "violations": [],
+      "incomplete": [],
+      "passes": 25
+    },
+    {
+      "route": "/garmin/data",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-prohibited-attr",
+          "nodes": 1
+        }
+      ],
+      "passes": 22
+    },
+    {
+      "route": "/strength",
+      "violations": [],
+      "incomplete": [],
+      "passes": 22
+    }
+  ],
+  "native_talkback_pass": false
+}

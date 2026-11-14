@@ -10,7 +10,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.shell, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
-      <View style={styles.dock}>
+      <View style={styles.dock} accessibilityRole="tablist" accessibilityLabel="Разделы приложения">
         {state.routes.filter((r) => r.name !== 'sleep').map((route) => {
           const options = descriptors[route.key]!.options;
           const selected = state.routes[state.index]?.key === route.key;
@@ -23,6 +23,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               accessibilityRole="tab"
               accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
               accessibilityState={{ selected }}
+              aria-selected={selected}
               onPress={() => {
                 const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 if (!selected && !event.defaultPrevented) navigation.navigate(route.name, route.params);

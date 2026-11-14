@@ -44,7 +44,7 @@ export function SetLogRow({ set, exerciseName, isCurrent, readOnly = false, onCo
   const canRepeat = set.weightKg == null && set.reps == null && (set.targetWeightKg != null || set.targetReps != null);
   return (
     <View style={styles.current} accessibilityLabel={`${exerciseName}, подход ${set.setIndex}${isCurrent ? ', текущий' : ''}`}>
-      <View style={styles.top}><AppText variant="caption">Подход {set.setIndex}{isCurrent ? ' · сейчас' : ''}</AppText>{canRepeat ? <Pressable onPress={() => onComplete({ weightKg: set.targetWeightKg, reps: set.targetReps })} style={styles.repeat} accessibilityRole="button" accessibilityLabel={`Повторить прошлый ${fmt(set.targetWeightKg)} на ${fmt(set.targetReps)}`} testID={`set-repeat-${set.id}`}><AppText variant="caption" tone="secondary">Как в прошлый</AppText></Pressable> : null}</View>
+      <View style={styles.top}><AppText variant="caption">Подход {set.setIndex}{isCurrent ? ' · сейчас' : ''}</AppText>{canRepeat ? <Pressable onPress={() => onComplete({ weightKg: set.targetWeightKg, reps: set.targetReps })} style={styles.repeat} accessibilityRole="button" accessibilityLabel={`Записать подсказку: ${fmt(set.targetWeightKg)} кг, ${fmt(set.targetReps)} повторений`} testID={`set-repeat-${set.id}`}><AppText variant="caption" tone="secondary">Записать подсказку</AppText></Pressable> : null}</View>
       <View style={styles.fields}>
         <View style={styles.field}><Field label="Вес, кг" value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="—" style={styles.input} testID={`set-weight-${set.id}`} /></View>
         <View style={styles.field}><Field label="Повторения" value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="—" style={styles.input} testID={`set-reps-${set.id}`} /></View>
@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
   saved: { minHeight: touchMin, flexDirection: 'row', alignItems: 'center', gap: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingVertical: space.sm },
   savedValue: { flex: 1, textAlign: 'right', fontWeight: '500' },
   current: { borderRadius: radius.card, backgroundColor: colors.trainingStrength, padding: space.lg, gap: space.md, marginVertical: space.sm },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm }, repeat: { minHeight: touchMin, justifyContent: 'center' },
+  top: { flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm }, repeat: { minHeight: touchMin, justifyContent: 'center' },
   fields: { flexDirection: 'row', gap: space.md }, field: { flex: 1, minWidth: 0 }, input: { fontSize: 32, height: 64, textAlign: 'center', borderWidth: 0, backgroundColor: colors.surface, letterSpacing: -1 },
 });

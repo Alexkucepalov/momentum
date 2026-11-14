@@ -303,7 +303,7 @@ export default function PurchaseImportScreen() {
                   }
                   style={styles.actionChip}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: line.excluded }}
+                  accessibilityState={{ checked: line.excluded }} aria-checked={line.excluded}
                   accessibilityLabel={`Исключить позицию ${i + 1}`}
                 >
                   <Text style={styles.link}>{line.excluded ? 'Исключено' : 'Исключить'}</Text>
@@ -316,7 +316,7 @@ export default function PurchaseImportScreen() {
                   }
                   style={styles.actionChip}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: line.isFood }}
+                  accessibilityState={{ checked: line.isFood }} aria-checked={line.isFood}
                   accessibilityLabel={`Еда позиция ${i + 1}`}
                 >
                   <Text style={styles.link}>{line.isFood ? 'Еда → запасы' : 'Не еда'}</Text>

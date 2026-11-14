@@ -10,7 +10,6 @@ import { parseExportJson, summarizeSnapshot } from '../../../../src/domain/impor
 import { localDateKey } from '../../../../src/storage/validation';
 import { asPersistable } from '../../../../src/storage/foodRepository';
 import { clearRecoveryCopies } from '@/src/storage/recoveryCopy';
-import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import { ZeppCsvImportCard } from '@/src/features/weight/ZeppCsvImportCard';
 import { collectDayReportText } from '@/src/features/progress/collectDayReport';
@@ -28,6 +27,7 @@ import {
 } from '@/src/design-system';
 import { bumpLocalDataWipeEpoch } from '../../../../src/domain/localDataWipeEpoch';
 import { clearGarminApiKey, getGarminApiKey } from '@/src/features/garmin/secureKeyStore';
+import { clearRecipePhotos } from '@/src/media/recipePhoto';
 import { clearTodayWidgetPayload } from '@/src/widgets/syncTodayWidget';
 import { alertMessage, confirmAction } from '@/src/utils/confirmAction';
 
@@ -301,8 +301,11 @@ export default function ProfileScreen() {
             setUndo(null);
             try {
               repo.deleteAllUserData();
-              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload(), clearRecoveryCopies()]);
+              setDateLocal(localDateKey(new Date(), repo.getProfile().timezone));
+              refresh('all');
+              const cleanup = await Promise.allSettled([clearGarminApiKey(), clearTodayWidgetPayload(), clearRecoveryCopies(), clearRecipePhotos()]);
               asPersistable(repo).flushPersist();
+              router.replace('/');
               refresh('all');
               if (cleanup.some(result => result.status === 'rejected')) showFlash('Часть локальных файлов или ключ Garmin удалить не удалось. Повтори удаление.');
               else showFlash('Локальные данные и ключ Garmin очищены');
@@ -573,7 +576,8 @@ export default function ProfileScreen() {
           />
           {privacyOpen ? (
             <View style={styles.privacyBody}>
-              <PrivacyLine text="Дневник, вес и привычки — только на этом устройстве." />
+              <PrivacyLine text="Дневник, вес и привычки хранятся на устройстве. В Android автоматическое резервное копирование приложения отключено." />
+              <PrivacyLine text="Для переноса используй экспорт JSON. Фото рецептов в JSON не входят." />
               <PrivacyLine text="Штрихкод: в сеть уходит только код (Open Food Facts)." />
               <PrivacyLine text="Garmin-ключ в SecureStore, не попадает в экспорт." />
               <PrivacyLine text="Нет аккаунта, нет обязательного AI, нет рассылки." />
@@ -630,7 +634,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      <FlashBar />
     </View>
   );
 }

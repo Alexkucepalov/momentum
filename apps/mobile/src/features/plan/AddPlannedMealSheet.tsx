@@ -28,6 +28,7 @@ export function AddPlannedMealSheet({
   onClose: () => void;
   onConfirm: (pick: AddPick, grams: number) => void;
 }) {
+  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [gramsRaw, setGramsRaw] = useState('200');
   const [picked, setPicked] = useState<AddPick | null>(null);
@@ -43,6 +44,7 @@ export function AddPlannedMealSheet({
   );
 
   const resetAndClose = () => {
+    setError(null);
     setQuery('');
     setGramsRaw('200');
     setPicked(null);
@@ -50,11 +52,14 @@ export function AddPlannedMealSheet({
   };
 
   const submit = () => {
-    if (!picked) return;
-    const grams = Number(gramsRaw.replace(',', '.'));
-    if (!Number.isFinite(grams) || grams <= 0) return;
-    onConfirm(picked, grams);
-    resetAndClose();
+    try {
+      setError(null);
+      if (!picked) throw new Error('Выбери продукт или рецепт');
+      const grams = Number(gramsRaw.replace(',', '.'));
+      if (!gramsRaw.trim() || !Number.isFinite(grams) || grams <= 0) throw new Error('Укажи порцию больше нуля');
+      onConfirm(picked, grams);
+      resetAndClose();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось добавить в план'); }
   };
 
   return (
@@ -121,6 +126,7 @@ export function AddPlannedMealSheet({
           )}
         </ScrollView>
 
+        {error ? <AppText tone="danger" accessibilityRole="alert">{error}</AppText> : null}
         <AppButton label="Добавить в план" onPress={submit} disabled={!picked} />
       </View>
     </SwipeToDismissSheet>
@@ -146,6 +152,7 @@ function PickRow({
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      aria-pressed={selected}
       accessibilityLabel={label}
     >
       <AppText variant="body" style={selected ? styles.pickTextOn : undefined}>

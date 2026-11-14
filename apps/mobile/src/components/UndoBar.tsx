@@ -7,9 +7,9 @@ import { colors, radius, space, type } from "../theme/tokens";
 import { useData } from "../state/DataContext";
 
 /** Approx tab bar content height (icons+label) above system inset. */
-const TAB_BAR_CONTENT = 52;
 
-export function UndoBar() {
+
+export function UndoBar({ bottomOffset = 56 }: { bottomOffset?: number }) {
   const { undo, performUndo, setUndo } = useData();
   const insets = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
@@ -24,7 +24,7 @@ export function UndoBar() {
 
   if (!undo) return null;
 
-  const bottom = TAB_BAR_CONTENT + Math.max(insets.bottom, space.sm) + space.sm;
+  const bottom = bottomOffset + Math.max(insets.bottom, space.sm);
 
   return (
     <View
@@ -32,7 +32,7 @@ export function UndoBar() {
       accessibilityLiveRegion="polite"
       testID="diary-undo"
     >
-      <Text style={styles.message} numberOfLines={1}>
+      <Text style={styles.message} numberOfLines={3}>
         {undo.message}
       </Text>
       <Pressable

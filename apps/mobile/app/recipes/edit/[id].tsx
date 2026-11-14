@@ -1,3 +1,4 @@
+import { getLocalDataWipeEpoch } from '../../../../../src/domain/localDataWipeEpoch';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -52,29 +53,16 @@ export default function EditRecipeScreen() {
               }))
             : [emptyIngredient()],
         }}
-        onSubmit={(values) => {
-          void (async () => {
-            let photoUri = values.photoUri;
-            if (photoUri && photoUri !== recipe.photoUri) {
-              try {
-                photoUri = await persistRecipePhoto(photoUri, recipe.id);
-              } catch {
-                // keep uri
-              }
-            }
-            repo.updateRecipe(recipe.id, {
-              name: values.name,
-              cookedYieldG: values.cookedYieldG,
-              description: values.description,
-              instructions: values.instructions,
-              photoUri,
-              nutritionPer100g: values.nutritionPer100g,
-              ingredients: values.ingredients,
-            });
-            refresh();
-            showFlash('Рецепт обновлён');
-            router.replace(`/recipes/${recipe.id}`);
-          })();
+        onSubmit={async (values) => {
+          const epoch = getLocalDataWipeEpoch();
+          const photoUri = values.photoUri && values.photoUri !== recipe.photoUri
+            ? await persistRecipePhoto(values.photoUri, recipe.id)
+            : values.photoUri;
+          if (epoch !== getLocalDataWipeEpoch()) throw new Error('Данные изменились. Открой рецепт заново.');
+          repo.updateRecipe(recipe.id, { ...values, photoUri });
+          refresh();
+          showFlash('Рецепт обновлён');
+          router.replace(`/recipes/${recipe.id}`);
         }}
       />
     </FormScrollView>

@@ -1,5 +1,6 @@
+import { RecipeImage } from '@/src/features/recipes/RecipeImage';
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
@@ -134,7 +135,7 @@ export function RecipesPanel({
               accessibilityLabel={`Рецепт ${r.name}, выбрать порцию`}
             >
               {r.photoUri ? (
-                <Image source={{ uri: r.photoUri }} style={styles.thumb} />
+                <RecipeImage uri={r.photoUri} style={styles.thumb} compact />
               ) : (
                 <View style={[styles.thumb, styles.thumbEmpty]}>
                   <Ionicons name="restaurant-outline" size={20} color={colors.textMuted} />

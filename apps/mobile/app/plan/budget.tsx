@@ -29,7 +29,7 @@ const CATS: { id: FoodExpenseCategory; label: string }[] = [
  * Budget: plan / fact / cart estimate / eaten estimate — never live store prices (N8/N9/N12).
  */
 export default function BudgetScreen() {
-  const { repo, dateLocal, refresh, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   void revision;
 
@@ -75,16 +75,17 @@ export default function BudgetScreen() {
   const addExpense = () => {
     setError(null);
     try {
+      if (!amount.trim()) throw new Error('Укажи сумму расхода');
       const n = Number(amount.replace(',', '.'));
       if (!Number.isFinite(n) || n < 0) throw new Error('Сумма: число ≥ 0');
-      repo.addFoodExpense({
+      const expense = repo.addFoodExpense({
         amountRub: n,
         category,
         spentOn: dateLocal,
       });
       setAmount('');
       refresh();
-      showFlash('Расход записан');
+      setUndo({ message: 'Расход записан', action: () => repo.softDeleteFoodExpense(expense.id) });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
     }
@@ -94,7 +95,7 @@ export default function BudgetScreen() {
     <FormScrollView contentContainerStyle={styles.content} testID="plan-budget">
       <AppText variant="body" tone="secondary" style={styles.lead}>
         Четыре разных числа: план (лимит), факт (твои расходы), корзина (оценка списка), съеденное
-        (оценка по твоим ценам). Live-цен магазинов нет.
+        (оценка по твоим ценам). Live-цен магазинов нет. Для оценки съеденного нужны цены с известной единицей; граммы не переводим в мл или штуки.
       </AppText>
 
       <AppText variant="title" style={styles.month}>
@@ -232,7 +233,7 @@ export default function BudgetScreen() {
               onPress={() => {
                 repo.softDeleteFoodExpense(e.id);
                 refresh();
-                showFlash('Расход удалён');
+                setUndo({ message: 'Расход удалён', action: () => repo.restoreFoodExpense(e.id) });
               }}
             />
           </AppCard>

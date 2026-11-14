@@ -168,7 +168,7 @@ export function HabitFormFields({
 
       <Text style={[styles.fieldLabel, styles.autoLabel]}>Отмечать автоматически?</Text>
       <Text style={styles.fieldHint}>
-        Только если на устройстве уже есть подходящая тренировка — ничего не выдумываем.
+        После записи подходящей тренировки. Автоматически считаем отметки, минуты длительности или количество тренировок. Другие единицы, например км, вводи вручную. Силовые минуты включают отдых.
       </Text>
       <View style={styles.autoRow}>
         {AUTO_OPTIONS.map((opt) => {

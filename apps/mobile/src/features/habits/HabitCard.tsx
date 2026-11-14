@@ -12,6 +12,8 @@ import { HabitWeekStrip } from './HabitWeekStrip';
 
 export function HabitCard({
   name,
+  dayLabel = 'выбранный день',
+  paused = false,
   kind,
   unit,
   completed,
@@ -40,6 +42,8 @@ export function HabitCard({
   onPause,
 }: {
   name: string;
+  dayLabel?: string;
+  paused?: boolean;
   kind: HabitKind;
   unit: string | null;
   completed: number;
@@ -123,7 +127,7 @@ export function HabitCard({
             onPress={onPause}
             style={styles.iconBtn}
             accessibilityRole="button"
-            accessibilityLabel={`Пауза ${name}`}
+            accessibilityLabel={`${paused ? 'Возобновить' : 'Приостановить'} ${name}`}
             hitSlop={6}
           >
             <Ionicons name="pause-outline" size={18} color={colors.textSecondary} />
@@ -149,6 +153,7 @@ export function HabitCard({
         </View>
       </View>
 
+      {paused ? <Text style={styles.pausedHint}>На паузе. Возобнови привычку, чтобы отмечать дни.</Text> : null}
       <HabitProgressBar completed={completed} target={target} />
       <HabitWeekStrip marks={marks} />
 
@@ -157,18 +162,22 @@ export function HabitCard({
           <Pressable
             style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}
             onPress={onAddQuantity}
+            disabled={paused}
+            aria-disabled={paused}
             accessibilityRole="button"
-            accessibilityLabel={`Добавить к ${name}`}
+            accessibilityLabel={`Изменить количество ${name}`}
           >
             <Ionicons name="add-circle-outline" size={20} color={colors.text} />
-            <Text style={styles.toggleText}>+ сегодня{unit ? ` · ${unit}` : ''}</Text>
+            <Text style={styles.toggleText}>Значение за день{unit ? ` · ${unit}` : ''}</Text>
           </Pressable>
           {loggedToday ? (
             <Pressable
               style={({ pressed }) => [styles.clearBtn, pressed && styles.pressed]}
               onPress={onToggleToday}
+            disabled={paused}
+            aria-disabled={paused}
               accessibilityRole="button"
-              accessibilityLabel={`Сбросить сегодня ${name}`}
+              accessibilityLabel={`Сбросить ${dayLabel} ${name}`}
             >
               <Text style={styles.clearText}>Сбросить день</Text>
             </Pressable>
@@ -182,9 +191,12 @@ export function HabitCard({
             pressed && styles.pressed,
           ]}
           onPress={onToggleToday}
+            disabled={paused}
+            aria-disabled={paused}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: loggedToday }}
-          accessibilityLabel={`${name} сегодня`}
+          aria-checked={loggedToday}
+          accessibilityLabel={`${name} · ${dayLabel}`}
         >
           <Ionicons
             name={loggedToday ? 'checkmark-circle' : 'ellipse-outline'}
@@ -192,7 +204,7 @@ export function HabitCard({
             color={loggedToday ? colors.primaryButtonText : colors.text}
           />
           <Text style={[styles.toggleText, loggedToday && styles.toggleTextOn]}>
-            {loggedToday ? 'Сделано сегодня' : 'Отметить сегодня'}
+            {loggedToday ? 'День отмечен' : 'Отметить день'}
           </Text>
         </Pressable>
       )}
@@ -201,6 +213,7 @@ export function HabitCard({
 }
 
 const styles = StyleSheet.create({
+  pausedHint: { color: colors.textSecondary, fontSize: type.caption, marginBottom: space.sm },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

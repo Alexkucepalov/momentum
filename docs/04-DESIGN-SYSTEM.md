@@ -65,3 +65,11 @@ Dragging changes planned cards only. `swapPlannedActivities` validates both card
 The browser evidence uses the repository's explicitly synthetic fixture, shifted to the QA week. Expo-web screenshots are not an Android device Pass. Device force-stop, TalkBack, large text, keyboard and drag behavior still need physical Android verification before updating device baselines.
 
 Implementation notes and evidence: [fresh-utility/README.md](quality/fresh-utility/README.md), [followup-228/README.md](quality/followup-228/README.md), [today-food-230/README.md](quality/today-food-230/README.md).
+
+### Доводка после аудита #232 — 2026-11-14
+
+Один `FeedbackHost` размещается в корневом layout: вложенные маршруты не создают собственные FlashBar/UndoBar. Положение учитывает нижнюю навигацию и CTA питания. Undo принадлежит DataProvider, содержит область обновления и теряет силу после wipe/import. Новый экран или модальная форма не должны скрывать ошибку: в формах показываем её рядом с вводом.
+
+Токен `textMuted` уточнён до контраста AA также на поверхности силовой тренировки; локальные цветовые исключения не нужны. Нижняя навигация имеет группу вкладок; tab/checkbox/radio передают выбранное состояние и в native accessibilityState, и в ARIA. Прогресс силовой сессии — progressbar с диапазоном и текущим значением.
+
+Для недоступного локального фото рецепта используется общая заглушка `RecipeImage`. Фото из импортированного JSON не загружается с произвольного внешнего URL.

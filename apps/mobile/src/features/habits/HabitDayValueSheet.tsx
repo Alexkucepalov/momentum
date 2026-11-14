@@ -12,7 +12,7 @@ import {
 import { FormScrollView } from "@/src/components/FormScrollView";
 import { SwipeToDismissSheet } from "@/src/components/SwipeToDismissSheet";
 import type { FlexibleHabit } from "../../../../../src/storage/types";
-export function TodayHabitValueSheet({
+export function HabitDayValueSheet({
   habit,
   value,
   onClose,

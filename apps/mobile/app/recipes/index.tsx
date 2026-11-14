@@ -1,5 +1,6 @@
+import { RecipeImage } from '@/src/features/recipes/RecipeImage';
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
@@ -99,7 +100,7 @@ export default function RecipesIndexScreen() {
           ) : null}
         </View>
 
-        <View style={styles.filters} accessibilityRole="tablist">
+        <View style={styles.filters} accessibilityRole="toolbar">
           {(
             [
               { id: 'all' as const, label: 'Все', count: counts.all },
@@ -197,7 +198,7 @@ function RecipeCard({
       testID={`recipe-card-${recipe.id}`}
     >
       {recipe.photoUri ? (
-        <Image source={{ uri: recipe.photoUri }} style={styles.thumb} />
+        <RecipeImage uri={recipe.photoUri} style={styles.thumb} compact />
       ) : (
         <View style={[styles.thumb, styles.thumbEmpty]}>
           <Ionicons

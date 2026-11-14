@@ -49,7 +49,7 @@ export default function ImportPersonalRecipesScreen() {
     return new Set(
       repo.listRecipes().filter((r) => r.id.startsWith('import:')).map((r) => r.id),
     );
-  }, [repo]);
+  }, [repo, revision]);
 
   const [selected, setSelected] = useState<Set<string>>(() => {
     const next = new Set<string>();
@@ -153,7 +153,7 @@ export default function ImportPersonalRecipesScreen() {
                 onPress={() => setScope(s.id)}
                 style={[styles.scopeChip, on && styles.scopeChipOn]}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
+                accessibilityState={{ selected: on }} aria-selected={on}
                 accessibilityLabel={s.label}
               >
                 <Ionicons
@@ -240,7 +240,7 @@ export default function ImportPersonalRecipesScreen() {
                   pressed && styles.pressed,
                 ]}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: on, disabled: blocked }}
+                accessibilityState={{ checked: on, disabled: blocked }} aria-checked={on}
                 accessibilityLabel={`${p.title}. ${statusLabel(p.status, p.verifiedByUser)}${
                   blocked ? '. Нельзя импортировать без грамм' : ''
                 }`}

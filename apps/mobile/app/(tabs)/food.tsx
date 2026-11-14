@@ -23,12 +23,10 @@ import { localDateKey } from "../../../../src/storage/validation";
 import { CopyYesterdayButton } from "@/src/components/CopyYesterdayButton";
 import { DiaryDayHeader } from "@/src/features/diary/DiaryDayHeader";
 import { DaySwipeArea } from "@/src/components/DaySwipeArea";
-import { FlashBar } from "@/src/components/FlashBar";
 import { FormScrollView } from "@/src/components/FormScrollView";
 import { KcalRing } from "@/src/components/KcalRing";
 import { SaveMealModal } from "@/src/components/SaveMealModal";
 import { ScreenFooter } from "@/src/components/ScreenFooter";
-import { UndoBar } from "@/src/components/UndoBar";
 import { ActionMenuSheet } from "@/src/components/ActionMenuSheet";
 import { DayCalendarSheet } from "@/src/features/calendar/DayCalendarSheet";
 import { AddFoodSheet } from "@/src/features/diary/AddFoodSheet";
@@ -512,8 +510,8 @@ export default function FoodScreen() {
           setPortionTarget(null);
         }}
       />
-      <FlashBar />
-      <UndoBar />
+
+
     </View>
   );
 }

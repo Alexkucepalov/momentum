@@ -1,0 +1,12 @@
+{
+  "passed": [
+    "Week plan reacts to add/move/edit/delete and Undo, invalid grams stay in form, diary unchanged",
+    "Quantity habit edits a day total and deletion/Undo preserves history",
+    "Manual weight edit/delete/Undo preserves exact date/source",
+    "Already-loaded browser app can log and Undo with network disabled",
+    "Full wipe clears loaded forms/navigation/Undo and returns to empty Today"
+  ],
+  "errors": [],
+  "platform": "Chromium / Expo web",
+  "native_device_pass": false
+}

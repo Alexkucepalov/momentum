@@ -17,7 +17,7 @@ const MEAL: Record<string, string> = {
 /** Compact «план на сегодня» on Today/Food — log without opening week board. */
 export function TodayPlanStrip() {
   const router = useRouter();
-  const { repo, dateLocal, refresh, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   const allowAdd = useAddGuard();
   void revision;
@@ -43,9 +43,11 @@ export function TodayPlanStrip() {
 
   const log = (m: PlannedMeal) => {
     if (!allowAdd()) return;
-    repo.logPlannedMealToDiary(m.id);
-    refresh();
-    showFlash(`В дневник: ${m.displayName}`);
+    try {
+      const entry = repo.logPlannedMealToDiary(m.id);
+      refresh('all');
+      setUndo({ message: `В дневник: ${m.displayName}`, scope: 'all', action: () => repo.undoPlannedMealLog(m.id, entry.id) });
+    } catch (e) { showFlash(e instanceof Error ? e.message : 'Не удалось записать'); }
   };
 
   return (

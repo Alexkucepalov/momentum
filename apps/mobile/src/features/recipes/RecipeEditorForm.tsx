@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { RecipeImage } from '@/src/features/recipes/RecipeImage';
+import { useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,6 +12,7 @@ import {
   pickRecipePhotoFromLibrary,
   takeRecipePhoto,
 } from '../../media/recipePhoto';
+import { ActionMenuSheet } from '@/src/components/ActionMenuSheet';
 import { AppButton, Field, colors, radius, space, touchMin, type } from '@/src/design-system';
 import { emptyIngredient, type DraftIngredient } from '../diary/addFood/types';
 
@@ -52,7 +54,7 @@ export function RecipeEditorForm({
 }: {
   initial?: RecipeFormInitial;
   submitLabel: string;
-  onSubmit: (values: RecipeFormValues) => void;
+  onSubmit: (values: RecipeFormValues) => void | Promise<void>;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
   const [yieldG, setYieldG] = useState(
@@ -68,6 +70,9 @@ export function RecipeEditorForm({
   const [ingredients, setIngredients] = useState<DraftIngredient[]>(
     initial?.ingredients?.length ? initial.ingredients : [emptyIngredient()],
   );
+  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [photoMenu, setPhotoMenu] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useAutoKcalFromMacros({
@@ -75,7 +80,7 @@ export function RecipeEditorForm({
     fat,
     carbs,
     setKcal,
-    syncFromStart: true,
+    syncFromStart: initial == null,
     seedKey: initial?.name ?? 'new',
   });
 
@@ -88,53 +93,25 @@ export function RecipeEditorForm({
   };
 
   const parseRequired = (raw: string, label: string): number => {
+    if (!raw.trim()) throw new Error(`${label}: укажи массу`);
     const n = Number(String(raw).replace(',', '.'));
     if (!Number.isFinite(n) || n < 0) throw new Error(`${label}: число ≥ 0`);
     return n;
   };
 
-  const attachPhoto = () => {
-    Alert.alert('Фото рецепта', 'Выбери источник', [
-      {
-        text: 'Галерея',
-        onPress: () => {
-          void (async () => {
-            try {
-              const uri = await pickRecipePhotoFromLibrary();
-              if (uri) setPhotoUri(uri);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : 'Не удалось выбрать фото');
-            }
-          })();
-        },
-      },
-      {
-        text: 'Камера',
-        onPress: () => {
-          void (async () => {
-            try {
-              const uri = await takeRecipePhoto();
-              if (uri) setPhotoUri(uri);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : 'Не удалось сделать фото');
-            }
-          })();
-        },
-      },
-      ...(photoUri
-        ? [
-            {
-              text: 'Убрать фото',
-              style: 'destructive' as const,
-              onPress: () => setPhotoUri(null),
-            },
-          ]
-        : []),
-      { text: 'Отмена', style: 'cancel' as const },
-    ]);
+  const choosePhoto = async (camera: boolean) => {
+    try {
+      const uri = await (camera ? takeRecipePhoto() : pickRecipePhotoFromLibrary());
+      if (uri) setPhotoUri(uri);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось выбрать фото');
+    }
   };
 
-  const save = () => {
+  const save = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     try {
       setError(null);
       const nameTrim = name.trim();
@@ -177,7 +154,7 @@ export function RecipeEditorForm({
         throw new Error('Впиши КБЖУ на 100 г готового блюда или добавь ингредиенты');
       }
 
-      onSubmit({
+      await onSubmit({
         name: nameTrim,
         cookedYieldG: cooked,
         description: description.trim() || null,
@@ -188,6 +165,9 @@ export function RecipeEditorForm({
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   };
 
@@ -355,12 +335,13 @@ export function RecipeEditorForm({
       <Text style={styles.blockLabel}>5. Фото (необязательно)</Text>
       <Pressable
         style={styles.photoBox}
-        onPress={attachPhoto}
+        onPress={() => setPhotoMenu(true)}
+        disabled={saving}
         accessibilityRole="button"
         accessibilityLabel={photoUri ? 'Изменить фото рецепта' : 'Добавить фото рецепта'}
       >
         {photoUri ? (
-          <Image source={{ uri: photoUri }} style={styles.photo} accessibilityIgnoresInvertColors />
+          <RecipeImage uri={photoUri} style={styles.photo} />
         ) : (
           <View style={styles.photoEmpty}>
             <Ionicons name="camera-outline" size={22} color={colors.textMuted} />
@@ -374,7 +355,12 @@ export function RecipeEditorForm({
           {error}
         </Text>
       ) : null}
-      <AppButton label={submitLabel} onPress={save} />
+      <AppButton label={saving ? 'Сохраняем…' : submitLabel} onPress={() => { void save(); }} disabled={saving} testID="recipe-save" />
+      <ActionMenuSheet visible={photoMenu} title="Фото рецепта" onClose={() => setPhotoMenu(false)} actions={[
+        { id: 'gallery', label: 'Выбрать из галереи', onPress: () => { void choosePhoto(false); } },
+        { id: 'camera', label: 'Сделать фото', onPress: () => { void choosePhoto(true); } },
+        ...(photoUri ? [{ id: 'remove-photo', label: 'Убрать фото', destructive: true, onPress: () => setPhotoUri(null) }] : []),
+      ]} />
     </View>
   );
 }

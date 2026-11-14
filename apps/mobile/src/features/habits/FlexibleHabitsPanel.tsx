@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText as Text } from '@/src/design-system/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 
 import { buildHabitWeekMarks } from '../../../../../src/domain/habitWeek';
-import type { HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
+import type { FlexibleHabit, HabitAutoSource, HabitKind } from '../../../../../src/storage/types';
 import { EmptyState } from '../../components/EmptyState';
 import { useData, useAnyRevision } from '../../state/DataContext';
 import { colors, radius, space, touchMin, type } from '../../theme/tokens';
 import { HabitCard } from './HabitCard';
 import { HabitFormFields } from './HabitFormFields';
+import { confirmAction } from '@/src/utils/confirmAction';
+import { HabitDayValueSheet } from './HabitDayValueSheet';
 import { AppButton } from '@/src/design-system';
 
 const emptyForm = {
@@ -22,9 +24,10 @@ const emptyForm = {
 };
 
 export function FlexibleHabitsPanel() {
-  const { repo, dateLocal, refresh, showFlash } = useData();
+  const { repo, dateLocal, refresh, showFlash, setUndo } = useData();
   const revision = useAnyRevision();
   void revision;
+  const [quantityHabit, setQuantityHabit] = useState<FlexibleHabit | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [composerOpen, setComposerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +52,7 @@ export function FlexibleHabitsPanel() {
       setForm(emptyForm);
       setComposerOpen(false);
       refresh();
-      showFlash(`Привычка «${habit.name}» добавлена`);
+      setUndo({ message: `Привычка «${habit.name}» добавлена`, action: () => repo.softDeleteFlexibleHabit(habit.id) });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не создано');
     }
@@ -75,6 +78,7 @@ export function FlexibleHabitsPanel() {
     if (!editingId) return;
     try {
       setError(null);
+      const previous = habits.find(h => h.id === editingId)!;
       const updated = repo.updateFlexibleHabit(editingId, {
         name: edit.name,
         timesPerWeek: edit.times,
@@ -85,68 +89,55 @@ export function FlexibleHabitsPanel() {
       });
       setEditingId(null);
       refresh();
-      showFlash(`Обновлено: ${updated.name}`);
+      setUndo({ message: `Обновлено: ${updated.name}`, action: () => repo.updateFlexibleHabit(previous.id, { ...previous }) });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не сохранено');
     }
   };
 
   const remove = (id: string, habitName: string) => {
-    Alert.alert(
-      'Удалить привычку?',
-      `«${habitName}» пропадёт из списка. Отметки за прошлые дни останутся в данных на устройстве.`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: () => {
-            try {
-              repo.softDeleteFlexibleHabit(id);
-              if (editingId === id) setEditingId(null);
-              refresh();
-              showFlash(`Удалено: ${habitName}`);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : 'Не удалено');
-            }
-          },
-        },
-      ],
-    );
+    confirmAction('Удалить привычку?', `«${habitName}» пропадёт из списка. Отметки за прошлые дни останутся на устройстве.`, {
+      confirmLabel: 'Удалить', destructive: true, onConfirm: () => {
+        try {
+          repo.softDeleteFlexibleHabit(id);
+          if (editingId === id) setEditingId(null);
+          refresh('diary');
+          setUndo({ message: `Удалено: ${habitName}`, action: () => repo.restoreFlexibleHabit(id) });
+        } catch (e) { setError(e instanceof Error ? e.message : 'Не удалено'); }
+      },
+    });
   };
 
   const pause = (id: string, habitName: string, paused: boolean) => {
     try {
       repo.updateFlexibleHabit(id, { paused });
-      refresh();
-      showFlash(paused ? `Пауза: ${habitName}` : `Снова в списке: ${habitName}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось');
-    }
+      refresh('diary');
+      setUndo({ message: paused ? `Пауза: ${habitName}` : `Снова в списке: ${habitName}`, action: () => repo.updateFlexibleHabit(id, { paused: !paused }) });
+    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось'); }
   };
 
-  const toggle = (id: string, habitName: string) => {
-    const logged = repo.isFlexibleHabitLogged(id, dateLocal);
-    if (logged) {
-      repo.unlogFlexibleHabit(id, dateLocal);
-      refresh();
-      showFlash(`Снято: ${habitName}`);
-    } else {
-      repo.logFlexibleHabit(id, dateLocal);
-      refresh();
-      showFlash(`Отмечено: ${habitName}`);
-    }
+  const saveDayValue = (habit: FlexibleHabit, value: number) => {
+    const day = dateLocal;
+    const previous = repo.flexibleHabitDayValue(habit.id, day);
+    repo.setFlexibleHabitDayValue(habit.id, day, value);
+    refresh('diary');
+    setUndo({ message: `Обновлён день: ${habit.name}`, action: () => repo.setFlexibleHabitDayValue(habit.id, day, previous) });
   };
-
-  const addQuantity = (id: string, habitName: string, unit: string | null) => {
-    const step = 1;
-    repo.logFlexibleHabit(id, dateLocal, step, 'manual');
-    refresh();
-    showFlash(`+${step}${unit ? ` ${unit}` : ''}: ${habitName}`);
+  const toggle = (id: string) => {
+    const habit = habits.find(h => h.id === id);
+    if (!habit) return;
+    try {
+      saveDayValue(habit, repo.isFlexibleHabitLogged(id, dateLocal) ? 0 : 1);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось изменить день'); }
   };
 
   return (
     <View style={styles.wrap}>
+      <HabitDayValueSheet habit={quantityHabit} value={quantityHabit ? repo.flexibleHabitDayValue(quantityHabit.id, dateLocal) : 0} onClose={() => setQuantityHabit(null)} onSave={value => {
+        if (!quantityHabit) return;
+        saveDayValue(quantityHabit, value);
+        setQuantityHabit(null);
+      }} />
       <View style={styles.hero}>
         <View style={styles.heroIcon}>
           <Ionicons name="checkbox-outline" size={20} color={colors.text} />
@@ -204,8 +195,10 @@ export function FlexibleHabitsPanel() {
             onChangeEditUnit={(t) => setEdit((s) => ({ ...s, unit: t }))}
             onChangeEditTargetValue={(t) => setEdit((s) => ({ ...s, targetValue: t }))}
             onChangeEditAutoSource={(s) => setEdit((prev) => ({ ...prev, autoSource: s }))}
-            onToggleToday={() => toggle(h.id, h.name)}
-            onAddQuantity={() => addQuantity(h.id, h.name, h.unit)}
+            onToggleToday={() => toggle(h.id)}
+            onAddQuantity={() => setQuantityHabit(h)}
+            dayLabel={dateLocal}
+            paused={isPaused}
             onStartEdit={() => startEdit(h.id)}
             onCancelEdit={() => setEditingId(null)}
             onSaveEdit={saveEdit}

@@ -1,3 +1,4 @@
+import { completedTrainingFacts } from '../../../../../src/domain/completedTraining';
 import {
   datesInInclusiveRange,
   type FlexibleReportInput,
@@ -54,11 +55,11 @@ export function collectFlexibleReportInput(
   const stepsDays: FlexibleReportInput['stepsDays'] = [];
   if (cats.has('activity')) {
     for (const dateLocal of days) {
-      for (const w of repo.listWorkoutsForDate(dateLocal)) {
+      for (const w of completedTrainingFacts(repo.listWorkoutsForDate(dateLocal), repo.listWorkoutSessionsForDate(dateLocal))) {
         workouts.push({
           dateLocal,
-          type: WORKOUT_TYPE_RU[w.type] ?? w.type,
-          durationMin: Math.max(1, Math.round(w.durationSec / 60)),
+          type: `${WORKOUT_TYPE_RU[w.type] ?? w.type}${w.title ? ` · ${w.title} (время сессии)` : ''}`,
+          durationMin: w.durationSec == null ? null : Math.round(w.durationSec / 60),
           distanceM: w.distanceM,
           notes: w.notes,
         });
@@ -76,7 +77,7 @@ export function collectFlexibleReportInput(
 
   const weights: ReportWeightRow[] = [];
   if (cats.has('weight')) {
-    for (const w of repo.listWeights(500)) {
+    for (const w of repo.listWeights(Number.MAX_SAFE_INTEGER)) {
       const d = localDateKey(new Date(w.weighedAt), profile.timezone);
       if (d >= args.periodStart && d <= args.periodEnd) {
         weights.push({ dateLocal: d, kg: w.kg });

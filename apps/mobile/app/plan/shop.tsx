@@ -37,7 +37,7 @@ export default function ShopScreen() {
   const [manualQty, setManualQty] = useState('1');
   const [manualUnit, setManualUnit] = useState<'g' | 'ml' | 'pcs'>('pcs');
 
-  const activeListId = listId ?? lists[0]?.id ?? null;
+  const activeListId = lists.some(l => l.id === listId) ? listId : lists[0]?.id ?? null;
   const list = activeListId ? repo.getShoppingList(activeListId) : null;
   const items = activeListId ? repo.listShoppingItems(activeListId) : [];
   const basket = activeListId ? repo.shoppingBasketTotal(activeListId) : null;
@@ -96,12 +96,14 @@ export default function ShopScreen() {
   const addManual = () => {
     setError(null);
     try {
+      if (!manualName.trim()) throw new Error('Укажи название позиции');
+      const qty = Number(manualQty.replace(',', '.'));
+      if (!manualQty.trim() || !Number.isFinite(qty) || qty <= 0) throw new Error('Количество: число больше нуля');
       let id = activeListId;
       if (!id) {
         id = repo.createEmptyShoppingList('Мой список').id;
         setListId(id);
       }
-      const qty = Number(manualQty.replace(',', '.'));
       repo.addShoppingItem({
         listId: id,
         displayName: manualName,
@@ -179,7 +181,8 @@ export default function ShopScreen() {
             onPress={() => setManualUnit(u)}
             style={[styles.unitChip, manualUnit === u && styles.unitChipOn]}
             accessibilityRole="radio"
-            accessibilityState={{ selected: manualUnit === u }}
+            accessibilityState={{ checked: manualUnit === u }}
+            aria-checked={manualUnit === u}
             accessibilityLabel={u === 'pcs' ? 'шт' : u}
           >
             <Text style={styles.unitChipText}>{u === 'pcs' ? 'шт' : u}</Text>
@@ -244,7 +247,7 @@ export default function ShopScreen() {
             onPress={() => setOnlyMissing((v) => !v)}
             style={[styles.filterChip, onlyMissing && styles.filterChipOn]}
             accessibilityRole="switch"
-            accessibilityState={{ checked: onlyMissing }}
+            accessibilityState={{ checked: onlyMissing }} aria-checked={onlyMissing}
             accessibilityLabel="Только недостающее"
           >
             <Text style={styles.filterChipText}>
@@ -285,7 +288,7 @@ export default function ShopScreen() {
                       }}
                       style={styles.checkHit}
                       accessibilityRole="checkbox"
-                      accessibilityState={{ checked: item.checked }}
+                      accessibilityState={{ checked: item.checked }} aria-checked={item.checked}
                       accessibilityLabel={item.displayName}
                     >
                       <Text style={styles.checkMark}>{item.checked ? '✓' : '○'}</Text>
@@ -315,7 +318,8 @@ export default function ShopScreen() {
                         />
                         <Pressable
                           onPress={() => {
-                            const raw = (priceDraft[item.id] ?? '').trim();
+                            try {
+                            const raw = (priceDraft[item.id] ?? (item.priceRub == null ? '' : String(item.priceRub))).trim();
                             if (!raw) {
                               repo.setShoppingItemPrice(item.id, { priceRub: null });
                             } else {
@@ -333,6 +337,7 @@ export default function ShopScreen() {
                             setError(null);
                             refresh();
                             showFlash('Цена сохранена');
+                            } catch (e) { setError(e instanceof Error ? e.message : 'Цена не сохранена'); }
                           }}
                           style={styles.priceBtn}
                           accessibilityRole="button"

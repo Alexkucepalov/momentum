@@ -45,7 +45,7 @@ export default function StoresScreen() {
             }}
             style={[styles.card, s.selected && styles.cardOn]}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: s.selected }}
+            accessibilityState={{ checked: s.selected }} aria-checked={s.selected}
             accessibilityLabel={s.label}
           >
             <Text style={styles.mark}>{s.selected ? '✓' : '○'}</Text>

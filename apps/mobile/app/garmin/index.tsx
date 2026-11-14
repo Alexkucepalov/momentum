@@ -3,7 +3,6 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { ThemedTextInput as TextInput } from '@/src/design-system/components/ThemedTextInput';
 import { useRouter, type Href } from 'expo-router';
 
-import { FlashBar } from '@/src/components/FlashBar';
 import { FormScrollView } from '@/src/components/FormScrollView';
 import {
   AppButton,
@@ -59,7 +58,7 @@ export default function GarminConnectScreen() {
       days: repo.listIntegratedDailyActivityStats('garmin', 2000).length,
       sleep: repo.listSleepNights(2000).filter((n) => n.source === 'garmin').length,
     }),
-    [repo],
+    [repo, revision],
   );
 
   const reloadKeyStatus = useCallback(async () => {
@@ -283,7 +282,7 @@ export default function GarminConnectScreen() {
           заново. Не присылай ключ в чат.
         </AppText>
       </FormScrollView>
-      <FlashBar />
+
     </View>
   );
 }

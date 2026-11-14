@@ -1,3 +1,4 @@
+import { completedTrainingFacts } from '../domain/completedTraining';
 import { MEALS, resizeEntrySnapshot, type EntryDetails } from '../domain/diaryEntry';
 import { sumActivityKcal } from '../domain/activityEnergy';
 import { buildCookAgainInput, type CookAgainDraft } from '../domain/cookAgain';
@@ -264,6 +265,7 @@ export type FoodRepository = {
   ): { recipe: Recipe; created: boolean };
   updateRecipe(recipeId: string, input: UpdateRecipeInput): Recipe;
   softDeleteRecipe(recipeId: string): Recipe;
+  restoreRecipe(id: string): Recipe;
   /**
    * Clone recipe as a cook batch with actual finished weight (and optional ingredient tweaks).
    * Does not mutate the source recipe — diary history stays valid.
@@ -279,6 +281,9 @@ export type FoodRepository = {
   removeWater(entryId: string): WaterEntry | null;
   restoreWater(entry: WaterEntry): void;
   addWeight(kg: number, weighedAt?: string): WeightEntry;
+  updateManualWeight(id: string, kg: number): WeightEntry;
+  removeManualWeight(id: string): WeightEntry;
+  restoreManualWeight(entry: WeightEntry): void;
   listWeights(limit?: number): WeightEntry[];
   /** Weights from an integration (e.g. Garmin), newest first. */
   listIntegratedWeights(source: IntegrationSource, limit?: number): WeightEntry[];
@@ -542,6 +547,7 @@ export type FoodRepository = {
     },
   ): FlexibleHabit;
   softDeleteFlexibleHabit(habitId: string): void;
+  restoreFlexibleHabit(habitId: string): void;
   logFlexibleHabit(
     habitId: string,
     dateLocal: string,
@@ -590,6 +596,7 @@ export type FoodRepository = {
     source?: PantrySource;
   }): PantryItem;
   softDeletePantryItem(pantryItemId: string): PantryItem;
+  restorePantryItem(id: string): PantryItem;
   listPurchases(): Purchase[];
   listPurchaseLines(purchaseId: string): PurchaseLine[];
   findPurchaseByFingerprint(fingerprint: string): Purchase | null;
@@ -671,6 +678,8 @@ export type FoodRepository = {
     },
   ): PlannedMeal;
   softDeletePlannedMeal(plannedMealId: string): PlannedMeal;
+  restorePlannedMeal(id: string): PlannedMeal;
+  undoPlannedMealLog(id: string, entryId: string): void;
   /**
    * Add a planned meal for a calendar day (never diary). Uses draft/active plan
    * covering the date, or creates an empty 1-day draft.
@@ -719,6 +728,7 @@ export type FoodRepository = {
   /** Projected spend from open shopping lists (user prices only — never live shelf). */
   openShoppingProjection(): ProjectedShoppingSpend;
   upsertProductPrice(input: {
+    basisQuantity?: number;
     productKey: string;
     priceRub: number;
     unit: PantryUnit;
@@ -736,6 +746,7 @@ export type FoodRepository = {
     note?: string | null;
   }): FoodExpense;
   softDeleteFoodExpense(expenseId: string): FoodExpense;
+  restoreFoodExpense(id: string): FoodExpense;
   monthBudgetSnapshot(month: string, asOfDateLocal: string): MonthBudgetSnapshot;
   /**
    * Amortized cost of diary entries in month using latest user product prices.
@@ -775,7 +786,7 @@ function normalizeProfile(raw: StoreSnapshotAny['profile']): Profile {
     timezone: raw.timezone,
     locale: raw.locale,
     units: 'metric',
-    waterTargetMl: raw.waterTargetMl ?? 2000,
+    waterTargetMl: raw.waterTargetMl === undefined ? 2000 : raw.waterTargetMl,
     dogfoodStartedOn: raw.dogfoodStartedOn ?? null,
     heightCm: raw.heightCm ?? null,
     dailyEnergyKcal: raw.dailyEnergyKcal ?? null,
@@ -1012,6 +1023,7 @@ function normalizeProductPrice(raw: ProductPrice): ProductPrice {
   const source: ShoppingPriceSource =
     raw.source === 'receipt' || raw.source === 'estimate' ? raw.source : 'user';
   return {
+    basisQuantity: raw.basisQuantity ?? null,
     id: raw.id,
     productKey: raw.productKey,
     storeId: raw.storeId ?? null,
@@ -1724,9 +1736,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...profile };
     },
     startDogfood(dateLocal) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(dateLocal);
       if (!profile.dogfoodStartedOn) {
         profile.dogfoodStartedOn = dateLocal;
         notify();
@@ -2238,8 +2248,10 @@ export function createMemoryFoodRepository(seed?: {
       return createRecipeInternal(id, input);
     },
     updateRecipe(recipeId, input) {
-      const recipe = recipes.get(recipeId);
-      if (!recipe || recipe.deletedAt) throw new Error('Recipe not found');
+      const storedRecipe = recipes.get(recipeId);
+      if (!storedRecipe || storedRecipe.deletedAt) throw new Error('Recipe not found');
+      const recipe = { ...storedRecipe };
+      let nextIngredients = ingredients.get(recipe.id) ?? [];
       if (input.name !== undefined) {
         const name = input.name.trim();
         if (!name) throw new Error('Recipe name required');
@@ -2288,9 +2300,7 @@ export function createMemoryFoodRepository(seed?: {
             carbG: ing.nutritionPer100g.carbs,
           });
         }
-        ingredients.set(
-          recipe.id,
-          input.ingredients.map((ing) => ({
+        nextIngredients = input.ingredients.map((ing) => ({
             id: newId(),
             recipeId: recipe.id,
             productId: ing.productId ?? null,
@@ -2300,10 +2310,9 @@ export function createMemoryFoodRepository(seed?: {
             proteinG: ing.nutritionPer100g.protein,
             fatG: ing.nutritionPer100g.fat,
             carbG: ing.nutritionPer100g.carbs,
-          })),
-        );
+          }));
       }
-      const ings = ingredients.get(recipe.id) ?? [];
+      const ings = nextIngredients;
       const hasManual =
         recipe.energyKcalPer100g !== null ||
         recipe.proteinGPer100g !== null ||
@@ -2313,8 +2322,18 @@ export function createMemoryFoodRepository(seed?: {
         throw new Error('Add ingredients or nutrition per 100g');
       }
       recipe.updatedAt = nowIso();
+      recipes.set(recipe.id, recipe);
+      ingredients.set(recipe.id, nextIngredients);
       notify();
       return { ...recipe };
+    },
+    restoreRecipe(id) {
+      const row = recipes.get(id);
+      if (!row) throw new Error('Recipe not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
     },
     softDeleteRecipe(recipeId) {
       const recipe = recipes.get(recipeId);
@@ -2367,6 +2386,8 @@ export function createMemoryFoodRepository(seed?: {
     addWeight(kg, weighedAt) {
       assertPositiveFinite(kg, 'kg');
       const ts = weighedAt ?? nowIso();
+      assertLocalDate(ts.slice(0, 10));
+      if (!Number.isFinite(Date.parse(ts))) throw new Error('Некорректное время замера');
       const entry: WeightEntry = {
         id: newId(),
         weighedAt: ts,
@@ -2379,10 +2400,28 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...entry };
     },
+    updateManualWeight(id, kg) {
+      assertPositiveFinite(kg, 'kg');
+      const row = weightEntries.get(id);
+      if (!row || row.source !== 'user') throw new Error('Можно менять только ручной замер');
+      row.kg = kg; notify(); return { ...row };
+    },
+    removeManualWeight(id) {
+      const row = weightEntries.get(id);
+      if (!row || row.source !== 'user') throw new Error('Можно удалить только ручной замер');
+      weightEntries.delete(id); notify(); return { ...row };
+    },
+    restoreManualWeight(entry) {
+      if (entry.source !== 'user' || weightEntries.has(entry.id)) throw new Error('Замер уже существует или получен из интеграции');
+      assertPositiveFinite(entry.kg, 'kg');
+      if (!Number.isFinite(Date.parse(entry.weighedAt))) throw new Error('Некорректное время замера');
+      weightEntries.set(entry.id, { ...entry }); notify();
+    },
     listWeights(limit = 30) {
       return [...weightEntries.values()]
         .sort((a, b) => b.weighedAt.localeCompare(a.weighedAt))
-        .slice(0, limit);
+        .slice(0, limit)
+        .map(w => ({ ...w }));
     },
     listIntegratedWeights(source, limit = 200) {
       return [...weightEntries.values()]
@@ -2584,9 +2623,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...w };
     },
     upsertDailyActivityStats(input) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('dateLocal must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.dateLocal);
       const steps =
         input.steps === undefined || input.steps === null
           ? null
@@ -3304,6 +3341,8 @@ export function createMemoryFoodRepository(seed?: {
       }
       s.status = 'completed';
       s.completedAt = nowIso();
+      const elapsed = (Date.parse(s.completedAt) - Date.parse(s.startedAt)) / 1000;
+      api.applyWorkoutHabitAutoCredit({ dateLocal: s.dateLocal, workoutType: 'strength', durationSec: Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0 });
       notify();
       return { ...s };
     },
@@ -3411,9 +3450,8 @@ export function createMemoryFoodRepository(seed?: {
       });
     },
     activityMinutesForDate(dateLocal) {
-      const sec = api
-        .listWorkoutsForDate(dateLocal)
-        .reduce((sum, w) => sum + w.durationSec, 0);
+      const sec = completedTrainingFacts(api.listWorkoutsForDate(dateLocal), api.listWorkoutSessionsForDate(dateLocal))
+        .reduce((sum, w) => sum + (w.durationSec ?? 0), 0);
       return Math.round(sec / 60);
     },
     activityEnergyKcalForDate(dateLocal) {
@@ -3473,8 +3511,9 @@ export function createMemoryFoodRepository(seed?: {
         });
     },
     updateFlexibleHabit(habitId, fields) {
-      const habit = flexibleHabits.get(habitId);
-      if (!habit || habit.deletedAt != null) throw new Error('Привычка не найдена');
+      const stored = flexibleHabits.get(habitId);
+      if (!stored || stored.deletedAt != null) throw new Error('Привычка не найдена');
+      const habit = { ...stored };
       if (fields.name !== undefined) {
         const trimmed = fields.name.trim();
         if (!trimmed) throw new Error('Введи название привычки');
@@ -3497,11 +3536,12 @@ export function createMemoryFoodRepository(seed?: {
       if (fields.paused === true) habit.pausedAt = nowIso();
       if (fields.paused === false) habit.pausedAt = null;
       if (habit.kind === 'quantity') {
-        if (habit.targetValue == null || habit.targetValue <= 0) {
+        if (habit.targetValue == null || !Number.isFinite(habit.targetValue) || habit.targetValue <= 0) {
           throw new Error('Для количественной привычки укажи цель > 0');
         }
         if (!habit.unit) habit.unit = 'раз';
       }
+      flexibleHabits.set(habit.id, habit);
       notify();
       return { ...habit };
     },
@@ -3512,7 +3552,16 @@ export function createMemoryFoodRepository(seed?: {
       habit.deletedAt = nowIso();
       notify();
     },
+    restoreFlexibleHabit(habitId) {
+      const habit = flexibleHabits.get(habitId);
+      if (!habit) throw new Error('Привычка не найдена');
+      habit.deletedAt = null;
+      habit.active = true;
+      notify();
+    },
     logFlexibleHabit(habitId, dateLocal, value, source = 'manual') {
+      assertLocalDate(dateLocal);
+      if (value != null) assertPositiveFinite(value, 'habit value');
       const habit = flexibleHabits.get(habitId);
       if (!habit || !habit.active || habit.deletedAt != null) throw new Error('Habit not found');
       const amount =
@@ -3598,7 +3647,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     applyWorkoutHabitAutoCredit({ dateLocal, workoutType, durationSec }) {
       const credited: FlexibleHabitEvent[] = [];
-      const mins = Math.max(1, Math.round(durationSec / 60));
+      const mins = Math.max(0, Math.round(durationSec / 60));
       for (const habit of api.listFlexibleHabits()) {
         if (habit.pausedAt) continue;
         const src = habit.autoSource;
@@ -3610,12 +3659,19 @@ export function createMemoryFoodRepository(seed?: {
           (src === 'strength' && workoutType === 'strength');
         if (!match) continue;
         if (api.isFlexibleHabitLogged(habit.id, dateLocal) && habit.kind === 'checkbox') continue;
-        const value = habit.kind === 'quantity' ? mins : 1;
+        const unit = habit.unit?.trim().toLowerCase();
+        const minuteUnit = ['мин', 'мин.', 'минут', 'минуты', 'min'].includes(unit ?? '');
+        const countUnit = ['раз', 'шт', 'шт.', 'тренировки', 'тренировок'].includes(unit ?? '');
+        if (habit.kind === 'quantity' && !minuteUnit && !countUnit) continue;
+        const value = habit.kind === 'quantity' && minuteUnit ? mins : 1;
+        if (!Number.isFinite(value) || value <= 0) continue;
         credited.push(api.logFlexibleHabit(habit.id, dateLocal, value, 'auto'));
       }
       return credited;
     },
     createChallenge(input) {
+      assertLocalDate(input.periodStart);
+      assertLocalDate(input.periodEnd);
       const name = input.name.trim();
       if (!name) throw new Error('Укажи название челленджа');
       if (!Number.isFinite(input.target) || input.target <= 0) {
@@ -3665,18 +3721,15 @@ export function createMemoryFoodRepository(seed?: {
       const c = challenges.get(challengeId);
       if (!c || c.deletedAt) throw new Error('Челлендж не найден');
       let current = 0;
+      const training = completedTrainingFacts([...workouts.values()], [...workoutSessions.values()]);
+      const inPeriod = training.filter(fact => {
+        const date = fact.source === 'workout' ? workouts.get(fact.id)?.dateLocal : workoutSessions.get(fact.id)?.dateLocal;
+        return date != null && date >= c.periodStart && date <= c.periodEnd;
+      });
       if (c.metric === 'workouts_count') {
-        current = [...workouts.values()].filter(
-          (w) =>
-            !w.deletedAt && w.dateLocal >= c.periodStart && w.dateLocal <= c.periodEnd,
-        ).length;
+        current = inPeriod.length;
       } else if (c.metric === 'activity_minutes') {
-        current = [...workouts.values()]
-          .filter(
-            (w) =>
-              !w.deletedAt && w.dateLocal >= c.periodStart && w.dateLocal <= c.periodEnd,
-          )
-          .reduce((s, w) => s + Math.round(w.durationSec / 60), 0);
+        current = inPeriod.reduce((sum, fact) => sum + Math.round((fact.durationSec ?? 0) / 60), 0);
       } else if (c.metric === 'food_log_days') {
         const days = new Set(
           [...entries.values()]
@@ -3710,6 +3763,9 @@ export function createMemoryFoodRepository(seed?: {
         .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ru'));
     },
     upsertPantryItem(input) {
+      if (!['fridge', 'freezer', 'pantry'].includes(input.location)) throw new Error('Некорректное место хранения');
+      if (!['g', 'ml', 'pcs'].includes(input.unit)) throw new Error('Некорректная единица');
+      if (input.expiresOn != null) assertLocalDate(input.expiresOn);
       const name = input.displayName.trim();
       if (!name) throw new Error('Pantry name required');
       if (input.quantityG != null) assertNonNegativeFinite(input.quantityG, 'quantityG');
@@ -3739,6 +3795,14 @@ export function createMemoryFoodRepository(seed?: {
       pantryItems.set(item.id, item);
       notify();
       return { ...item };
+    },
+    restorePantryItem(id) {
+      const row = pantryItems.get(id);
+      if (!row) throw new Error('Pantry item not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
     },
     softDeletePantryItem(pantryItemId) {
       const item = pantryItems.get(pantryItemId);
@@ -3770,9 +3834,7 @@ export function createMemoryFoodRepository(seed?: {
       if (!isConfirmablePurchaseStatus(input.status)) {
         throw new Error('Подтверждение только для delivered / fiscal_receipt');
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.purchasedOn)) {
-        throw new Error('purchasedOn must be YYYY-MM-DD');
-      }
+      assertLocalDate(input.purchasedOn);
       if (input.totalRub != null) assertNonNegativeFinite(input.totalRub, 'totalRub');
       if (input.lines.length === 0) throw new Error('Нужна хотя бы одна позиция');
 
@@ -3783,6 +3845,8 @@ export function createMemoryFoodRepository(seed?: {
         if (l.lineTotalRub != null) assertNonNegativeFinite(l.lineTotalRub, 'lineTotalRub');
         if (l.unitPriceRub != null) assertNonNegativeFinite(l.unitPriceRub, 'unitPriceRub');
         if (l.discountRub != null) assertNonNegativeFinite(l.discountRub, 'discountRub');
+        if (l.unit != null && !['g', 'ml', 'pcs'].includes(l.unit)) throw new Error('Некорректная единица');
+        if (l.lineTotalRub != null && l.quantity != null && l.quantity > 0) assertNonNegativeFinite(l.lineTotalRub / l.quantity, 'unitPriceRub');
         return {
           rawName: l.rawName.trim() || displayName,
           displayName,
@@ -3882,7 +3946,7 @@ export function createMemoryFoodRepository(seed?: {
 
         // Price observation only when unit + price known — never invent.
         if (l.isFood && !l.excluded && l.unit) {
-          let unitPrice = l.unitPriceRub;
+          let unitPrice = l.unit === 'pcs' ? l.unitPriceRub : null;
           if (
             unitPrice == null &&
             l.lineTotalRub != null &&
@@ -3895,9 +3959,10 @@ export function createMemoryFoodRepository(seed?: {
             api.upsertProductPrice({
               productKey: shoppingKey(l.displayName, l.unit),
               priceRub: unitPrice,
+              basisQuantity: 1,
               unit: l.unit,
               observedOn: input.purchasedOn,
-              source: 'user',
+              source: 'receipt',
               storeId: input.storePreferenceId ?? null,
             });
           }
@@ -4119,9 +4184,7 @@ export function createMemoryFoodRepository(seed?: {
       return { ...plan };
     },
     ensureWeekDraftPlan(weekStartMondayDate) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartMondayDate)) {
-        throw new Error('weekStartMonday must be YYYY-MM-DD');
-      }
+      assertLocalDate(weekStartMondayDate);
       const weekEnd = (() => {
         const [y, m, d] = weekStartMondayDate.split('-').map(Number);
         const dt = new Date(Date.UTC(y!, m! - 1, d! + 6));
@@ -4214,6 +4277,8 @@ export function createMemoryFoodRepository(seed?: {
       return { ...m };
     },
     movePlannedMeal(plannedMealId, args) {
+      assertLocalDate(args.dateLocal);
+      if (!MEALS.includes(args.meal)) throw new Error('Выбери приём пищи');
       const m = plannedMeals.get(plannedMealId);
       if (!m || m.deletedAt) throw new Error('Planned meal not found');
       m.dateLocal = args.dateLocal;
@@ -4237,6 +4302,22 @@ export function createMemoryFoodRepository(seed?: {
       notify();
       return { ...m };
     },
+    restorePlannedMeal(id) {
+      const row = plannedMeals.get(id);
+      if (!row) throw new Error('Planned meal not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
+      notify();
+      return { ...row };
+    },
+    undoPlannedMealLog(id, entryId) {
+      const row = plannedMeals.get(id);
+      if (!row || row.deletedAt) throw new Error('Planned meal not found');
+      api.undoDiaryAdds([entryId]);
+      row.status = 'planned';
+      row.updatedAt = nowIso();
+      notify();
+    },
     softDeletePlannedMeal(plannedMealId) {
       const m = plannedMeals.get(plannedMealId);
       if (!m || m.deletedAt) throw new Error('Planned meal not found');
@@ -4246,12 +4327,11 @@ export function createMemoryFoodRepository(seed?: {
       return { ...m };
     },
     addPlannedMeal(input) {
+      if (!MEALS.includes(input.meal)) throw new Error('Выбери приём пищи');
       const name = input.displayName.trim();
       if (!name) throw new Error('Display name required');
       assertPositiveFinite(input.grams, 'grams');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateLocal)) {
-        throw new Error('Invalid dateLocal');
-      }
+      assertLocalDate(input.dateLocal);
       const covering = [...mealPlans.values()]
         .filter(
           (p) =>
@@ -4393,7 +4473,7 @@ export function createMemoryFoodRepository(seed?: {
         }));
       const priceMap = new Map<
         string,
-        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+        { priceRub: number; basisQuantity: number | null; priceAsOf: string; priceSource: ShoppingPriceSource }
       >();
       for (const pp of productPrices.values()) {
         if (pp.deletedAt) continue;
@@ -4401,6 +4481,7 @@ export function createMemoryFoodRepository(seed?: {
         if (!existing || pp.observedOn >= existing.priceAsOf) {
           priceMap.set(pp.productKey, {
             priceRub: pp.priceRub,
+            basisQuantity: pp.basisQuantity ?? null,
             priceAsOf: pp.observedOn,
             priceSource: pp.source,
           });
@@ -4561,7 +4642,7 @@ export function createMemoryFoodRepository(seed?: {
         }));
       const priceMap = new Map<
         string,
-        { priceRub: number; priceAsOf: string; priceSource: ShoppingPriceSource }
+        { priceRub: number; basisQuantity: number | null; priceAsOf: string; priceSource: ShoppingPriceSource }
       >();
       for (const pp of productPrices.values()) {
         if (pp.deletedAt) continue;
@@ -4569,6 +4650,7 @@ export function createMemoryFoodRepository(seed?: {
         if (!existing || pp.observedOn >= existing.priceAsOf) {
           priceMap.set(pp.productKey, {
             priceRub: pp.priceRub,
+            basisQuantity: pp.basisQuantity ?? null,
             priceAsOf: pp.observedOn,
             priceSource: pp.source,
           });
@@ -4619,8 +4701,10 @@ export function createMemoryFoodRepository(seed?: {
       return { ...item };
     },
     setShoppingItemPrice(itemId, args) {
-      const item = shoppingItems.get(itemId);
-      if (!item || item.deletedAt) throw new Error('Shopping item not found');
+      const stored = shoppingItems.get(itemId);
+      if (!stored || stored.deletedAt) throw new Error('Shopping item not found');
+      if (args.priceAsOf != null) assertLocalDate(args.priceAsOf);
+      const item = { ...stored };
       if (args.priceRub !== null) assertNonNegativeFinite(args.priceRub, 'priceRub');
       item.priceRub = args.priceRub;
       item.priceAsOf = args.priceAsOf === undefined ? item.priceAsOf : args.priceAsOf;
@@ -4633,23 +4717,24 @@ export function createMemoryFoodRepository(seed?: {
       if (args.priceRub !== null && !item.priceAsOf) {
         item.priceAsOf = nowIso().slice(0, 10);
       }
-      if (args.priceRub !== null) {
+      if (args.priceRub !== null && item.needToBuy > 0) {
         item.priceSource = item.priceSource ?? 'user';
         const key = shoppingKey(item.displayName, item.unit);
         // Persist ₽/kg (or ₽/L) for eaten-cost amortization; line price stays on item.
         let catalogPrice = args.priceRub;
-        if ((item.unit === 'g' || item.unit === 'ml') && item.needToBuy > 0) {
-          catalogPrice = (args.priceRub / item.needToBuy) * 1000;
-        }
+        const basisQuantity = item.unit === 'pcs' ? 1 : 1000;
+        catalogPrice = (args.priceRub / item.needToBuy) * basisQuantity;
         api.upsertProductPrice({
           productKey: key,
           priceRub: catalogPrice,
+          basisQuantity,
           unit: item.unit,
           observedOn: item.priceAsOf ?? nowIso().slice(0, 10),
           source: item.priceSource ?? 'user',
         });
       }
       item.updatedAt = nowIso();
+      shoppingItems.set(item.id, item);
       notify();
       return { ...item };
     },
@@ -4699,6 +4784,9 @@ export function createMemoryFoodRepository(seed?: {
       return estimateBasketTotal(items);
     },
     upsertProductPrice(input) {
+      const basisQuantity = input.basisQuantity ?? (input.unit === 'pcs' ? 1 : 1000);
+      assertPositiveFinite(basisQuantity, 'basisQuantity');
+      assertLocalDate(input.observedOn);
       assertNonNegativeFinite(input.priceRub, 'priceRub');
       const key = input.productKey.trim();
       if (!key) throw new Error('productKey required');
@@ -4708,6 +4796,7 @@ export function createMemoryFoodRepository(seed?: {
       );
       if (existing) {
         existing.priceRub = input.priceRub;
+        existing.basisQuantity = basisQuantity;
         existing.unit = input.unit;
         existing.observedOn = input.observedOn;
         existing.source = input.source ?? 'user';
@@ -4716,6 +4805,7 @@ export function createMemoryFoodRepository(seed?: {
         return { ...existing };
       }
       const row: ProductPrice = {
+        basisQuantity,
         id: newId(),
         productKey: key,
         storeId: input.storeId ?? null,
@@ -4737,7 +4827,7 @@ export function createMemoryFoodRepository(seed?: {
     },
     setFoodBudget(month, limitRub) {
       assertPositiveFinite(limitRub, 'limitRub');
-      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('month must be YYYY-MM');
       const ts = nowIso();
       const existing = [...foodBudgets.values()].find((x) => !x.deletedAt && x.month === month);
       if (existing) {
@@ -4765,6 +4855,8 @@ export function createMemoryFoodRepository(seed?: {
         .sort((a, b) => b.spentOn.localeCompare(a.spentOn));
     },
     addFoodExpense(input) {
+      assertLocalDate(input.spentOn);
+      if (!['groceries', 'cafe', 'office', 'delivery'].includes(input.category)) throw new Error('Некорректная категория');
       assertNonNegativeFinite(input.amountRub, 'amountRub');
       const ts = nowIso();
       const row: FoodExpense = {
@@ -4778,6 +4870,14 @@ export function createMemoryFoodRepository(seed?: {
         deletedAt: null,
       };
       foodExpenses.set(row.id, row);
+      notify();
+      return { ...row };
+    },
+    restoreFoodExpense(id) {
+      const row = foodExpenses.get(id);
+      if (!row) throw new Error('Expense not found');
+      row.deletedAt = null;
+      row.updatedAt = nowIso();
       notify();
       return { ...row };
     },
@@ -4800,7 +4900,7 @@ export function createMemoryFoodRepository(seed?: {
       });
     },
     monthEatenCostEstimate(month) {
-      if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('month must be YYYY-MM');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('month must be YYYY-MM');
       const priceByKey = new Map<string, ProductPrice>();
       for (const pp of productPrices.values()) {
         if (pp.deletedAt) continue;
@@ -4814,16 +4914,16 @@ export function createMemoryFoodRepository(seed?: {
         const keyG = shoppingKey(e.displayName, 'g');
         const keyMl = shoppingKey(e.displayName, 'ml');
         const keyPcs = shoppingKey(e.displayName, 'pcs');
-        const pp = priceByKey.get(keyG) ?? priceByKey.get(keyMl) ?? priceByKey.get(keyPcs) ?? null;
+        const pp = priceByKey.get(keyG) ?? null;
         if (!pp) return null;
-        if (pp.unit === 'pcs') {
+        if (pp.unit !== 'g' || pp.basisQuantity == null) {
           // Diary is grams — cannot amortize piece price honestly.
           return null;
         }
         return estimateEatenCostRub({
           grams: e.grams,
           priceRub: pp.priceRub,
-          pricePerUnitG: 1000,
+          pricePerUnitG: pp.basisQuantity,
         });
       });
       const summed = sumEatenCost(estimates);
