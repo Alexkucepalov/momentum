@@ -1,0 +1,7 @@
+---
+description: Keep project mental model via orientation graphs
+alwaysApply: true
+---
+At session start (and when lost in IA/domain): skim `docs/AGENT-ORIENTATION.md` — tabs/routes, food/plan/strength entities, JTBD, code layers, locks.
+
+Do not reinvent navigation: 5 tabs only; strength lives in Movement; plan ≠ diary ≠ session history. Prefer linking new work to the graphs in that file when docs change.

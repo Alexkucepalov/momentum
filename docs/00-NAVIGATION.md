@@ -1,4 +1,5 @@
 # Document map
+- **`AGENT-ORIENTATION.md`**: **start here for agents** — mermaid maps of tabs, domain, JTBD, code layers, locks
 - `00-PROJECT-BLUEPRINT.md`: **nf-fit** canonical product blueprint (Phase 0+)
 - `project-context.md` / `visual-direction.md`: short context + visual verdict
 - `01-PRD.md`: product direction, personas, scope, priorities, acceptance criteria

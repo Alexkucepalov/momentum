@@ -2,7 +2,7 @@
 description: Low-touch agent workflow — one issue, one branch, one PR
 alwaysApply: true
 ---
-Before coding: read `AGENTS.md` and `docs/17-DEV-PLAN.md` (Backlog / current issue only).
+Before coding: read `AGENTS.md`, `docs/AGENT-ORIENTATION.md` (graphs), and `docs/17-DEV-PLAN.md` (Backlog / current issue only).
 
 Workflow: one GitHub issue → one feature branch → one PR. Never merge to `main`, never rotate secrets, never Play/EAS production, never invent nutrition values or commit real health data.
 
