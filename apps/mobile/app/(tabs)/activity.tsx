@@ -22,7 +22,7 @@ import { TrainingCycleSheet } from '@/src/features/strength/TrainingCycleSheet';
 import { LinkCyclingSheet } from '@/src/features/strength/LinkCyclingSheet';
 import { useData, useActivityRevision } from '@/src/state/DataContext';
 import { confirmAction } from '@/src/utils/confirmAction';
-import { AppText, SegmentedControl, colors, radius, space, touchMin } from '@/src/design-system';
+import { AppButton, AppText, SegmentedControl, colors, radius, space, touchMin } from '@/src/design-system';
 
 type MovementTab = 'activity' | 'sleep';
 export default function MovementScreen() {
@@ -141,6 +141,7 @@ export default function MovementScreen() {
         onLayout={e => { viewportHeight.current = e.nativeEvent.layout.height; scrollBox.current.max = Math.max(0, contentHeight.current - viewportHeight.current); scrollViewport.current?.measureInWindow((_, y, _w, h) => { scrollBox.current.top = y; scrollBox.current.bottom = y + h; }); }}>
         <SegmentedControl<MovementTab> accessibilityLabel="Раздел движения" value={segment} onChange={setSegment} options={[{ id: 'activity', label: 'Тренировки' }, { id: 'sleep', label: 'Сон' }]} />
         {segment === 'sleep' ? <SleepDayPanel todayKey={todayKey} onUndo={feedback} /> : <>
+          <AppButton label="Тренировочный план · упражнения и ориентиры" variant="secondary" testID="movement-program" onPress={() => router.push('/strength/program' as Href)} />
           {drafts.map(draft => <DraftSessionBanner key={draft.id} session={draft} onContinue={() => router.push(strengthSessionHref(draft.id))} />)}
           <StrengthWeekBoard days={days} selectedDate={dateLocal} todayDate={todayKey} sessions={weekSessions} onSelectDate={setDateLocal} onAdd={date => openEditor(date ?? dateLocal)} onApplyProgram={() => setWeekMenu('week')} onOpenTemplates={() => router.push(strengthHubHref())} onOpenCalendar={() => setCalendarOpen(true)} onMenu={setMenu} onStart={start} onDraggingChange={setDraggingPlan}
             onAutoScroll={pointerY => { const box = scrollBox.current; const delta = pointerY < box.top + 64 ? -16 : pointerY > box.bottom - 64 ? 16 : 0; const next = Math.max(0, Math.min(box.max, scrollY.current + delta)); if (!delta || next === scrollY.current) return false; scrollY.current = next; scroll.current?.scrollTo({ y: next, animated: false }); return true; }}

@@ -1,14 +1,20 @@
-import { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useEffect } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter, type Href } from "expo-router";
 
 import {
   strengthSessionHref,
   strengthTemplateHref,
-} from '@/src/features/strength/StrengthEntryCard';
-import { AppButton, AppCard, AppText, colors, space } from '@/src/design-system';
-import { useActivityRevision, useData } from '@/src/state/DataContext';
+} from "@/src/features/strength/StrengthEntryCard";
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  colors,
+  space,
+} from "@/src/design-system";
+import { useActivityRevision, useData } from "@/src/state/DataContext";
 
 export default function StrengthHubScreen() {
   const router = useRouter();
@@ -18,7 +24,7 @@ export default function StrengthHubScreen() {
   useEffect(() => {
     const before = repo.listWorkoutTemplates().length;
     repo.ensureStrengthCatalog();
-    if (repo.listWorkoutTemplates().length !== before) refresh('activity');
+    if (repo.listWorkoutTemplates().length !== before) refresh("activity");
   }, [repo, refresh]);
   const templates = repo.listWorkoutTemplates();
   const inProgress = repo.listInProgressWorkoutSessions();
@@ -26,35 +32,56 @@ export default function StrengthHubScreen() {
   const startTemplate = (templateId: string) => {
     const tmpl = repo.getWorkoutTemplate(templateId);
     if (!tmpl) {
-      showFlash('Шаблон не найден');
+      showFlash("Шаблон не найден");
       return;
     }
-    const session = repo.startWorkoutSession({
-      dateLocal,
-      title: tmpl.name,
-      templateId: tmpl.id,
-    });
-    refresh('activity');
-    showFlash('Сессия начата');
-    router.push(strengthSessionHref(session.id));
+    try {
+      const session = repo.startWorkoutSession({
+        dateLocal,
+        title: tmpl.name,
+        templateId: tmpl.id,
+      });
+      refresh("activity");
+      showFlash("Сессия начата");
+      router.push(strengthSessionHref(session.id));
+    } catch (e) {
+      showFlash(
+        e instanceof Error ? e.message : "Не удалось начать тренировку",
+      );
+    }
   };
 
   const createBlankTemplate = () => {
     try {
       const created = repo.createWorkoutTemplate({
-        name: 'Новый шаблон',
+        name: "Новый шаблон",
         subtitle: null,
         exercises: [],
       });
-      refresh('activity');
+      refresh("activity");
       router.push(strengthTemplateHref(created.id));
     } catch (e) {
-      showFlash(e instanceof Error ? e.message : 'Не удалось создать шаблон');
+      showFlash(e instanceof Error ? e.message : "Не удалось создать шаблон");
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.content} testID="strength-hub">
+      <AppCard style={styles.programCard}>
+        <AppText variant="label" tone="secondary">
+          ТВОЯ ПРОГРАММА
+        </AppText>
+        <AppText variant="title">План. Тренировка. Прогресс.</AppText>
+        <AppText variant="body" tone="secondary">
+          Содержание занятий, ориентиры и результаты каждого подхода.
+        </AppText>
+        <AppButton
+          label="Открыть тренировочный план"
+          variant="secondary"
+          onPress={() => router.push("/strength/program" as Href)}
+          testID="hub-program"
+        />
+      </AppCard>
       {inProgress.map((s) => (
         <AppCard key={s.id} style={styles.activeCard}>
           <AppText variant="label" tone="muted">
@@ -95,7 +122,8 @@ export default function StrengthHubScreen() {
                 </AppText>
               ) : null}
               <AppText variant="caption" tone="secondary">
-                {lines.length} упр. · {lines.reduce((sum, l) => sum + l.targetSets, 0)} подходов
+                {lines.length} упр. ·{" "}
+                {lines.reduce((sum, l) => sum + l.targetSets, 0)} подходов
               </AppText>
               <View style={styles.actions}>
                 <AppButton
@@ -116,7 +144,7 @@ export default function StrengthHubScreen() {
                   const reps =
                     l.targetRepsMin != null && l.targetRepsMax != null
                       ? `${l.targetRepsMin}–${l.targetRepsMax}`
-                      : String(l.targetRepsMin ?? l.targetRepsMax ?? '—');
+                      : String(l.targetRepsMin ?? l.targetRepsMax ?? "—");
                   return (
                     <AppText key={l.id} variant="caption" tone="muted">
                       · {ex?.name ?? l.exerciseId} · {l.targetSets}×{reps}
@@ -133,7 +161,7 @@ export default function StrengthHubScreen() {
         <Pressable
           onPress={() => {
             repo.ensureStrengthCatalog();
-            refresh('activity');
+            refresh("activity");
           }}
           style={styles.empty}
           accessibilityRole="button"
@@ -155,14 +183,15 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingBottom: space.xxl,
   },
+  programCard: { backgroundColor: colors.trainingStrength, gap: space.md },
   activeCard: {
     gap: space.sm,
   },
   sectionRow: {
     marginTop: space.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: space.sm,
   },
   list: {
@@ -178,7 +207,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   empty: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: space.sm,
     padding: space.xl,
   },

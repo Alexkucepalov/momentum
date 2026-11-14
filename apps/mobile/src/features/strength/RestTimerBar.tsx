@@ -1,26 +1,33 @@
-import { useEffect, useState } from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
-import { restSecondsRemaining } from '../../../../../src/domain/strength/restTimer';
+import { useEffect, useState } from "react";
+import { AppState, Pressable, StyleSheet, View } from "react-native";
+import { restSecondsRemaining } from "../../../../../src/domain/strength/restTimer";
 
-import { AppText, colors, radius, space, touchMin } from '@/src/design-system';
+import { AppText, colors, radius, space, touchMin } from "@/src/design-system";
 
 export function RestTimerBar({
   deadlineMs,
   onSkip,
   onDone,
+  onExtend,
 }: {
   deadlineMs: number;
   onSkip: () => void;
   onDone: () => void;
+  onExtend?: () => void;
 }) {
-  const [left, setLeft] = useState(() => restSecondsRemaining(deadlineMs, Date.now()));
+  const [left, setLeft] = useState(() =>
+    restSecondsRemaining(deadlineMs, Date.now()),
+  );
 
   useEffect(() => {
     const update = () => setLeft(restSecondsRemaining(deadlineMs, Date.now()));
     update();
     const timer = setInterval(update, 250);
-    const subscription = AppState.addEventListener('change', update);
-    return () => { clearInterval(timer); subscription.remove(); };
+    const subscription = AppState.addEventListener("change", update);
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
   }, [deadlineMs]);
 
   useEffect(() => {
@@ -30,12 +37,28 @@ export function RestTimerBar({
     }
   }, [left, onDone]);
 
-  const mm = String(Math.floor(left / 60)).padStart(1, '0');
-  const ss = String(left % 60).padStart(2, '0');
+  const mm = String(Math.floor(left / 60)).padStart(1, "0");
+  const ss = String(left % 60).padStart(2, "0");
 
   return (
-    <View style={styles.bar} testID="rest-timer-bar" accessibilityLabel={`Отдых ${mm}:${ss}`}>
-      <AppText variant="subtitle">Отдых {mm}:{ss}</AppText>
+    <View
+      style={styles.bar}
+      testID="rest-timer-bar"
+      accessibilityLabel={`Отдых ${mm}:${ss}`}
+    >
+      <AppText variant="subtitle">
+        Отдых {mm}:{ss}
+      </AppText>
+      {onExtend ? (
+        <Pressable
+          onPress={onExtend}
+          style={styles.skip}
+          accessibilityRole="button"
+          accessibilityLabel="Добавить 30 секунд отдыха"
+        >
+          <AppText variant="caption">+30 с</AppText>
+        </Pressable>
+      ) : null}
       <Pressable
         onPress={onSkip}
         style={({ pressed }) => [styles.skip, pressed && styles.pressed]}
@@ -51,9 +74,11 @@ export function RestTimerBar({
 
 const styles = StyleSheet.create({
   bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.xs,
+    alignItems: "center",
+    justifyContent: "space-between",
     minHeight: touchMin,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
@@ -66,7 +91,7 @@ const styles = StyleSheet.create({
   skip: {
     minHeight: touchMin,
     paddingHorizontal: space.md,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   pressed: { opacity: 0.85 },
 });

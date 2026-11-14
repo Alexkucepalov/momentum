@@ -1,3 +1,4 @@
+import { validateExercisePlan } from './strength/sessionReview';
 import { validateCookedConsumption } from "./cookedConsumption";
 import { assertLocalDate, assertLocalTime } from "../storage/validation";
 
@@ -81,7 +82,7 @@ const dates = new Set(
   ),
 );
 const timestamps = new Set(
-  "cookedAt createdAt updatedAt deletedAt weighedAt startAt endAt pausedAt confirmedAt startedAt completedAt lastSuccessfulSyncAt lastAttemptAt".split(
+  "restUntilAt cookedAt createdAt updatedAt deletedAt weighedAt startAt endAt pausedAt confirmedAt startedAt completedAt lastSuccessfulSyncAt lastAttemptAt".split(
     " ",
   ),
 );
@@ -214,6 +215,11 @@ function validateRow(
             : ["user", "garmin", "zepp"];
     if (!allowed.includes(row.source as string)) fail(`${path}.source`);
   }
+  if (table === 'workoutSessions' && row.exercisePlan !== undefined) {
+    try { validateExercisePlan(row.exercisePlan); } catch { fail(`${path}.exercisePlan`); }
+  }
+  for (const key of ['draftWeightText', 'draftRepsText']) if (table === 'workoutSets' && row[key] !== undefined && (typeof row[key] !== 'string' || (row[key] as string).length > 32)) fail(`${path}.${key}`);
+  for (const key of ['planNotes', 'notes']) if (['workoutSessions', 'workoutTemplates'].includes(table) && row[key] != null && (typeof row[key] !== 'string' || (row[key] as string).length > 4000)) fail(`${path}.${key}`);
   if (table === "entries" && row.cookedConsumption !== undefined) {
     try {
       validateCookedConsumption(row.cookedConsumption, row.grams as number);

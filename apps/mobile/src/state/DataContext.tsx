@@ -28,6 +28,8 @@ export type UndoState = {
   entryIds?: string[];
   action?: () => void;
   wipeEpoch?: number;
+  /** UI owner for expiring an action whose editing context has closed. */
+  ownerId?: string;
   scope?: DataRefreshScope | "all";
 } | null;
 
@@ -112,11 +114,14 @@ export function DataProvider({
     });
   }, []);
 
-  const showFlash = useCallback((message: string) => {
-    setUndo(null);
-    setFlash(message);
-    setFlashId(id => id + 1);
-  }, [setUndo]);
+  const showFlash = useCallback(
+    (message: string) => {
+      setUndo(null);
+      setFlash(message);
+      setFlashId((id) => id + 1);
+    },
+    [setUndo],
+  );
   const clearFlash = useCallback(() => setFlash(null), []);
 
   const setDateLocalWithFeedback = useCallback((d: string) => {
@@ -182,7 +187,9 @@ export function DataProvider({
         <ActivityRevisionContext.Provider value={areas.activity}>
           <ProfileRevisionContext.Provider value={areas.profile}>
             <PlanRevisionContext.Provider value={areas.plan}>
-              <React.Fragment key={getLocalDataWipeEpoch()}>{children}</React.Fragment>
+              <React.Fragment key={getLocalDataWipeEpoch()}>
+                {children}
+              </React.Fragment>
             </PlanRevisionContext.Provider>
           </ProfileRevisionContext.Provider>
         </ActivityRevisionContext.Provider>

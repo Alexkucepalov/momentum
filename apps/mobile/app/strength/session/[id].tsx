@@ -1,238 +1,593 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-
-import { nextIncompleteSetId } from '../../../../../src/domain/strength';
-import { RestTimerBar } from '@/src/features/strength/RestTimerBar';
-import { SessionFinishSheet } from '@/src/features/strength/SessionFinishSheet';
-import { SetLogRow } from '@/src/features/strength/SetLogRow';
-import { AppButton, AppText, colors, radius, space } from '@/src/design-system';
-import { useActivityRevision, useData } from '@/src/state/DataContext';
-import { confirmAction } from '@/src/utils/confirmAction';
-
-const DEFAULT_REST_SEC = 90;
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import {
+  buildSessionReview,
+  formatSetPerformance,
+  repsRangeLabel,
+} from "../../../../../src/domain/strength/sessionReview";
+import type { WorkoutSet } from "../../../../../src/domain/strength/types";
+import { RestTimerBar } from "@/src/features/strength/RestTimerBar";
+import { SessionFinishSheet } from "@/src/features/strength/SessionFinishSheet";
+import { SetLogRow } from "@/src/features/strength/SetLogRow";
+import { SessionReviewPanel } from "@/src/features/strength/SessionReviewPanel";
+import { ExerciseFigure } from "@/src/features/strength/ExerciseFigure";
+import { FormScrollView } from "@/src/components/FormScrollView";
+import { SwipeToDismissSheet } from "@/src/components/SwipeToDismissSheet";
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  colors,
+  radius,
+  space,
+  touchMin,
+} from "@/src/design-system";
+import { useActivityRevision, useData } from "@/src/state/DataContext";
+import { confirmAction } from "@/src/utils/confirmAction";
 
 export default function StrengthSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { repo, refresh, showFlash } = useData();
+  const { repo, refresh, showFlash, setUndo, undo } = useData();
   useActivityRevision();
-  const [restUntil, setRestUntil] = useState<number | null>(null);
-  const [finishOpen, setFinishOpen] = useState(false);
-
+  const [finishOpen, setFinishOpen] = useState(false),
+    [listOpen, setListOpen] = useState(false),
+    [infoOpen, setInfoOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null),
+    [editingSet, setEditingSet] = useState<string | null>(null);
+  const lastAddedAt = useRef(0);
+  const scroll = useRef<ScrollView>(null),
+    lastRecorded = useRef<{ id: string; at: number } | null>(null);
   const session = id ? repo.getWorkoutSession(String(id)) : null;
   const sets = session ? repo.listWorkoutSets(session.id) : [];
-  const currentSetId = nextIncompleteSetId(sets);
-
-  const restByExercise = useMemo(() => {
-    const map = new Map<string, number>();
-    if (!session?.templateId) return map;
-    for (const line of repo.listTemplateExercises(session.templateId)) {
-      map.set(line.exerciseId, line.restSec ?? DEFAULT_REST_SEC);
+  const snapshot = useMemo(
+    () => repo.getStrengthHistory(),
+    [repo, id, session?.status],
+  );
+  const review = session
+    ? buildSessionReview(session, sets, snapshot.sessions, snapshot.sets)
+    : null;
+  const groups = review?.exercises ?? [];
+  const active =
+    groups.find((g) => g.exerciseId === selectedExercise) ??
+    groups.find((g) => g.sets.some((s) => !s.completed)) ??
+    groups[0];
+  const activeIndex = groups.findIndex(
+    (g) => g.exerciseId === active?.exerciseId,
+  );
+  const plan = active?.plan;
+  const exercise = active ? repo.getStrengthExercise(active.exerciseId) : null;
+  const name = plan?.name ?? exercise?.name ?? "Упражнение";
+  const current =
+    active?.sets.find((s) => s.id === editingSet) ??
+    active?.sets.find((s) => !s.completed) ??
+    null;
+  const isLive = session?.status === "in_progress";
+  const names = Object.fromEntries(
+    repo.listStrengthExercises().map((ex) => [ex.id, ex.name]),
+  );
+  const restDeadline = session?.restUntilAt
+    ? Date.parse(session.restUntilAt)
+    : null;
+  const clearRest = useCallback(() => {
+    if (id && repo.getWorkoutSession(String(id))?.status === "in_progress") {
+      repo.setSessionRestDeadline(String(id), null);
+      refresh("activity");
     }
-    return map;
-  }, [repo, session?.templateId]);
-
-  useEffect(() => {
-    if (!session || session.status !== 'in_progress') { setRestUntil(null); return; }
-    const latest = repo.listWorkoutSets(session.id).filter(s => s.completedAt).sort((a, b) => b.completedAt!.localeCompare(a.completedAt!))[0];
-    const deadline = latest?.completedAt ? Date.parse(latest.completedAt) + (restByExercise.get(latest.exerciseId) ?? DEFAULT_REST_SEC) * 1000 : null;
-    setRestUntil(deadline != null && deadline > Date.now() ? deadline : null);
-  }, [id, repo, restByExercise]);
-
-  const groups = useMemo(() => {
-    const map = new Map<string, typeof sets>();
-    for (const s of sets) {
-      const list = map.get(s.exerciseId) ?? [];
-      list.push(s);
-      map.set(s.exerciseId, list);
+  }, [id, repo, refresh]);
+  const select = (index: number) => {
+    const group = groups[index];
+    if (group) {
+      setSelectedExercise(group.exerciseId);
+      setEditingSet(null);
+      setListOpen(false);
+      scroll.current?.scrollTo({ y: 0, animated: false });
     }
-    return [...map.entries()].map(([exerciseId, rows]) => ({
-      exerciseId,
-      name: repo.getStrengthExercise(exerciseId)?.name ?? exerciseId,
-      rows: rows.sort((a, b) => a.setIndex - b.setIndex),
-      done: rows.filter((r) => r.completed).length,
-      total: rows.length,
-    }));
-  }, [sets, repo]);
-
-  const clearRest = useCallback(() => setRestUntil(null), []);
-
-  if (!session) {
+  };
+  if (!session || !review)
     return (
-      <View style={styles.missing}>
-        <AppText variant="body" tone="muted">
-          Сессия не найдена
-        </AppText>
-        <AppButton label="Назад" variant="secondary" onPress={() => router.back()} />
+      <View style={styles.content}>
+        <AppText variant="subtitle">Тренировка не найдена</AppText>
+        <AppButton label="Назад" onPress={() => router.back()} />
       </View>
     );
-  }
-
-  const doneCount = sets.filter((s) => s.completed).length;
-  const total = sets.length;
-  const isLive = session.status === 'in_progress';
-  const progress = total > 0 ? doneCount / total : 0;
-
+  const finish = () => setFinishOpen(true);
+  const record = (
+    set: WorkoutSet,
+    values: { weightKg: number | null; reps: number | null },
+  ) => {
+    if (
+      lastRecorded.current?.id === set.id &&
+      Date.now() - lastRecorded.current.at < 500
+    )
+      return;
+    const before = repo
+      .listWorkoutSets(session.id)
+      .find((row) => row.id === set.id);
+    if (!before) throw new Error("Подход не найден");
+    const restBefore = repo.getWorkoutSession(session.id)?.restUntilAt ?? null;
+    repo.completeWorkoutSet(set.id, values);
+    lastRecorded.current = { id: set.id, at: Date.now() };
+    refresh("activity");
+    setEditingSet(null);
+    if (Platform.OS !== "web")
+      void Haptics.selectionAsync().catch(() => undefined);
+    setUndo({
+      message: `${name} · подход ${set.setIndex} записан`,
+      ownerId: session.id,
+      scope: "activity",
+      action: () => {
+        repo.restoreWorkoutSet(before);
+        repo.setSessionRestDeadline(session.id, restBefore);
+        setSelectedExercise(set.exerciseId);
+        setEditingSet(before.completed ? before.id : null);
+      },
+    });
+  };
+  if (!isLive)
+    return (
+      <FormScrollView
+        contentContainerStyle={styles.content}
+        testID="strength-session"
+      >
+        <View style={styles.summaryHead}>
+          <View style={styles.summaryIcon}>
+            <Ionicons
+              name={session.status === "completed" ? "checkmark" : "pause"}
+              color={colors.ink}
+              size={30}
+            />
+          </View>
+          <AppText variant="label" tone="secondary">
+            {session.status === "completed"
+              ? "ТРЕНИРОВКА СОХРАНЕНА"
+              : "ТРЕНИРОВКА ПРЕРВАНА"}
+          </AppText>
+          <AppText variant="title">{session.title}</AppText>
+          <AppText variant="caption" tone="secondary">
+            {review.durationSec == null
+              ? "Время неизвестно"
+              : `${review.durationSec < 60 ? `${Math.floor(review.durationSec)} с` : `${Math.floor(review.durationSec / 60)} мин`} · включая отдых`}
+            {session.feelingRpe != null
+              ? ` · сложность ${session.feelingRpe}/10`
+              : ""}
+          </AppText>
+        </View>
+        <SessionReviewPanel review={review} names={names} />
+        {session.feelingNote ? (
+          <AppCard>
+            <AppText variant="label" tone="secondary">
+              ТВОЯ ЗАМЕТКА
+            </AppText>
+            <AppText variant="body">{session.feelingNote}</AppText>
+          </AppCard>
+        ) : null}
+        {session.planNotes ? (
+          <AppCard>
+            <AppText variant="label" tone="secondary">
+              ОПИСАНИЕ ПЛАНА НА СТАРТЕ
+            </AppText>
+            <AppText variant="body">{session.planNotes}</AppText>
+          </AppCard>
+        ) : null}
+        <AppButton label="Готово" onPress={() => router.back()} />
+      </FormScrollView>
+    );
   return (
     <View style={styles.root}>
-      {restUntil != null && isLive ? (
-        <View style={styles.restSticky}>
-          <RestTimerBar deadlineMs={restUntil} onSkip={clearRest} onDone={clearRest} />
+      {restDeadline != null && restDeadline > Date.now() ? (
+        <View style={styles.rest}>
+          <RestTimerBar
+            deadlineMs={restDeadline}
+            onSkip={clearRest}
+            onDone={clearRest}
+            onExtend={() => {
+              repo.setSessionRestDeadline(
+                session.id,
+                new Date(
+                  Math.max(Date.now(), restDeadline) + 30_000,
+                ).toISOString(),
+              );
+              refresh("activity");
+            }}
+          />
         </View>
       ) : null}
-
-      <ScrollView contentContainerStyle={styles.content} testID="strength-session" keyboardShouldPersistTaps="handled">
-        <AppText variant="title">{session.title}</AppText>
-        <AppText variant="caption" tone="secondary">{new Date(`${session.dateLocal}T12:00:00Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' })}</AppText>
-        <AppText variant="caption" tone="muted">
-          {session.status === 'completed'
-            ? session.feelingRpe != null
-              ? `Завершена · RPE ${session.feelingRpe}`
-              : 'Завершена'
-            : session.status === 'abandoned'
-              ? 'Прервана'
-              : `${doneCount} из ${total || '—'} подходов`}
-        </AppText>
-        {isLive && total > 0 ? (
-          <View style={styles.progressTrack} accessibilityRole="progressbar" accessibilityLabel="Прогресс тренировки" accessibilityValue={{ min: 0, max: total, now: doneCount }} aria-valuemin={0} aria-valuemax={total} aria-valuenow={doneCount}>
-            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+      <FormScrollView
+        ref={scroll}
+        contentContainerStyle={styles.content}
+        testID="strength-session"
+      >
+        <View style={styles.progressHead}>
+          <View style={styles.flex}>
+            <AppText variant="caption" tone="secondary">
+              {session.title}
+            </AppText>
+            <AppText variant="body">
+              {review.completedSets} из {review.totalSets} подходов
+            </AppText>
           </View>
-        ) : null}
-        {session.feelingNote ? (
-          <AppText variant="caption" tone="secondary">
-            {session.feelingNote}
-          </AppText>
-        ) : null}
-
-        {groups.map((g) => {
-          const groupDone = g.done === g.total && g.total > 0;
-          return (
-            <View key={g.exerciseId} style={[styles.block, groupDone && styles.blockDone]}>
-              <View style={styles.exHead}>
-                <AppText variant="subtitle" style={styles.exTitle}>
-                  {g.name}
+          <Pressable
+            onPress={() => setListOpen(true)}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Список упражнений"
+            testID="session-exercise-list"
+          >
+            <Ionicons name="list-outline" size={24} color={colors.ink} />
+          </Pressable>
+        </View>
+        <View
+          style={styles.progressTrack}
+          accessibilityRole="progressbar"
+          accessibilityLabel="Прогресс тренировки"
+          accessibilityValue={{
+            min: 0,
+            max: Math.max(1, review.totalSets),
+            now: review.completedSets,
+          }}
+          aria-valuemin={0}
+          aria-valuemax={Math.max(1, review.totalSets)}
+          aria-valuenow={review.completedSets}
+        >
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${review.totalSets ? (review.completedSets / review.totalSets) * 100 : 0}%`,
+              },
+            ]}
+          />
+        </View>
+        {active ? (
+          <>
+            <View style={styles.exerciseHead}>
+              <View style={styles.flex}>
+                <AppText variant="label" tone="secondary">
+                  УПРАЖНЕНИЕ {activeIndex + 1} / {groups.length}
                 </AppText>
-                <AppText variant="caption" tone="muted">
-                  {g.done}/{g.total}
+                <AppText variant="title">{name}</AppText>
+              </View>
+              <Pressable
+                onPress={() => setInfoOpen(true)}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Информация об упражнении и плане"
+              >
+                <Ionicons
+                  name="information-outline"
+                  size={22}
+                  color={colors.ink}
+                />
+              </Pressable>
+            </View>
+            <ExerciseFigure
+              muscles={plan?.primaryMuscles ?? exercise?.primaryMuscles ?? []}
+              equipment={plan?.equipment ?? exercise?.equipment}
+            />
+            <View style={styles.context}>
+              <AppText variant="caption" tone="secondary">
+                {plan
+                  ? `План: ${plan.targetSets} × ${repsRangeLabel(plan)} · отдых ${plan.restSec ?? 90} с`
+                  : "Ориентиры этой сессии не сохранены"}
+              </AppText>
+              {active.previous ? (
+                <AppText variant="caption" tone="secondary">
+                  В прошлый раз:{" "}
+                  {active.previous.sets.map(formatSetPerformance).join(" · ")}
+                </AppText>
+              ) : (
+                <AppText variant="caption" tone="secondary">
+                  Первая запись этого упражнения
+                </AppText>
+              )}
+            </View>
+            {current ? (
+              <SetLogRow
+                key={current.id}
+                set={current}
+                exerciseName={name}
+                onComplete={(values) => record(current, values)}
+                onDraft={(input) => {
+                  repo.saveWorkoutSetDraft(current.id, input);
+                  refresh("activity");
+                }}
+              />
+            ) : (
+              <AppCard style={styles.exerciseDone}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={28}
+                  color={colors.success}
+                />
+                <AppText variant="subtitle">Упражнение записано</AppText>
+                <AppText variant="caption" tone="secondary">
+                  Можно изменить подход или перейти дальше.
+                </AppText>
+              </AppCard>
+            )}
+            <View style={styles.sets}>
+              {active.sets.map((set) => (
+                <Pressable
+                  key={set.id}
+                  onPress={() => setEditingSet(set.id)}
+                  style={[
+                    styles.setPill,
+                    set.id === current?.id && styles.setPillCurrent,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${name}, подход ${set.setIndex}${set.completed ? ", записан, изменить" : ", открыть"}`}
+                  accessibilityState={{ selected: set.id === current?.id }}
+                >
+                  <AppText
+                    variant="caption"
+                    tone={set.id === current?.id ? "inverse" : "ink"}
+                  >
+                    {set.setIndex}
+                  </AppText>
+                  {set.completed ? (
+                    <Ionicons
+                      name="checkmark"
+                      size={14}
+                      color={
+                        set.id === current?.id
+                          ? colors.onPrimary
+                          : colors.success
+                      }
+                    />
+                  ) : null}
+                </Pressable>
+              ))}
+              <Pressable
+                style={styles.setPill}
+                accessibilityRole="button"
+                accessibilityLabel="Добавить подход"
+                onPress={() => {
+                  if (Date.now() - lastAddedAt.current < 500) return;
+                  const added = repo.upsertWorkoutSet({
+                    sessionId: session.id,
+                    exerciseId: active.exerciseId,
+                    setIndex:
+                      Math.max(0, ...active.sets.map((s) => s.setIndex)) + 1,
+                    targetReps: plan?.targetRepsMin ?? null,
+                  });
+                  refresh("activity");
+                  lastAddedAt.current = Date.now();
+                  setEditingSet(added.id);
+                  setUndo({
+                    message: "Подход добавлен",
+                    ownerId: session.id,
+                    scope: "activity",
+                    action: () => {
+                      repo.softDeleteWorkoutSet(added.id);
+                      setEditingSet(null);
+                    },
+                  });
+                }}
+              >
+                <Ionicons name="add" size={18} color={colors.ink} />
+              </Pressable>
+            </View>
+            <View style={styles.navigation}>
+              <AppButton
+                label="Назад"
+                variant="secondary"
+                disabled={activeIndex <= 0}
+                onPress={() => select(activeIndex - 1)}
+                style={styles.flex}
+              />
+              <AppButton
+                label={
+                  activeIndex < groups.length - 1
+                    ? active.completed === active.sets.length
+                      ? "Дальше"
+                      : "Другое упражнение"
+                    : "К итогам"
+                }
+                variant="secondary"
+                style={styles.flex}
+                onPress={() =>
+                  activeIndex < groups.length - 1
+                    ? select(activeIndex + 1)
+                    : finish()
+                }
+              />
+            </View>
+          </>
+        ) : (
+          <AppText variant="body" tone="secondary">
+            В этой сессии нет упражнений. Можно завершить её без записей.
+          </AppText>
+        )}
+        <AppButton
+          label="Завершить тренировку"
+          variant="ghost"
+          onPress={finish}
+          testID="strength-finish"
+        />
+      </FormScrollView>
+      <SwipeToDismissSheet
+        visible={listOpen}
+        onClose={() => setListOpen(false)}
+        testID="session-exercise-sheet"
+      >
+        <FormScrollView variant="sheet" contentContainerStyle={styles.sheet}>
+          <AppText variant="title">Эта тренировка</AppText>
+          {groups.map((group, index) => (
+            <Pressable
+              key={group.exerciseId}
+              onPress={() => select(index)}
+              style={styles.listRow}
+              accessibilityRole="button"
+              accessibilityLabel={`Открыть упражнение ${index + 1}: ${group.plan?.name ?? names[group.exerciseId]}`}
+            >
+              <AppText variant="caption" tone="secondary">
+                {String(index + 1).padStart(2, "0")}
+              </AppText>
+              <View style={styles.flex}>
+                <AppText variant="body">
+                  {group.plan?.name ?? names[group.exerciseId]}
+                </AppText>
+                <AppText variant="caption" tone="secondary">
+                  {group.completed}/{group.sets.length} подходов
                 </AppText>
               </View>
-              {g.rows.map((s) => (
-                <SetLogRow
-                  key={s.id}
-                  set={s}
-                  exerciseName={g.name}
-                  isCurrent={s.id === currentSetId}
-                  readOnly={!isLive}
-                  onComplete={({ weightKg, reps }) => {
-                    try {
-                      repo.completeWorkoutSet(s.id, { weightKg, reps });
-                      refresh('activity');
-                      if (!s.completed) setRestUntil(Date.now() + (restByExercise.get(g.exerciseId) ?? DEFAULT_REST_SEC) * 1000);
-                    } catch (e) {
-                      showFlash(e instanceof Error ? e.message : 'Не удалось записать подход');
-                    }
-                  }}
-                />
-              ))}
-            </View>
-          );
-        })}
-
-        {isLive ? (
-          <View style={styles.footer}>
-            <AppButton
-              label={doneCount === total && total > 0 ? 'Завершить · все подходы есть' : 'Завершить тренировку'}
-              variant={doneCount === total && total > 0 ? 'primary' : 'secondary'}
-              onPress={() => setFinishOpen(true)}
-              testID="strength-finish"
-            />
-            <AppButton
-              label="Прервать"
-              variant="ghost"
-              onPress={() => confirmAction('Прервать тренировку?', 'Записанные подходы сохранятся в истории. Чтобы продолжить позже, можно просто вернуться назад.', { confirmLabel: 'Прервать', destructive: true, onConfirm: () => {
-                repo.abandonWorkoutSession(session.id);
-                refresh('activity');
-                showFlash('Сессия прервана — история подходов сохранена');
-                router.back();
-              } })}
-              testID="strength-abandon"
-            />
-          </View>
-        ) : (
-          <AppButton label="Закрыть" variant="secondary" onPress={() => router.back()} />
-        )}
-      </ScrollView>
-
+              <Ionicons name="arrow-forward" size={18} color={colors.ink} />
+            </Pressable>
+          ))}
+          <AppButton
+            label="Завершить"
+            variant="secondary"
+            onPress={() => {
+              setListOpen(false);
+              finish();
+            }}
+          />
+          <AppButton
+            label="Прервать тренировку"
+            variant="ghost"
+            testID="strength-abandon"
+            onPress={() =>
+              confirmAction(
+                "Прервать тренировку?",
+                "Записанные подходы останутся в истории. Чтобы продолжить позже, достаточно выйти с экрана.",
+                {
+                  destructive: true,
+                  confirmLabel: "Прервать",
+                  onConfirm: () => {
+                    repo.abandonWorkoutSession(session.id);
+                    if (undo?.ownerId === session.id) setUndo(null);
+                    refresh("activity");
+                    setListOpen(false);
+                    showFlash("Тренировка прервана");
+                  },
+                },
+              )
+            }
+          />
+          <AppButton
+            label="Закрыть список"
+            variant="ghost"
+            onPress={() => setListOpen(false)}
+          />
+        </FormScrollView>
+      </SwipeToDismissSheet>
+      <SwipeToDismissSheet
+        visible={infoOpen}
+        onClose={() => setInfoOpen(false)}
+      >
+        <FormScrollView variant="sheet" contentContainerStyle={styles.sheet}>
+          <AppText variant="title">Ориентиры</AppText>
+          <AppText variant="subtitle">{name}</AppText>
+          <AppText variant="body">
+            {plan
+              ? `${plan.targetSets} подхода · ${repsRangeLabel(plan)} повторений · отдых ${plan.restSec ?? 90} с`
+              : "Для этой сессии нет сохранённого описания плана."}
+          </AppText>
+          {plan?.notes ? <AppText variant="body">{plan.notes}</AppText> : null}
+          {session.planNotes ? (
+            <AppText variant="body">{session.planNotes}</AppText>
+          ) : null}
+          <AppText variant="caption" tone="secondary">
+            План — ориентир. Записывай фактические значения; незаписанный подход
+            не считается выполненным.
+          </AppText>
+          <AppButton
+            label="Вернуться к упражнению"
+            onPress={() => setInfoOpen(false)}
+          />
+        </FormScrollView>
+      </SwipeToDismissSheet>
       <SessionFinishSheet
         visible={finishOpen}
         title={session.title}
-        completedCount={doneCount}
-        totalCount={total}
+        completedCount={review.completedSets}
+        totalCount={review.totalSets}
+        review={review}
         onClose={() => setFinishOpen(false)}
-        onConfirm={({ feelingRpe, feelingNote }) => {
-          try {
-            repo.completeWorkoutSession(session.id, { feelingRpe, feelingNote });
-            setFinishOpen(false);
-            refresh('activity');
-            showFlash('Тренировка сохранена');
-            router.back();
-          } catch (e) {
-            showFlash(e instanceof Error ? e.message : 'Не удалось завершить');
-          }
+        onConfirm={(values) => {
+          repo.completeWorkoutSession(session.id, values);
+          if (undo?.ownerId === session.id) setUndo(null);
+          setFinishOpen(false);
+          refresh("activity");
+          showFlash("Тренировка сохранена");
         }}
       />
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
-  restSticky: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.sm,
-    backgroundColor: colors.canvas,
-  },
-  content: {
-    padding: space.screen,
-    gap: space.md,
-    paddingBottom: space.xxl,
-    backgroundColor: colors.canvas,
-  },
+  content: { padding: space.screen, gap: space.md },
+  rest: { paddingHorizontal: space.screen, paddingTop: space.sm },
+  flex: { flex: 1, minWidth: 0, gap: space.xs },
+  progressHead: { flexDirection: "row", alignItems: "center", gap: space.sm },
   progressTrack: {
-    height: 6,
+    height: 4,
     borderRadius: radius.pill,
     backgroundColor: colors.border,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.ink,
-    borderRadius: radius.pill,
-  },
-  block: {
-    gap: space.xs,
-  },
-  blockDone: {
-    opacity: 0.7,
-  },
-  exHead: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: space.xs,
-  },
-  exTitle: {
-    flex: 1,
-  },
-  footer: {
+  progressFill: { height: "100%", backgroundColor: colors.ink },
+  exerciseHead: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: space.sm,
     marginTop: space.md,
   },
-  missing: {
-    flex: 1,
-    padding: space.lg,
+  iconButton: {
+    width: touchMin,
+    minHeight: touchMin,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  context: { gap: space.xs },
+  sets: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  setPill: {
+    minWidth: touchMin,
+    minHeight: touchMin,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.xs,
+  },
+  setPillCurrent: { backgroundColor: colors.ink },
+  navigation: { flexDirection: "row", gap: space.sm },
+  exerciseDone: { gap: space.sm, alignItems: "center" },
+  sheet: { padding: space.screen, gap: space.md },
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: space.md,
-    justifyContent: 'center',
+    minHeight: touchMin,
+    paddingVertical: space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  summaryHead: {
+    alignItems: "center",
+    gap: space.md,
+    paddingVertical: space.lg,
+  },
+  summaryIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    backgroundColor: colors.trainingStrength,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

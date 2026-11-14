@@ -35,7 +35,7 @@ Manrope400/500/600 is bundled locally, including Cyrillic and its SIL OFL licens
 
 Scale: metric46, hero36, title28, subtitle18, body14, caption12, label11. Headings and large metrics use medium weight. Body copy uses regular weight; semibold is for actions and row emphasis. Text scaling stays enabled.
 
-Screen padding20; base spacing4/8/12/16/20/24/32; section break28. Card radius22, controls14–16, floating dock24. Interactive chips, presets, row actions and main touch targets use a minimum48dp; decorative bars and labels may be smaller. The dock occupies layout space, so it cannot cover the last scroll item or the existing sticky food action.
+Screen padding20; base spacing4/8/12/16/20/24/32; section break28. Card radius24, controls16, floating dock pill. Interactive chips, presets, row actions and main touch targets use a minimum48dp; decorative bars and labels may be smaller. The dock occupies layout space, so it cannot cover the last scroll item or the existing sticky food action.
 
 ## Shared components
 
@@ -73,3 +73,11 @@ Implementation notes and evidence: [fresh-utility/README.md](quality/fresh-utili
 Токен `textMuted` уточнён до контраста AA также на поверхности силовой тренировки; локальные цветовые исключения не нужны. Нижняя навигация имеет группу вкладок; tab/checkbox/radio передают выбранное состояние и в native accessibilityState, и в ARIA. Прогресс силовой сессии — progressbar с диапазоном и текущим значением.
 
 Для недоступного локального фото рецепта используется общая заглушка `RecipeImage`. Фото из импортированного JSON не загружается с произвольного внешнего URL.
+
+### Интерактивный зал и общая доводка #236 — 2026-11-14
+
+Контролы используют радиус16, карточки24; основной CTA имеет минимум52dp. Переключатели размещены на нейтральной округлой подложке, выбранный пункт — белая поверхность с тонкой границей. Подписи полей используют caption12, заголовки графиков — subtitle18. Кнопки дают краткий отклик на нажатие без постоянной анимации.
+
+Силовая сессия показывает одно упражнение и один редактируемый подход. План/предыдущее занятие отделены от факта; черновик не считается выполненным. Подтверждение даёт Undo, запускает сохранённый таймер и открывает следующий незаписанный подход. После завершения показывается интерактивная сводка. Декоративная схема мышц не заменяет объяснение техники. Общая панель имеет роль диалога, доступное имя и полноценную кнопку закрытия с областью48dp.
+
+Evidence: [интерактивный зал](quality/interactive-gym-236/README.md).

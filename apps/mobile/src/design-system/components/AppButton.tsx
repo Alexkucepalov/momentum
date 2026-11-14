@@ -1,9 +1,14 @@
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
-import { colors, radius, touchMin } from '../tokens';
-import { AppText } from './AppText';
+import { colors, radius, touchMin } from "../tokens";
+import { AppText } from "./AppText";
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 type AppButtonProps = {
   label: string;
@@ -20,12 +25,12 @@ export function AppButton({
   label,
   onPress,
   disabled,
-  variant = 'primary',
+  variant = "primary",
   accessibilityHint,
   style,
   testID,
 }: AppButtonProps) {
-  const onDark = variant === 'primary' || variant === 'danger';
+  const onDark = variant === "primary" || variant === "danger";
   return (
     <Pressable
       onPress={onPress}
@@ -33,10 +38,10 @@ export function AppButton({
       testID={testID}
       style={({ pressed }) => [
         styles.btn,
-        variant === 'primary' && styles.primary,
-        variant === 'secondary' && styles.secondary,
-        variant === 'ghost' && styles.ghost,
-        variant === 'danger' && styles.danger,
+        variant === "primary" && styles.primary,
+        variant === "secondary" && styles.secondary,
+        variant === "ghost" && styles.ghost,
+        variant === "danger" && styles.danger,
         pressed && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -46,7 +51,11 @@ export function AppButton({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}
     >
-      <AppText variant="body" tone={onDark ? 'inverse' : 'ink'} style={styles.label}>
+      <AppText
+        variant="body"
+        tone={onDark ? "inverse" : "ink"}
+        style={styles.label}
+      >
         {label}
       </AppText>
     </Pressable>
@@ -55,10 +64,10 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   btn: {
-    minHeight: touchMin,
+    minHeight: touchMin + 4,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 20,
   },
   primary: {
@@ -70,20 +79,21 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   ghost: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   danger: {
     backgroundColor: colors.danger,
   },
   pressed: {
     opacity: 0.85,
+    transform: [{ scale: 0.985 }],
   },
   disabled: {
     opacity: 0.4,
   },
   label: {
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     paddingVertical: 2,
   },
 });

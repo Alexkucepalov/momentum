@@ -69,9 +69,9 @@ export const HEART_RATE_ZONE_COLORS = ['#AEB8AD', '#7F999C', '#6D8B68', '#B78E63
 
 export const radius = {
   sm: 8,
-  md: 14,
-  lg: 16,
-  card: 22,
+  md: 16,
+  lg: 18,
+  card: 24,
   xl: 24,
   pill: 999,
 } as const;
